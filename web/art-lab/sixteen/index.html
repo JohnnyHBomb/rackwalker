@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Art lab: 16-bit overworld</title>
+<style>
+  :root { --bg: #140c1c; --panel: #2a1d33; --ink: #fbf7e8; --dim: #b3aeb0; --line: #3b3552; }
+  html, body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  p { color: var(--dim); margin: 0 0 12px; }
+  canvas { image-rendering: pixelated; display: block; max-width: 100%; height: auto; }
+  .row { display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start; margin-top: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); padding: 8px; }
+  .card h2 { font-size: 13px; margin: 0 0 6px; color: var(--dim); font-weight: 600; }
+  .dialogue { display: flex; gap: 8px; align-items: center; background: #1e2440; border: 3px solid #b3aeb0;
+              outline: 2px solid #140c1c; padding: 8px; max-width: 520px; }
+  .dialogue .who { color: #5ef0ff; font-weight: 700; }
+  label { color: var(--dim); }
+</style>
+</head>
+<body>
+<main>
+  <h1>16-bit console RPG: overworld test screen</h1>
+  <p>256 x 224 native, 16 x 16 tiles, 63-colour palette, 3/4 top-down. Every pixel comes from the indexed data in
+    <code>assets/</code>. <label>Scale <select id="scale"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label></p>
+  <div class="card"><h2>Scene</h2><canvas id="scene"></canvas></div>
+  <div class="row">
+    <div class="card"><h2>Dialogue portrait</h2>
+      <div class="dialogue"><canvas id="portrait"></canvas>
+        <div><div class="who">Ilatea</div>Small things matter. One serial, one label, one cable.</div></div>
+    </div>
+    <div class="card"><h2>Byte and Nocti</h2><canvas id="owls"></canvas></div>
+    <div class="card"><h2>Walk cycle</h2><canvas id="walk"></canvas></div>
+  </div>
+</main>
+<script type="module">
+  import { VIEWS, toCanvas } from './lab.js';
+  const q = new URLSearchParams(location.search);
+  const sel = document.getElementById('scale');
+  if (q.get('scale')) sel.value = q.get('scale');
+  const t0 = performance.now();
+  function frame() {
+    const t = q.has('t') ? Number(q.get('t')) : performance.now() - t0;
+    const s = Number(sel.value);
+    toCanvas(VIEWS.scene(t), s, document.getElementById('scene'));
+    toCanvas(VIEWS.portrait(t), 2, document.getElementById('portrait'));
+    toCanvas(VIEWS.owls(t), 3, document.getElementById('owls'));
+    toCanvas(VIEWS.walk(t), 3, document.getElementById('walk'));
+    if (!q.has('t')) requestAnimationFrame(frame);
+  }
+  frame();
+</script>
+</body>
+</html>
