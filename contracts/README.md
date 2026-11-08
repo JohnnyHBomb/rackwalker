@@ -1,4 +1,4 @@
-# Contracts (version 2.0.0)
+# Contracts (version 2.1.0)
 
 These files are the interface between the two halves of RackWalker: the Python proxy (`proxy/`) and the browser
 game (`web/`). Each side builds and tests against them on its own, so a change here is deliberate and versioned
@@ -7,7 +7,7 @@ game (`web/`). Each side builds and tests against them on its own, so a change h
 | File | What it fixes | Who implements it |
 |---|---|---|
 | `scene.schema.json` | Every JSON body between web and proxy (JSON Schema 2020-12, `$defs`). **Source of truth.** | proxy produces, web consumes |
-| `openapi.yaml` | The 8 HTTP routes, wired to the `$defs` above | proxy |
+| `openapi.yaml` | The 15 HTTP routes (8 scene and change routes, 7 game routes), wired to the `$defs` above | proxy |
 | `api.md` | Route rules: errors, status codes, ChangeSet semantics, the `update_fields` whitelist, caching | proxy, web editor |
 | `iso.md` + `web/src/contracts/iso.ts` | Tile size, axes, facing, screen mapping, depth key, zoom levels, GPS projection | web engine |
 | `theme.md` + `theme-slots.json` + `web/src/contracts/theme.ts` | Theme interface, palette keys, the 21 sprite slots with size and anchor | web engine, themes |
@@ -34,7 +34,14 @@ TraceResponse   meta, trace { origin, hops[ {near_end[], cable|null, far_end[]} 
 ChangeSet       ops[ move_rack | place_device | unplace_device | create_rack | update_fields ], reason?
 ChangeResult    mode, applied, write_enabled, ops[ {index, op, target, status, before, after, diff[], error} ]
 ErrorResponse   { error: {code, message, details}, request_id? }   (every non-2xx answer)
+
+GameSession     signed_in, player: Player|null, csrf_token, local_mode                     sign-in (cookie session)
+GameState       contract_version, player, settings: GameSettings, flags: Flags, saves[ SaveSlot ]
+SaveSlot        slot (auto|1|2|3), rev, updated_at, data: SaveData {scene, overworld {x,y,facing}, iso|null}
 ```
+
+Game bodies (2.1.0) are the game's own state, kept by the proxy in SQLite and never written into NetBox; rules in
+`api.md` "Game state".
 
 Entities: `Site`, `Location` (a room), `Rack`, `Device` (with `Role`, `DeviceType`), `Interface`
 (any cable-able port; `kind` says which), `Termination` (a cable end), `Cable`, `CableRef`, `CableTrace`.
@@ -72,7 +79,7 @@ Rules that both sides rely on:
    are `#rrggbb`.
 5. **Time** is RFC 3339 with an offset. `last_updated` on Site/Location/Rack/Device feeds the optimistic lock
    `if_unmodified_since` on change ops.
-6. **Supported NetBox**: 4.7.x for contract 2.0.0 (`/api/health` reports `netbox.supported`). The proxy
+6. **Supported NetBox**: 4.7.x for contract 2.1.0 (`/api/health` reports `netbox.supported`). The proxy
    authenticates with a v2 token (`Authorization: Bearer nbt_<key>.<token>`, NetBox >= 4.5); a legacy v1 token
    (deprecated in 4.6, removed in 5.0) is still sent as `Token <hex>`.
 7. **Trace normalisation**: NetBox's `/trace/` segments become `hops` in order. Crossing a circuit is a hop with
@@ -84,6 +91,7 @@ Rules that both sides rely on:
 | Version | Date | Change |
 |---|---|---|
 | 2.0.0 | 2026-11-08 | First public contract of World of Confusion: RackWalker. Bodies cover NetBox data only (sites, locations, racks, devices, ports, cables, traces, change sets); targets NetBox 4.7.x. |
+| 2.1.0 | 2026-11-08 | Additive: the game shell. Seven `/api/game/*` routes (sign-in as a NetBox user, sign-out, game state, save slots, settings, flags), their `$defs` (`GameSession`, `SignInRequest`, `Player`, `GameState`, `GameSettings`, `KeyBindings`, `SaveData`, `SaveSlot`, `Flags`, `FlagsPatch`, ...), error codes `unauthorized` (401) and `forbidden` (403), fixtures `game-*.json`, `players.json`, `error-unauthorized.json`. Scene and change bodies are unchanged apart from `contract_version`. |
 
 ## NetBox 4.7 notes
 

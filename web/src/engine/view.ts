@@ -98,8 +98,11 @@ export class RackWalkerView {
   private readonly caches = new Map<string, ThemeCaches>();
   private shownTheme: Theme;
   private hud!: Hud;
-  /** Called after every HUD refresh (level, selection or theme changed); the theme picker listens here. */
+  /** Called after every HUD refresh (level, selection, camera or theme changed); the theme picker listens here. */
   onUpdate: (() => void) | null = null;
+  /** Asked before every navigation; returning true means the caller handles it and the view stays (the game shell
+   *  turns "zoom out to the world" into leaving the building). */
+  navGuard: ((t: Target) => boolean) | null = null;
   private readonly bundles = new Map<string, Bundle>();
   private cur: Bundle | null = null;
   private selected: Pick | null = null;
@@ -210,6 +213,7 @@ export class RackWalkerView {
 
   /** Queue a navigation; transitions never overlap. */
   goto(t: Target, direction: 'in' | 'out' | 'none' = 'none', from?: Item): Promise<void> {
+    if (this.navGuard?.(t)) return Promise.resolve();
     return this.enqueue(() => this.doGoto(t, direction, from));
   }
 

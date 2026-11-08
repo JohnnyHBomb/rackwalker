@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackwalker.invalid/web/dialogue.schema.json",
+  "title": "RackWalker dialogue script",
+  "description": "One conversation as data (web/src/game/scripts/*.json). Graph rules (every next names a node, every node reachable, one unconditional choice per node) are checked by validateScript in dialogue.ts.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "start", "nodes"],
+  "properties": {
+    "$schema": {"type": "string"},
+    "id": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,47}$"},
+    "once": {"$ref": "#/$defs/Flag", "description": "Set when the first line shows; the game never starts the script on its own again."},
+    "min_hint": {"enum": ["off", "low", "normal", "high"], "description": "Lowest hint level at which the game starts the script on its own (default low)."},
+    "start": {"$ref": "#/$defs/NodeName"},
+    "nodes": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": {"$ref": "#/$defs/NodeName"},
+      "additionalProperties": {"$ref": "#/$defs/Node"}
+    }
+  },
+  "$defs": {
+    "Flag": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_.:-]{0,63}$"},
+    "NodeName": {"type": "string", "pattern": "^[a-z][a-z0-9_-]{0,31}$"},
+    "Set": {"type": "object", "propertyNames": {"$ref": "#/$defs/Flag"}, "additionalProperties": {"type": ["boolean", "integer", "string"]}},
+    "Next": {
+      "oneOf": [
+        {"type": "null"},
+        {"$ref": "#/$defs/NodeName"},
+        {"type": "array", "minItems": 1, "items": {
+          "type": "object", "additionalProperties": false, "required": ["to"],
+          "properties": {"to": {"oneOf": [{"type": "null"}, {"$ref": "#/$defs/NodeName"}]}, "if": {"$ref": "#/$defs/Flag"}, "unless": {"$ref": "#/$defs/Flag"}}
+        }}
+      ]
+    },
+    "Choice": {
+      "type": "object", "additionalProperties": false, "required": ["label"],
+      "properties": {
+        "label": {"type": "string", "minLength": 1, "maxLength": 48},
+        "next": {"$ref": "#/$defs/Next"},
+        "set": {"$ref": "#/$defs/Set"},
+        "do": {"enum": ["hints_low", "hints_off", "open_settings", "open_menu"]},
+        "if": {"$ref": "#/$defs/Flag"},
+        "unless": {"$ref": "#/$defs/Flag"}
+      }
+    },
+    "Node": {
+      "type": "object", "additionalProperties": false, "required": ["speaker", "text"],
+      "properties": {
+        "speaker": {"enum": ["ilatea", "byte", "nocti"]},
+        "text": {"type": "string", "minLength": 1, "maxLength": 160},
+        "choices": {"type": "array", "minItems": 1, "maxItems": 4, "items": {"$ref": "#/$defs/Choice"}},
+        "next": {"$ref": "#/$defs/Next"},
+        "set": {"$ref": "#/$defs/Set"}
+      },
+      "not": {"properties": {"choices": true, "next": true}, "required": ["choices", "next"]}
+    }
+  }
+}

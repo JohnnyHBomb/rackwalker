@@ -11,10 +11,11 @@ RackWalker is a locally hosted, browser-based 8/16-bit open-world game that play
 
 Fill a gap in NetBox, verified against the real data, to earn XP, potions and tools.
 
-Status: early development. Not yet playable as a game. What works today is the engine underneath it: an
-isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS, rooms, racks, devices, cables and cable
-traces) in four original art themes plus a plain debug theme, with drag-and-drop edits written back to NetBox
-after a diff preview.
+Status: early development. What works today: the game shell (sign in as your NetBox user, a placeholder overworld
+with one building per site, walk through a door into that site's isometric room and back out, Ilatea's first
+lines, autosave) on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
+rooms, racks, devices, cables and cable traces) in four original art themes plus a plain debug theme, with
+drag-and-drop edits written back to NetBox after a diff preview.
 
 | Farm | Industrial robotic | Pagodas and nature | Business |
 |---|---|---|---|
@@ -42,9 +43,9 @@ token never reaches the browser, a response body or a log line.
 
 | Path | What |
 |---|---|
-| `contracts/` | Contract 2.0.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
+| `contracts/` | Contract 2.1.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
 | `web/` | The game in the browser: TypeScript + Vite + PixiJS 8, Vitest and Playwright; npm with a pinned `package-lock.json` |
-| `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache; pytest; pinned `requirements.lock` |
+| `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in and the game store (SQLite); pytest; pinned `requirements.lock` |
 | `fixtures/` | Canned responses for every route, rendered from the synthetic seed model; the web side can run on them alone |
 | `devnetbox/` | Throwaway NetBox v4.7.4 stacks (netbox-docker 5.1.1) in Docker, with an idempotent synthetic seed |
 | `docs/` | Art briefs and screenshots |
@@ -78,7 +79,7 @@ several stacks can run side by side.
 | Command | Does |
 |---|---|
 | `make test` | proxy pytest + web `tsc --noEmit` + vitest. Validates every fixture against the schema on both sides and checks that generated code is fresh |
-| `make e2e` (or `make test-e2e`) | Playwright, headless chromium: golden screenshot per zoom level, pixel-crispness check, interaction, editor, perf (1,000 devices at room level >= 50 fps) |
+| `make e2e` (or `make test-e2e`) | Playwright, headless chromium: golden screenshot per zoom level, pixel-crispness check, interaction, editor, perf (1,000 devices at room level >= 50 fps), and the game shell on a fixture-mode proxy with a fresh game store (screenshots to `docs/screenshots/g0/g0b/`) |
 | `make e2e-themes` | the interaction and editor e2e once per theme (`RACKWALKER_E2E_THEME=<id>` adds `?theme=<id>`; the goldens stay on `debug`) |
 | `make theme-shots THEME=<id>` (or `all`) | every zoom level, the theme picker and the slot sheet of one theme into `docs/screenshots/themes/<id>/` |
 | `make gen` | regenerate pydantic models, TS types and fixtures from their sources |
@@ -86,7 +87,7 @@ several stacks can run side by side.
 | `make netbox-up` / `seed` / `reset` / `down` / `destroy` / `status` / `check-fixtures` | manage a dev NetBox stack (`NB_PROJECT`, `NB_PORT`) |
 | `make netbox-env` | write `.env` with the stack's URL and the proxy user's **read-only** token and `WRITE_ENABLED=0`; `WRITE=1 FORCE=1` writes the proxy user's write token and `WRITE_ENABLED=1` instead. The admin token never goes to the proxy |
 | `make test-live` | proxy contract tests against the dev NetBox (fresh seed): fixture parity, errors, an apply round trip checked in NetBox's changelog, then put back. `RACKWALKER_RECORD=1` also re-records `proxy/tests/recorded/` (the offline replay data `make test` uses) |
-| `make e2e-live` (with `make dev` running) | headless chromium on the live stack: all 3 sites on the world view, double-click down to a device, every `/api` answer from NetBox; with `NB_URL` and `NB_ADMIN_TOKEN` of a write-enabled stack also the live write round trip. Screenshots to `docs/screenshots/` |
+| `make e2e-live` (with `make dev` running) | headless chromium on the live stack: all 3 sites on the world view, double-click down to a device, every `/api` answer from NetBox; with `NB_URL` and `NB_ADMIN_TOKEN` of a write-enabled stack also the live write round trip, and with `NB_ADMIN_TOKEN` (or `NB_PLAYER_TOKEN`) the game: sign in as that NetBox user, every door in and out, reload. Screenshots to `docs/screenshots/` |
 
 The live write round trip of `make e2e-live` needs a write-enabled proxy and the stack's admin token (used only by
 the test, to read the device and its changelog):
@@ -97,6 +98,38 @@ export NB_URL=$(devnetbox/nb.sh env admin | sed -n 's/^NETBOX_URL=//p')
 export NB_ADMIN_TOKEN=$(devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')
 make e2e-live
 ```
+
+## The game shell: `web/src/game/`
+
+Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixtures`.
+
+* **Sign in as your NetBox user.** Paste one of your NetBox API tokens (a read-only one is enough; NetBox: your user
+  menu, API Tokens). The proxy asks NetBox once who owns it and forgets it; your session is an HttpOnly cookie. In
+  the dev stack, `devnetbox/nb.sh env admin` prints a token of the `admin` user; with `make dev-fixtures` use a
+  synthetic token from `fixtures/players.json`. `RACKWALKER_LOCAL_PLAYER=1` skips sign-in for a NetBox only you use
+  (off by default).
+* **Overworld (placeholder).** A code-drawn meadow with one building per site, labelled with the site's name and drawn
+  in its theme's colours. Walk with the arrow keys or WASD, or tap/click where you want to go. Each door has an arch
+  and a marker above it. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
+  the back button or the "World" crumb) leaves the building, and you stand in front of its door.
+* **Ilatea** speaks one line on your first visit ("Small things matter") and then lets you act. She speaks again only
+  on your first building, or once if you seem stuck on the green, and never repeats herself. Every bubble closes
+  with `Esc` or its close button; the typewriter finishes at the first key or tap; choices work by arrow keys and
+  `Enter`, number keys, mouse or touch.
+* **Menu** (`M` or the button in the corner): talk to Ilatea, the field-guide pages of her owls Byte (commands and
+  hardening) and Nocti (hardware and best practice) as placeholders, settings, sign out.
+* **Settings**: Ilatea's hint level (off, low, normal, high), sound (mute, volume; for the music to come), reduce
+  motion (text at once, scene changes cut), and every key remappable (up to three keys per action). Nothing flashes;
+  the selected choice and the doors are marked by shapes, not only colour.
+* **Autosave**: your place (overworld tile, or the level and camera inside a building) is saved by the proxy on every
+  change of place, so a reload puts you back where you were. No save points.
+* **Game state** lives in `data/game.sqlite3` (`RACKWALKER_STATE_DIR` to move it; gitignored), keyed by NetBox user id,
+  schema-versioned. It is never written into NetBox. Routes and rules: `contracts/api.md` "Game state".
+* **Dialogue scripts** are data: `web/src/game/scripts/*.json`, schema `web/src/game/dialogue.schema.json`, checked by
+  `validateScript` (every `next` names a node, every node is reachable, one line of at most 160 characters, at most
+  four choices, always one unconditional choice) when they load and in `make test`.
+
+`?view=...`, `source=fixture`, `perf=` and `game=0` open the plain viewer as before (no sign-in, the level in the URL).
 
 ## The proxy
 
@@ -111,6 +144,7 @@ make e2e-live
 * The OpenAPI document is at `/api/openapi.json`; the Swagger UI (`/api/docs`) and ReDoc (`/api/redoc`) pages load
   their scripts from a CDN, so they are served only with `RACKWALKER_DOCS=1` (local development).
 * `RACKWALKER_FIXTURES=1` (or a directory) serves `fixtures/` instead of NetBox.
+* Game routes (`/api/game/*`): sign-in, session cookie, CSRF header, the SQLite game store; see the game shell above.
 
 ## Themes: `web/src/themes/`
 

@@ -1,0 +1,72 @@
+{
+  "contract_version": "2.1.0",
+  "player": {
+    "id": 11,
+    "username": "walker",
+    "display_name": "Rae Walker"
+  },
+  "settings": {
+    "audio": {
+      "muted": false,
+      "volume": 0.6
+    },
+    "hint_level": "normal",
+    "keys": {
+      "up": [
+        "ArrowUp",
+        "KeyW"
+      ],
+      "down": [
+        "ArrowDown",
+        "KeyS"
+      ],
+      "left": [
+        "ArrowLeft",
+        "KeyA"
+      ],
+      "right": [
+        "ArrowRight",
+        "KeyD"
+      ],
+      "interact": [
+        "Enter",
+        "Space",
+        "KeyE"
+      ],
+      "cancel": [
+        "Escape"
+      ],
+      "menu": [
+        "KeyM"
+      ]
+    },
+    "reduce_motion": false
+  },
+  "flags": {
+    "ilatea.intro.seen": true
+  },
+  "saves": [
+    {
+      "slot": "auto",
+      "rev": 4,
+      "updated_at": "2026-11-07T09:00:00Z",
+      "data": {
+        "iso": {
+          "camera": {
+            "cx": 48.0,
+            "cy": 120.0,
+            "scale": 2
+          },
+          "site_id": 1,
+          "view": "room:1:1"
+        },
+        "overworld": {
+          "facing": "N",
+          "x": 9,
+          "y": 11
+        },
+        "scene": "iso"
+      }
+    }
+  ]
+}

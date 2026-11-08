@@ -1,0 +1,17 @@
+{
+  "$schema": "../dialogue.schema.json",
+  "id": "ilatea-stuck",
+  "once": "ilatea.stuck.seen",
+  "min_hint": "normal",
+  "start": "nudge",
+  "nodes": {
+    "nudge": {
+      "speaker": "ilatea",
+      "text": "One small step: the doors are the dark arches. Walk into one.",
+      "choices": [
+        {"label": "Thanks", "next": null},
+        {"label": "Stop the hints", "do": "hints_off", "next": null}
+      ]
+    }
+  }
+}

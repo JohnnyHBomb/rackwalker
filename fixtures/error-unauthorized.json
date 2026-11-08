@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "unauthorized",
+    "message": "Sign in first (POST /api/game/session).",
+    "details": null
+  },
+  "request_id": "fixture-0003"
+}

@@ -5,7 +5,8 @@ from typing import Any
 
 STATUS_FOR = {
     "bad_request": 400, "not_found": 404, "validation_failed": 422, "conflict": 409, "write_disabled": 403,
-    "netbox_unreachable": 502, "netbox_error": 502, "unsupported_netbox_version": 502, "internal": 500,
+    "netbox_unreachable": 502, "netbox_error": 502, "unsupported_netbox_version": 502, "unauthorized": 401, "forbidden": 403,
+    "internal": 500,
 }
 
 

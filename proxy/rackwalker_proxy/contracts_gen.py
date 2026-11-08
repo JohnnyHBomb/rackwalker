@@ -12,6 +12,7 @@ from pydantic import (
     Field,
     RootModel,
     StringConstraints,
+    constr,
 )
 
 
@@ -19,7 +20,7 @@ class RackWalkerSceneContract(RootModel[Any]):
     root: Annotated[
         Any,
         Field(
-            description='Source of truth for every body exchanged between web/ and proxy/. Contract version 2.0.0 (first public contract of World of Confusion: RackWalker). Change only by contract change; see contracts/README.md.',
+            description='Source of truth for every body exchanged between web/ and proxy/. Contract version 2.1.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state). Change only by contract change; see contracts/README.md.',
             title='RackWalker scene contract',
         ),
     ]
@@ -33,7 +34,7 @@ class Meta(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    contract_version: Literal['2.0.0']
+    contract_version: Literal['2.1.0']
     generated_at: Annotated[
         AwareDatetime,
         Field(
@@ -486,7 +487,7 @@ class HealthNetbox(BaseModel):
     supported: Annotated[
         bool,
         Field(
-            description='Version is in the supported range (4.7.x for contract 2.0.0).'
+            description='Version is in the supported range (4.7.x for contract 2.1.0).'
         ),
     ]
 
@@ -502,7 +503,7 @@ class HealthResponse(BaseModel):
         ),
     ]
     app_version: str
-    contract_version: Literal['2.0.0']
+    contract_version: Literal['2.1.0']
     write_enabled: Annotated[
         bool, Field(description='true only when the proxy runs with WRITE_ENABLED=1.')
     ]
@@ -762,6 +763,165 @@ class OpTarget(BaseModel):
     ]
 
 
+class Player(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: Annotated[
+        int,
+        Field(
+            description="The player's NetBox user id; 0 only in the single-user local mode (RACKWALKER_LOCAL_PLAYER=1).",
+            ge=0,
+        ),
+    ]
+    username: Annotated[str, Field(max_length=150, min_length=1)]
+    display_name: Annotated[
+        str | None,
+        Field(
+            description='NetBox first and last name, or null when NetBox has neither.',
+            max_length=300,
+        ),
+    ]
+
+
+class GameSession(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    signed_in: bool
+    player: Player | None
+    csrf_token: Annotated[
+        str | None,
+        Field(
+            description='Send it back as the X-RackWalker-CSRF header on every game write. null when signed out.',
+            max_length=100,
+        ),
+    ]
+    local_mode: Annotated[
+        bool,
+        Field(
+            description='true when the proxy runs the single-user local mode (no NetBox sign-in; off by default).'
+        ),
+    ]
+
+
+class SignInRequest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    token: Annotated[str, Field(max_length=512, min_length=8)]
+
+
+class KeyListItem(RootModel[str]):
+    root: Annotated[str, Field(pattern='^[A-Za-z0-9]{1,24}$')]
+
+
+class AudioSettings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    muted: bool
+    volume: Annotated[float, Field(ge=0.0, le=1.0)]
+
+
+class OverworldPos(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    x: Annotated[int, Field(ge=0, le=4096)]
+    y: Annotated[int, Field(ge=0, le=4096)]
+    facing: Annotated[
+        Literal['N', 'E', 'S', 'W'] | None,
+        Field(
+            description='Grid direction the front faces. N = -y (screen up-right), E = +x (screen down-right), S = +y (screen down-left), W = -x (screen up-left). See contracts/iso.md.'
+        ),
+    ]
+
+
+class IsoCamera(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    cx: float
+    cy: float
+    scale: Annotated[int, Field(ge=1, le=16)]
+
+
+class IsoPlace(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    view: Annotated[
+        str,
+        Field(
+            description='The isometric level, in the ?view= deep-link form.',
+            pattern='^(site:\\d+|room:\\d+:\\d+|rack:\\d+|device:\\d+)$',
+        ),
+    ]
+    camera: IsoCamera | None
+
+
+class SaveData(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    scene: Literal['overworld', 'iso']
+    overworld: Annotated[
+        OverworldPos,
+        Field(
+            description='Overworld tile the player stands on and the way they face.',
+            title='OverworldPos',
+        ),
+    ]
+    iso: Annotated[
+        IsoPlace | None,
+        Field(description='The building the player is in (scene iso), else null.'),
+    ]
+
+
+class SaveSlot(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    slot: Annotated[
+        Literal['auto', '1', '2', '3'],
+        Field(
+            description='auto = the autosave slot the game writes on every change of place; 1-3 = manual slots.'
+        ),
+    ]
+    rev: Annotated[int, Field(description='Counts writes to this slot.', ge=1)]
+    updated_at: Annotated[
+        AwareDatetime,
+        Field(
+            description='RFC 3339 / ISO 8601 with offset, e.g. 2026-11-07T10:00:00Z.'
+        ),
+    ]
+    data: SaveData
+
+
+class Flags(
+    RootModel[dict[Annotated[str, StringConstraints(pattern=r'^[a-z0-9][a-z0-9_.:-]{0,63}$')], bool | int | constr(max_length=200)]]
+):
+    root: Annotated[
+        dict[Annotated[str, StringConstraints(pattern=r'^[a-z0-9][a-z0-9_.:-]{0,63}$')], bool | int | constr(max_length=200)],
+        Field(
+            description='Dialogue and story flags (e.g. ilatea.intro.seen). Open on purpose: names come from the dialogue scripts.',
+            max_length=500,
+        ),
+    ]
+
+
+class FlagsPatch(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    flags: Annotated[
+        dict[Annotated[str, StringConstraints(pattern=r'^[a-z0-9][a-z0-9_.:-]{0,63}$')], bool | int | constr(max_length=200) | None],
+        Field(description='Flags to set; null deletes a flag.', max_length=100),
+    ]
+
+
 class ErrorBody(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -775,6 +935,8 @@ class ErrorBody(BaseModel):
         'netbox_unreachable',
         'netbox_error',
         'unsupported_netbox_version',
+        'unauthorized',
+        'forbidden',
         'internal',
     ]
     message: Annotated[
@@ -966,3 +1128,99 @@ class ChangeResult(BaseModel):
     ]
     write_enabled: bool
     ops: list[OpResult]
+
+
+class KeyBindings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    up: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    down: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    left: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    right: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    interact: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    cancel: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    menu: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+
+
+class GameSettings(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    hint_level: Annotated[
+        Literal['off', 'low', 'normal', 'high'],
+        Field(
+            description='How often the guide speaks up: off = never on her own (the menu still opens her), low = only first-time essentials, normal = also when you seem stuck, high = also extra tips.'
+        ),
+    ]
+    audio: Annotated[AudioSettings, Field(title='AudioSettings')]
+    reduce_motion: Annotated[
+        bool,
+        Field(
+            description='Text appears at once and scene changes cut instead of sliding.'
+        ),
+    ]
+    keys: KeyBindings
+
+
+class GameState(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    contract_version: Literal['2.1.0']
+    player: Player
+    settings: GameSettings
+    flags: Flags
+    saves: Annotated[
+        list[SaveSlot],
+        Field(description='Existing slots, autosave first.', max_length=4),
+    ]

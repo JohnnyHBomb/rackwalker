@@ -28,9 +28,10 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import changes, scene, schema
+from . import changes, game, scene, schema
 from . import contracts_gen as c
 from .errors import STATUS_FOR, ApiError  # noqa: F401  (STATUS_FOR re-exported)
+from .gamestore import GameStore
 from .netbox import SUPPORTED_PREFIX, NetBox, auth_header
 
 APP_VERSION = "0.1.0"
@@ -59,6 +60,12 @@ class Settings:
     # Swagger UI / ReDoc pages load their scripts from a CDN (floating major, no SRI) on the origin that also serves
     # POST /api/changes/apply, so they are off unless RACKWALKER_DOCS=1 (local development only).
     docs: bool = False
+    # The game's own state (SQLite, never NetBox): <state_dir>/game.sqlite3. RACKWALKER_STATE_DIR, default <repo>/data.
+    state_dir: Path = REPO / "data"
+    # Single-user local mode: no NetBox sign-in, one player (id 0). It bypasses identity, so it is off by default.
+    local_player: bool = False
+    # Secure flag on the session cookie: set RACKWALKER_COOKIE_SECURE=1 when the game is served over https.
+    cookie_secure: bool = False
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -70,7 +77,10 @@ class Settings:
                    cache_ttl=float(env.get("RACKWALKER_CACHE_TTL", "10")),
                    allowed_hosts=tuple(h.strip().lower() for h in env.get("RACKWALKER_ALLOWED_HOSTS", "127.0.0.1,localhost").split(",")
                                        if h.strip()),
-                   docs=env.get("RACKWALKER_DOCS", "0") == "1")
+                   docs=env.get("RACKWALKER_DOCS", "0") == "1",
+                   state_dir=Path(env["RACKWALKER_STATE_DIR"]) if env.get("RACKWALKER_STATE_DIR") else REPO / "data",
+                   local_player=env.get("RACKWALKER_LOCAL_PLAYER", "0") == "1",
+                   cookie_secure=env.get("RACKWALKER_COOKIE_SECURE", "0") == "1")
 
 
 class ReadCache:
@@ -281,4 +291,7 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             cache.clear()  # also after a refused or partial apply: never serve pre-write state as current
         return JSONResponse(_dump(res))
 
+    game.install(app, open_store=lambda: GameStore(s.state_dir / "game.sqlite3"), netbox_url=s.netbox_url,
+                 fixtures_dir=s.fixtures_dir, local_player=s.local_player, allowed_hosts=allowed_hosts,
+                 cookie_secure=s.cookie_secure, transport=transport)
     return app

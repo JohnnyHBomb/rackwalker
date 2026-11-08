@@ -1,0 +1,74 @@
+// The proxy's game routes (contracts/openapi.yaml, /api/game/*): who is playing, and the game's own state (save
+// slots, settings, dialogue flags). The session is an HttpOnly cookie the page never sees; every write carries the
+// session's CSRF token in the X-RackWalker-CSRF header. Game state lives in the proxy's SQLite file, never in NetBox.
+import type { Flags, FlagsPatch, GameSession, GameSettings, GameState, SaveData, SaveSlot, SaveSlotId } from '../contracts/scene.gen';
+import { SceneSourceError, errorFrom } from '../engine/source';
+
+export const CSRF_HEADER = 'X-RackWalker-CSRF';
+
+export interface GameApi {
+  session(): Promise<GameSession>;
+  signIn(token: string): Promise<GameSession>;
+  signOut(): Promise<GameSession>;
+  state(): Promise<GameState>;
+  save(slot: SaveSlotId, data: SaveData): Promise<SaveSlot>;
+  settings(s: GameSettings): Promise<GameSettings>;
+  flags(patch: FlagsPatch['flags']): Promise<Flags>;
+}
+
+export class HttpGameApi implements GameApi {
+  private csrf: string | null = null;
+
+  constructor(
+    private readonly base = '',
+    private readonly fetchFn: typeof fetch = (...a) => fetch(...a),
+  ) {}
+
+  private async call<T>(method: string, path: string, body?: unknown): Promise<T> {
+    let res: Response;
+    try {
+      res = await this.fetchFn(this.base + path, {
+        method,
+        credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json',
+          ...(body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+          ...(method !== 'GET' ? { [CSRF_HEADER]: this.csrf ?? 'sign-in' } : {}),
+        },
+        ...(body !== undefined ? { body: JSON.stringify(body) } : {}),
+      });
+    } catch (e) {
+      throw new SceneSourceError(0, 'netbox_unreachable', `Proxy unreachable: ${String(e)}`);
+    }
+    const json: unknown = await res.json().catch(() => null);
+    if (!res.ok) throw errorFrom(res.status, json);
+    return json as T;
+  }
+
+  private keep(s: GameSession): GameSession {
+    this.csrf = s.csrf_token;
+    return s;
+  }
+
+  async session(): Promise<GameSession> {
+    return this.keep(await this.call<GameSession>('GET', '/api/game/session'));
+  }
+  async signIn(token: string): Promise<GameSession> {
+    return this.keep(await this.call<GameSession>('POST', '/api/game/session', { token }));
+  }
+  async signOut(): Promise<GameSession> {
+    return this.keep(await this.call<GameSession>('DELETE', '/api/game/session'));
+  }
+  state(): Promise<GameState> {
+    return this.call('GET', '/api/game/state');
+  }
+  save(slot: SaveSlotId, data: SaveData): Promise<SaveSlot> {
+    return this.call('PUT', `/api/game/saves/${slot}`, data);
+  }
+  settings(s: GameSettings): Promise<GameSettings> {
+    return this.call('PUT', '/api/game/settings', s);
+  }
+  flags(patch: FlagsPatch['flags']): Promise<Flags> {
+    return this.call('PATCH', '/api/game/flags', { flags: patch } satisfies FlagsPatch);
+  }
+}

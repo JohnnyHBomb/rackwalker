@@ -14,7 +14,7 @@ from rackwalker_proxy.app import Settings, create_app
 from .conftest import INDEX, LOCAL, load, schema_validator
 from .netbox_replay import RECORDED_HOST, Replay, load as recordings, strip
 
-GETS = [f for f in INDEX if f["method"] == "GET" and f["path"] != "/api/health"]
+GETS = [f for f in INDEX if f["method"] == "GET" and f["path"] != "/api/health" and not f.get("store")]  # store: game routes
 TOKEN = "nbt_abcdef123456.0123456789abcdef0123456789abcdef01234567"
 
 

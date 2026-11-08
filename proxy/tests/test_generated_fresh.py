@@ -42,4 +42,5 @@ def test_openapi_refs_resolve():
             assert frag.startswith("/$defs/") and frag.split("/")[-1] in SCHEMA["$defs"], r
     paths = set(spec["paths"])
     assert paths == {"/api/health", "/api/scene/world", "/api/scene/site/{site_id}", "/api/scene/rack/{rack_id}",
-                     "/api/device/{device_id}", "/api/trace/{kind}/{port_id}", "/api/changes/preview", "/api/changes/apply"}
+                     "/api/device/{device_id}", "/api/trace/{kind}/{port_id}", "/api/changes/preview", "/api/changes/apply",
+                     "/api/game/session", "/api/game/state", "/api/game/saves/{slot}", "/api/game/settings", "/api/game/flags"}

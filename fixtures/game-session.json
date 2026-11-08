@@ -1,0 +1,10 @@
+{
+  "signed_in": true,
+  "player": {
+    "id": 11,
+    "username": "walker",
+    "display_name": "Rae Walker"
+  },
+  "csrf_token": "fixture-csrf-token",
+  "local_mode": false
+}

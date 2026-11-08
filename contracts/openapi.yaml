@@ -1,10 +1,10 @@
-# RackWalker HTTP API between web/ and proxy/. Contract 2.0.0.
+# RackWalker HTTP API between web/ and proxy/. Contract 2.1.0.
 # Bodies are defined once in scene.schema.json ($defs); this file only wires paths to them.
 # Prose, rules and the update_fields whitelist: api.md. Examples: ../fixtures/ (index.json maps request -> file).
 openapi: 3.1.0
 info:
   title: RackWalker proxy API
-  version: 2.0.0
+  version: 2.1.0
   license: {name: Apache-2.0, identifier: Apache-2.0}
 servers:
   - url: http://localhost:8710
@@ -16,7 +16,19 @@ components:
       content:
         application/json:
           schema: {$ref: "scene.schema.json#/$defs/ErrorResponse"}
+  securitySchemes:
+    session:
+      type: apiKey
+      in: cookie
+      name: rackwalker_session
+      description: Set by POST /api/game/session (HttpOnly, SameSite=Strict, Path=/api/game). Writes also need the X-RackWalker-CSRF header.
   parameters:
+    Csrf:
+      name: X-RackWalker-CSRF
+      in: header
+      required: true
+      description: The session's csrf_token (GameSession). On sign-in, any value; it only proves the request came from the game's own page.
+      schema: {type: string}
     Id:
       in: path
       required: true
@@ -102,4 +114,84 @@ paths:
         "200":
           description: Apply result (mode=apply). applied=true only if every op ended ok/no_change. If the validation pass finds any op error, nothing is written and the result carries applied=false with the per-op errors (still HTTP 200).
           content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeResult"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/session:
+    get:
+      summary: Who is playing. Always 200; signed_in false when there is no valid session cookie.
+      responses:
+        "200":
+          description: Session.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GameSession"}}}
+    post:
+      summary: Sign in as the NetBox user who owns the token. The proxy asks NetBox once (/api/authentication-check/) and forgets the token. Sets the session cookie.
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/SignInRequest"}}}
+      responses:
+        "200":
+          description: Signed in.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GameSession"}}}
+        default: {$ref: "#/components/responses/Error"}
+    delete:
+      summary: Sign out (ends the session, clears the cookie).
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      responses:
+        "200":
+          description: Signed out.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GameSession"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/state:
+    get:
+      summary: Everything the game stores for the signed-in player (profile, settings, flags, save slots). Never NetBox data.
+      security: [{session: []}]
+      responses:
+        "200":
+          description: Game state.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GameState"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/saves/{slot}:
+    put:
+      summary: Write a save slot (auto = the autosave the game writes on every change of place; 1-3 manual). Last write wins.
+      security: [{session: []}]
+      parameters:
+        - name: slot
+          in: path
+          required: true
+          schema: {$ref: "scene.schema.json#/$defs/SaveSlotId"}
+        - {$ref: "#/components/parameters/Csrf"}
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/SaveData"}}}
+      responses:
+        "200":
+          description: The slot as stored.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/SaveSlot"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/settings:
+    put:
+      summary: Replace the player's settings (hint level, audio, reduce motion, key bindings).
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GameSettings"}}}
+      responses:
+        "200":
+          description: The settings as stored.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GameSettings"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/flags:
+    patch:
+      summary: Set dialogue and story flags; a null value deletes a flag. At most 500 flags per player (409 conflict past that).
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/FlagsPatch"}}}
+      responses:
+        "200":
+          description: All of the player's flags after the patch.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/Flags"}}}
         default: {$ref: "#/components/responses/Error"}

@@ -1,0 +1,45 @@
+{
+  "$comment": "Fixture mode only: synthetic sign-in tokens -> the NetBox user each stands for. Not secrets.",
+  "players": [
+    {
+      "token": "nbt_fixtureplayer1.synthetic-not-a-secret",
+      "user": {
+        "id": 11,
+        "username": "walker",
+        "display_name": "Rae Walker"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer2.synthetic-not-a-secret",
+      "user": {
+        "id": 12,
+        "username": "sorter",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer3.synthetic-not-a-secret",
+      "user": {
+        "id": 13,
+        "username": "mapper",
+        "display_name": "Ida Mapper"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer4.synthetic-not-a-secret",
+      "user": {
+        "id": 14,
+        "username": "cabler",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer5.synthetic-not-a-secret",
+      "user": {
+        "id": 15,
+        "username": "labeller",
+        "display_name": "Lee Labeller"
+      }
+    }
+  ]
+}

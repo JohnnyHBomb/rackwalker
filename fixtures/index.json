@@ -200,6 +200,78 @@
       "status": 404,
       "schema": "ErrorResponse",
       "file": "error-not-found.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/session",
+      "status": 200,
+      "schema": "GameSession",
+      "file": "game-session.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/session",
+      "status": 200,
+      "schema": "GameSession",
+      "file": "game-session.json",
+      "request_schema": "SignInRequest",
+      "request_file": "game-sign-in-request.json",
+      "store": true
+    },
+    {
+      "method": "DELETE",
+      "path": "/api/game/session",
+      "status": 200,
+      "schema": "GameSession",
+      "file": "game-session-signed-out.json",
+      "store": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/state",
+      "status": 200,
+      "schema": "GameState",
+      "file": "game-state.json",
+      "store": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/game/saves/auto",
+      "status": 200,
+      "schema": "SaveSlot",
+      "file": "game-save.json",
+      "request_schema": "SaveData",
+      "request_file": "game-save-request.json",
+      "store": true
+    },
+    {
+      "method": "PUT",
+      "path": "/api/game/settings",
+      "status": 200,
+      "schema": "GameSettings",
+      "file": "game-settings.json",
+      "request_schema": "GameSettings",
+      "request_file": "game-settings.json",
+      "store": true
+    },
+    {
+      "method": "PATCH",
+      "path": "/api/game/flags",
+      "status": 200,
+      "schema": "Flags",
+      "file": "game-flags.json",
+      "request_schema": "FlagsPatch",
+      "request_file": "game-flags-request.json",
+      "store": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/state",
+      "status": 401,
+      "schema": "ErrorResponse",
+      "file": "error-unauthorized.json",
+      "store": true
     }
   ]
 }

@@ -1,0 +1,28 @@
+{
+  "$schema": "../dialogue.schema.json",
+  "id": "ilatea-intro",
+  "once": "ilatea.intro.seen",
+  "min_hint": "low",
+  "start": "hello",
+  "nodes": {
+    "hello": {
+      "speaker": "ilatea",
+      "text": "I am Ilatea. Small things matter: walk to a door and step inside.",
+      "choices": [
+        {"label": "On my way", "next": null},
+        {"label": "How do I walk?", "next": "keys"},
+        {"label": "Fewer hints, please", "do": "hints_low", "next": "fewer"}
+      ]
+    },
+    "keys": {
+      "speaker": "ilatea",
+      "text": "Arrow keys or WASD, or tap where you want to go. M opens the menu.",
+      "next": null
+    },
+    "fewer": {
+      "speaker": "ilatea",
+      "text": "Fewer hints it is. The menu can call me back.",
+      "next": null
+    }
+  }
+}

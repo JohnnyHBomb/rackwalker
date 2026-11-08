@@ -12,7 +12,8 @@ def client(**env) -> TestClient:
     return TestClient(base_url=LOCAL, app=create_app(Settings.from_env({"RACKWALKER_FIXTURES": str(REPO / "fixtures"), **env})))
 
 
-@pytest.mark.parametrize("f", [f for f in INDEX if f["method"] == "GET"], ids=lambda f: f["path"])
+# Game routes ("store": true) answer from the game store in every mode: test_game.py covers them.
+@pytest.mark.parametrize("f", [f for f in INDEX if f["method"] == "GET" and not f.get("store")], ids=lambda f: f["path"])
 def test_get_routes_serve_fixtures(f):
     r = client().get(f["path"])
     assert r.status_code == f["status"]

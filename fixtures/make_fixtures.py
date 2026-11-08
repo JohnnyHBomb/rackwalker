@@ -22,7 +22,7 @@ import seed_model as sm  # noqa: E402
 
 NB = "http://netbox.example.invalid"
 TS = "2026-11-07T09:00:00Z"
-META = {"contract_version": "2.0.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
+META = {"contract_version": "2.1.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
 
 PASS_THROUGH = {"front_port", "rear_port"}
 # PortKind enum order (contracts/scene.schema.json): DeviceDetail.interfaces is ordered by kind in this order.
@@ -179,7 +179,7 @@ def render() -> dict[str, object]:
     m = sm.build()
     w = World(m)
     out: dict[str, object] = {}
-    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.0.0", "write_enabled": False,
+    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.1.0", "write_enabled": False,
                           "netbox": {"url": "http://netbox.example.invalid", "reachable": True, "version": "4.7.4", "supported": True}}
     sites = []
     for s in m.sites:
@@ -284,7 +284,7 @@ def render() -> dict[str, object]:
                   {"field": "face", "before": srv.face, "after": None}], "error": None},
         {"index": 4, "op": "update_fields", "client_ref": None, "target": {"kind": "device", "id": detail_ids[0]}, "status": "error",
          "before": None, "after": None, "diff": [],
-         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.0.0.",
+         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.1.0.",
                    "details": {"field": "primary_ip",
                                "allowed": ["name", "status", "serial", "asset_tag", "description", "comments"]}}},
         {"index": 5, "op": "move_rack", "client_ref": None, "target": {"kind": "rack", "id": "@newrack"}, "status": "ok",
@@ -295,6 +295,32 @@ def render() -> dict[str, object]:
                                                   "details": None}, "request_id": "fixture-0001"}
     out["error-not-found.json"] = {"error": {"code": "not_found", "message": "Site 999 does not exist.",
                                              "details": {"kind": "site", "id": 999}}, "request_id": "fixture-0002"}
+
+    # Game routes (contract 2.1.0). They answer from the game store in every mode, fixture mode included, so these
+    # bodies are examples for both sides' schema checks, not canned answers ("store": true in the index).
+    # players.json: synthetic tokens that fixture mode accepts at sign-in, and the NetBox users they stand for.
+    names = [("walker", "Rae Walker"), ("sorter", None), ("mapper", "Ida Mapper"), ("cabler", None), ("labeller", "Lee Labeller")]
+    players = [{"token": f"nbt_fixtureplayer{i}.synthetic-not-a-secret", "user": {"id": 10 + i, "username": u, "display_name": d}}
+               for i, (u, d) in enumerate(names, 1)]
+    out["players.json"] = {"$comment": "Fixture mode only: synthetic sign-in tokens -> the NetBox user each stands for. Not secrets.",
+                           "players": players}
+    keys = {"up": ["ArrowUp", "KeyW"], "down": ["ArrowDown", "KeyS"], "left": ["ArrowLeft", "KeyA"], "right": ["ArrowRight", "KeyD"],
+            "interact": ["Enter", "Space", "KeyE"], "cancel": ["Escape"], "menu": ["KeyM"]}
+    settings = {"audio": {"muted": False, "volume": 0.6}, "hint_level": "normal", "keys": keys, "reduce_motion": False}
+    save = {"iso": {"camera": {"cx": 48.0, "cy": 120.0, "scale": 2}, "site_id": 1, "view": "room:1:1"},
+            "overworld": {"facing": "N", "x": 9, "y": 11}, "scene": "iso"}
+    out["game-session.json"] = {"signed_in": True, "player": players[0]["user"], "csrf_token": "fixture-csrf-token", "local_mode": False}
+    out["game-session-signed-out.json"] = {"signed_in": False, "player": None, "csrf_token": None, "local_mode": False}
+    out["game-sign-in-request.json"] = {"token": players[0]["token"]}
+    out["game-state.json"] = {"contract_version": META["contract_version"], "player": players[0]["user"], "settings": settings,
+                              "flags": {"ilatea.intro.seen": True}, "saves": [{"slot": "auto", "rev": 4, "updated_at": TS, "data": save}]}
+    out["game-save-request.json"] = save
+    out["game-save.json"] = {"slot": "auto", "rev": 5, "updated_at": TS, "data": save}
+    out["game-settings.json"] = settings
+    out["game-flags-request.json"] = {"flags": {"ilatea.intro.seen": True, "ilatea.stuck.seen": None}}
+    out["game-flags.json"] = {"ilatea.intro.seen": True}
+    out["error-unauthorized.json"] = {"error": {"code": "unauthorized", "message": "Sign in first (POST /api/game/session).",
+                                                "details": None}, "request_id": "fixture-0003"}
 
     index = [
         {"method": "GET", "path": "/api/health", "status": 200, "schema": "HealthResponse", "file": "health.json"},
@@ -319,6 +345,20 @@ def render() -> dict[str, object]:
         {"method": "POST", "path": "/api/changes/apply", "status": 403, "schema": "ErrorResponse", "file": "error-write-disabled.json",
          "request_schema": "ChangeSet", "request_file": "changes-request.json"},
         {"method": "GET", "path": "/api/scene/site/999", "status": 404, "schema": "ErrorResponse", "file": "error-not-found.json"},
+        {"method": "GET", "path": "/api/game/session", "status": 200, "schema": "GameSession", "file": "game-session.json", "store": True},
+        {"method": "POST", "path": "/api/game/session", "status": 200, "schema": "GameSession", "file": "game-session.json",
+         "request_schema": "SignInRequest", "request_file": "game-sign-in-request.json", "store": True},
+        {"method": "DELETE", "path": "/api/game/session", "status": 200, "schema": "GameSession", "file": "game-session-signed-out.json",
+         "store": True},
+        {"method": "GET", "path": "/api/game/state", "status": 200, "schema": "GameState", "file": "game-state.json", "store": True},
+        {"method": "PUT", "path": "/api/game/saves/auto", "status": 200, "schema": "SaveSlot", "file": "game-save.json",
+         "request_schema": "SaveData", "request_file": "game-save-request.json", "store": True},
+        {"method": "PUT", "path": "/api/game/settings", "status": 200, "schema": "GameSettings", "file": "game-settings.json",
+         "request_schema": "GameSettings", "request_file": "game-settings.json", "store": True},
+        {"method": "PATCH", "path": "/api/game/flags", "status": 200, "schema": "Flags", "file": "game-flags.json",
+         "request_schema": "FlagsPatch", "request_file": "game-flags-request.json", "store": True},
+        {"method": "GET", "path": "/api/game/state", "status": 401, "schema": "ErrorResponse", "file": "error-unauthorized.json",
+         "store": True},
     ]
     out["index.json"] = {"$comment": "Fixture catalogue: request -> canned response, with the $defs name each body validates against.",
                          "fixtures": index}

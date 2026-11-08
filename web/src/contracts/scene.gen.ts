@@ -113,10 +113,48 @@ export type ErrorCode =
   | "netbox_unreachable"
   | "netbox_error"
   | "unsupported_netbox_version"
+  | "unauthorized"
+  | "forbidden"
   | "internal";
+/**
+ * The player's NetBox user id; 0 only in the single-user local mode (RACKWALKER_LOCAL_PLAYER=1).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "PlayerId".
+ */
+export type PlayerId = number;
+/**
+ * How often the guide speaks up: off = never on her own (the menu still opens her), low = only first-time essentials, normal = also when you seem stuck, high = also extra tips.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "HintLevel".
+ */
+export type HintLevel = "off" | "low" | "normal" | "high";
+/**
+ * KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.
+ *
+ * @minItems 1
+ * @maxItems 3
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "KeyList".
+ */
+export type KeyList = [string] | [string, string] | [string, string, string];
+/**
+ * auto = the autosave slot the game writes on every change of place; 1-3 = manual slots.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SaveSlotId".
+ */
+export type SaveSlotId = "auto" | "1" | "2" | "3";
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "FlagValue".
+ */
+export type FlagValue = boolean | number | string;
 
 /**
- * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.0.0 (first public contract of World of Confusion: RackWalker). Change only by contract change; see contracts/README.md.
+ * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.1.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state). Change only by contract change; see contracts/README.md.
  */
 export interface RackWalkerSceneContract {}
 /**
@@ -126,7 +164,7 @@ export interface RackWalkerSceneContract {}
  * via the `definition` "Meta".
  */
 export interface Meta {
-  contract_version: "2.0.0";
+  contract_version: "2.1.0";
   generated_at: Timestamp;
   /**
    * Version reported by NetBox /api/status/, e.g. 4.7.4; null for fixtures.
@@ -490,7 +528,7 @@ export interface HealthResponse {
    */
   status: "ok" | "degraded" | "down";
   app_version: string;
-  contract_version: "2.0.0";
+  contract_version: "2.1.0";
   /**
    * true only when the proxy runs with WRITE_ENABLED=1.
    */
@@ -505,7 +543,7 @@ export interface HealthNetbox {
   reachable: boolean;
   version: string | null;
   /**
-   * Version is in the supported range (4.7.x for contract 2.0.0).
+   * Version is in the supported range (4.7.x for contract 2.1.0).
    */
   supported: boolean;
 }
@@ -846,6 +884,165 @@ export interface ChangeResult {
   applied: boolean;
   write_enabled: boolean;
   ops: OpResult[];
+}
+/**
+ * The signed-in player: a NetBox user, as NetBox reported it at sign-in.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Player".
+ */
+export interface Player {
+  id: PlayerId;
+  username: string;
+  /**
+   * NetBox first and last name, or null when NetBox has neither.
+   */
+  display_name: string | null;
+}
+/**
+ * Who is playing. GET /api/game/session always answers 200 with this body.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "GameSession".
+ */
+export interface GameSession {
+  signed_in: boolean;
+  player: Player | null;
+  /**
+   * Send it back as the X-RackWalker-CSRF header on every game write. null when signed out.
+   */
+  csrf_token: string | null;
+  /**
+   * true when the proxy runs the single-user local mode (no NetBox sign-in; off by default).
+   */
+  local_mode: boolean;
+}
+/**
+ * Sign in as a NetBox user with one of that user's NetBox API tokens. The proxy asks NetBox who owns the token, then forgets the token: it is never stored, logged or used again.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SignInRequest".
+ */
+export interface SignInRequest {
+  token: string;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "KeyBindings".
+ */
+export interface KeyBindings {
+  up: KeyList;
+  down: KeyList;
+  left: KeyList;
+  right: KeyList;
+  interact: KeyList;
+  cancel: KeyList;
+  menu: KeyList;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "GameSettings".
+ */
+export interface GameSettings {
+  hint_level: HintLevel;
+  audio: AudioSettings;
+  /**
+   * Text appears at once and scene changes cut instead of sliding.
+   */
+  reduce_motion: boolean;
+  keys: KeyBindings;
+}
+export interface AudioSettings {
+  muted: boolean;
+  volume: number;
+}
+/**
+ * Where the player is. Small on purpose: everything else is re-read from NetBox.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SaveData".
+ */
+export interface SaveData {
+  scene: "overworld" | "iso";
+  overworld: OverworldPos;
+  /**
+   * The building the player is in (scene iso), else null.
+   */
+  iso: null | IsoPlace;
+}
+/**
+ * Overworld tile the player stands on and the way they face.
+ */
+export interface OverworldPos {
+  x: number;
+  y: number;
+  facing: IsoFacing;
+}
+export interface IsoPlace {
+  site_id: Id;
+  /**
+   * The isometric level, in the ?view= deep-link form.
+   */
+  view: string;
+  camera: null | IsoCamera;
+}
+export interface IsoCamera {
+  cx: number;
+  cy: number;
+  scale: number;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SaveSlot".
+ */
+export interface SaveSlot {
+  slot: SaveSlotId;
+  /**
+   * Counts writes to this slot.
+   */
+  rev: number;
+  updated_at: Timestamp;
+  data: SaveData;
+}
+/**
+ * Dialogue and story flags (e.g. ilatea.intro.seen). Open on purpose: names come from the dialogue scripts.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Flags".
+ */
+export interface Flags {
+  [k: string]: FlagValue | undefined;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "FlagsPatch".
+ */
+export interface FlagsPatch {
+  /**
+   * Flags to set; null deletes a flag.
+   */
+  flags: {
+    [k: string]: FlagValue | null | undefined;
+  };
+}
+/**
+ * Everything the game stores for the signed-in player. Never written into NetBox.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "GameState".
+ */
+export interface GameState {
+  contract_version: "2.1.0";
+  player: Player;
+  settings: GameSettings;
+  flags: Flags;
+  /**
+   * Existing slots, autosave first.
+   *
+   * @maxItems 4
+   */
+  saves:
+    [] | [SaveSlot] | [SaveSlot, SaveSlot] | [SaveSlot, SaveSlot, SaveSlot] | [SaveSlot, SaveSlot, SaveSlot, SaveSlot];
 }
 /**
  * The one error shape for every non-2xx response.

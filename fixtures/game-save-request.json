@@ -1,0 +1,17 @@
+{
+  "iso": {
+    "camera": {
+      "cx": 48.0,
+      "cy": 120.0,
+      "scale": 2
+    },
+    "site_id": 1,
+    "view": "room:1:1"
+  },
+  "overworld": {
+    "facing": "N",
+    "x": 9,
+    "y": 11
+  },
+  "scene": "iso"
+}

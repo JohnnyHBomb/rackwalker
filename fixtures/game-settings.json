@@ -1,0 +1,37 @@
+{
+  "audio": {
+    "muted": false,
+    "volume": 0.6
+  },
+  "hint_level": "normal",
+  "keys": {
+    "up": [
+      "ArrowUp",
+      "KeyW"
+    ],
+    "down": [
+      "ArrowDown",
+      "KeyS"
+    ],
+    "left": [
+      "ArrowLeft",
+      "KeyA"
+    ],
+    "right": [
+      "ArrowRight",
+      "KeyD"
+    ],
+    "interact": [
+      "Enter",
+      "Space",
+      "KeyE"
+    ],
+    "cancel": [
+      "Escape"
+    ],
+    "menu": [
+      "KeyM"
+    ]
+  },
+  "reduce_motion": false
+}

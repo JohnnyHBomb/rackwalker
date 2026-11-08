@@ -1,4 +1,4 @@
-# HTTP API (contract 2.0.0)
+# HTTP API (contract 2.1.0)
 
 The browser talks only to the proxy. The proxy talks to NetBox with its token; the token never reaches the
 browser, a response body, or a log line. Routes are in `openapi.yaml`; bodies are `$defs` in
@@ -14,6 +14,13 @@ browser, a response body, or a log line. Routes are in `openapi.yaml`; bodies ar
 | `GET /api/trace/{kind}/{port_id}` | - | `TraceResponse` | device (on demand) | `trace-interface-173.json` (patch panels), `-210` (circuit), `-172` (no cable); `-21` and `-30` are 173 and 210 traced from the other end |
 | `POST /api/changes/preview` | `ChangeSet` | `ChangeResult` (mode preview) | drag/edit | `changes-request.json` -> `changes-preview.json` |
 | `POST /api/changes/apply` | `ChangeSet` | `ChangeResult` (mode apply) | drag/edit | `changes-request.json` -> `error-write-disabled.json` (403) |
+| `GET /api/game/session` | - | `GameSession` | (game boot) | `game-session.json`, `game-session-signed-out.json` |
+| `POST /api/game/session` | `SignInRequest` | `GameSession` + cookie | sign-in | `game-sign-in-request.json` -> `game-session.json` |
+| `DELETE /api/game/session` | - | `GameSession` (signed out) | menu | `game-session-signed-out.json` |
+| `GET /api/game/state` | - | `GameState` | (game boot) | `game-state.json`; signed out: `error-unauthorized.json` (401) |
+| `PUT /api/game/saves/{slot}` | `SaveData` | `SaveSlot` | autosave | `game-save-request.json` -> `game-save.json` |
+| `PUT /api/game/settings` | `GameSettings` | `GameSettings` | settings page | `game-settings.json` |
+| `PATCH /api/game/flags` | `FlagsPatch` | `Flags` | dialogue | `game-flags-request.json` -> `game-flags.json` |
 
 `/api/trace/interface/{id}` is the common form; `kind` accepts every `PortKind`. A port with no cable answers
 200 with `hops: []`, `is_complete: false`, `is_split: false` (NetBox's `/trace/` returns `[]`).
@@ -50,6 +57,8 @@ Every non-2xx response is an `ErrorResponse`:
 | `validation_failed` | 422 | request body does not match the schema (FastAPI body validation is mapped to this) |
 | `conflict` | 409 | reserved for whole-request conflicts; per-op conflicts go inside `ChangeResult.ops[].error` |
 | `write_disabled` | 403 | `POST /api/changes/apply` while `WRITE_ENABLED` is not `1` |
+| `unauthorized` | 401 | a game route without a valid session; a sign-in token NetBox does not accept |
+| `forbidden` | 403 | a game write without the session's `X-RackWalker-CSRF` header, or with a foreign `Origin` |
 | `netbox_unreachable` | 502 | NetBox did not answer (timeout, connection refused) |
 | `netbox_error` | 502 | NetBox answered 4xx/5xx to a read the proxy expected to work |
 | `unsupported_netbox_version` | 502 | NetBox is not 4.7.x |
@@ -132,3 +141,33 @@ Semantics:
 Reads may be served from a short cache (`meta.source: "cache"`); every apply (also a refused or failed one)
 invalidates it, and a read that was still running when an apply finished is not cached.
 `meta.generated_at` is when the body was built.
+
+## Game state (`/api/game/*`, added in 2.1.0)
+
+The game keeps its own state in one SQLite file owned by the proxy (`<RACKWALKER_STATE_DIR>/game.sqlite3`, default
+`data/game.sqlite3`, gitignored, mode 600). It is never written into NetBox and no game route sends a request to
+NetBox, except the one identity check at sign-in. The file is schema-versioned (`PRAGMA user_version`, forward
+migrations only); a file from a newer RackWalker is refused, never rewritten.
+
+* **Player = NetBox user.** `POST /api/game/session {token}`: the proxy calls NetBox `GET /api/authentication-check/`
+  with that token (NetBox >= 4.3), takes the user's `id`, `username` and name, and forgets the token. It is never
+  stored, logged or used again; every NetBox read and write still uses the proxy's own token. Why a token rather
+  than a password: no password ever reaches the game; NetBox has no side-effect-free password check over the API
+  (token provisioning creates a token); and it works the same for local, LDAP and SSO users. A read-only token is
+  enough. NetBox answering 401/403 -> `unauthorized`.
+* **Session.** A random cookie `rackwalker_session` (HttpOnly, SameSite=Strict, Path=/api/game, 7 days;
+  `RACKWALKER_COOKIE_SECURE=1` adds Secure behind https). Only its SHA-256 is stored, with the player id and a CSRF
+  token. Sign-out deletes it.
+* **CSRF.** Every write (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/game/`) needs the `X-RackWalker-CSRF` header: the
+  session's `csrf_token` (from `GameSession`), or any value on sign-in. A custom header cannot be sent cross-site
+  without a CORS preflight, which the proxy never grants; an `Origin` header, when present, must name an allowed host.
+  The Host allow-list (`RACKWALKER_ALLOWED_HOSTS`) applies to the game routes as to all others.
+* **Keyed by NetBox user id.** Players never see each other's state. Saves: slot `auto` (the game writes it on every
+  change of place) and `1`-`3`; each write bumps `rev`; last write wins. Settings default as in
+  `game-settings.json`. Flags: names `^[a-z0-9][a-z0-9_.:-]{0,63}$`, values boolean, integer or short string, at most
+  500 per player.
+* **Single-user local mode** (`RACKWALKER_LOCAL_PLAYER=1`, off by default): no sign-in, one player with id 0. It
+  bypasses identity, so it is only for a NetBox you alone use. Writes still need the CSRF header (`local`).
+* **Fixture mode** has no NetBox: sign-in accepts the synthetic tokens in `fixtures/players.json` and the store is
+  real, so the game shell runs end to end on fixtures (`make dev-fixtures`, `make e2e`). Their index entries carry
+  `"store": true`: examples for the schema checks, not canned answers.

@@ -1,0 +1,292 @@
+// Game panels (DOM): sign-in, the menu, the settings page and the owls' field-guide pages. One look for all of them:
+// dark ink on parchment, thick pixel borders, focus shown by a dashed outline and the selected state by a marker and
+// underline as well as colour. Nothing here flashes or animates.
+import type { GameSettings, HintLevel } from '../contracts/scene.gen';
+import { HINT_LEVELS } from './dialogue';
+import { ACTION_LABELS, DEFAULT_KEYS, KEY_ACTIONS, keyName, rebind, type KeyAction } from './keys';
+import { drawPortrait } from './portraits';
+
+const CSS = `
+.game-panel{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:30;width:min(520px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;
+  box-sizing:border-box;background:#f6efd9;color:#1d1a14;border:4px solid #1d1a14;box-shadow:0 0 0 2px #f6efd9,0 0 0 4px #1d1a14;padding:14px 16px;font:15px/1.45 ui-monospace,monospace}
+.game-panel h2{font-size:17px;margin:0 0 8px;text-transform:uppercase;letter-spacing:1px}
+.game-panel p{margin:6px 0}
+.game-panel button,.game-panel select,.game-panel input{font:inherit;color:#1d1a14;background:#fffaf0;border:2px solid #1d1a14;padding:5px 9px;min-height:34px}
+.game-panel button{cursor:pointer}
+.game-panel input[type=checkbox]{width:20px;height:20px;min-height:0;padding:0;margin:0 6px 0 0;vertical-align:middle;accent-color:#1d1a14}
+.game-panel input[type=range]{padding:0;min-height:0}
+.game-panel label.check{display:block;margin:6px 0}
+.game-panel :focus-visible{outline:3px dashed #1d1a14;outline-offset:2px}
+.game-panel .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:6px 0}
+.game-panel .menu-list{display:flex;flex-direction:column;gap:6px}
+.game-panel .menu-list button{text-align:left}
+.game-panel .error{color:#8a1c12;font-weight:bold}
+.game-panel .error::before{content:"⚠ "}
+.game-panel table{border-collapse:collapse;width:100%}
+.game-panel td{padding:3px 4px;border-bottom:1px solid #c8bc9c}
+.game-panel .guide{display:flex;gap:12px;align-items:flex-start}
+.game-panel kbd{border:1px solid #1d1a14;padding:0 4px;background:#fffaf0}
+#game-button{position:fixed;right:8px;bottom:8px;z-index:15;font:14px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:6px 10px;min-height:40px;cursor:pointer}
+#scene-card{position:fixed;inset:0;z-index:25;background:#0e1410;color:#f6efd9;display:flex;align-items:center;justify-content:center;font:18px ui-monospace,monospace;letter-spacing:1px}
+`;
+
+export function ensureCss(): void {
+  if (document.getElementById('game-css')) return;
+  const s = document.createElement('style');
+  s.id = 'game-css';
+  s.textContent = CSS;
+  document.head.appendChild(s);
+}
+
+function panel(id: string, title: string): HTMLElement {
+  ensureCss();
+  document.getElementById(id)?.remove();
+  const el = document.createElement('div');
+  el.id = id;
+  el.className = 'game-panel game-ui';
+  el.setAttribute('role', 'dialog');
+  el.setAttribute('aria-label', title);
+  const h = document.createElement('h2');
+  h.textContent = title;
+  el.append(h);
+  return el;
+}
+function button(label: string, onclick: () => void, id?: string): HTMLButtonElement {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.textContent = label;
+  if (id) b.id = id;
+  b.onclick = onclick;
+  return b;
+}
+function para(text: string): HTMLParagraphElement {
+  const p = document.createElement('p');
+  p.textContent = text;
+  return p;
+}
+
+/** Sign-in with a NetBox API token. Resolves when `submit` accepts the token; the field is cleared either way. */
+export function signInPanel(host: HTMLElement, submit: (token: string) => Promise<string | null>): Promise<void> {
+  const el = panel('signin', 'Sign in');
+  el.append(
+    para('RackWalker plays as your NetBox user. Paste one of your NetBox API tokens: a read-only one is enough (NetBox: your user menu, API Tokens).'),
+    para('The game asks NetBox once who owns it, then forgets it. It is never stored.'),
+  );
+  const form = document.createElement('form');
+  form.className = 'row';
+  const label = document.createElement('label');
+  label.textContent = 'NetBox API token';
+  label.htmlFor = 'signin-token';
+  const input = document.createElement('input');
+  input.id = 'signin-token';
+  input.type = 'password';
+  input.autocomplete = 'off';
+  input.spellcheck = false;
+  input.style.flex = '1';
+  const go = document.createElement('button');
+  go.type = 'submit';
+  go.id = 'signin-submit';
+  go.textContent = 'Sign in';
+  const err = document.createElement('p');
+  err.id = 'signin-error';
+  err.setAttribute('role', 'alert');
+  form.append(label, input, go);
+  el.append(form, err);
+  host.append(el);
+  input.focus();
+  return new Promise((resolve) => {
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      const token = input.value.trim();
+      input.value = '';
+      go.disabled = true;
+      const problem = token ? await submit(token) : 'Paste a token first.';
+      go.disabled = false;
+      if (problem === null) {
+        el.remove();
+        resolve();
+      } else {
+        err.className = 'error';
+        err.textContent = problem;
+        input.focus();
+      }
+    };
+  });
+}
+
+export interface MenuActions {
+  talk(): void;
+  guide(who: 'byte' | 'nocti'): void;
+  settings(): void;
+  signOut(): void;
+  close(): void;
+}
+
+export function menuPanel(host: HTMLElement, player: string, a: MenuActions): HTMLElement {
+  const el = panel('game-menu', 'Menu');
+  el.append(para(`Playing as ${player}. Progress saves by itself.`));
+  const list = document.createElement('div');
+  list.className = 'menu-list';
+  list.append(
+    button('▶ Back to the game', a.close, 'menu-resume'),
+    button('Talk to Ilatea', a.talk, 'menu-ilatea'),
+    button('Byte: commands and hardening', () => a.guide('byte'), 'menu-byte'),
+    button('Nocti: hardware and best practice', () => a.guide('nocti'), 'menu-nocti'),
+    button('Settings', a.settings, 'menu-settings'),
+    button('Sign out', a.signOut, 'menu-signout'),
+  );
+  el.append(list);
+  host.append(el);
+  (list.firstChild as HTMLButtonElement).focus();
+  return el;
+}
+
+const GUIDES = {
+  byte: {
+    title: 'Byte',
+    sub: 'Field guide: commands, command patterns and hardening',
+    body: 'Byte keeps the command pages: what to type on which platform, and the small hardening steps that matter. The first pages arrive in a later version; reading them will never block play.',
+  },
+  nocti: {
+    title: 'Nocti',
+    sub: 'Field guide: hands-on hardware setup and best practice',
+    body: 'Nocti keeps the hands-on pages: cables, labels, rack mounting, airflow. Safety notes come first on every page. The first pages arrive in a later version; reading them will never block play.',
+  },
+} as const;
+
+export function guidePanel(host: HTMLElement, who: 'byte' | 'nocti', back: () => void): HTMLElement {
+  const g = GUIDES[who];
+  const el = panel(`guide-${who}`, g.title);
+  const row = document.createElement('div');
+  row.className = 'guide';
+  const text = document.createElement('div');
+  text.append(para(g.sub), para(g.body));
+  row.append(drawPortrait(who, 3), text);
+  el.append(row, button('◀ Back to the menu', back, 'guide-back'));
+  host.append(el);
+  (el.querySelector('#guide-back') as HTMLButtonElement).focus();
+  return el;
+}
+
+const HINT_TEXT: Readonly<Record<HintLevel, string>> = {
+  off: 'off: she speaks only when you call her',
+  low: 'low: first-time essentials only',
+  normal: 'normal: also when you seem stuck',
+  high: 'high: also extra tips',
+};
+
+/** The settings page. Each change is applied at once through `save`; key rows wait for the next key press. */
+export function settingsPanel(host: HTMLElement, current: GameSettings, save: (s: GameSettings) => void, back: () => void): HTMLElement {
+  let s: GameSettings = structuredClone(current);
+  const el = panel('game-settings', 'Settings');
+  const commit = () => save(structuredClone(s));
+
+  const hint = document.createElement('select');
+  hint.id = 'set-hint';
+  for (const h of HINT_LEVELS) hint.append(new Option(HINT_TEXT[h], h, false, h === s.hint_level));
+  hint.onchange = () => ((s = { ...s, hint_level: hint.value as HintLevel }), commit());
+  const hintRow = document.createElement('label');
+  hintRow.className = 'row';
+  hintRow.append('Ilatea’s hints: ', hint);
+
+  const mute = document.createElement('input');
+  mute.type = 'checkbox';
+  mute.id = 'set-mute';
+  mute.checked = s.audio.muted;
+  mute.onchange = () => ((s = { ...s, audio: { ...s.audio, muted: mute.checked } }), commit());
+  const vol = document.createElement('input');
+  vol.type = 'range';
+  vol.id = 'set-volume';
+  vol.min = '0';
+  vol.max = '100';
+  vol.value = String(Math.round(s.audio.volume * 100));
+  vol.setAttribute('aria-label', 'Volume');
+  vol.onchange = () => ((s = { ...s, audio: { ...s.audio, volume: Number(vol.value) / 100 } }), commit());
+  const audioRow = document.createElement('div');
+  audioRow.className = 'row';
+  const muteLabel = document.createElement('label');
+  muteLabel.append(mute, ' Mute');
+  audioRow.append('Sound: ', muteLabel, vol);
+
+  const motion = document.createElement('input');
+  motion.type = 'checkbox';
+  motion.id = 'set-motion';
+  motion.checked = s.reduce_motion;
+  motion.onchange = () => ((s = { ...s, reduce_motion: motion.checked }), commit());
+  const motionRow = document.createElement('label');
+  motionRow.className = 'check';
+  motionRow.append(motion, ' Reduce motion (text appears at once, scene changes cut). Nothing in the game flashes.');
+
+  const table = document.createElement('table');
+  table.id = 'set-keys';
+  const msg = document.createElement('p');
+  msg.id = 'set-keys-msg';
+  msg.setAttribute('role', 'status');
+  let waiting: KeyAction | null = null;
+  const drawKeys = () => {
+    table.replaceChildren();
+    for (const a of KEY_ACTIONS) {
+      const tr = table.insertRow();
+      tr.dataset.action = a;
+      tr.insertCell().textContent = ACTION_LABELS[a];
+      const keys = tr.insertCell();
+      for (const k of s.keys[a]) {
+        const kbd = document.createElement('kbd');
+        kbd.textContent = keyName(k);
+        keys.append(kbd, ' ');
+      }
+      const b = button(waiting === a ? 'press a key…' : 'set key', () => {
+        waiting = a;
+        msg.className = '';
+        msg.textContent = `Press the new key for "${ACTION_LABELS[a]}" (Esc keeps the old one).`;
+        drawKeys();
+      });
+      b.dataset.action = a;
+      tr.insertCell().append(b);
+    }
+  };
+  // Capture phase on window: the key that is being bound must not also act in the game.
+  const onKey = (e: KeyboardEvent) => {
+    if (!waiting || !el.isConnected) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const a = waiting;
+    waiting = null;
+    if (e.code === 'Escape' && a !== 'cancel') {
+      msg.textContent = 'Kept the old key.';
+    } else {
+      const r = rebind(s.keys, a, e.code);
+      if ('error' in r) {
+        msg.className = 'error';
+        msg.textContent = r.error;
+      } else {
+        s = { ...s, keys: r.keys };
+        msg.className = '';
+        msg.textContent = `"${ACTION_LABELS[a]}" is now ${keyName(e.code)}.`;
+        commit();
+      }
+    }
+    drawKeys();
+  };
+  window.addEventListener('keydown', onKey, true);
+  drawKeys();
+  const reset = button('Reset keys', () => {
+    s = { ...s, keys: structuredClone(DEFAULT_KEYS) };
+    msg.textContent = 'Keys reset.';
+    drawKeys();
+    commit();
+  }, 'set-keys-reset');
+  const done = button('◀ Back to the menu', () => {
+    window.removeEventListener('keydown', onKey, true);
+    back();
+  }, 'settings-back');
+  el.append(hintRow, audioRow, motionRow, para('Keys:'), table, msg, reset, ' ', done);
+  host.append(el);
+  hint.focus();
+  return el;
+}
+
+/** Whether a settings page is waiting for a key (the shell then leaves keys alone). */
+export function capturingKey(): boolean {
+  return !!document.querySelector('#set-keys button[data-action]') && [...document.querySelectorAll('#set-keys button')].some((b) => b.textContent === 'press a key…');
+}

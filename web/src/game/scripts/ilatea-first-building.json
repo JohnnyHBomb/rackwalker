@@ -1,0 +1,14 @@
+{
+  "$schema": "../dialogue.schema.json",
+  "id": "ilatea-first-building",
+  "once": "ilatea.first-building.seen",
+  "min_hint": "normal",
+  "start": "inside",
+  "nodes": {
+    "inside": {
+      "speaker": "ilatea",
+      "text": "Inside. Double-click a rack to look closer; Esc steps back out.",
+      "next": null
+    }
+  }
+}

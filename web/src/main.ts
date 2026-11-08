@@ -5,6 +5,10 @@
 //   anim=0                               no transition animation (golden screenshots)
 //   perf=<n>                             synthetic site with n devices (performance check)
 //   theme=<id>                           theme override on every level (see themes/index.ts for the normal choice)
+//   game=0                               the plain viewer even without view=
+// The game (sign-in, overworld, dialogue, autosave: src/game/) runs when the page reads the live proxy and has no
+// view= deep link: it keeps the player's place in the proxy's game store, so the URL stays as it is. A view= link,
+// fixture data or perf= open the plain viewer, as before.
 // Editing (drag and drop, change basket, field edits) talks to the proxy's /api/changes and /api/health, so it is on
 // only with source=http: on canned fixture data (or perf=) the editor is read-only and says so, because a fixture id
 // sent to a proxy names a live NetBox object (previously: a fixture-view cable edit wrote NetBox cable 6).
@@ -14,6 +18,8 @@ import { Editor } from './edit/editor';
 import { entityKey } from './engine/entity';
 import { fixtureSource } from './engine/fixtures';
 import { WORLD, parseView } from './engine/nav';
+import { HttpGameApi } from './game/api';
+import { GameShell } from './game/shell';
 import { HttpSceneSource, type SceneSource } from './engine/source';
 import { SyntheticSceneSource } from './engine/synthetic';
 import { RackWalkerView } from './engine/view';
@@ -24,6 +30,7 @@ import { ThemePicker } from './ui/theme-picker';
 
 declare global {
   interface Window {
+    __game?: { shell: GameShell; ready: Promise<void> };
     __iso?: {
       view: RackWalkerView;
       editor: Editor;
@@ -52,16 +59,18 @@ async function main() {
   await view.init();
   const picker = new ThemePicker(view.hudSlot, choice, view);
   const search = new SearchBox(view.hudSlot, view);
-  const url = new NavUrl(view);
+  const game = kind === 'http' && !q.has('view') && q.get('game') !== '0' ? new GameShell(document.body, view, new HttpGameApi('')) : null;
+  const url = game ? null : new NavUrl(view);
   editor.attach(view);
   view.onUpdate = () => {
     picker.update();
     search.restyle();
-    url.sync(); // the level on screen is in the URL: reload and Back/Forward work
+    url?.sync(); // the level on screen is in the URL: reload and Back/Forward work (the game keeps it in its save)
     editor.syncTheme(); // the panels follow the theme on screen
   };
   document.getElementById('status')?.remove();
-  const ready = view.goto(parseView(q.get('view')) ?? WORLD);
+  const ready = game ? game.start() : view.goto(parseView(q.get('view')) ?? WORLD);
+  if (game) window.__game = { shell: game, ready };
   window.__iso = {
     view,
     editor,

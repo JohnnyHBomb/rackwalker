@@ -1,0 +1,26 @@
+{
+  "$schema": "../dialogue.schema.json",
+  "id": "ilatea-menu",
+  "start": "ask",
+  "nodes": {
+    "ask": {
+      "speaker": "ilatea",
+      "text": "Small things matter. What do you need?",
+      "choices": [
+        {"label": "What should I do next?", "next": [{"to": "next-inside", "if": "game.visited-building"}, {"to": "next-outside"}]},
+        {"label": "Change how often you speak", "do": "open_settings", "next": null},
+        {"label": "Nothing for now", "next": null}
+      ]
+    },
+    "next-outside": {
+      "speaker": "ilatea",
+      "text": "Step into a building. Every site has a door on the green.",
+      "next": null
+    },
+    "next-inside": {
+      "speaker": "ilatea",
+      "text": "Look closely at one rack. One label, one serial: small things.",
+      "next": null
+    }
+  }
+}

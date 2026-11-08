@@ -22,7 +22,7 @@ from .netbox_replay import Recorder, strip
 
 pytestmark = pytest.mark.skipif(os.environ.get("RACKWALKER_LIVE_NETBOX") != "1", reason="live NetBox tests: make test-live")
 URL, TOKEN = os.environ.get("NETBOX_URL", ""), os.environ.get("NETBOX_TOKEN", "")
-GETS = [f for f in INDEX if f["method"] == "GET" and f["path"] != "/api/health"]
+GETS = [f for f in INDEX if f["method"] == "GET" and f["path"] != "/api/health" and not f.get("store")]  # store: game routes
 
 
 @pytest.fixture(scope="module")
@@ -249,3 +249,41 @@ def test_rack_names_follow_netbox_rule_live(rw, nbx):
         nbx.patch("dcim/racks/9/", json={"name": name})
     assert nbx.get("dcim/racks/9/").json()["name"] == "EE-A1"
     _assert_seeded(rw, "/api/scene/rack/9", "/api/scene/site/3")
+
+
+# ------------------------------------------------------------------------------------------- game sign-in (live)
+
+
+def _count(nbx, path: str) -> int:
+    r = nbx.get(path, params={"limit": 1})
+    r.raise_for_status()
+    return r.json()["count"]
+
+
+def test_game_sign_in_as_netbox_users_live(tmp_path, nbx):
+    """Two NetBox users sign in with their own tokens and get their own game state; the sign-in and every game
+    write leave NetBox untouched (no new token, no changelog entry)."""
+    admin = os.environ.get("NETBOX_ADMIN_TOKEN")
+    if not admin:
+        pytest.skip("needs NETBOX_ADMIN_TOKEN (make test-live sets it)")
+    changes0, tokens0 = _count(nbx, "core/object-changes/"), _count(nbx, "users/tokens/")
+    app = create_app(Settings(URL, TOKEN, False, None, state_dir=tmp_path))
+    with TestClient(base_url=LOCAL, app=app) as a, TestClient(base_url=LOCAL, app=app) as b:
+        sa = a.post("/api/game/session", json={"token": admin}, headers={"X-RackWalker-CSRF": "x"})
+        sb = b.post("/api/game/session", json={"token": TOKEN}, headers={"X-RackWalker-CSRF": "x"})
+        assert sa.status_code == sb.status_code == 200, (sa.text, sb.text)
+        for s in (sa, sb):
+            schema_validator("GameSession").validate(s.json())
+            assert admin not in s.text and TOKEN not in s.text
+        pa, pb = sa.json()["player"], sb.json()["player"]
+        assert pa["username"] == "admin" and pb["username"] == "rackwalker-proxy" and pa["id"] != pb["id"]
+        save = {"scene": "overworld", "overworld": {"x": 5, "y": 6, "facing": "E"}, "iso": None}
+        assert a.put("/api/game/saves/auto", json=save, headers={"X-RackWalker-CSRF": sa.json()["csrf_token"]}).status_code == 200
+        b.patch("/api/game/flags", json={"flags": {"ilatea.intro.seen": True}}, headers={"X-RackWalker-CSRF": sb.json()["csrf_token"]})
+        assert a.get("/api/game/state").json()["saves"][0]["data"] == save
+        assert b.get("/api/game/state").json()["saves"] == [] and a.get("/api/game/state").json()["flags"] == {}
+        bad = a.post("/api/game/session", json={"token": "nbt_notakey.notasecret"}, headers={"X-RackWalker-CSRF": "x"})
+        assert bad.status_code == 401 and bad.json()["error"]["code"] == "unauthorized"
+    db = (tmp_path / "game.sqlite3").read_bytes()
+    assert admin.encode() not in db and TOKEN.encode() not in db
+    assert (_count(nbx, "core/object-changes/"), _count(nbx, "users/tokens/")) == (changes0, tokens0)
