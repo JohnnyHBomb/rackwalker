@@ -1,0 +1,18 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /web
+    schedule: { interval: weekly }
+    groups:
+      web-minor: { update-types: [minor, patch] }
+  - package-ecosystem: pip
+    directory: /proxy
+    schedule: { interval: weekly }
+    groups:
+      proxy-minor: { update-types: [minor, patch] }
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly }
+  - package-ecosystem: docker-compose
+    directory: /devnetbox
+    schedule: { interval: weekly }
