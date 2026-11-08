@@ -79,7 +79,7 @@ several stacks can run side by side.
 | Command | Does |
 |---|---|
 | `make test` | proxy pytest + web `tsc --noEmit` + vitest. Validates every fixture against the schema on both sides and checks that generated code is fresh |
-| `make e2e` (or `make test-e2e`) | Playwright, headless chromium: golden screenshot per zoom level, pixel-crispness check, interaction, editor, perf (1,000 devices at room level >= 50 fps), and the game shell on a fixture-mode proxy with a fresh game store (screenshots to `docs/screenshots/g0/g0b/`) |
+| `make e2e` (or `make test-e2e`) | Playwright, headless chromium: golden screenshot per zoom level, pixel-crispness check, interaction, editor, perf (1,000 devices at room level >= 50 fps), and the game shell on a fixture-mode proxy with a fresh game store (screenshots to `docs/screenshots/game/`) |
 | `make e2e-themes` | the interaction and editor e2e once per theme (`RACKWALKER_E2E_THEME=<id>` adds `?theme=<id>`; the goldens stay on `debug`) |
 | `make theme-shots THEME=<id>` (or `all`) | every zoom level, the theme picker and the slot sheet of one theme into `docs/screenshots/themes/<id>/` |
 | `make gen` | regenerate pydantic models, TS types and fixtures from their sources |
@@ -109,11 +109,13 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   synthetic token from `fixtures/players.json`. `RACKWALKER_LOCAL_PLAYER=1` skips sign-in for a NetBox only you use
   (off by default).
 * **Overworld (placeholder).** A code-drawn meadow with one building per site, labelled with the site's name and drawn
-  in its theme's colours. Walk with the arrow keys or WASD, or tap/click where you want to go. Each door has an arch
+  in its theme's colours. Walk with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has an arch
   and a marker above it. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
   the back button or the "World" crumb) leaves the building, and you stand in front of its door.
 * **Ilatea** speaks one line on your first visit ("Small things matter") and then lets you act. She speaks again only
-  on your first building, or once if you seem stuck on the green, and never repeats herself. Every bubble closes
+  on your first building, or once if you seem stuck on the green, and never repeats herself. She stands on the green
+  near the start: walk up to her and press the interact key, or tap her, to ask what to do next. Her lines name your
+  own keys, so they stay right after you remap them. Every bubble closes
   with `Esc` or its close button; the typewriter finishes at the first key or tap; choices work by arrow keys and
   `Enter`, number keys, mouse or touch.
 * **Menu** (`M` or the button in the corner): talk to Ilatea, the field-guide pages of her owls Byte (commands and
@@ -125,9 +127,10 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   change of place, so a reload puts you back where you were. No save points.
 * **Game state** lives in `data/game.sqlite3` (`RACKWALKER_STATE_DIR` to move it; gitignored), keyed by NetBox user id,
   schema-versioned. It is never written into NetBox. Routes and rules: `contracts/api.md` "Game state".
-* **Dialogue scripts** are data: `web/src/game/scripts/*.json`, schema `web/src/game/dialogue.schema.json`, checked by
-  `validateScript` (every `next` names a node, every node is reachable, one line of at most 160 characters, at most
-  four choices, always one unconditional choice) when they load and in `make test`.
+* **Dialogue scripts** are data: `web/src/game/scripts/*.json`, schema `contracts/dialogue.schema.json`, checked by
+  `validateScript` (every `next` names a node, every node is reachable and can reach an end, one line of at most 160
+  characters, at most four choices, always one unconditional choice, `{key:<action>}` names a real key action) when
+  they load and in `make test`. A line that mentions keys uses `{key:<action>}`, so it names the player's own keys.
 
 `?view=...`, `source=fixture`, `perf=` and `game=0` open the plain viewer as before (no sign-in, the level in the URL).
 

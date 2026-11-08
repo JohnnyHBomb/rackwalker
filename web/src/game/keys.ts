@@ -44,6 +44,12 @@ export function rebind(keys: KeyBindings, action: KeyAction, code: string): { ke
   return { keys: next as KeyBindings };
 }
 
+/** The keys bound to `action`, for text the player reads ("↑/W"); an unknown action stays as written. */
+export function keysLabel(keys: KeyBindings, action: string): string {
+  const list = (KEY_ACTIONS as readonly string[]).includes(action) ? keys[action as KeyAction] : null;
+  return list?.length ? list.map(keyName).join('/') : action;
+}
+
 /** A readable name for a KeyboardEvent.code. */
 export function keyName(code: string): string {
   if (/^Key[A-Z]$/.test(code)) return code.slice(3);

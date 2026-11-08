@@ -5,7 +5,7 @@ import { boot, game, idle, ready, typed } from '../e2e/game-helpers';
 // into each site's building and back out, and reload into the same place. Every scene comes from NetBox through the
 // proxy; game state goes only to the proxy's game store. Skipped without a token.
 const token = process.env.NB_PLAYER_TOKEN ?? process.env.NB_ADMIN_TOKEN;
-const SHOTS = '../docs/screenshots/g0/g0b';
+const SHOTS = '../docs/screenshots/game';
 
 test('live: sign in as a NetBox user, every door in and out, reload keeps the place', async ({ page }) => {
   test.skip(!token, 'needs NB_PLAYER_TOKEN or NB_ADMIN_TOKEN');

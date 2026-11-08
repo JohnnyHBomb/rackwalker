@@ -1,8 +1,8 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://rackwalker.invalid/web/dialogue.schema.json",
+  "$id": "https://rackwalker.invalid/contracts/dialogue.schema.json",
   "title": "RackWalker dialogue script",
-  "description": "One conversation as data (web/src/game/scripts/*.json). Graph rules (every next names a node, every node reachable, one unconditional choice per node) are checked by validateScript in dialogue.ts.",
+  "description": "One conversation as data (web/src/game/scripts/*.json). Graph rules (every next names a node, every node reachable from start and able to reach an end, one unconditional choice per node) and {key:<action>} tokens are checked by validateScript in web/src/game/dialogue.ts.",
   "type": "object",
   "additionalProperties": false,
   "required": ["id", "start", "nodes"],

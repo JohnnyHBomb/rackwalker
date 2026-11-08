@@ -1,9 +1,9 @@
 // The placeholder overworld (the real, GPS-scaled one comes later): a code-drawn tile field with one building per
-// site, each with one door. Pure model, no DOM: the map, walking with collisions, tap-to-walk paths and doors.
+// site, each with one door, and Ilatea standing near the start (walk up to her and press interact, or tap her). Pure model, no DOM: the map, walking with collisions, tap-to-walk paths and doors.
 // Deterministic: the same site list always gives the same map.
 
 export const TILE = 16;
-export type Tile = 'grass' | 'flowers' | 'tree' | 'path' | 'building' | 'door';
+export type Tile = 'grass' | 'flowers' | 'tree' | 'path' | 'building' | 'door' | 'guide';
 /** Facing, in the contract's IsoFacing letters: N = up, S = down, W = left, E = right on screen. */
 export type Dir = 'N' | 'E' | 'S' | 'W';
 
@@ -42,6 +42,8 @@ export class OverworldMap {
   readonly h: number;
   readonly doors: readonly Door[];
   readonly start: Pos;
+  /** Where Ilatea stands: two tiles left of the start, on the open grass. */
+  readonly guide: Pos;
   private readonly tiles: Tile[];
 
   constructor(sites: readonly DoorSite[]) {
@@ -85,6 +87,10 @@ export class OverworldMap {
       }
     this.start = { x: Math.floor(this.w / 2), y: this.h - 3 };
     this.set(this.start.x, this.start.y, 'grass');
+    this.guide = { x: this.start.x - 2, y: this.start.y };
+    this.set(this.start.x - 1, this.start.y, 'grass');
+    this.set(this.guide.x, this.guide.y + 1, 'grass'); // the tile in front of her is always free
+    this.set(this.guide.x, this.guide.y, 'guide');
   }
 
   private set(x: number, y: number, t: Tile): void {
@@ -109,6 +115,22 @@ export class OverworldMap {
   walkable(x: number, y: number): boolean {
     const t = this.at(x, y);
     return t === 'grass' || t === 'flowers' || t === 'path' || t === 'door';
+  }
+  /** Is the player next to Ilatea (one step away, not diagonal)? */
+  nearGuide(p: Pos): boolean {
+    return Math.abs(p.x - this.guide.x) + Math.abs(p.y - this.guide.y) === 1;
+  }
+  /** The free tile next to Ilatea that is the shortest walk from `from` (where a tap on her walks to). */
+  besideGuide(from: Pos): Pos | null {
+    if (this.nearGuide(from)) return from;
+    let best: Pos[] | null = null;
+    for (const s of Object.values(STEP)) {
+      const n = { x: this.guide.x + s.x, y: this.guide.y + s.y };
+      if (!this.walkable(n.x, n.y) || this.doorAt(n.x, n.y)) continue;
+      const p = this.path(from, n);
+      if (p.length && (!best || p.length < best.length)) best = p;
+    }
+    return best ? best[best.length - 1]! : null;
   }
   doorAt(x: number, y: number): Door | null {
     return this.doors.find((d) => d.x === x && d.y === y) ?? null;

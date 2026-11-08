@@ -1,12 +1,12 @@
 // The game shell end to end, on a real proxy in fixture mode (playwright.config.ts starts it with a fresh game store):
 // sign in as a (fixture) NetBox user, Ilatea's intro, walk through a door into the site's room and back out, the
 // dialogue by keyboard, mouse and touch, remapped keys, the owls' pages, and reload = you are where you were.
-// Screenshots for the docs go to docs/screenshots/g0/g0b/.
+// Screenshots for the docs go to docs/screenshots/game/.
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { boot, game, idle, ready, stored, typed } from './game-helpers';
 
-const SHOTS = '../docs/screenshots/g0/g0b';
+const SHOTS = '../docs/screenshots/game';
 const players = JSON.parse(readFileSync(new URL('../../fixtures/players.json', import.meta.url), 'utf8')).players as { token: string; user: { id: number; username: string } }[];
 
 async function signIn(page: Page, i: number): Promise<void> {
@@ -49,7 +49,7 @@ test('first run: sign in, Ilatea once, door in and out, reload puts you back', a
   await page.screenshot({ path: `${SHOTS}/dialogue-choices.png` });
   await page.keyboard.press('Enter');
   await typed(page);
-  expect((await game(page)).dialogue).toMatchObject({ node: 'keys', choices: [] });
+  expect((await game(page)).dialogue).toMatchObject({ node: 'keys', choices: ['Got it', 'Change keys'] });
   await page.keyboard.press('Enter');
   expect((await game(page)).dialogue).toBeNull();
   expect((await game(page)).flags['ilatea.intro.seen']).toBe(true);
@@ -155,6 +155,46 @@ test('remapped keys walk the player; settings persist; a stuck nudge can turn hi
   const st = await stored(page);
   expect(st.settings.reduce_motion).toBe(true);
   expect(st.flags).toMatchObject({ 'ilatea.intro.seen': true, 'ilatea.stuck.seen': true });
+});
+
+test('Ilatea names your own keys and stands on the green: walk up and press interact, or click her', async ({ page }) => {
+  await signIn(page, 4);
+  await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-intro');
+  await page.keyboard.press('Enter'); // finishes the typewriter
+  await typed(page);
+  await page.keyboard.press('Digit2'); // How do I walk?
+  await typed(page);
+  let g = await game(page);
+  expect(g.dialogue).toMatchObject({ node: 'keys', choices: ['Got it', 'Change keys'] });
+  expect(g.dialogue!.text).toBe('Walk with ↑/W ←/A ↓/S →/D, or tap where you want to go. M opens the menu.');
+  await page.keyboard.press('Digit2'); // Change keys: the settings page opens
+  await expect(page.locator('#game-settings')).toBeVisible();
+  await page.click('#set-keys button[data-action=interact]');
+  await page.keyboard.press('KeyF');
+  await expect(page.locator('#set-keys-msg')).toContainText('is now F');
+  await page.click('#settings-back');
+  await page.keyboard.press('Escape');
+  await expect(page.locator('#game-menu')).toHaveCount(0);
+  expect(await page.locator('#game-button').getAttribute('title')).toBe('Menu (M)');
+
+  // One step left from the start puts Ilatea in reach; the (remapped) interact key talks to her.
+  const guide = await page.evaluate(() => ({ ...window.__game!.shell.map!.guide }));
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(async () => (await game(page)).pos).toEqual({ x: guide.x + 1, y: guide.y });
+  await page.keyboard.press('KeyF');
+  await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-menu');
+  expect((await game(page)).facing).toBe('W');
+  await page.keyboard.press('Escape');
+  expect((await game(page)).dialogue).toBeNull();
+
+  // Walk away, then click her: the player walks back beside her and she talks.
+  await page.evaluate(() => window.__game!.shell.overworld!.walkTo({ x: window.__game!.shell.map!.start.x + 2, y: window.__game!.shell.map!.start.y }));
+  await expect.poll(async () => (await game(page)).pos.x).toBe(guide.x + 4);
+  const at = await page.evaluate((t) => window.__game!.shell.overworld!.clientOf(t), guide);
+  await page.mouse.click(at.x, at.y);
+  await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 10_000 }).toBe('ilatea-menu');
+  g = await game(page);
+  expect(Math.abs(g.pos.x - guide.x) + Math.abs(g.pos.y - guide.y)).toBe(1);
 });
 
 test.describe('touch', () => {

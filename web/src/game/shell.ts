@@ -10,7 +10,7 @@ import { THEMES, isThemeId } from '../themes/index';
 import type { GameApi } from './api';
 import { loadScript, mayAutoStart, type Action, type Effects, type Script } from './dialogue';
 import { DialogueBox } from './dialogue-ui';
-import { actionOf, DEFAULT_SETTINGS } from './keys';
+import { actionOf, DEFAULT_SETTINGS, keysLabel } from './keys';
 import { OverworldMap, type Dir, type Door, type Pos } from './overworld';
 import { OverworldView } from './overworld-view';
 import { capturingKey, ensureCss, guidePanel, menuPanel, settingsPanel, signInPanel } from './panels';
@@ -104,7 +104,7 @@ export class GameShell {
     const save = this.state.saves.find((s) => s.slot === 'auto')?.data ?? null;
     this.owPos = this.map.clampPos(save ? { x: save.overworld.x, y: save.overworld.y } : this.map.start);
     this.owFacing = save?.overworld.facing ?? 'N';
-    this.overworld = new OverworldView(this.host, this.map, palette, { door: (d) => void this.enter(d), moved: (p, f) => this.moved(p, f) }, this.owPos, this.owFacing);
+    this.overworld = new OverworldView(this.host, this.map, palette, { door: (d) => void this.enter(d), moved: (p, f) => this.moved(p, f), talk: () => this.talkToGuide() }, this.owPos, this.owFacing);
     this.view.navGuard = (t) => this.guard(t);
     const prevUpdate = this.view.onUpdate;
     this.view.onUpdate = () => {
@@ -133,7 +133,7 @@ export class GameShell {
     b.className = 'game-ui';
     b.type = 'button';
     b.textContent = '☰ Menu';
-    b.title = 'Menu (M)';
+    b.title = `Menu (${keysLabel(this.settings.keys, 'menu')})`;
     b.onclick = () => this.toggleMenu();
     this.host.append(b);
   }
@@ -283,11 +283,18 @@ export class GameShell {
     if (this.dialogue.open) this.dialogue.close();
     this.overworld?.hold(null);
     this.dialogue.reduceMotion = this.settings.reduce_motion;
-    const playing = this.dialogue.play(s, this.flags);
+    const playing = this.dialogue.play(s, this.flags, (a) => keysLabel(this.settings.keys, a));
     if (s.once) this.persistFlags({ [s.once]: true }); // seen as soon as it shows: never repeats, even after a reload
     const eff: Effects = await playing;
     const rest = Object.fromEntries(Object.entries(eff.set).filter(([k]) => k !== s.once));
     if (Object.keys(rest).length) this.persistFlags(rest);
+  }
+
+  /** Ilatea on the overworld: the player walked up to her (or tapped her) and talks. */
+  private talkToGuide(): void {
+    if (this.scene !== 'overworld' || this.dialogue.open || this.menu) return;
+    this.owSince = performance.now();
+    void this.talk(SCRIPTS.menu);
   }
 
   private act(a: Action): void {
@@ -306,6 +313,8 @@ export class GameShell {
   saveSettings(s: GameSettings): void {
     this.settings = s;
     this.dialogue.reduceMotion = s.reduce_motion;
+    const b = document.getElementById('game-button');
+    if (b) b.title = `Menu (${keysLabel(s.keys, 'menu')})`;
     this.api.settings(s).catch((e) => (this.error = `Could not save settings: ${String(e)}`));
   }
 
@@ -369,6 +378,7 @@ export class GameShell {
         this.owSince = performance.now();
         return eat();
       }
+      if (a === 'interact' && this.overworld!.faceGuide()) return this.talkToGuide(), eat();
       if (a === 'interact' || a === 'cancel') return eat();
       // The isometric view behind the overworld is hidden: none of its keys (zoom, back, search) act from here.
       return e.stopImmediatePropagation();

@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 from rackwalker_proxy import contracts_gen as c
 from rackwalker_proxy.app import Settings, create_app
 from rackwalker_proxy.game import COOKIE, CSRF_HEADER
-from rackwalker_proxy.gamestore import DEFAULT_SETTINGS, SCHEMA_VERSION, GameStore, StoreError
+from rackwalker_proxy.gamestore import DEFAULT_SETTINGS, SCHEMA_VERSION, GameStore, StoreError, migrate, statements
 
 from .conftest import LOCAL, REPO, load, schema_validator
 
@@ -93,13 +93,32 @@ def test_save_settings_flags_round_trip(tmp_path):
     assert body["settings"]["hint_level"] == "low" and body["flags"] == {"ilatea.intro.seen": True}
 
 
-def test_writes_need_the_session_csrf_token(tmp_path):
+GAME_WRITES = [("put", "/api/game/saves/auto", SAVE), ("put", "/api/game/settings", DEFAULT_SETTINGS),
+               ("patch", "/api/game/flags", {"flags": {"a.b": True}}), ("delete", "/api/game/session", None)]
+
+
+@pytest.mark.parametrize("method,path,body", GAME_WRITES, ids=[f"{m} {p}" for m, p, _ in GAME_WRITES])
+def test_every_game_write_needs_the_session_csrf_token_and_a_same_host_origin(tmp_path, method, path, body):
     cl = fixture_client(tmp_path)
-    sign_in(cl)
-    for h in ({}, {CSRF_HEADER: "wrong"}):
-        r = cl.put("/api/game/saves/auto", json=SAVE, headers=h)
-        assert r.status_code == 403 and r.json()["error"]["code"] == "forbidden"
-    assert cl.get("/api/game/state").json()["saves"] == []
+    csrf = sign_in(cl)
+    kw = {"json": body} if body is not None else {}
+    for h in ({}, {CSRF_HEADER: "wrong"}, {CSRF_HEADER: "sign-in"}, {CSRF_HEADER: csrf, "Origin": "http://evil.example"},
+              {CSRF_HEADER: csrf, "Origin": "null"}):
+        r = cl.request(method.upper(), path, headers=h, **kw)
+        assert r.status_code == 403 and r.json()["error"]["code"] == "forbidden", (h, r.text)
+    state = cl.get("/api/game/state").json()
+    assert state["saves"] == [] and state["flags"] == {} and state["settings"] == DEFAULT_SETTINGS  # nothing was written
+    assert cl.request(method.upper(), path, headers={CSRF_HEADER: csrf}, **kw).status_code == 200
+
+
+def test_a_key_bound_to_two_actions_is_refused(tmp_path):
+    cl = fixture_client(tmp_path)
+    h = {CSRF_HEADER: sign_in(cl)}
+    keys = {**DEFAULT_SETTINGS["keys"], "menu": ["KeyM", "KeyW"]}  # KeyW also walks up
+    r = cl.put("/api/game/settings", json={**DEFAULT_SETTINGS, "keys": keys}, headers=h)
+    assert r.status_code == 422 and r.json()["error"]["code"] == "validation_failed"
+    assert "KeyW" in r.json()["error"]["message"]
+    assert cl.get("/api/game/state").json()["settings"] == DEFAULT_SETTINGS
 
 
 def test_players_are_kept_apart(tmp_path):
@@ -159,12 +178,44 @@ def test_game_routes_keep_the_host_allow_list(tmp_path):
     assert cl.get("/api/game/session", headers={"Host": "evil.example"}).status_code == 400
 
 
-def test_no_state_file_until_the_game_is_used(tmp_path):
+def test_no_state_file_until_a_player_signs_in(tmp_path):
     cl = fixture_client(tmp_path)
     cl.get("/api/health")
+    assert cl.get("/api/game/session").json()["signed_in"] is False  # a signed-out check never needs the file
     assert not (tmp_path / "game.sqlite3").exists()
-    cl.get("/api/game/session")
+    sign_in(cl)
     assert (tmp_path / "game.sqlite3").stat().st_mode & 0o077 == 0
+
+
+def test_a_slow_game_store_never_stalls_the_other_routes(tmp_path, monkeypatch):
+    # Opening the store (create, migrate, fsync) can take seconds on a busy disk; it runs off the event loop.
+    import threading
+    import time
+
+    from rackwalker_proxy import gamestore
+
+    opened, release = threading.Event(), threading.Event()
+    real_init = gamestore.GameStore.__init__
+
+    def slow_init(self, *a, **kw):
+        opened.set()
+        assert release.wait(10)
+        real_init(self, *a, **kw)
+
+    monkeypatch.setattr(gamestore.GameStore, "__init__", slow_init)
+    with fixture_client(tmp_path) as cl:
+        done: list[int] = []
+        t = threading.Thread(target=lambda: done.append(cl.post("/api/game/session", json={"token": PLAYER_TOKEN},
+                                                                headers={CSRF_HEADER: "sign-in"}).status_code))
+        t.start()
+        assert opened.wait(10)  # the sign-in is now inside the store's open
+        t0 = time.monotonic()
+        assert cl.get("/api/health").status_code == 200
+        assert cl.get("/api/game/session").json()["signed_in"] is False
+        assert time.monotonic() - t0 < 2
+        release.set()
+        t.join(10)
+    assert done == [200]
 
 
 # ------------------------------------------------------------------------------------------- NetBox identity
@@ -228,6 +279,37 @@ def test_store_migrates_and_refuses_newer_files(tmp_path):
     db.close()
     with pytest.raises(StoreError, match="schema version"):
         GameStore(p)
+
+
+def test_migrations_run_in_order_and_a_failing_step_leaves_the_old_version():
+    db = sqlite3.connect(":memory:", isolation_level=None)
+    steps = ["CREATE TABLE a (x INTEGER);", "ALTER TABLE a ADD COLUMN y TEXT; INSERT INTO a (x, y) VALUES (1, 'one');"]
+    assert migrate(db, steps) == 2
+    assert db.execute("SELECT x, y FROM a").fetchall() == [(1, "one")]
+    with pytest.raises(sqlite3.OperationalError):
+        migrate(db, steps + ["CREATE TABLE b (z INTEGER); INSERT INTO nope VALUES (1);"])
+    assert db.execute("PRAGMA user_version").fetchone()[0] == 2
+    assert db.execute("SELECT count(*) FROM sqlite_master WHERE name = 'b'").fetchone()[0] == 0
+    assert migrate(db, steps) == 2  # already there: nothing runs again
+    assert db.execute("SELECT count(*) FROM a").fetchone()[0] == 1
+
+
+def test_a_semicolon_in_a_string_comment_or_trigger_does_not_split_a_migration():
+    script = """
+    -- a comment; with a semicolon
+    CREATE TABLE t (v TEXT, n INTEGER DEFAULT 0); /* block; comment */
+    INSERT INTO t (v) VALUES ('a;b'), ('it''s; fine');
+    CREATE TRIGGER t_bump AFTER INSERT ON t BEGIN
+        UPDATE t SET n = n + 1 WHERE rowid = NEW.rowid;
+        UPDATE t SET v = v || ';' WHERE rowid = NEW.rowid;
+    END;
+    -- trailing comment
+    """
+    parts = statements(script)
+    assert len(parts) == 3 and parts[2].startswith("CREATE TRIGGER") and parts[2].endswith("END;")
+    db = sqlite3.connect(":memory:", isolation_level=None)
+    assert migrate(db, [script, "INSERT INTO t (v) VALUES ('c');"]) == 2
+    assert db.execute("SELECT v, n FROM t ORDER BY rowid").fetchall() == [("a;b", 0), ("it's; fine", 0), ("c;", 1)]
 
 
 def test_store_session_expiry(tmp_path):

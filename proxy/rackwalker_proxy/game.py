@@ -18,6 +18,7 @@ is off by default.
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from collections.abc import Callable
 from typing import Annotated, Any
@@ -25,6 +26,7 @@ from urllib.parse import urlsplit
 
 import httpx
 from fastapi import Body, FastAPI, Request
+from fastapi.concurrency import run_in_threadpool
 from fastapi import Path as PathParam
 from fastapi.responses import JSONResponse
 
@@ -45,6 +47,18 @@ def _valid(defname: str, body: Any) -> Any:
     if errs:
         raise ApiError("validation_failed", f"The request body does not match the {defname} schema.", {"errors": errs})
     return body
+
+
+def check_bindings(settings: dict[str, Any]) -> dict[str, Any]:
+    """Refuses settings that bind one key to two actions (the game could not tell which one the player meant)."""
+    seen: dict[str, str] = {}
+    for action, keys in settings["keys"].items():
+        for k in keys:
+            if k in seen and seen[k] != action:
+                raise ApiError("validation_failed", f"Key {k} is bound to both {seen[k]} and {action}.",
+                               {"errors": [{"path": f"/keys/{action}", "message": f"{k} is already bound to {seen[k]}"}]})
+            seen[k] = action
+    return settings
 
 
 async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTransport | None = None) -> dict[str, Any]:
@@ -82,21 +96,28 @@ def fixture_whoami(fixtures_dir: Path, token: str) -> dict[str, Any]:
 def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: str, fixtures_dir: Path | None, local_player: bool,
             allowed_hosts: set[str], cookie_secure: bool, transport: httpx.AsyncBaseTransport | None = None) -> None:
 
+    # Every route that touches the store is a plain `def`, which FastAPI runs in its thread pool: SQLite work (opening
+    # the file, a migration, the fsync of each commit) can take seconds on a busy disk, and on the event loop it would
+    # stall every other route, scenes and health included. GameStore serialises its own calls.
     opened: list[GameStore] = []
+    opening = threading.Lock()
 
     def get_store() -> GameStore:
         # Opened on first use, so a proxy that never serves the game never creates the state file.
-        if not opened:
-            st = open_store()
-            if local_player:
-                st.upsert_player(LOCAL_PLAYER["id"], LOCAL_PLAYER["username"], LOCAL_PLAYER["display_name"])
-            opened.append(st)
+        with opening:
+            if not opened:
+                st = open_store()
+                if local_player:
+                    st.upsert_player(LOCAL_PLAYER["id"], LOCAL_PLAYER["username"], LOCAL_PLAYER["display_name"])
+                opened.append(st)
         return opened[0]
 
     app.state.game_store = get_store
 
     def session_of(request: Request) -> Session | None:
-        return get_store().session(request.cookies.get(COOKIE))
+        cookie = request.cookies.get(COOKIE)
+        # No cookie, no session: answered without the store, so a signed-out page never waits for the file.
+        return get_store().session(cookie) if cookie else None
 
     def origin_ok(request: Request) -> bool:
         origin = request.headers.get("origin")
@@ -133,7 +154,7 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         return resp
 
     @app.get("/api/game/session")
-    async def get_session(request: Request):
+    def get_session(request: Request):
         return no_store(JSONResponse(session_body(session_of(request))))
 
     @app.post("/api/game/session")
@@ -143,16 +164,20 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         token = _valid("SignInRequest", body)["token"]
         user = fixture_whoami(fixtures_dir, token) if fixtures_dir else await netbox_whoami(netbox_url, token, transport)
         del token, body  # used once, never kept
-        get_store().end_session(request.cookies.get(COOKIE))
-        get_store().upsert_player(user["id"], user["username"], user["display_name"])
-        value, s = get_store().new_session(user["id"])
-        resp = no_store(JSONResponse(session_body(s)))
+        value, s, resp_body = await run_in_threadpool(start_session, request.cookies.get(COOKIE), user)
+        resp = no_store(JSONResponse(resp_body))
         resp.set_cookie(COOKIE, value, max_age=int(s.expires_at - get_store().clock()), path="/api/game", httponly=True,
                         samesite="strict", secure=cookie_secure)
         return resp
 
+    def start_session(old_cookie: str | None, user: dict[str, Any]) -> tuple[str, Session, dict[str, Any]]:
+        get_store().end_session(old_cookie)
+        get_store().upsert_player(user["id"], user["username"], user["display_name"])
+        value, s = get_store().new_session(user["id"])
+        return value, s, session_body(s)
+
     @app.delete("/api/game/session")
-    async def sign_out(request: Request):
+    def sign_out(request: Request):
         if session_of(request) is not None:
             require(request, write=True)
         get_store().end_session(request.cookies.get(COOKIE))
@@ -166,21 +191,21 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
                 "flags": get_store().flags(uid), "saves": get_store().saves(uid)}
 
     @app.get("/api/game/state")
-    async def get_state(request: Request):
+    def get_state(request: Request):
         return no_store(JSONResponse(state_of(require(request, write=False))))
 
     @app.put("/api/game/saves/{slot}")
-    async def put_save(request: Request, slot: Slot, body: Json):
+    def put_save(request: Request, slot: Slot, body: Json):
         uid = require(request, write=True)
         return no_store(JSONResponse(get_store().put_save(uid, slot, _valid("SaveData", body))))
 
     @app.put("/api/game/settings")
-    async def put_settings(request: Request, body: Json):
+    def put_settings(request: Request, body: Json):
         uid = require(request, write=True)
-        return no_store(JSONResponse(get_store().put_settings(uid, _valid("GameSettings", body))))
+        return no_store(JSONResponse(get_store().put_settings(uid, check_bindings(_valid("GameSettings", body)))))
 
     @app.patch("/api/game/flags")
-    async def patch_flags(request: Request, body: Json):
+    def patch_flags(request: Request, body: Json):
         uid = require(request, write=True)
         patch = _valid("FlagsPatch", body)["flags"]
         try:

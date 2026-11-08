@@ -1,5 +1,5 @@
 {
-  "$schema": "../dialogue.schema.json",
+  "$schema": "../../../../contracts/dialogue.schema.json",
   "id": "ilatea-stuck",
   "once": "ilatea.stuck.seen",
   "min_hint": "normal",

@@ -5,9 +5,10 @@ import Ajv2020 from 'ajv/dist/2020.js';
 import { readFileSync, readdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { DialogueRun, MAX_TEXT, loadScript, mayAutoStart, validateScript, type Script } from '../src/game/dialogue';
+import { DEFAULT_KEYS, keysLabel, rebind } from '../src/game/keys';
 
 const dir = resolve(__dirname, '../src/game/scripts');
-const schema = JSON.parse(readFileSync(resolve(__dirname, '../src/game/dialogue.schema.json'), 'utf8'));
+const schema = JSON.parse(readFileSync(resolve(__dirname, '../../contracts/dialogue.schema.json'), 'utf8'));
 const ajv = new Ajv2020({ strict: true, allowUnionTypes: true, allErrors: true });
 const validate = ajv.compile(schema);
 const files = readdirSync(dir).filter((f) => f.endsWith('.json'));
@@ -60,6 +61,8 @@ describe('validateScript', () => {
     [{ nodes: { a: { speaker: 'ilatea', text: 'x', next: [{ to: null, if: 'f' }] } } }, 'last branch must be unconditional'],
     [{ nodes: { a: { speaker: 'ilatea', text: 'x', choices: [1, 2, 3, 4, 5].map((i) => ({ label: `c${i}` })) } } }, '1 to 4'],
     [{ once: 'Bad Flag' }, 'once: not a flag name'],
+    [{ nodes: { a: { speaker: 'ilatea', text: 'x', next: 'b' }, b: { speaker: 'ilatea', text: 'y', next: 'a' } } }, 'nodes.a: can never reach an end'],
+    [{ nodes: { a: { speaker: 'ilatea', text: 'Press {key:jump}.' } } }, '{key:jump} names no key action'],
   ] as [Partial<Script>, string][])('refuses %j', (over, msg) => {
     expect(validateScript(script(over)).join('; ')).toContain(msg);
     expect(() => loadScript(script(over))).toThrow();
@@ -103,6 +106,38 @@ describe('DialogueRun', () => {
     const r = new DialogueRun(script({ nodes: { a: { speaker: 'ilatea', text: 'x', choices: [{ label: 'quiet', do: 'hints_off' }] } } }), {});
     r.choose(0);
     expect(r.effects.actions).toEqual(['hints_off']);
+  });
+});
+
+describe('lines name the player\'s own keys', () => {
+  const intro = () => loadScript(read('ilatea-intro.json'));
+  const keysLine = (keys = DEFAULT_KEYS) => {
+    const r = new DialogueRun(intro(), {}, (a) => keysLabel(keys, a));
+    r.choose(1); // How do I walk?
+    return r.text;
+  };
+  it('the intro\'s keys line names the default keys', () => {
+    expect(keysLine()).toBe('Walk with ↑/W ←/A ↓/S →/D, or tap where you want to go. M opens the menu.');
+  });
+  it('after a remap the same line names the new keys and never the old ones', () => {
+    let keys = DEFAULT_KEYS;
+    for (const [a, code] of [['up', 'KeyI'], ['menu', 'KeyP']] as const) {
+      const r = rebind(keys, a, code);
+      if (!('keys' in r)) throw new Error(r.error);
+      keys = r.keys;
+    }
+    const line = keysLine(keys);
+    expect(line).toContain('I/↑/W');
+    expect(line).toContain('P/M opens the menu');
+  });
+  it('no script hard-codes a key name in its text', () => {
+    for (const f of files)
+      for (const n of Object.values(read(f).nodes) as { text: string }[])
+        expect(n.text.replace(/\{key:[a-z]+\}/g, ''), `${f}: ${n.text}`).not.toMatch(/\b(Esc|Escape|Enter|Space|WASD)\b|[Aa]rrow keys?|\b[A-Z] (opens|closes|steps|talks)\b/);
+  });
+  it('a script without a key label function shows the action name', () => {
+    const r = new DialogueRun(script({ nodes: { a: { speaker: 'ilatea', text: 'Press {key:interact}.' } } }), {});
+    expect(r.text).toBe('Press interact.');
   });
 });
 

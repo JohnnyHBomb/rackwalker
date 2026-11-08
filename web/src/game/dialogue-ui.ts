@@ -51,16 +51,16 @@ export class DialogueBox {
   get state(): { script: string; node: string | null; text: string; typing: boolean; choices: string[]; selected: number } | null {
     const r = this.run;
     if (!r) return null;
-    return { script: r.script.id, node: r.nodeName, text: r.current?.text ?? '', typing: this.typing, choices: r.choices.map((c) => c.label), selected: this.sel };
+    return { script: r.script.id, node: r.nodeName, text: r.text, typing: this.typing, choices: r.choices.map((c) => c.label), selected: this.sel };
   }
   private get typing(): boolean {
-    return !!this.run?.current && this.shownChars < this.run.current.text.length;
+    return !!this.run?.current && this.shownChars < this.run.text.length;
   }
 
   /** Plays a script; resolves with the flags it set and the actions picked once it ends or is closed. */
-  play(script: Script, flags: Flags): Promise<Effects> {
+  play(script: Script, flags: Flags, keyLabel?: (action: string) => string): Promise<Effects> {
     this.finish();
-    this.run = new DialogueRun(script, flags);
+    this.run = new DialogueRun(script, flags, keyLabel);
     return new Promise((res) => {
       this.resolve = res;
       this.render();
@@ -93,7 +93,7 @@ export class DialogueBox {
 
   private skip(): void {
     if (!this.run?.current) return;
-    this.shownChars = this.run.current.text.length;
+    this.shownChars = this.run.text.length;
     this.paintText();
   }
   private next(): void {
@@ -177,7 +177,7 @@ export class DialogueBox {
     this.host.append(el);
     this.el = el;
     this.sel = 0;
-    this.shownChars = this.reduceMotion ? node.text.length : 0;
+    this.shownChars = this.reduceMotion ? this.run!.text.length : 0;
     this.paintText();
     this.select(0);
     if (!this.reduceMotion)
@@ -192,7 +192,7 @@ export class DialogueBox {
     const node = this.run?.current;
     const t = this.el?.querySelector('#dialogue-text');
     if (!node || !t) return;
-    t.textContent = node.text.slice(0, this.shownChars);
+    t.textContent = this.run!.text.slice(0, this.shownChars);
     if (!this.typing && !node.choices) {
       const more = document.createElement('span');
       more.id = 'dialogue-more';

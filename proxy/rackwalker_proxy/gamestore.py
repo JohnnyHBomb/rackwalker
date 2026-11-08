@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import secrets
 import sqlite3
 import threading
@@ -87,6 +88,49 @@ def _hash(value: str) -> str:
     return hashlib.sha256(value.encode()).hexdigest()
 
 
+def statements(script: str) -> list[str]:
+    """Splits a migration into single statements. `executescript` cannot be used: it COMMITs the open transaction, so
+    a failing step would leave half a migration behind. A `;` ends a statement only where SQLite agrees the statement
+    is complete (`sqlite3.complete_statement`), so a `;` inside a string, a comment or a trigger body never splits.
+    Pieces that hold only comments or whitespace are dropped."""
+    out: list[str] = []
+    buf = ""
+    for ch in script:
+        buf += ch
+        if ch == ";" and sqlite3.complete_statement(buf):
+            out.append(buf.strip())
+            buf = ""
+    if buf.strip() and not _only_comments(buf):
+        out.append(buf.strip())
+    return [st for st in out if not _only_comments(st)]
+
+
+def _only_comments(text: str) -> bool:
+    rest = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
+    rest = "\n".join(line.split("--", 1)[0] for line in rest.splitlines())
+    return not rest.strip(" \t\r\n;")
+
+
+def migrate(db: sqlite3.Connection, steps: list[str], label: object = "game state file") -> int:
+    """Brings `db` (autocommit mode) to version len(steps): `steps[i]` takes it from version i to i + 1 inside one
+    transaction, so a failing step leaves the file at the version before it. A newer file is refused untouched."""
+    have = db.execute("PRAGMA user_version").fetchone()[0]
+    if have > len(steps):
+        raise StoreError(f"game state file {label} has schema version {have}; this RackWalker knows up to "
+                         f"{len(steps)}. Refusing to touch it (update RackWalker).")
+    for v in range(have, len(steps)):
+        db.execute("BEGIN IMMEDIATE")
+        try:
+            for stmt in statements(steps[v]):
+                db.execute(stmt)
+            db.execute(f"PRAGMA user_version = {v + 1}")
+            db.execute("COMMIT")
+        except BaseException:
+            db.execute("ROLLBACK")
+            raise
+    return len(steps)
+
+
 @dataclass(frozen=True)
 class Session:
     user_id: int
@@ -119,21 +163,7 @@ class GameStore:
 
     def migrate(self) -> None:
         with self._lock:
-            have = self.version
-            if have > SCHEMA_VERSION:
-                raise StoreError(f"game state file {self.path} has schema version {have}; this RackWalker knows up to "
-                                 f"{SCHEMA_VERSION}. Refusing to touch it (update RackWalker).")
-            for v in range(have, SCHEMA_VERSION):
-                self._db.execute("BEGIN IMMEDIATE")
-                try:
-                    for stmt in MIGRATIONS[v].split(";"):
-                        if stmt.strip():
-                            self._db.execute(stmt)
-                    self._db.execute(f"PRAGMA user_version = {v + 1}")
-                    self._db.execute("COMMIT")
-                except BaseException:
-                    self._db.execute("ROLLBACK")
-                    raise
+            migrate(self._db, MIGRATIONS, self.path)
 
     def close(self) -> None:
         with self._lock:

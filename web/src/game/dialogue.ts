@@ -1,6 +1,6 @@
 // The dialogue system every NPC shares: branching scripts as JSON data files (scripts/*.json, schema
-// dialogue.schema.json), checked by `validateScript` when they load and in the unit tests. This module is the pure
-// part (no DOM): which line is on screen, which choices show, and what picking one does. The bubble is dialogue-ui.ts.
+// contracts/dialogue.schema.json), checked by `validateScript` when they load and in the unit tests. This module is
+// the pure part (no DOM): which line is on screen, which choices show, and what picking one does. The bubble is dialogue-ui.ts.
 //
 // A script: { id, once?, min_hint?, start, nodes: { <name>: Node } }.
 //   Node:   { speaker, text, choices?: Choice[], next?: Next, set?: {flag: value} }
@@ -9,7 +9,10 @@
 // `once` names a flag the run sets as soon as the first line shows; a script whose `once` flag is set never starts on
 // its own again (the guide never repeats herself). `min_hint` is the lowest hint level at which the game may start
 // the script on its own; the player can still open it from the menu.
+// `{key:<action>}` in a line names the player's own key for that action (keys.ts KEY_ACTIONS), so a line about keys
+// stays true after the player remaps them.
 import type { FlagValue, Flags, HintLevel } from '../contracts/scene.gen';
+import { KEY_ACTIONS } from './keys';
 
 export const SPEAKERS = ['ilatea', 'byte', 'nocti'] as const;
 export type Speaker = (typeof SPEAKERS)[number];
@@ -21,6 +24,8 @@ export const MAX_TEXT = 160;
 export const MAX_CHOICES = 4;
 const FLAG = /^[a-z0-9][a-z0-9_.:-]{0,63}$/;
 const NAME = /^[a-z][a-z0-9_-]{0,31}$/;
+/** `{key:<action>}` in a line: replaced by the key(s) the player has bound to that action. */
+export const KEY_TOKEN = /\{key:([a-z]+)\}/g;
 
 export interface Branch {
   readonly to: string | null;
@@ -87,6 +92,8 @@ export function validateScript(s: unknown): string[] {
     if (!SPEAKERS.includes(n.speaker)) e.push(`${w}.speaker: unknown speaker ${String(n.speaker)}`);
     if (typeof n.text !== 'string' || !n.text.trim()) e.push(`${w}.text: empty`);
     else if (n.text.length > MAX_TEXT) e.push(`${w}.text: longer than ${MAX_TEXT} characters`);
+    if (typeof n.text === 'string')
+      for (const m of n.text.matchAll(KEY_TOKEN)) if (!(KEY_ACTIONS as readonly string[]).includes(m[1]!)) e.push(`${w}.text: {key:${m[1]}} names no key action`);
     flags(w, n.set);
     let out: (string | null)[] = [];
     if (n.choices !== undefined) {
@@ -115,6 +122,13 @@ export function validateScript(s: unknown): string[] {
     while (todo.length) for (const t of edges.get(todo.pop()!) ?? []) if (t !== null && t in nodes && !seen.has(t)) seen.add(t), todo.push(t);
     for (const n of names) if (!seen.has(n)) e.push(`nodes.${n}: unreachable from start`);
   }
+  // Every node can reach an end (a null next), so no loop of lines can hold the player in a conversation.
+  const ends = new Set<string>();
+  for (let grew = true; grew; ) {
+    grew = false;
+    for (const n of names) if (!ends.has(n) && (edges.get(n) ?? []).some((t) => t === null || ends.has(t))) ends.add(n), (grew = true);
+  }
+  for (const n of names) if (!ends.has(n)) e.push(`nodes.${n}: can never reach an end`);
   return e;
 }
 
@@ -145,7 +159,11 @@ export class DialogueRun {
   private readonly flags: Record<string, FlagValue>;
   readonly effects: Effects = { set: {}, actions: [] };
 
-  constructor(readonly script: Script, flags: Flags) {
+  constructor(
+    readonly script: Script,
+    flags: Flags,
+    private readonly keyLabel: (action: string) => string = (a) => a,
+  ) {
     this.flags = Object.fromEntries(Object.entries(flags).filter((e): e is [string, FlagValue] => e[1] !== undefined));
     this.node = script.start;
     if (script.once) this.setFlags({ [script.once]: true });
@@ -157,6 +175,10 @@ export class DialogueRun {
   }
   get current(): DialogueNode | null {
     return this.node === null ? null : this.script.nodes[this.node]!;
+  }
+  /** The line on screen, with each `{key:<action>}` replaced by the player's key for it. */
+  get text(): string {
+    return this.current?.text.replace(KEY_TOKEN, (_, a: string) => this.keyLabel(a)) ?? '';
   }
   get nodeName(): string | null {
     return this.node;

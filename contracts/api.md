@@ -165,7 +165,10 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
 * **Keyed by NetBox user id.** Players never see each other's state. Saves: slot `auto` (the game writes it on every
   change of place) and `1`-`3`; each write bumps `rev`; last write wins. Settings default as in
   `game-settings.json`. Flags: names `^[a-z0-9][a-z0-9_.:-]{0,63}$`, values boolean, integer or short string, at most
-  500 per player.
+  500 per player. `PUT /api/game/settings` refuses a key bound to two actions (`validation_failed`).
+* **The file is created at the first sign-in**, not before: `GET /api/game/session` without a session cookie answers
+  `signed_in: false` without touching it. Store work runs off the request loop, so a slow disk delays only the game
+  call that is waiting for it, never the scene routes or `/api/health`.
 * **Single-user local mode** (`RACKWALKER_LOCAL_PLAYER=1`, off by default): no sign-in, one player with id 0. It
   bypasses identity, so it is only for a NetBox you alone use. Writes still need the CSRF header (`local`).
 * **Fixture mode** has no NetBox: sign-in accepts the synthetic tokens in `fixtures/players.json` and the store is

@@ -1,5 +1,6 @@
 // Draws the placeholder overworld on its own canvas (2D, integer scale, no smoothing) and walks the player around
-// it: keys move one tile per step, a tap or click walks there along the shortest path, a door enters its site.
+// it: keys move one tile per step, a tap or click walks there along the shortest path, a door enters its site, and a
+// tap on Ilatea walks up to her and talks.
 // All art is drawn here by code from the small palette below; buildings take their site's theme colours.
 import type { Palette } from '../contracts/theme';
 import { labelBuffer } from '../engine/font';
@@ -10,6 +11,9 @@ const P = {
   canopy: '#2e6a33', canopy2: '#3e8443', trunk: '#6b4a2b', path: '#c8ae78', path2: '#b79a62',
   door: '#22170f', doorFrame: '#e9dcc0', skin: '#e7b98f', hair: '#3a2a20', tunic: '#2f5f9e', tunic2: '#24497a', boots: '#3b2b1d',
   marker: '#fff6d8', markerEdge: '#22170f',
+  // Ilatea (docs/art/guide-ilatea.md): dark hair with a silver strand, owl-gold eyes, dark chiton with blue circuit
+  // lines, spear-stylus with a glowing tip.
+  gHair: '#2a2030', gSilver: '#c9d3e0', gSkin: '#d9a77e', gEye: '#f2c14e', gRobe: '#1e2a44', gLine: '#5fb8ff', gTip: '#9fe3ff',
 } as const;
 export const STEP_MS = 110;
 
@@ -73,6 +77,21 @@ function drawPlayer(f: Dir, frame: number): HTMLCanvasElement {
   });
 }
 
+/** 16 x 16 Ilatea, facing the viewer, spear-stylus in her right hand. */
+function drawGuide(): HTMLCanvasElement {
+  return tileCanvas((g) => {
+    px(g, 3, 0, 8, 9, P.gHair);
+    px(g, 4, 1, 1, 7, P.gSilver);
+    px(g, 4, 2, 6, 5, P.gSkin);
+    px(g, 5, 4, 1, 1, P.gEye), px(g, 8, 4, 1, 1, P.gEye);
+    px(g, 3, 8, 8, 7, P.gRobe);
+    px(g, 4, 10, 6, 1, P.gLine), px(g, 7, 11, 1, 4, P.gLine);
+    px(g, 2, 9, 1, 3, P.gSkin), px(g, 11, 9, 1, 3, P.gSkin);
+    px(g, 4, 15, 2, 1, P.boots), px(g, 8, 15, 2, 1, P.boots);
+    px(g, 13, 2, 1, 14, P.gSilver), px(g, 12, 0, 3, 2, P.gTip);
+  });
+}
+
 /** A down-pointing marker over each door: a shape, so it reads without colour. */
 function drawMarker(): HTMLCanvasElement {
   return tileCanvas((g) => {
@@ -88,6 +107,8 @@ function bufferCanvas(b: { width: number; height: number; data: Uint8ClampedArra
 export interface OverworldEvents {
   door(d: Door): void;
   moved(p: Pos, facing: Dir): void;
+  /** The player reached Ilatea after tapping her. */
+  talk(): void;
 }
 
 export class OverworldView {
@@ -97,6 +118,9 @@ export class OverworldView {
   private readonly buildings = new Map<number, HTMLCanvasElement>();
   private readonly labels = new Map<number, HTMLCanvasElement>();
   private readonly marker = drawMarker();
+  private readonly guide = drawGuide();
+  /** A tap on Ilatea: talk once the walk to her ends. */
+  private talkOnArrival = false;
   private readonly players = new Map<string, HTMLCanvasElement>();
   pos: Pos;
   facing: Dir = 'N';
@@ -122,7 +146,7 @@ export class OverworldView {
     this.facing = facing;
     this.canvas.id = 'overworld';
     this.canvas.setAttribute('role', 'img');
-    this.canvas.setAttribute('aria-label', `Overworld: ${map.doors.map((d) => d.name).join(', ')}. Walk with the arrow keys or tap; walk into a door to go inside.`);
+    this.canvas.setAttribute('aria-label', `Overworld: ${map.doors.map((d) => d.name).join(', ')}. Walk with your movement keys or tap; walk into a door to go inside.`);
     this.canvas.style.cssText = 'position:fixed;inset:0;width:100%;height:100%;display:none;image-rendering:pixelated;touch-action:none';
     host.appendChild(this.canvas);
     this.g = this.canvas.getContext('2d')!;
@@ -134,7 +158,8 @@ export class OverworldView {
     this.canvas.addEventListener('pointerdown', (e) => {
       if (!this.active) return;
       const t = this.tileAtClient(e.clientX, e.clientY);
-      this.walkTo(t);
+      if (t.x === this.map.guide.x && t.y === this.map.guide.y) this.walkToGuide();
+      else this.walkTo(t);
     });
     window.addEventListener('resize', () => this.active && this.draw());
   }
@@ -158,6 +183,7 @@ export class OverworldView {
     this.canvas.style.display = on ? 'block' : 'none';
     this.held = null;
     this.queue = [];
+    this.talkOnArrival = false;
     if (on) this.loop();
     else cancelAnimationFrame(this.raf);
   }
@@ -171,11 +197,13 @@ export class OverworldView {
     this.facing = facing;
     this.stepFrom = null;
     this.queue = [];
+    this.talkOnArrival = false;
     this.draw();
   }
 
   /** Held direction (key down / up); a fresh press steps at once, holding repeats every STEP_MS. */
   hold(d: Dir | null): void {
+    if (d) this.talkOnArrival = false;
     if (d && d !== this.held) {
       this.queue = [];
       this.held = d;
@@ -186,6 +214,21 @@ export class OverworldView {
   walkTo(t: Pos): void {
     this.queue = this.map.path(this.pos, t);
     this.held = null;
+    this.talkOnArrival = false;
+  }
+  /** Walks to the nearest free tile next to Ilatea, then talks to her. */
+  walkToGuide(): void {
+    const to = this.map.besideGuide(this.pos);
+    if (!to) return;
+    this.walkTo(to);
+    this.talkOnArrival = true;
+  }
+  /** Turns to Ilatea; true when she is in reach (one step away). */
+  faceGuide(): boolean {
+    if (!this.map.nearGuide(this.pos)) return false;
+    this.facing = dirTo(this.pos, this.map.guide);
+    this.draw();
+    return true;
   }
   /** Tile under a client (CSS pixel) point. */
   tileAtClient(x: number, y: number): Pos {
@@ -239,6 +282,10 @@ export class OverworldView {
     if (!this.stepFrom) {
       const next = this.queue.shift();
       if (next) this.tryStep(dirTo(this.pos, next));
+      else if (this.talkOnArrival) {
+        this.talkOnArrival = false;
+        if (this.faceGuide()) this.events.talk();
+      }
       else if (this.held && now - this.lastStepAt >= 0) this.tryStep(this.held);
     }
     this.draw();
@@ -262,7 +309,7 @@ export class OverworldView {
       for (let x = x0; x < x1; x++) {
         const t = this.map.at(x, y)!;
         const v = (x * 7 + y * 13) % 8;
-        const kind = t === 'building' || t === 'door' ? 'grass' : t;
+        const kind = t === 'building' || t === 'door' || t === 'guide' ? 'grass' : t;
         const k = `${kind}:${v}`;
         let img = this.tiles.get(k);
         if (!img) this.tiles.set(k, (img = drawTile(kind, v)));
@@ -274,6 +321,7 @@ export class OverworldView {
       g.drawImage(lab, d.bx * TILE + Math.round((d.bw * TILE - lab.width) / 2), d.by * TILE - lab.height - 2);
       g.drawImage(this.marker, d.x * TILE, (d.y - 1) * TILE + 6);
     }
+    g.drawImage(this.guide, this.map.guide.x * TILE, this.map.guide.y * TILE);
     const p = this.pixelPos();
     const pk = `${this.facing}:${this.stepFrom ? this.frame % 2 : 0}`;
     let pl = this.players.get(pk);

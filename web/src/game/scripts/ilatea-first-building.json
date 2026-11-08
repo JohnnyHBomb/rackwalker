@@ -1,5 +1,5 @@
 {
-  "$schema": "../dialogue.schema.json",
+  "$schema": "../../../../contracts/dialogue.schema.json",
   "id": "ilatea-first-building",
   "once": "ilatea.first-building.seen",
   "min_hint": "normal",
@@ -7,7 +7,7 @@
   "nodes": {
     "inside": {
       "speaker": "ilatea",
-      "text": "Inside. Double-click a rack to look closer; Esc steps back out.",
+      "text": "Inside. Double-click a rack to look closer; {key:cancel} steps back out.",
       "next": null
     }
   }

@@ -1,5 +1,5 @@
 {
-  "$schema": "../dialogue.schema.json",
+  "$schema": "../../../../contracts/dialogue.schema.json",
   "id": "ilatea-intro",
   "once": "ilatea.intro.seen",
   "min_hint": "low",
@@ -16,8 +16,11 @@
     },
     "keys": {
       "speaker": "ilatea",
-      "text": "Arrow keys or WASD, or tap where you want to go. M opens the menu.",
-      "next": null
+      "text": "Walk with {key:up} {key:left} {key:down} {key:right}, or tap where you want to go. {key:menu} opens the menu.",
+      "choices": [
+        {"label": "Got it", "next": null},
+        {"label": "Change keys", "do": "open_settings", "next": null}
+      ]
     },
     "fewer": {
       "speaker": "ilatea",

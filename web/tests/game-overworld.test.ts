@@ -23,6 +23,17 @@ describe('OverworldMap', () => {
     for (let x = 0; x < m.w; x++) expect([m.walkable(x, 0), m.walkable(x, m.h - 1)]).toEqual([false, false]);
     expect(m.walkable(m.start.x, m.start.y)).toBe(true);
   });
+  it('Ilatea stands on the grass near the start: not walkable, in reach from the tile beside her', () => {
+    expect(m.at(m.guide.x, m.guide.y)).toBe('guide');
+    expect(m.walkable(m.guide.x, m.guide.y)).toBe(false);
+    expect(m.path(m.start, m.guide)).toEqual([]); // walks never go through her
+    expect(m.nearGuide(m.start)).toBe(false);
+    const beside = m.besideGuide(m.start)!;
+    expect(m.nearGuide(beside)).toBe(true);
+    expect(m.path(m.start, beside).length).toBe(1); // the free tile between the start and her
+    expect(m.besideGuide(beside)).toEqual(beside);
+    expect(m.nearGuide({ x: m.guide.x + 1, y: m.guide.y + 1 })).toBe(false); // diagonal is not in reach
+  });
   it('every door is reachable from the start, and the walk ends on the door', () => {
     for (const d of m.doors) {
       const p = m.path(m.start, d);

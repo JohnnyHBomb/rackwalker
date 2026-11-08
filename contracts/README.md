@@ -11,6 +11,7 @@ game (`web/`). Each side builds and tests against them on its own, so a change h
 | `api.md` | Route rules: errors, status codes, ChangeSet semantics, the `update_fields` whitelist, caching | proxy, web editor |
 | `iso.md` + `web/src/contracts/iso.ts` | Tile size, axes, facing, screen mapping, depth key, zoom levels, GPS projection | web engine |
 | `theme.md` + `theme-slots.json` + `web/src/contracts/theme.ts` | Theme interface, palette keys, the 21 sprite slots with size and anchor | web engine, themes |
+| `dialogue.schema.json` | The dialogue script format (`web/src/game/scripts/*.json`): nodes, choices, branches, flags, `{key:<action>}` tokens. Not an HTTP body; the graph rules are in `validateScript` (`web/src/game/dialogue.ts`) | web (game data) |
 | `../fixtures/` | One canned response per route, rendered from the dev NetBox seed model | web (fixture mode), tests |
 
 ## Generated code (never edit by hand)
