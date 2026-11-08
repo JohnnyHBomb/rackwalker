@@ -1,0 +1,8 @@
+{
+  "error": {
+    "code": "write_disabled",
+    "message": "Apply is refused: the proxy runs in dry-run mode (WRITE_ENABLED is not 1).",
+    "details": null
+  },
+  "request_id": "fixture-0001"
+}

@@ -1,0 +1,237 @@
+{
+  "mode": "preview",
+  "applied": false,
+  "write_enabled": false,
+  "ops": [
+    {
+      "index": 0,
+      "op": "move_rack",
+      "client_ref": null,
+      "target": {
+        "kind": "rack",
+        "id": 2
+      },
+      "status": "ok",
+      "before": {
+        "iso_x": 3,
+        "iso_y": 2
+      },
+      "after": {
+        "iso_x": 4,
+        "iso_y": 3
+      },
+      "diff": [
+        {
+          "field": "iso_x",
+          "before": 3,
+          "after": 4
+        },
+        {
+          "field": "iso_y",
+          "before": 2,
+          "after": 3
+        }
+      ],
+      "error": null
+    },
+    {
+      "index": 1,
+      "op": "create_rack",
+      "client_ref": "newrack",
+      "target": {
+        "kind": "rack",
+        "id": null
+      },
+      "status": "ok",
+      "before": null,
+      "after": {
+        "site_id": 1,
+        "location_id": 1,
+        "name": "ND-R5",
+        "status": "planned",
+        "u_height": 42,
+        "iso_x": 9,
+        "iso_y": 2,
+        "iso_facing": "S"
+      },
+      "diff": [
+        {
+          "field": "site_id",
+          "before": null,
+          "after": 1
+        },
+        {
+          "field": "location_id",
+          "before": null,
+          "after": 1
+        },
+        {
+          "field": "name",
+          "before": null,
+          "after": "ND-R5"
+        },
+        {
+          "field": "status",
+          "before": null,
+          "after": "planned"
+        },
+        {
+          "field": "u_height",
+          "before": null,
+          "after": 42
+        },
+        {
+          "field": "iso_x",
+          "before": null,
+          "after": 9
+        },
+        {
+          "field": "iso_y",
+          "before": null,
+          "after": 2
+        },
+        {
+          "field": "iso_facing",
+          "before": null,
+          "after": "S"
+        }
+      ],
+      "error": null
+    },
+    {
+      "index": 2,
+      "op": "place_device",
+      "client_ref": null,
+      "target": {
+        "kind": "device",
+        "id": 27
+      },
+      "status": "ok",
+      "before": {
+        "rack_id": null,
+        "position": null,
+        "face": null,
+        "location_id": 3
+      },
+      "after": {
+        "rack_id": "@newrack",
+        "position": 20,
+        "face": "front",
+        "location_id": 1
+      },
+      "diff": [
+        {
+          "field": "rack_id",
+          "before": null,
+          "after": "@newrack"
+        },
+        {
+          "field": "position",
+          "before": null,
+          "after": 20
+        },
+        {
+          "field": "face",
+          "before": null,
+          "after": "front"
+        },
+        {
+          "field": "location_id",
+          "before": 3,
+          "after": 1
+        }
+      ],
+      "error": null
+    },
+    {
+      "index": 3,
+      "op": "unplace_device",
+      "client_ref": null,
+      "target": {
+        "kind": "device",
+        "id": 9
+      },
+      "status": "ok",
+      "before": {
+        "rack_id": 2,
+        "position": 10,
+        "face": "front"
+      },
+      "after": {
+        "rack_id": null,
+        "position": null,
+        "face": null
+      },
+      "diff": [
+        {
+          "field": "rack_id",
+          "before": 2,
+          "after": null
+        },
+        {
+          "field": "position",
+          "before": 10,
+          "after": null
+        },
+        {
+          "field": "face",
+          "before": "front",
+          "after": null
+        }
+      ],
+      "error": null
+    },
+    {
+      "index": 4,
+      "op": "update_fields",
+      "client_ref": null,
+      "target": {
+        "kind": "device",
+        "id": 2
+      },
+      "status": "error",
+      "before": null,
+      "after": null,
+      "diff": [],
+      "error": {
+        "code": "validation_failed",
+        "message": "Field 'primary_ip' is not editable on device in contract 2.0.0.",
+        "details": {
+          "field": "primary_ip",
+          "allowed": [
+            "name",
+            "status",
+            "serial",
+            "asset_tag",
+            "description",
+            "comments"
+          ]
+        }
+      }
+    },
+    {
+      "index": 5,
+      "op": "move_rack",
+      "client_ref": null,
+      "target": {
+        "kind": "rack",
+        "id": "@newrack"
+      },
+      "status": "ok",
+      "before": {
+        "iso_facing": "S"
+      },
+      "after": {
+        "iso_facing": "E"
+      },
+      "diff": [
+        {
+          "field": "iso_facing",
+          "before": "S",
+          "after": "E"
+        }
+      ],
+      "error": null
+    }
+  ]
+}

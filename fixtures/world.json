@@ -1,0 +1,105 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "sites": [
+    {
+      "site": {
+        "id": 1,
+        "slug": "north-depot",
+        "name": "North Depot",
+        "status": "active",
+        "latitude": 54.118,
+        "longitude": -1.342,
+        "iso_theme": "industrial-robotic",
+        "description": "Synthetic site near Brackenford",
+        "last_updated": "2026-11-07T09:00:00Z",
+        "netbox_url": "http://netbox.example.invalid/dcim/sites/1/"
+      },
+      "counts": {
+        "locations": 3,
+        "racks": 5,
+        "devices": 28,
+        "unracked_devices": 7,
+        "cables": 44
+      }
+    },
+    {
+      "site": {
+        "id": 2,
+        "slug": "west-works",
+        "name": "West Works",
+        "status": "active",
+        "latitude": 51.621,
+        "longitude": -2.893,
+        "iso_theme": "farm",
+        "description": "Synthetic site near Wrenmouth",
+        "last_updated": "2026-11-07T09:00:00Z",
+        "netbox_url": "http://netbox.example.invalid/dcim/sites/2/"
+      },
+      "counts": {
+        "locations": 2,
+        "racks": 3,
+        "devices": 13,
+        "unracked_devices": 3,
+        "cables": 15
+      }
+    },
+    {
+      "site": {
+        "id": 3,
+        "slug": "east-exchange",
+        "name": "East Exchange",
+        "status": "active",
+        "latitude": 52.784,
+        "longitude": 1.412,
+        "iso_theme": "business",
+        "description": "Synthetic site near Saltings Cross",
+        "last_updated": "2026-11-07T09:00:00Z",
+        "netbox_url": "http://netbox.example.invalid/dcim/sites/3/"
+      },
+      "counts": {
+        "locations": 3,
+        "racks": 4,
+        "devices": 19,
+        "unracked_devices": 4,
+        "cables": 24
+      }
+    }
+  ],
+  "links": [
+    {
+      "a_site_id": 1,
+      "b_site_id": 2,
+      "cable_ids": [],
+      "circuits": [
+        {
+          "id": 1,
+          "cid": "EXC-1001",
+          "provider": "Example Carrier",
+          "type": "Ethernet WAN",
+          "status": "active"
+        }
+      ]
+    },
+    {
+      "a_site_id": 1,
+      "b_site_id": 3,
+      "cable_ids": [
+        82
+      ],
+      "circuits": [
+        {
+          "id": 2,
+          "cid": "EXC-1002",
+          "provider": "Example Carrier",
+          "type": "Ethernet WAN",
+          "status": "active"
+        }
+      ]
+    }
+  ]
+}

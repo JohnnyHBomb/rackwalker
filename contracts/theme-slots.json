@@ -1,0 +1,27 @@
+{
+  "$comment": "Frozen sprite slot list (contract 2.0.0). Sizes and anchors are in sprite pixels at render scale 1. space: world = drawn on the iso grid; rack = drawn on the rack front elevation (orthographic, 1U = 8 px); screen = UI overlay. Anchor = the sprite pixel that is placed on the object's ground point (world: top corner of its footprint tile, see iso.md; rack: top-left of the U slot; screen: the pointer/frame origin).",
+  "palette_keys": ["background", "outline", "floor", "floor_alt", "wall", "wall_shade", "metal", "metal_shade", "accent", "accent_alt", "led_ok", "led_warn", "led_err", "wire", "text", "highlight"],
+  "slots": [
+    {"id": "site_building",       "space": "world",  "width": 64, "height": 80, "anchor": [32, 48], "footprint": [2, 2], "use": "A site on the overworld (2x2 tiles, 48 px tall)."},
+    {"id": "room_floor",          "space": "world",  "width": 32, "height": 16, "anchor": [16, 0],  "footprint": [1, 1], "use": "One floor tile of a room."},
+    {"id": "room_wall",           "space": "world",  "width": 16, "height": 40, "anchor": [0, 32],  "footprint": [1, 0], "use": "Wall on the N (-y) edge of a tile: runs from the tile top corner screen down-right to its right corner, 32 px tall. The engine mirrors it horizontally (anchor becomes [16, 32]) for the W (-x) edge. S and E edges are never drawn (they would hide the room)."},
+    {"id": "rack_empty",          "space": "world",  "width": 32, "height": 64, "anchor": [16, 48], "footprint": [1, 1], "use": "A rack on the room grid, front facing S (variant.rotation turns it). 48 px tall."},
+    {"id": "device_1u",           "space": "rack",   "width": 64, "height": 8,  "anchor": [0, 0],   "footprint": null,   "use": "Generic 1U faceplate; tinted by variant.role_color."},
+    {"id": "device_2u",           "space": "rack",   "width": 64, "height": 16, "anchor": [0, 0],   "footprint": null,   "use": "Generic 2U faceplate (3U devices use 2U + 1U, 5U+ stack 4U)."},
+    {"id": "device_4u",           "space": "rack",   "width": 64, "height": 32, "anchor": [0, 0],   "footprint": null,   "use": "Generic 4U faceplate."},
+    {"id": "switch",              "space": "rack",   "width": 64, "height": 8,  "anchor": [0, 0],   "footprint": null,   "use": "1U faceplate for role switch (port row + LEDs)."},
+    {"id": "router",              "space": "rack",   "width": 64, "height": 8,  "anchor": [0, 0],   "footprint": null,   "use": "1U faceplate for roles router and firewall."},
+    {"id": "patch_panel",         "space": "rack",   "width": 64, "height": 8,  "anchor": [0, 0],   "footprint": null,   "use": "1U faceplate for role patch-panel."},
+    {"id": "psu",                 "space": "rack",   "width": 64, "height": 8,  "anchor": [0, 0],   "footprint": null,   "use": "1U faceplate for role pdu. Also every zero-U device (device_type.u_height 0, any role): drawn with variant.rotation 1 (8x64, vertical) on the rack's side rail."},
+    {"id": "rack_unit",           "space": "rack",   "width": 80, "height": 8,  "anchor": [8, 0],   "footprint": null,   "use": "One U of the rack frame at rack zoom: 8 px rail each side and the empty slot between. Stacked u_height times under the faceplates; the anchor is where a faceplate's top-left goes."},
+    {"id": "port",                "space": "rack",   "width": 8,  "height": 8,  "anchor": [0, 0],   "footprint": null,   "use": "One port at device zoom (any PortKind). variant.status: 'connected', 'free', 'disabled' or 'mgmt'; variant.wire_color = the cable colour when connected."},
+    {"id": "wire_straight",       "space": "world",  "width": 32, "height": 16, "anchor": [16, 0],  "footprint": [1, 1], "use": "Floor wire/cable tray along +x (variant.rotation 1 = along +y). Tinted by variant.wire_color."},
+    {"id": "wire_corner",         "space": "world",  "width": 32, "height": 16, "anchor": [16, 0],  "footprint": [1, 1], "use": "Corner joining -x and +y edges at rotation 0; rotations 1-3 turn 90 degrees clockwise on screen."},
+    {"id": "wire_cross",          "space": "world",  "width": 32, "height": 16, "anchor": [16, 0],  "footprint": [1, 1], "use": "Crossing of x and y runs."},
+    {"id": "decoration_small",    "space": "world",  "width": 16, "height": 16, "anchor": [8, 7],   "footprint": [1, 1], "use": "Small prop standing at the tile centre (variant.seed picks one of the theme's props)."},
+    {"id": "decoration_large",    "space": "world",  "width": 32, "height": 48, "anchor": [16, 32], "footprint": [1, 1], "use": "Large prop filling a tile, 32 px tall."},
+    {"id": "ui_frame",            "space": "screen", "width": 24, "height": 24, "anchor": [0, 0],   "footprint": null,   "use": "9-slice panel frame: 8 px corners, 8 px edges, 8x8 centre."},
+    {"id": "cursor",              "space": "world",  "width": 32, "height": 16, "anchor": [16, 0],  "footprint": [1, 1], "use": "Tile selector outline under the pointer."},
+    {"id": "selection_highlight", "space": "world",  "width": 34, "height": 18, "anchor": [17, 1],  "footprint": [1, 1], "use": "Ring around the selected object's footprint tile (1 px larger than a tile on every side)."}
+  ]
+}

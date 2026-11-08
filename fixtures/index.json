@@ -1,0 +1,205 @@
+{
+  "$comment": "Fixture catalogue: request -> canned response, with the $defs name each body validates against.",
+  "fixtures": [
+    {
+      "method": "GET",
+      "path": "/api/health",
+      "status": 200,
+      "schema": "HealthResponse",
+      "file": "health.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/world",
+      "status": 200,
+      "schema": "WorldResponse",
+      "file": "world.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/site/1",
+      "status": 200,
+      "schema": "SiteScene",
+      "file": "site-1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/site/2",
+      "status": 200,
+      "schema": "SiteScene",
+      "file": "site-2.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/site/3",
+      "status": 200,
+      "schema": "SiteScene",
+      "file": "site-3.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/1",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-1.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/2",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-2.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/3",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-3.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/4",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-4.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/5",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-5.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/6",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-6.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/7",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-7.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/8",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-8.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/9",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-9.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/10",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-10.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/11",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-11.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/rack/12",
+      "status": 200,
+      "schema": "RackScene",
+      "file": "rack-12.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/device/2",
+      "status": 200,
+      "schema": "DeviceDetail",
+      "file": "device-2.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/device/3",
+      "status": 200,
+      "schema": "DeviceDetail",
+      "file": "device-3.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/device/4",
+      "status": 200,
+      "schema": "DeviceDetail",
+      "file": "device-4.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/trace/interface/21",
+      "status": 200,
+      "schema": "TraceResponse",
+      "file": "trace-interface-21.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/trace/interface/30",
+      "status": 200,
+      "schema": "TraceResponse",
+      "file": "trace-interface-30.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/trace/interface/173",
+      "status": 200,
+      "schema": "TraceResponse",
+      "file": "trace-interface-173.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/trace/interface/210",
+      "status": 200,
+      "schema": "TraceResponse",
+      "file": "trace-interface-210.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/trace/interface/172",
+      "status": 200,
+      "schema": "TraceResponse",
+      "file": "trace-interface-172.json"
+    },
+    {
+      "method": "POST",
+      "path": "/api/changes/preview",
+      "status": 200,
+      "schema": "ChangeResult",
+      "file": "changes-preview.json",
+      "request_schema": "ChangeSet",
+      "request_file": "changes-request.json"
+    },
+    {
+      "method": "POST",
+      "path": "/api/changes/apply",
+      "status": 403,
+      "schema": "ErrorResponse",
+      "file": "error-write-disabled.json",
+      "request_schema": "ChangeSet",
+      "request_file": "changes-request.json"
+    },
+    {
+      "method": "GET",
+      "path": "/api/scene/site/999",
+      "status": 404,
+      "schema": "ErrorResponse",
+      "file": "error-not-found.json"
+    }
+  ]
+}

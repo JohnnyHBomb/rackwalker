@@ -1,0 +1,123 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "trace": {
+    "origin": {
+      "kind": "interface",
+      "id": 173,
+      "name": "Te1/1/1",
+      "device_id": 26,
+      "device_name": "nd-acc-nd-c1",
+      "circuit_id": null,
+      "circuit_cid": null,
+      "site_id": 1
+    },
+    "hops": [
+      {
+        "near_end": [
+          {
+            "kind": "interface",
+            "id": 173,
+            "name": "Te1/1/1",
+            "device_id": 26,
+            "device_name": "nd-acc-nd-c1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ],
+        "cable": {
+          "id": 30,
+          "label": "ND-030",
+          "type": "mmf-om4",
+          "color": "00bcd4",
+          "status": "connected"
+        },
+        "far_end": [
+          {
+            "kind": "front_port",
+            "id": 97,
+            "name": "1",
+            "device_id": 25,
+            "device_name": "nd-pp-nd-c1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ]
+      },
+      {
+        "near_end": [
+          {
+            "kind": "rear_port",
+            "id": 97,
+            "name": "1",
+            "device_id": 25,
+            "device_name": "nd-pp-nd-c1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ],
+        "cable": {
+          "id": 31,
+          "label": "ND-031",
+          "type": "smf-os2",
+          "color": "ffeb3b",
+          "status": "connected"
+        },
+        "far_end": [
+          {
+            "kind": "rear_port",
+            "id": 1,
+            "name": "1",
+            "device_id": 1,
+            "device_name": "nd-pp1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ]
+      },
+      {
+        "near_end": [
+          {
+            "kind": "front_port",
+            "id": 1,
+            "name": "1",
+            "device_id": 1,
+            "device_name": "nd-pp1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ],
+        "cable": {
+          "id": 32,
+          "label": "ND-032",
+          "type": "mmf-om4",
+          "color": "00bcd4",
+          "status": "connected"
+        },
+        "far_end": [
+          {
+            "kind": "interface",
+            "id": 21,
+            "name": "Te1/0/20",
+            "device_id": 2,
+            "device_name": "nd-core1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ]
+      }
+    ],
+    "is_complete": true,
+    "is_split": false
+  }
+}

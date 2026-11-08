@@ -1,0 +1,327 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "device": {
+    "id": 4,
+    "name": "nd-fw1",
+    "role": {
+      "id": 3,
+      "slug": "firewall",
+      "name": "Firewall",
+      "color": "f44336"
+    },
+    "device_type": {
+      "id": 4,
+      "manufacturer": "Example Networks",
+      "model": "EX-F200",
+      "slug": "ex-f200",
+      "u_height": 1,
+      "is_full_depth": false
+    },
+    "site_id": 1,
+    "location_id": 1,
+    "rack_id": 1,
+    "position": 35,
+    "face": "front",
+    "status": "active",
+    "primary_ip": "192.0.2.3/24",
+    "last_updated": "2026-11-07T09:00:00Z",
+    "netbox_url": "http://netbox.example.invalid/dcim/devices/4/"
+  },
+  "info": {
+    "serial": "SYN100004",
+    "asset_tag": null,
+    "platform": null,
+    "description": "",
+    "comments": "",
+    "tags": [],
+    "custom_fields": {}
+  },
+  "interfaces": [
+    {
+      "kind": "interface",
+      "id": 32,
+      "device_id": 4,
+      "name": "port1",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": 1,
+      "link_peers": [
+        {
+          "kind": "interface",
+          "id": 27,
+          "name": "ge-0/0/1",
+          "device_id": 3,
+          "device_name": "nd-rtr1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "connected_endpoint": {
+        "kind": "interface",
+        "id": 27,
+        "name": "ge-0/0/1",
+        "device_id": 3,
+        "device_name": "nd-rtr1",
+        "circuit_id": null,
+        "circuit_cid": null,
+        "site_id": 1
+      }
+    },
+    {
+      "kind": "interface",
+      "id": 33,
+      "device_id": 4,
+      "name": "port2",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": 2,
+      "link_peers": [
+        {
+          "kind": "interface",
+          "id": 25,
+          "name": "Te1/0/24",
+          "device_id": 2,
+          "device_name": "nd-core1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "connected_endpoint": {
+        "kind": "interface",
+        "id": 25,
+        "name": "Te1/0/24",
+        "device_id": 2,
+        "device_name": "nd-core1",
+        "circuit_id": null,
+        "circuit_cid": null,
+        "site_id": 1
+      }
+    },
+    {
+      "kind": "interface",
+      "id": 34,
+      "device_id": 4,
+      "name": "port3",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": null,
+      "link_peers": [],
+      "connected_endpoint": null
+    },
+    {
+      "kind": "interface",
+      "id": 35,
+      "device_id": 4,
+      "name": "port4",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": null,
+      "link_peers": [],
+      "connected_endpoint": null
+    },
+    {
+      "kind": "interface",
+      "id": 36,
+      "device_id": 4,
+      "name": "port5",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": null,
+      "link_peers": [],
+      "connected_endpoint": null
+    },
+    {
+      "kind": "interface",
+      "id": 37,
+      "device_id": 4,
+      "name": "port6",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": null,
+      "link_peers": [],
+      "connected_endpoint": null
+    },
+    {
+      "kind": "interface",
+      "id": 38,
+      "device_id": 4,
+      "name": "port7",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": null,
+      "link_peers": [],
+      "connected_endpoint": null
+    },
+    {
+      "kind": "interface",
+      "id": 39,
+      "device_id": 4,
+      "name": "port8",
+      "type": "1000base-t",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": null,
+      "link_peers": [],
+      "connected_endpoint": null
+    },
+    {
+      "kind": "power_port",
+      "id": 4,
+      "device_id": 4,
+      "name": "PSU1",
+      "type": "iec-60320-c14",
+      "enabled": true,
+      "mgmt_only": false,
+      "description": "",
+      "cable_id": 5,
+      "link_peers": [
+        {
+          "kind": "power_outlet",
+          "id": 3,
+          "name": "OUT3",
+          "device_id": 5,
+          "device_name": "nd-pdu-nd-r1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "connected_endpoint": {
+        "kind": "power_outlet",
+        "id": 3,
+        "name": "OUT3",
+        "device_id": 5,
+        "device_name": "nd-pdu-nd-r1",
+        "circuit_id": null,
+        "circuit_cid": null,
+        "site_id": 1
+      }
+    }
+  ],
+  "cables": [
+    {
+      "id": 1,
+      "label": "ND-001",
+      "type": "cat6",
+      "color": "2196f3",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 27,
+          "name": "ge-0/0/1",
+          "device_id": 3,
+          "device_name": "nd-rtr1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 32,
+          "name": "port1",
+          "device_id": 4,
+          "device_name": "nd-fw1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/1/"
+    },
+    {
+      "id": 2,
+      "label": "ND-002",
+      "type": "cat6",
+      "color": "2196f3",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 33,
+          "name": "port2",
+          "device_id": 4,
+          "device_name": "nd-fw1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 25,
+          "name": "Te1/0/24",
+          "device_id": 2,
+          "device_name": "nd-core1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/2/"
+    },
+    {
+      "id": 5,
+      "label": "ND-005",
+      "type": "power",
+      "color": "111111",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "power_outlet",
+          "id": 3,
+          "name": "OUT3",
+          "device_id": 5,
+          "device_name": "nd-pdu-nd-r1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "power_port",
+          "id": 4,
+          "name": "PSU1",
+          "device_id": 4,
+          "device_name": "nd-fw1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/5/"
+    }
+  ]
+}

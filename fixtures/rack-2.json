@@ -1,0 +1,565 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "rack": {
+    "id": 2,
+    "site_id": 1,
+    "location_id": 1,
+    "name": "ND-R2",
+    "status": "active",
+    "u_height": 42,
+    "starting_unit": 1,
+    "desc_units": false,
+    "iso_x": 3,
+    "iso_y": 2,
+    "iso_facing": "S",
+    "latitude": null,
+    "longitude": null,
+    "last_updated": "2026-11-07T09:00:00Z",
+    "netbox_url": "http://netbox.example.invalid/dcim/racks/2/"
+  },
+  "devices": [
+    {
+      "id": 6,
+      "name": "nd-pp-nd-r2",
+      "role": {
+        "id": 5,
+        "slug": "patch-panel",
+        "name": "Patch panel",
+        "color": "9e9e9e"
+      },
+      "device_type": {
+        "id": 6,
+        "manufacturer": "Example Networks",
+        "model": "EX-PP24",
+        "slug": "ex-pp24",
+        "u_height": 1,
+        "is_full_depth": false
+      },
+      "site_id": 1,
+      "location_id": 1,
+      "rack_id": 2,
+      "position": 42,
+      "face": "front",
+      "status": "active",
+      "primary_ip": null,
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/6/"
+    },
+    {
+      "id": 7,
+      "name": "nd-acc-nd-r2",
+      "role": {
+        "id": 1,
+        "slug": "switch",
+        "name": "Switch",
+        "color": "2196f3"
+      },
+      "device_type": {
+        "id": 2,
+        "manufacturer": "Example Networks",
+        "model": "EX-A2400",
+        "slug": "ex-a2400",
+        "u_height": 1,
+        "is_full_depth": false
+      },
+      "site_id": 1,
+      "location_id": 1,
+      "rack_id": 2,
+      "position": 40,
+      "face": "front",
+      "status": "active",
+      "primary_ip": "192.0.2.10/24",
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/7/"
+    },
+    {
+      "id": 8,
+      "name": "nd-pdu-nd-r2",
+      "role": {
+        "id": 6,
+        "slug": "pdu",
+        "name": "PDU",
+        "color": "795548"
+      },
+      "device_type": {
+        "id": 7,
+        "manufacturer": "Example Power",
+        "model": "EX-PDU16",
+        "slug": "ex-pdu16",
+        "u_height": 0,
+        "is_full_depth": false
+      },
+      "site_id": 1,
+      "location_id": 1,
+      "rack_id": 2,
+      "position": null,
+      "face": null,
+      "status": "active",
+      "primary_ip": null,
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/8/"
+    },
+    {
+      "id": 9,
+      "name": "nd-srv01",
+      "role": {
+        "id": 4,
+        "slug": "server",
+        "name": "Server",
+        "color": "4caf50"
+      },
+      "device_type": {
+        "id": 5,
+        "manufacturer": "Example Compute",
+        "model": "EX-S2",
+        "slug": "ex-s2",
+        "u_height": 2,
+        "is_full_depth": true
+      },
+      "site_id": 1,
+      "location_id": 1,
+      "rack_id": 2,
+      "position": 10,
+      "face": "front",
+      "status": "active",
+      "primary_ip": "192.0.2.101/24",
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/9/"
+    },
+    {
+      "id": 10,
+      "name": "nd-srv02",
+      "role": {
+        "id": 4,
+        "slug": "server",
+        "name": "Server",
+        "color": "4caf50"
+      },
+      "device_type": {
+        "id": 5,
+        "manufacturer": "Example Compute",
+        "model": "EX-S2",
+        "slug": "ex-s2",
+        "u_height": 2,
+        "is_full_depth": true
+      },
+      "site_id": 1,
+      "location_id": 1,
+      "rack_id": 2,
+      "position": 12,
+      "face": "front",
+      "status": "active",
+      "primary_ip": "192.0.2.102/24",
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/10/"
+    },
+    {
+      "id": 11,
+      "name": "nd-srv03",
+      "role": {
+        "id": 4,
+        "slug": "server",
+        "name": "Server",
+        "color": "4caf50"
+      },
+      "device_type": {
+        "id": 5,
+        "manufacturer": "Example Compute",
+        "model": "EX-S2",
+        "slug": "ex-s2",
+        "u_height": 2,
+        "is_full_depth": true
+      },
+      "site_id": 1,
+      "location_id": 1,
+      "rack_id": 2,
+      "position": 14,
+      "face": "front",
+      "status": "active",
+      "primary_ip": "192.0.2.103/24",
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/11/"
+    }
+  ],
+  "cables": [
+    {
+      "id": 6,
+      "label": "ND-006",
+      "type": "mmf-om4",
+      "color": "00bcd4",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 65,
+          "name": "Te1/1/1",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 2,
+          "name": "Te1/0/1",
+          "device_id": 2,
+          "device_name": "nd-core1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/6/"
+    },
+    {
+      "id": 7,
+      "label": "ND-007",
+      "type": "mmf-om4",
+      "color": "00bcd4",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 66,
+          "name": "Te1/1/2",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 3,
+          "name": "Te1/0/2",
+          "device_id": 2,
+          "device_name": "nd-core1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/7/"
+    },
+    {
+      "id": 8,
+      "label": "ND-008",
+      "type": "cat6",
+      "color": null,
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 68,
+          "name": "eth0",
+          "device_id": 9,
+          "device_name": "nd-srv01",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 40,
+          "name": "Gi1/0/1",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/8/"
+    },
+    {
+      "id": 9,
+      "label": "ND-009",
+      "type": "cat6",
+      "color": null,
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 69,
+          "name": "eth1",
+          "device_id": 9,
+          "device_name": "nd-srv01",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 41,
+          "name": "Gi1/0/2",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/9/"
+    },
+    {
+      "id": 10,
+      "label": "ND-010",
+      "type": "cat6",
+      "color": null,
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 71,
+          "name": "eth0",
+          "device_id": 10,
+          "device_name": "nd-srv02",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 42,
+          "name": "Gi1/0/3",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/10/"
+    },
+    {
+      "id": 11,
+      "label": "ND-011",
+      "type": "cat6",
+      "color": null,
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 72,
+          "name": "eth1",
+          "device_id": 10,
+          "device_name": "nd-srv02",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 43,
+          "name": "Gi1/0/4",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/11/"
+    },
+    {
+      "id": 12,
+      "label": "ND-012",
+      "type": "cat6",
+      "color": null,
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 74,
+          "name": "eth0",
+          "device_id": 11,
+          "device_name": "nd-srv03",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 44,
+          "name": "Gi1/0/5",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/12/"
+    },
+    {
+      "id": 13,
+      "label": "ND-013",
+      "type": "cat6",
+      "color": null,
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 75,
+          "name": "eth1",
+          "device_id": 11,
+          "device_name": "nd-srv03",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 45,
+          "name": "Gi1/0/6",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/13/"
+    },
+    {
+      "id": 33,
+      "label": "ND-033",
+      "type": "cat6",
+      "color": "9c27b0",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 67,
+          "name": "bmc",
+          "device_id": 9,
+          "device_name": "nd-srv01",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 59,
+          "name": "Gi1/0/20",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/33/"
+    },
+    {
+      "id": 34,
+      "label": "ND-034",
+      "type": "cat6",
+      "color": "9c27b0",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 70,
+          "name": "bmc",
+          "device_id": 10,
+          "device_name": "nd-srv02",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 60,
+          "name": "Gi1/0/21",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/34/"
+    },
+    {
+      "id": 35,
+      "label": "ND-035",
+      "type": "cat6",
+      "color": "9c27b0",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 73,
+          "name": "bmc",
+          "device_id": 11,
+          "device_name": "nd-srv03",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "interface",
+          "id": 61,
+          "name": "Gi1/0/22",
+          "device_id": 7,
+          "device_name": "nd-acc-nd-r2",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 1
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/35/"
+    }
+  ]
+}

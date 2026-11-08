@@ -1,0 +1,74 @@
+{
+  "reason": "fixture example",
+  "ops": [
+    {
+      "op": "move_rack",
+      "target": {
+        "kind": "rack",
+        "id": 2
+      },
+      "fields": {
+        "iso_x": 4,
+        "iso_y": 3
+      },
+      "if_unmodified_since": "2026-11-07T09:00:00Z"
+    },
+    {
+      "op": "create_rack",
+      "client_ref": "newrack",
+      "target": {
+        "kind": "rack",
+        "id": null
+      },
+      "fields": {
+        "site_id": 1,
+        "location_id": 1,
+        "name": "ND-R5",
+        "u_height": 42,
+        "iso_x": 9,
+        "iso_y": 2,
+        "iso_facing": "S"
+      }
+    },
+    {
+      "op": "place_device",
+      "target": {
+        "kind": "device",
+        "id": 27
+      },
+      "fields": {
+        "rack_id": "@newrack",
+        "position": 20,
+        "face": "front"
+      }
+    },
+    {
+      "op": "unplace_device",
+      "target": {
+        "kind": "device",
+        "id": 9
+      },
+      "fields": {}
+    },
+    {
+      "op": "update_fields",
+      "target": {
+        "kind": "device",
+        "id": 2
+      },
+      "fields": {
+        "primary_ip": "192.0.2.99/24"
+      }
+    },
+    {
+      "op": "move_rack",
+      "target": {
+        "kind": "rack",
+        "id": "@newrack"
+      },
+      "fields": {
+        "iso_facing": "E"
+      }
+    }
+  ]
+}

@@ -1,0 +1,1801 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://rackwalker.invalid/contracts/scene.schema.json",
+  "title": "RackWalker scene contract",
+  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.0.0 (first public contract of World of Confusion: RackWalker). Change only by contract change; see contracts/README.md.",
+  "$comment": "contract_version=2.0.0",
+  "$defs": {
+    "Id": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "NetBox primary key."
+    },
+    "NullableId": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1
+    },
+    "Timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "RFC 3339 / ISO 8601 with offset, e.g. 2026-11-07T10:00:00Z."
+    },
+    "NullableTimestamp": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "format": "date-time"
+    },
+    "Latitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": -90,
+      "maximum": 90
+    },
+    "Longitude": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": -180,
+      "maximum": 180
+    },
+    "IsoCoord": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": -4096,
+      "maximum": 4096,
+      "description": "Tile coordinate on the parent grid; null = not placed yet (the engine auto-lays out, deterministically, and never writes that back unless the user drags)."
+    },
+    "IsoSize": {
+      "type": [
+        "integer",
+        "null"
+      ],
+      "minimum": 1,
+      "maximum": 256,
+      "description": "Size in tiles; null = engine default."
+    },
+    "IsoFacing": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "enum": [
+        "N",
+        "E",
+        "S",
+        "W",
+        null
+      ],
+      "description": "Grid direction the front faces. N = -y (screen up-right), E = +x (screen down-right), S = +y (screen down-left), W = -x (screen up-left). See contracts/iso.md."
+    },
+    "ThemeId": {
+      "type": "string",
+      "enum": [
+        "debug",
+        "industrial-robotic",
+        "farm",
+        "business",
+        "pagodas-nature"
+      ]
+    },
+    "NetboxUrl": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Absolute link to the object in the NetBox web UI (for 'open in NetBox'); null when unknown."
+    },
+    "PortKind": {
+      "type": "string",
+      "enum": [
+        "interface",
+        "front_port",
+        "rear_port",
+        "console_port",
+        "console_server_port",
+        "power_port",
+        "power_outlet",
+        "power_feed",
+        "circuit_termination"
+      ],
+      "description": "Short name of the NetBox termination model (dcim.interface -> interface, dcim.frontport -> front_port, circuits.circuittermination -> circuit_termination, ...). (kind, id) is unique; id alone is not."
+    },
+    "Meta": {
+      "type": "object",
+      "description": "Present on every scene/device/trace response.",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "generated_at",
+        "netbox_version",
+        "source"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "const": "2.0.0"
+        },
+        "generated_at": {
+          "$ref": "#/$defs/Timestamp"
+        },
+        "netbox_version": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Version reported by NetBox /api/status/, e.g. 4.7.4; null for fixtures."
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "netbox",
+            "cache",
+            "fixture"
+          ],
+          "description": "cache = served from the proxy read cache."
+        }
+      }
+    },
+    "Site": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "slug",
+        "name",
+        "status",
+        "latitude",
+        "longitude",
+        "iso_theme",
+        "description",
+        "last_updated",
+        "netbox_url"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "description": "NetBox status value: planned|staging|active|decommissioning|retired (sites may define more)."
+        },
+        "latitude": {
+          "$ref": "#/$defs/Latitude"
+        },
+        "longitude": {
+          "$ref": "#/$defs/Longitude"
+        },
+        "iso_theme": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ThemeId"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Custom field iso_theme; null = app default theme."
+        },
+        "description": {
+          "type": "string"
+        },
+        "last_updated": {
+          "$ref": "#/$defs/NullableTimestamp"
+        },
+        "netbox_url": {
+          "$ref": "#/$defs/NetboxUrl"
+        }
+      }
+    },
+    "SiteCounts": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "locations",
+        "racks",
+        "devices",
+        "unracked_devices",
+        "cables"
+      ],
+      "properties": {
+        "locations": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "racks": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "devices": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unracked_devices": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Devices in the site with rack_id null or position null (0U devices count here too)."
+        },
+        "cables": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Cables with at least one termination in the site."
+        }
+      }
+    },
+    "Location": {
+      "type": "object",
+      "description": "A NetBox Location, drawn as a room. iso_* are custom fields; coordinates are tiles on the site grid.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "site_id",
+        "parent_id",
+        "name",
+        "slug",
+        "iso_x",
+        "iso_y",
+        "iso_w",
+        "iso_h",
+        "iso_facing",
+        "latitude",
+        "longitude",
+        "last_updated",
+        "netbox_url"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "parent_id": {
+          "$ref": "#/$defs/NullableId",
+          "description": "Parent location (NetBox locations nest); null = top level."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1
+        },
+        "iso_x": {
+          "$ref": "#/$defs/IsoCoord"
+        },
+        "iso_y": {
+          "$ref": "#/$defs/IsoCoord"
+        },
+        "iso_w": {
+          "$ref": "#/$defs/IsoSize"
+        },
+        "iso_h": {
+          "$ref": "#/$defs/IsoSize"
+        },
+        "iso_facing": {
+          "$ref": "#/$defs/IsoFacing",
+          "description": "Side of the room that has the door."
+        },
+        "latitude": {
+          "$ref": "#/$defs/Latitude",
+          "description": "Custom field iso_latitude (optional room GPS)."
+        },
+        "longitude": {
+          "$ref": "#/$defs/Longitude",
+          "description": "Custom field iso_longitude."
+        },
+        "last_updated": {
+          "$ref": "#/$defs/NullableTimestamp"
+        },
+        "netbox_url": {
+          "$ref": "#/$defs/NetboxUrl"
+        }
+      }
+    },
+    "Rack": {
+      "type": "object",
+      "description": "A NetBox Rack. One tile footprint. iso_x/iso_y are tiles on the location grid (relative to the location origin) or on the site grid when location_id is null.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "site_id",
+        "location_id",
+        "name",
+        "status",
+        "u_height",
+        "starting_unit",
+        "desc_units",
+        "iso_x",
+        "iso_y",
+        "iso_facing",
+        "latitude",
+        "longitude",
+        "last_updated",
+        "netbox_url"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "location_id": {
+          "$ref": "#/$defs/NullableId"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "description": "reserved|available|planned|active|deprecated"
+        },
+        "u_height": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "starting_unit": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Number of the lowest U (NetBox default 1)."
+        },
+        "desc_units": {
+          "type": "boolean",
+          "description": "true when units are numbered top to bottom."
+        },
+        "iso_x": {
+          "$ref": "#/$defs/IsoCoord"
+        },
+        "iso_y": {
+          "$ref": "#/$defs/IsoCoord"
+        },
+        "iso_facing": {
+          "$ref": "#/$defs/IsoFacing",
+          "description": "Direction the rack front faces."
+        },
+        "latitude": {
+          "$ref": "#/$defs/Latitude",
+          "description": "Custom field iso_latitude."
+        },
+        "longitude": {
+          "$ref": "#/$defs/Longitude",
+          "description": "Custom field iso_longitude."
+        },
+        "last_updated": {
+          "$ref": "#/$defs/NullableTimestamp"
+        },
+        "netbox_url": {
+          "$ref": "#/$defs/NetboxUrl"
+        }
+      }
+    },
+    "Role": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "slug",
+        "name",
+        "color"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "slug": {
+          "type": "string",
+          "description": "Sprite choice keys off the slug: switch, router, firewall, server, patch-panel, pdu (others fall back to device_<n>u)."
+        },
+        "name": {
+          "type": "string"
+        },
+        "color": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{6}$",
+          "description": "NetBox role colour, lower-case hex without #."
+        }
+      }
+    },
+    "DeviceType": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "manufacturer",
+        "model",
+        "slug",
+        "u_height",
+        "is_full_depth"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "slug": {
+          "type": "string"
+        },
+        "u_height": {
+          "type": "number",
+          "minimum": 0,
+          "multipleOf": 0.5,
+          "description": "0 = zero-U (side mounted, e.g. vertical PDU)."
+        },
+        "is_full_depth": {
+          "type": "boolean"
+        }
+      }
+    },
+    "Device": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "name",
+        "role",
+        "device_type",
+        "site_id",
+        "location_id",
+        "rack_id",
+        "position",
+        "face",
+        "status",
+        "primary_ip",
+        "last_updated",
+        "netbox_url"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "NetBox allows unnamed devices."
+        },
+        "role": {
+          "$ref": "#/$defs/Role"
+        },
+        "device_type": {
+          "$ref": "#/$defs/DeviceType"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "location_id": {
+          "$ref": "#/$defs/NullableId"
+        },
+        "rack_id": {
+          "$ref": "#/$defs/NullableId",
+          "description": "null = not in a rack (unracked)."
+        },
+        "position": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0.5,
+          "multipleOf": 0.5,
+          "description": "Lowest U occupied; null with rack_id set = zero-U / non-racked in that rack."
+        },
+        "face": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "front",
+            "rear",
+            null
+          ]
+        },
+        "status": {
+          "type": "string",
+          "description": "offline|active|planned|staged|failed|inventory|decommissioning"
+        },
+        "primary_ip": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "CIDR, e.g. 192.0.2.11/24."
+        },
+        "last_updated": {
+          "$ref": "#/$defs/NullableTimestamp"
+        },
+        "netbox_url": {
+          "$ref": "#/$defs/NetboxUrl"
+        }
+      }
+    },
+    "Termination": {
+      "type": "object",
+      "description": "One end of a cable or a trace hop.",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "name",
+        "device_id",
+        "device_name",
+        "circuit_id",
+        "circuit_cid",
+        "site_id"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/PortKind"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Port name; for a circuit termination the side, A or Z."
+        },
+        "device_id": {
+          "$ref": "#/$defs/NullableId"
+        },
+        "device_name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "circuit_id": {
+          "$ref": "#/$defs/NullableId"
+        },
+        "circuit_cid": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "site_id": {
+          "$ref": "#/$defs/NullableId",
+          "description": "Lets the engine see that a cable leaves the site."
+        }
+      }
+    },
+    "Interface": {
+      "type": "object",
+      "description": "Any cable-able port of a device (an interface in the wide sense); kind also covers patch-panel front/rear ports, console and power ports.",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "device_id",
+        "name",
+        "type",
+        "enabled",
+        "mgmt_only",
+        "description",
+        "cable_id",
+        "link_peers",
+        "connected_endpoint"
+      ],
+      "properties": {
+        "kind": {
+          "$ref": "#/$defs/PortKind"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "device_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "NetBox type value, e.g. 1000base-t, 10gbase-x-sfpp, 8p8c, iec-60320-c14."
+        },
+        "enabled": {
+          "type": "boolean",
+          "description": "Always true for kinds without an enabled flag."
+        },
+        "mgmt_only": {
+          "type": "boolean",
+          "description": "Always false for kinds other than interface."
+        },
+        "description": {
+          "type": "string"
+        },
+        "cable_id": {
+          "$ref": "#/$defs/NullableId"
+        },
+        "link_peers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Termination"
+          },
+          "description": "The far side of this port's own cable (one hop)."
+        },
+        "connected_endpoint": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Termination"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "End of the whole path through patch panels/circuits (NetBox connected_endpoints[0]); null if the path is incomplete or the kind has none."
+        }
+      }
+    },
+    "CableRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "type",
+        "color",
+        "status"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "cat6, mmf-om4, smf-os2, dac-passive, power, ... (NetBox cable type)."
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{6}$",
+          "description": "Lower-case hex without #; null = theme wire colour."
+        },
+        "status": {
+          "type": "string",
+          "description": "connected|planned|decommissioning"
+        }
+      }
+    },
+    "Cable": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "type",
+        "color",
+        "status",
+        "length",
+        "length_unit",
+        "a_terminations",
+        "b_terminations",
+        "netbox_url"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "type": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "color": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "pattern": "^[0-9a-f]{6}$"
+        },
+        "status": {
+          "type": "string"
+        },
+        "length": {
+          "type": [
+            "number",
+            "null"
+          ],
+          "minimum": 0
+        },
+        "length_unit": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "enum": [
+            "km",
+            "m",
+            "cm",
+            "mi",
+            "ft",
+            "in",
+            null
+          ]
+        },
+        "a_terminations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Termination"
+          }
+        },
+        "b_terminations": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/Termination"
+          }
+        },
+        "netbox_url": {
+          "$ref": "#/$defs/NetboxUrl"
+        }
+      }
+    },
+    "TraceHop": {
+      "type": "object",
+      "description": "One segment of NetBox's /trace/: near end(s) -> cable -> far end(s).",
+      "additionalProperties": false,
+      "required": [
+        "near_end",
+        "cable",
+        "far_end"
+      ],
+      "properties": {
+        "near_end": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Termination"
+          }
+        },
+        "cable": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/CableRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "null for a segment with no cable (e.g. a circuit's provider network)."
+        },
+        "far_end": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Termination"
+          },
+          "description": "Empty when the path stops here."
+        }
+      }
+    },
+    "CableTrace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "origin",
+        "hops",
+        "is_complete",
+        "is_split"
+      ],
+      "properties": {
+        "origin": {
+          "$ref": "#/$defs/Termination"
+        },
+        "hops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/TraceHop"
+          },
+          "description": "In order from the origin. A port with no cable (NetBox /trace/ returns []) has hops [], is_complete false, is_split false; the origin is still set."
+        },
+        "is_complete": {
+          "type": "boolean",
+          "description": "The path reaches an endpoint (interface, console/power endpoint, provider network)."
+        },
+        "is_split": {
+          "type": "boolean",
+          "description": "The path fans out (e.g. a rear port with several positions); hops stop at the split."
+        }
+      }
+    },
+    "WorldSite": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "site",
+        "counts"
+      ],
+      "properties": {
+        "site": {
+          "$ref": "#/$defs/Site"
+        },
+        "counts": {
+          "$ref": "#/$defs/SiteCounts"
+        }
+      }
+    },
+    "WorldLink": {
+      "type": "object",
+      "description": "Aggregated connectivity between two sites, drawn as one overworld wire. a_site_id < b_site_id.",
+      "additionalProperties": false,
+      "required": [
+        "a_site_id",
+        "b_site_id",
+        "cable_ids",
+        "circuits"
+      ],
+      "properties": {
+        "a_site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "b_site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "cable_ids": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Id"
+          },
+          "description": "Cables whose two ends are in these two sites."
+        },
+        "circuits": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "id",
+              "cid",
+              "provider",
+              "type",
+              "status"
+            ],
+            "properties": {
+              "id": {
+                "$ref": "#/$defs/Id"
+              },
+              "cid": {
+                "type": "string"
+              },
+              "provider": {
+                "type": "string"
+              },
+              "type": {
+                "type": "string"
+              },
+              "status": {
+                "type": "string"
+              }
+            },
+            "title": "WorldCircuit"
+          }
+        }
+      }
+    },
+    "HealthResponse": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "app_version",
+        "contract_version",
+        "write_enabled",
+        "netbox"
+      ],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "degraded",
+            "down"
+          ],
+          "description": "ok = NetBox reachable, supported and answered /api/status/ within 2 s; degraded = reachable but unsupported version, or /api/status/ took longer than 2 s (slow); down = unreachable (no answer within 5 s, or not HTTP 200)."
+        },
+        "app_version": {
+          "type": "string"
+        },
+        "contract_version": {
+          "type": "string",
+          "const": "2.0.0"
+        },
+        "write_enabled": {
+          "type": "boolean",
+          "description": "true only when the proxy runs with WRITE_ENABLED=1."
+        },
+        "netbox": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "url",
+            "reachable",
+            "version",
+            "supported"
+          ],
+          "properties": {
+            "url": {
+              "type": "string",
+              "description": "NetBox base URL (no token, ever)."
+            },
+            "reachable": {
+              "type": "boolean"
+            },
+            "version": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "supported": {
+              "type": "boolean",
+              "description": "Version is in the supported range (4.7.x for contract 2.0.0)."
+            }
+          },
+          "title": "HealthNetbox"
+        }
+      }
+    },
+    "WorldResponse": {
+      "type": "object",
+      "description": "GET /api/scene/world. Feeds zoom level 'world'.",
+      "additionalProperties": false,
+      "required": [
+        "meta",
+        "sites",
+        "links"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "sites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorldSite"
+          }
+        },
+        "links": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/WorldLink"
+          }
+        }
+      }
+    },
+    "SiteScene": {
+      "type": "object",
+      "description": "GET /api/scene/site/{id}. Feeds zoom levels 'site' and 'room' (room = filter by location_id client-side).",
+      "additionalProperties": false,
+      "required": [
+        "meta",
+        "site",
+        "locations",
+        "racks",
+        "devices",
+        "cables"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "site": {
+          "$ref": "#/$defs/Site"
+        },
+        "locations": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Location"
+          }
+        },
+        "racks": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Rack"
+          }
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Device"
+          },
+          "description": "All devices of the site, racked or not."
+        },
+        "cables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Cable"
+          },
+          "description": "Cables with at least one termination in the site; terminations elsewhere carry their own site_id."
+        }
+      }
+    },
+    "RackScene": {
+      "type": "object",
+      "description": "GET /api/scene/rack/{id}. Feeds zoom level 'rack'.",
+      "additionalProperties": false,
+      "required": [
+        "meta",
+        "rack",
+        "devices",
+        "cables"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "rack": {
+          "$ref": "#/$defs/Rack"
+        },
+        "devices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Device"
+          },
+          "description": "Devices with rack_id = this rack (position null = zero-U)."
+        },
+        "cables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Cable"
+          },
+          "description": "Cables touching any device in the rack."
+        }
+      }
+    },
+    "DeviceInfo": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "serial",
+        "asset_tag",
+        "platform",
+        "description",
+        "comments",
+        "tags",
+        "custom_fields"
+      ],
+      "properties": {
+        "serial": {
+          "type": "string"
+        },
+        "asset_tag": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "platform": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "description": {
+          "type": "string"
+        },
+        "comments": {
+          "type": "string"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Tag slugs."
+        },
+        "custom_fields": {
+          "type": "object",
+          "description": "NetBox custom_fields as returned (open map).",
+          "additionalProperties": true
+        }
+      }
+    },
+    "DeviceDetail": {
+      "type": "object",
+      "description": "GET /api/device/{id}. Feeds zoom level 'device' and the info panel.",
+      "additionalProperties": false,
+      "required": [
+        "meta",
+        "device",
+        "info",
+        "interfaces",
+        "cables"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "device": {
+          "$ref": "#/$defs/Device"
+        },
+        "info": {
+          "$ref": "#/$defs/DeviceInfo"
+        },
+        "interfaces": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Interface"
+          },
+          "description": "All ports of every kind. Ordered by kind in PortKind enum order (interface, front_port, rear_port, console_port, ...), then within a kind in the order NetBox's own list endpoint returns them for this device (`GET /api/dcim/<ports>/?device_id=<id>`, NetBox's natural order, e.g. Gi1/0/24, Te1/1/1, mgmt0)."
+        },
+        "cables": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Cable"
+          },
+          "description": "Cables attached to any of these ports."
+        }
+      }
+    },
+    "TraceResponse": {
+      "type": "object",
+      "description": "GET /api/trace/{kind}/{id}.",
+      "additionalProperties": false,
+      "required": [
+        "meta",
+        "trace"
+      ],
+      "properties": {
+        "meta": {
+          "$ref": "#/$defs/Meta"
+        },
+        "trace": {
+          "$ref": "#/$defs/CableTrace"
+        }
+      }
+    },
+    "Ref": {
+      "type": "string",
+      "pattern": "^@[A-Za-z0-9_-]{1,64}$",
+      "description": "Reference to an object created by an earlier op in the same ChangeSet: '@' + that op's client_ref."
+    },
+    "IdOrRef": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/Id"
+        },
+        {
+          "$ref": "#/$defs/Ref"
+        }
+      ]
+    },
+    "OpCommon": {
+      "type": "object",
+      "properties": {
+        "client_ref": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9_-]{1,64}$",
+          "description": "Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'."
+        },
+        "if_unmodified_since": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        }
+      }
+    },
+    "MoveRackOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "move_rack"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "rack"
+            },
+            "id": {
+              "$ref": "#/$defs/IdOrRef"
+            }
+          },
+          "title": "MoveRackTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "minProperties": 1,
+          "properties": {
+            "location_id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/IdOrRef"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "iso_x": {
+              "$ref": "#/$defs/IsoCoord"
+            },
+            "iso_y": {
+              "$ref": "#/$defs/IsoCoord"
+            },
+            "iso_facing": {
+              "$ref": "#/$defs/IsoFacing"
+            }
+          },
+          "title": "MoveRackFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "PlaceDeviceOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "place_device"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "PlaceDeviceTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "rack_id",
+            "position",
+            "face"
+          ],
+          "properties": {
+            "rack_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "position": {
+              "type": "number",
+              "minimum": 0.5,
+              "multipleOf": 0.5
+            },
+            "face": {
+              "type": "string",
+              "enum": [
+                "front",
+                "rear"
+              ]
+            }
+          },
+          "title": "PlaceDeviceFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "UnplaceDeviceOp": {
+      "type": "object",
+      "description": "Clears rack, position and face; the device stays in its site and location.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "unplace_device"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "UnplaceDeviceTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "maxProperties": 0,
+          "title": "UnplaceDeviceFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateRackOp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_rack"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "rack"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateRackTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "site_id",
+            "name"
+          ],
+          "properties": {
+            "site_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "location_id": {
+              "$ref": "#/$defs/NullableId"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "status": {
+              "type": "string",
+              "default": "planned"
+            },
+            "u_height": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "default": 42
+            },
+            "iso_x": {
+              "$ref": "#/$defs/IsoCoord"
+            },
+            "iso_y": {
+              "$ref": "#/$defs/IsoCoord"
+            },
+            "iso_facing": {
+              "$ref": "#/$defs/IsoFacing"
+            }
+          },
+          "title": "CreateRackFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "UpdateFieldsOp": {
+      "type": "object",
+      "description": "Edit plain fields. The proxy accepts only the whitelist in contracts/api.md#update_fields per kind and answers validation_failed for anything else.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "update_fields"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "site",
+                "location",
+                "rack",
+                "device",
+                "cable",
+                "interface"
+              ]
+            },
+            "id": {
+              "$ref": "#/$defs/IdOrRef"
+            }
+          },
+          "title": "UpdateFieldsTarget"
+        },
+        "fields": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[a-z][a-z0-9_]{0,63}$"
+          },
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "boolean",
+              "null"
+            ]
+          },
+          "title": "UpdateFieldsFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "ChangeOp": {
+      "oneOf": [
+        {
+          "$ref": "#/$defs/MoveRackOp"
+        },
+        {
+          "$ref": "#/$defs/PlaceDeviceOp"
+        },
+        {
+          "$ref": "#/$defs/UnplaceDeviceOp"
+        },
+        {
+          "$ref": "#/$defs/CreateRackOp"
+        },
+        {
+          "$ref": "#/$defs/UpdateFieldsOp"
+        }
+      ]
+    },
+    "ChangeSet": {
+      "type": "object",
+      "description": "Body of POST /api/changes/preview and POST /api/changes/apply. Ops run in order.",
+      "additionalProperties": false,
+      "required": [
+        "ops"
+      ],
+      "properties": {
+        "ops": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 100,
+          "items": {
+            "$ref": "#/$defs/ChangeOp"
+          }
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "Optional note; the proxy logs it with the apply."
+        }
+      }
+    },
+    "FieldDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "field",
+        "before",
+        "after"
+      ],
+      "properties": {
+        "field": {
+          "type": "string"
+        },
+        "before": {},
+        "after": {}
+      }
+    },
+    "OpResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "op",
+        "client_ref",
+        "target",
+        "status",
+        "before",
+        "after",
+        "diff",
+        "error"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "move_rack",
+            "place_device",
+            "unplace_device",
+            "create_rack",
+            "update_fields"
+          ]
+        },
+        "client_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "site",
+                "location",
+                "rack",
+                "device",
+                "cable",
+                "interface"
+              ]
+            },
+            "id": {
+              "oneOf": [
+                {
+                  "$ref": "#/$defs/Id"
+                },
+                {
+                  "$ref": "#/$defs/Ref"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Resolved target. Preview: the request's id, or the request's '@<client_ref>' string unchanged when the target was created by an earlier op of the same ChangeSet; null for create_rack. Apply: always the real NetBox id."
+            }
+          },
+          "title": "OpTarget"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "ok",
+            "no_change",
+            "error",
+            "skipped"
+          ],
+          "description": "skipped = not run because an earlier op failed during apply."
+        },
+        "before": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "The touched fields before (contract field names); null for create_rack.",
+          "additionalProperties": true
+        },
+        "after": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "The touched fields after (predicted in preview, read back from NetBox after apply).",
+          "additionalProperties": true
+        },
+        "diff": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/FieldDiff"
+          }
+        },
+        "error": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ErrorBody"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "ChangeResult": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "applied",
+        "write_enabled",
+        "ops"
+      ],
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": [
+            "preview",
+            "apply"
+          ]
+        },
+        "applied": {
+          "type": "boolean",
+          "description": "true only if mode=apply and every op ended ok/no_change."
+        },
+        "write_enabled": {
+          "type": "boolean"
+        },
+        "ops": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/OpResult"
+          }
+        }
+      }
+    },
+    "ErrorCode": {
+      "type": "string",
+      "enum": [
+        "bad_request",
+        "not_found",
+        "validation_failed",
+        "conflict",
+        "write_disabled",
+        "netbox_unreachable",
+        "netbox_error",
+        "unsupported_netbox_version",
+        "internal"
+      ]
+    },
+    "ErrorBody": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "code",
+        "message",
+        "details"
+      ],
+      "properties": {
+        "code": {
+          "$ref": "#/$defs/ErrorCode"
+        },
+        "message": {
+          "type": "string",
+          "description": "One human sentence. Never contains the NetBox token."
+        },
+        "details": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "description": "Machine detail, e.g. {\"field\": \"position\", \"reason\": \"U12 occupied by device 31\"}.",
+          "additionalProperties": true
+        }
+      }
+    },
+    "ErrorResponse": {
+      "type": "object",
+      "description": "The one error shape for every non-2xx response.",
+      "additionalProperties": false,
+      "required": [
+        "error"
+      ],
+      "properties": {
+        "error": {
+          "$ref": "#/$defs/ErrorBody"
+        },
+        "request_id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

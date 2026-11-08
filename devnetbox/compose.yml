@@ -1,0 +1,105 @@
+# Throwaway dev NetBox v4.7.4 (netbox-docker 5.1.1) for RackWalker. Synthetic data only.
+# Driven by devnetbox/nb.sh on the local Docker daemon (or a remote one via DOCKER_HOST). env_file paths are read on
+# the client, so per-stack secrets stay in devnetbox/.stacks/<project>.env on this machine (gitignored, mode 600).
+# NetBox 4.7 needs PostgreSQL >= 15 and Redis/Valkey >= 6 (docs/installation/index.md in the image). We pin the current
+# majors that netbox-docker 5.1.1 itself uses (postgres:18-alpine, valkey:9.1-alpine) at exact tags + digests
+# (checked 7 Nov 2026). postgres 18 keeps PGDATA at /var/lib/postgresql/18/docker, so the volume mounts /var/lib/postgresql.
+# v2 API tokens need API_TOKEN_PEPPER_1 (in the stack env file, see nb.sh).
+# NetBox image pinned by tag and digest (netbox.original-tag v4.7.4-5.1.1, release.yaml 4.7.4).
+# Several stacks run side by side: each has its own compose project name (volumes, network) and host port.
+name: ${NB_PROJECT:?set NB_PROJECT}
+
+x-netbox: &netbox
+  image: docker.io/netboxcommunity/netbox:v4.7.4-5.1.1@sha256:69cd72d0b0e4928a90940a7011954aaa7060c75fddd8dc6cea2f19407bae45b1
+  user: "999:0"
+  env_file: ["./.stacks/${NB_PROJECT}.env"]
+  environment:
+    DB_HOST: postgres
+    DB_NAME: netbox
+    DB_USER: netbox
+    REDIS_HOST: redis
+    REDIS_DATABASE: "0"
+    REDIS_CACHE_HOST: redis-cache
+    REDIS_CACHE_DATABASE: "1"
+    ALLOWED_HOSTS: "*"
+    SKIP_SUPERUSER: "false"
+    SUPERUSER_NAME: admin
+    SUPERUSER_EMAIL: admin@example.invalid
+    RELEASE_CHECK_URL: ""
+    GRANIAN_WORKERS: "2"
+    MEDIA_ROOT: /opt/netbox/netbox/media
+  volumes: [netbox-media:/opt/netbox/netbox/media:rw]
+  labels: {rackwalker.devnetbox: "${NB_PROJECT}"}
+  restart: unless-stopped
+
+services:
+  netbox:
+    <<: *netbox
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      redis-cache: {condition: service_healthy}
+    ports: ["${NB_PORT:?set NB_PORT}:8080"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:8080/login/ -o /dev/null || exit 1"]
+      start_period: 600s
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy: {resources: {limits: {cpus: "2", memory: 2g}}}
+
+  netbox-worker:
+    <<: *netbox
+    depends_on:
+      netbox: {condition: service_healthy}
+    command: [/opt/netbox/venv/bin/python, /opt/netbox/netbox/manage.py, rqworker]
+    healthcheck:
+      test: ["CMD-SHELL", "ps -aux | grep -v grep | grep -q rqworker || exit 1"]
+      start_period: 30s
+      interval: 15s
+    deploy: {resources: {limits: {cpus: "1", memory: 1g}}}
+
+  postgres:
+    image: docker.io/library/postgres:18.6-alpine@sha256:123b17998ccaf47e53b502e8c6a1e79afd8f579c6f3eec83c563da026f957395
+    env_file: ["./.stacks/${NB_PROJECT}.env"]
+    environment: {POSTGRES_DB: netbox, POSTGRES_USER: netbox}
+    volumes: [netbox-postgres:/var/lib/postgresql]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -q -t 2 -d netbox -U netbox"]
+      start_period: 30s
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    labels: {rackwalker.devnetbox: "${NB_PROJECT}"}
+    restart: unless-stopped
+    deploy: {resources: {limits: {cpus: "2", memory: 1g}}}
+
+  redis:
+    image: docker.io/valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+    env_file: ["./.stacks/${NB_PROJECT}.env"]
+    command: [sh, -c, 'exec valkey-server --appendonly yes --requirepass "$$REDIS_PASSWORD"']
+    volumes: [netbox-redis:/data]
+    healthcheck:
+      test: ["CMD-SHELL", '[ "$$(valkey-cli --no-auth-warning -a "$$REDIS_PASSWORD" ping)" = PONG ]']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    labels: {rackwalker.devnetbox: "${NB_PROJECT}"}
+    restart: unless-stopped
+
+  redis-cache:
+    image: docker.io/valkey/valkey:9.1.3-alpine@sha256:bf09d58e96d6b4524a15396b65b242bbe18beebbcc15a04d8ee75ddac62fae0b
+    env_file: ["./.stacks/${NB_PROJECT}.env"]
+    command: [sh, -c, 'exec valkey-server --requirepass "$$REDIS_CACHE_PASSWORD"']
+    healthcheck:
+      test: ["CMD-SHELL", '[ "$$(valkey-cli --no-auth-warning -a "$$REDIS_CACHE_PASSWORD" ping)" = PONG ]']
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    labels: {rackwalker.devnetbox: "${NB_PROJECT}"}
+    restart: unless-stopped
+
+volumes:
+  netbox-media:
+  netbox-postgres:
+  netbox-redis:

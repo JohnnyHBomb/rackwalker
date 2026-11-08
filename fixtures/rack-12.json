@@ -1,0 +1,151 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "rack": {
+    "id": 12,
+    "site_id": 3,
+    "location_id": 8,
+    "name": "EE-C1",
+    "status": "active",
+    "u_height": 24,
+    "starting_unit": 1,
+    "desc_units": false,
+    "iso_x": 1,
+    "iso_y": 1,
+    "iso_facing": "N",
+    "latitude": 52.7842,
+    "longitude": 1.4116,
+    "last_updated": "2026-11-07T09:00:00Z",
+    "netbox_url": "http://netbox.example.invalid/dcim/racks/12/"
+  },
+  "devices": [
+    {
+      "id": 58,
+      "name": "ee-pp-ee-c1",
+      "role": {
+        "id": 5,
+        "slug": "patch-panel",
+        "name": "Patch panel",
+        "color": "9e9e9e"
+      },
+      "device_type": {
+        "id": 6,
+        "manufacturer": "Example Networks",
+        "model": "EX-PP24",
+        "slug": "ex-pp24",
+        "u_height": 1,
+        "is_full_depth": false
+      },
+      "site_id": 3,
+      "location_id": 8,
+      "rack_id": 12,
+      "position": 24,
+      "face": "front",
+      "status": "active",
+      "primary_ip": null,
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/58/"
+    },
+    {
+      "id": 59,
+      "name": "ee-acc-ee-c1",
+      "role": {
+        "id": 1,
+        "slug": "switch",
+        "name": "Switch",
+        "color": "2196f3"
+      },
+      "device_type": {
+        "id": 2,
+        "manufacturer": "Example Networks",
+        "model": "EX-A2400",
+        "slug": "ex-a2400",
+        "u_height": 1,
+        "is_full_depth": false
+      },
+      "site_id": 3,
+      "location_id": 8,
+      "rack_id": 12,
+      "position": 22,
+      "face": "front",
+      "status": "active",
+      "primary_ip": "203.0.113.30/24",
+      "last_updated": "2026-11-07T09:00:00Z",
+      "netbox_url": "http://netbox.example.invalid/dcim/devices/59/"
+    }
+  ],
+  "cables": [
+    {
+      "id": 75,
+      "label": "EE-020",
+      "type": "mmf-om4",
+      "color": "00bcd4",
+      "status": "connected",
+      "length": null,
+      "length_unit": null,
+      "a_terminations": [
+        {
+          "kind": "interface",
+          "id": 421,
+          "name": "Te1/1/1",
+          "device_id": 59,
+          "device_name": "ee-acc-ee-c1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 3
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "front_port",
+          "id": 265,
+          "name": "1",
+          "device_id": 58,
+          "device_name": "ee-pp-ee-c1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 3
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/75/"
+    },
+    {
+      "id": 76,
+      "label": "EE-021",
+      "type": "smf-os2",
+      "color": "ffeb3b",
+      "status": "connected",
+      "length": 45,
+      "length_unit": "m",
+      "a_terminations": [
+        {
+          "kind": "rear_port",
+          "id": 265,
+          "name": "1",
+          "device_id": 58,
+          "device_name": "ee-pp-ee-c1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 3
+        }
+      ],
+      "b_terminations": [
+        {
+          "kind": "rear_port",
+          "id": 193,
+          "name": "1",
+          "device_id": 42,
+          "device_name": "ee-pp1",
+          "circuit_id": null,
+          "circuit_cid": null,
+          "site_id": 3
+        }
+      ],
+      "netbox_url": "http://netbox.example.invalid/dcim/cables/76/"
+    }
+  ]
+}

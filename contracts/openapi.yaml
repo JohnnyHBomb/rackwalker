@@ -1,0 +1,105 @@
+# RackWalker HTTP API between web/ and proxy/. Contract 2.0.0.
+# Bodies are defined once in scene.schema.json ($defs); this file only wires paths to them.
+# Prose, rules and the update_fields whitelist: api.md. Examples: ../fixtures/ (index.json maps request -> file).
+openapi: 3.1.0
+info:
+  title: RackWalker proxy API
+  version: 2.0.0
+  license: {name: Apache-2.0, identifier: Apache-2.0}
+servers:
+  - url: http://localhost:8710
+    description: proxy in dev (vite proxies /api to it)
+components:
+  responses:
+    Error:
+      description: Any non-2xx answer. One shape everywhere.
+      content:
+        application/json:
+          schema: {$ref: "scene.schema.json#/$defs/ErrorResponse"}
+  parameters:
+    Id:
+      in: path
+      required: true
+      schema: {type: integer, minimum: 1}
+paths:
+  /api/health:
+    get:
+      summary: Proxy and NetBox health; tells the UI whether writes are enabled.
+      responses:
+        "200":
+          description: Always 200 while the proxy runs; status says ok|degraded|down.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/HealthResponse"}}}
+  /api/scene/world:
+    get:
+      summary: All sites with GPS and summary counts, plus inter-site links. Zoom level world.
+      responses:
+        "200":
+          description: World scene.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/WorldResponse"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/scene/site/{site_id}:
+    get:
+      summary: Locations, racks, devices and cables of one site. Zoom levels site and room.
+      parameters:
+        - {name: site_id, $ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Site scene.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/SiteScene"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/scene/rack/{rack_id}:
+    get:
+      summary: One rack with its devices and their cables. Zoom level rack.
+      parameters:
+        - {name: rack_id, $ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Rack scene.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/RackScene"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/device/{device_id}:
+    get:
+      summary: Full device detail including every port. Zoom level device and the info panel.
+      parameters:
+        - {name: device_id, $ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Device detail.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/DeviceDetail"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/trace/{kind}/{port_id}:
+    get:
+      summary: NetBox cable trace from one port, normalised to ordered hops. /api/trace/interface/{id} is the common case.
+      parameters:
+        - name: kind
+          in: path
+          required: true
+          schema: {$ref: "scene.schema.json#/$defs/PortKind"}
+        - {name: port_id, $ref: "#/components/parameters/Id"}
+      responses:
+        "200":
+          description: Trace.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/TraceResponse"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/changes/preview:
+    post:
+      summary: Validate a ChangeSet against live NetBox and return the per-op before/after diff. Never writes.
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeSet"}}}
+      responses:
+        "200":
+          description: Preview (mode=preview, applied=false). Per-op errors are inside ops[], not an HTTP error.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeResult"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/changes/apply:
+    post:
+      summary: Preview, then write the ops in order. 403 write_disabled unless the proxy runs with WRITE_ENABLED=1.
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeSet"}}}
+      responses:
+        "200":
+          description: Apply result (mode=apply). applied=true only if every op ended ok/no_change. If the validation pass finds any op error, nothing is written and the result carries applied=false with the per-op errors (still HTTP 200).
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeResult"}}}
+        default: {$ref: "#/components/responses/Error"}

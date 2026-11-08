@@ -1,0 +1,11 @@
+{
+  "error": {
+    "code": "not_found",
+    "message": "Site 999 does not exist.",
+    "details": {
+      "kind": "site",
+      "id": 999
+    }
+  },
+  "request_id": "fixture-0002"
+}

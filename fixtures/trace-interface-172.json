@@ -1,0 +1,23 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "trace": {
+    "origin": {
+      "kind": "interface",
+      "id": 172,
+      "name": "mgmt0",
+      "device_id": 26,
+      "device_name": "nd-acc-nd-c1",
+      "circuit_id": null,
+      "circuit_cid": null,
+      "site_id": 1
+    },
+    "hops": [],
+    "is_complete": false,
+    "is_split": false
+  }
+}

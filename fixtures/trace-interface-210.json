@@ -1,0 +1,117 @@
+{
+  "meta": {
+    "contract_version": "2.0.0",
+    "generated_at": "2026-11-07T10:00:00Z",
+    "netbox_version": null,
+    "source": "fixture"
+  },
+  "trace": {
+    "origin": {
+      "kind": "interface",
+      "id": 210,
+      "name": "xe-0/1/0",
+      "device_id": 31,
+      "device_name": "ww-rtr1",
+      "circuit_id": null,
+      "circuit_cid": null,
+      "site_id": 2
+    },
+    "hops": [
+      {
+        "near_end": [
+          {
+            "kind": "interface",
+            "id": 210,
+            "name": "xe-0/1/0",
+            "device_id": 31,
+            "device_name": "ww-rtr1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 2
+          }
+        ],
+        "cable": {
+          "id": 79,
+          "label": "WW-015",
+          "type": "smf-os2",
+          "color": "ffeb3b",
+          "status": "connected"
+        },
+        "far_end": [
+          {
+            "kind": "circuit_termination",
+            "id": 2,
+            "name": "Z",
+            "device_id": null,
+            "device_name": null,
+            "circuit_id": 1,
+            "circuit_cid": "EXC-1001",
+            "site_id": 2
+          }
+        ]
+      },
+      {
+        "near_end": [
+          {
+            "kind": "circuit_termination",
+            "id": 2,
+            "name": "Z",
+            "device_id": null,
+            "device_name": null,
+            "circuit_id": 1,
+            "circuit_cid": "EXC-1001",
+            "site_id": 2
+          }
+        ],
+        "cable": null,
+        "far_end": [
+          {
+            "kind": "circuit_termination",
+            "id": 1,
+            "name": "A",
+            "device_id": null,
+            "device_name": null,
+            "circuit_id": 1,
+            "circuit_cid": "EXC-1001",
+            "site_id": 1
+          }
+        ]
+      },
+      {
+        "near_end": [
+          {
+            "kind": "circuit_termination",
+            "id": 1,
+            "name": "A",
+            "device_id": null,
+            "device_name": null,
+            "circuit_id": 1,
+            "circuit_cid": "EXC-1001",
+            "site_id": 1
+          }
+        ],
+        "cable": {
+          "id": 78,
+          "label": "ND-042",
+          "type": "smf-os2",
+          "color": "ffeb3b",
+          "status": "connected"
+        },
+        "far_end": [
+          {
+            "kind": "interface",
+            "id": 30,
+            "name": "xe-0/1/0",
+            "device_id": 3,
+            "device_name": "nd-rtr1",
+            "circuit_id": null,
+            "circuit_cid": null,
+            "site_id": 1
+          }
+        ]
+      }
+    ],
+    "is_complete": true,
+    "is_split": false
+  }
+}
