@@ -1,0 +1,37 @@
+# CI: GitHub-hosted runners only (public repo: never a self-hosted runner).
+name: ci
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      CI: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.15"
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "26"
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: bootstrap
+        run: make bootstrap
+      - name: test (proxy pytest, web typecheck + vitest, fixture/schema/codegen freshness)
+        run: make test
+      - name: build web
+        run: make build
+      - name: e2e browser (chromium + system deps, GitHub-hosted runner)
+        run: cd web && npx playwright install --with-deps chromium
+        env:
+          PLAYWRIGHT_BROWSERS_PATH: ${{ github.workspace }}/.ms-playwright
+      - name: test-e2e (golden screenshots per zoom level, interaction, perf)
+        run: make test-e2e
+        env:
+          PERF_MIN_FPS: "0" # report-only on shared runners (software GL); the 50 fps gate runs locally
