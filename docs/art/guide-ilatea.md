@@ -22,7 +22,10 @@ offers lore, hints and XP spending.
   - a shimmering mesh of silver and light.
 - Aegis: a translucent mantle or shield of hexagonal energy tiles, pulsing gently.
 - Spear-stylus: a spear whose tip is a glowing stylus that traces data glyphs and constellations in the air.
-- Owl: a small holographic owl on her shoulder, or tiny glowing owls released from her palm.
+- Owls: two, and both are field guides opened from the menu:
+  - **Byte**: blue and white, holographic sheen. Covers commands, command patterns and hardening.
+  - **Nocti**: brown and black, a little rumpled, a hands-on look. Covers hardware setup and best practice.
+  Each one needs a portrait (64x64), a perched sprite and a flying sprite.
 - Setting cues: cracked marble columns among server racks with blinking lights; olive branches with
   fibre-optic roots; a soft, flowing stream of light behind her.
 
