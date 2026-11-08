@@ -13,6 +13,14 @@ const TOKEN = process.env.NB_ADMIN_TOKEN;
 const DEVICE = 3;
 const TO = 20;
 
+// A write-enabled proxy writes only for a signed-in player: sign in as the admin user before each test (the editor
+// then sends the session's CSRF header), so the changelog names that player.
+test.beforeEach(async ({ page }) => {
+  if (!TOKEN) return;
+  const r = await page.request.post('/api/game/session', { data: { token: TOKEN }, headers: { 'X-RackWalker-CSRF': 'sign-in' } });
+  expect(r.status(), await r.text()).toBe(200);
+});
+
 async function nb<T>(path: string): Promise<T> {
   const r = await fetch(`${NB}${path}`, { headers: { Authorization: `Bearer ${TOKEN}`, Accept: 'application/json' } });
   expect(r.status, path).toBe(200);
@@ -67,7 +75,7 @@ test('live: drag a device to a new U, apply, see it in NetBox, its changelog and
     `/api/core/object-changes/?changed_object_type=dcim.device&changed_object_id=${DEVICE}&ordering=-time&limit=1`,
   );
   const e = log.results[0]!;
-  expect(e).toMatchObject({ action: { value: 'update' }, user_name: 'rackwalker-proxy', message: 'rackwalker: live round trip: nd-rtr1 to U20' });
+  expect(e).toMatchObject({ action: { value: 'update' }, user_name: 'rackwalker-proxy', message: 'rackwalker (admin): live round trip: nd-rtr1 to U20' });
   expect([Number(e.prechange_data.position), Number(e.postchange_data.position)]).toEqual([36, TO]);
   expect(new Date(e.time).getTime()).toBeGreaterThan(t0.getTime() - 60_000);
   console.log(`changelog: ${e.time} ${e.user_name} ${e.action.value} dcim.device ${DEVICE} position ${e.prechange_data.position} -> ${e.postchange_data.position} "${e.message}"`);

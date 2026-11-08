@@ -40,6 +40,126 @@
         "username": "labeller",
         "display_name": "Lee Labeller"
       }
+    },
+    {
+      "token": "nbt_fixtureplayer6.synthetic-not-a-secret",
+      "user": {
+        "id": 16,
+        "username": "linker",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer7.synthetic-not-a-secret",
+      "user": {
+        "id": 17,
+        "username": "racker",
+        "display_name": "Mo Racker"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer8.synthetic-not-a-secret",
+      "user": {
+        "id": 18,
+        "username": "patcher",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer9.synthetic-not-a-secret",
+      "user": {
+        "id": 19,
+        "username": "tagger",
+        "display_name": "Kit Tagger"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer10.synthetic-not-a-secret",
+      "user": {
+        "id": 20,
+        "username": "planner",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer11.synthetic-not-a-secret",
+      "user": {
+        "id": 21,
+        "username": "auditor",
+        "display_name": "Ana Auditor"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer12.synthetic-not-a-secret",
+      "user": {
+        "id": 22,
+        "username": "cooler",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer13.synthetic-not-a-secret",
+      "user": {
+        "id": 23,
+        "username": "mounter",
+        "display_name": "Sam Mounter"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer14.synthetic-not-a-secret",
+      "user": {
+        "id": 24,
+        "username": "splicer",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer15.synthetic-not-a-secret",
+      "user": {
+        "id": 25,
+        "username": "tester",
+        "display_name": "Jo Tester"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer16.synthetic-not-a-secret",
+      "user": {
+        "id": 26,
+        "username": "cataloguer",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer17.synthetic-not-a-secret",
+      "user": {
+        "id": 27,
+        "username": "surveyor",
+        "display_name": "Pat Surveyor"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer18.synthetic-not-a-secret",
+      "user": {
+        "id": 28,
+        "username": "fixer",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer19.synthetic-not-a-secret",
+      "user": {
+        "id": 29,
+        "username": "scout",
+        "display_name": "Ren Scout"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer20.synthetic-not-a-secret",
+      "user": {
+        "id": 30,
+        "username": "keeper",
+        "display_name": null
+      }
     }
   ]
 }

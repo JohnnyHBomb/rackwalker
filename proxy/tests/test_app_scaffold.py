@@ -110,10 +110,10 @@ def test_write_enabled_only_for_exactly_1(v):
                                      ("rebind.attacker.example:8710", False), ("127.0.0.1.nip.io:8710", False),
                                      ("localhost.attacker.example", False), ("[::1]:8710", False), ("", False)])
 def test_foreign_host_header_refused(host, ok):
-    cl = client(WRITE_ENABLED="1")
+    cl = client(WRITE_ENABLED="1", RACKWALKER_LOCAL_PLAYER="1")
     for method, path in [("GET", "/api/scene/world"), ("GET", "/api/device/2"), ("GET", "/api/health"),
                          ("POST", "/api/changes/preview")]:
-        r = cl.request(method, path, headers={"host": host}, json=load("changes-request.json") if method == "POST" else None)
+        r = cl.request(method, path, headers={"host": host, "X-RackWalker-CSRF": "local"}, json=load("changes-request.json") if method == "POST" else None)
         if ok:
             assert r.status_code == 200, (host, path, r.text)
         else:

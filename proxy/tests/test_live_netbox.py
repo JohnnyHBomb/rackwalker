@@ -41,9 +41,17 @@ def ro(recorder):
 
 
 @pytest.fixture(scope="module")
-def rw():
-    """Write-enabled proxy with the read cache on (default TTL)."""
-    with TestClient(base_url=LOCAL, app=create_app(Settings(URL, TOKEN, True, None))) as cl:
+def rw(tmp_path_factory):
+    """Write-enabled proxy with the read cache on (default TTL). A write-enabled proxy writes only for a signed-in
+    player: the client signs in as the admin user (or, without NETBOX_ADMIN_TOKEN, as the proxy's own user) and sends
+    the session's CSRF header on every request. `cl.player` is that user's name, which the changelog carries."""
+    who = os.environ.get("NETBOX_ADMIN_TOKEN") or TOKEN
+    app = create_app(Settings(URL, TOKEN, True, None, state_dir=tmp_path_factory.mktemp("rw-game")))
+    with TestClient(base_url=LOCAL, app=app) as cl:
+        r = cl.post("/api/game/session", json={"token": who}, headers={"X-RackWalker-CSRF": "sign-in"})
+        assert r.status_code == 200, r.text
+        cl.headers["X-RackWalker-CSRF"] = r.json()["csrf_token"]
+        cl.player = r.json()["player"]["username"]
         yield cl
 
 
@@ -194,7 +202,7 @@ def test_apply_round_trip_live(rw, nbx):
         assert [d["id"] for d in new_scene["devices"]] == [27] and new_scene["rack"]["iso_facing"] == "E"
         # the audit trail: NetBox's changelog has each write with the ChangeSet's reason as its message
         rack2 = _changes(nbx, "dcim.rack", 2)[0]
-        assert rack2["action"]["value"] == "update" and rack2["message"] == "rackwalker: s1a live round trip"
+        assert rack2["action"]["value"] == "update" and rack2["message"] == f"rackwalker ({rw.player}): s1a live round trip"
         assert rack2["postchange_data"]["custom_fields"]["iso_x"] == x0 + 1
         created = _changes(nbx, "dcim.rack", new_id)
         assert [c["action"]["value"] for c in created] == ["update", "create"]
@@ -287,3 +295,17 @@ def test_game_sign_in_as_netbox_users_live(tmp_path, nbx):
     db = (tmp_path / "game.sqlite3").read_bytes()
     assert admin.encode() not in db and TOKEN.encode() not in db
     assert (_count(nbx, "core/object-changes/"), _count(nbx, "users/tokens/")) == (changes0, tokens0)
+
+
+def test_a_write_enabled_proxy_refuses_writes_without_a_signed_in_player_live(tmp_path, ro):
+    """No session, no CSRF header, a foreign Origin: the change routes answer 401 and NetBox is untouched."""
+    before = ro.get("/api/scene/rack/1").json()["rack"]
+    app = create_app(Settings(URL, TOKEN, True, None, cache_ttl=0, state_dir=tmp_path))
+    cs = {"ops": [{"op": "move_rack", "target": {"kind": "rack", "id": 1}, "fields": {"iso_y": (before["iso_y"] or 0) + 1}}],
+          "reason": "no session"}
+    with TestClient(base_url=LOCAL, app=app) as cl:
+        for path in ("/api/changes/apply", "/api/changes/preview"):
+            r = cl.post(path, json=cs, headers={"Origin": "http://localhost:9999"})
+            assert r.status_code == 401 and r.json()["error"]["code"] == "unauthorized", r.text
+    after = ro.get("/api/scene/rack/1").json()["rack"]
+    assert (after["iso_y"], after["last_updated"]) == (before["iso_y"], before["last_updated"])

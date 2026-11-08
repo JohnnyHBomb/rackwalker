@@ -112,7 +112,7 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   in its theme's colours. Walk with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has an arch
   and a marker above it. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
   the back button or the "World" crumb) leaves the building, and you stand in front of its door.
-* **Ilatea** speaks one line on your first visit ("Small things matter") and then lets you act. She speaks again only
+* **Ilatea** speaks one line on your first visit ("Small things matter"; in a NetBox with no sites yet, she asks you to add one) and then lets you act. She speaks again only
   on your first building, or once if you seem stuck on the green, and never repeats herself. She stands on the green
   near the start: walk up to her and press the interact key, or tap her, to ask what to do next. Her lines name your
   own keys, so they stay right after you remap them. Every bubble closes
@@ -121,10 +121,13 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
 * **Menu** (`M` or the button in the corner): talk to Ilatea, the field-guide pages of her owls Byte (commands and
   hardening) and Nocti (hardware and best practice) as placeholders, settings, sign out.
 * **Settings**: Ilatea's hint level (off, low, normal, high), sound (mute, volume; for the music to come), reduce
-  motion (text at once, scene changes cut), and every key remappable (up to three keys per action). Nothing flashes;
+  motion (text at once, scene changes and zooms cut), and every overworld and menu key remappable (up to three keys
+  per action; inside a building the back key follows the remap, the zoom, enter and search keys are fixed for now). Nothing flashes;
   the selected choice and the doors are marked by shapes, not only colour.
 * **Autosave**: your place (overworld tile, or the level and camera inside a building) is saved by the proxy on every
-  change of place, so a reload puts you back where you were. No save points.
+  change of place, so a reload puts you back where you were. No save points. A write that fails (proxy or NetBox down,
+  signed out in another tab) shows a notice at the top, is kept and sent again; "Sign in again" there keeps your place.
+  If the game cannot load, it says why and offers "Try again"; a building that will not open leaves you at its door.
 * **Game state** lives in `data/game.sqlite3` (`RACKWALKER_STATE_DIR` to move it; gitignored), keyed by NetBox user id,
   schema-versioned. It is never written into NetBox. Routes and rules: `contracts/api.md` "Game state".
 * **Dialogue scripts** are data: `web/src/game/scripts/*.json`, schema `contracts/dialogue.schema.json`, checked by
@@ -136,8 +139,12 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
 
 ## The proxy
 
-* Writes to NetBox are refused unless the proxy runs with `WRITE_ENABLED=1`; the default is dry-run. Each write
-  carries the change set's reason as NetBox's `changelog_message` (`rackwalker: <reason>`).
+* Writes to NetBox are refused unless the proxy runs with `WRITE_ENABLED=1`; the default is dry-run. A
+  write-enabled proxy previews and applies only for a signed-in player (sign in through the game first; the editor
+  sends the session's CSRF header), and each write carries the player and the change set's reason as NetBox's
+  `changelog_message` (`rackwalker (<username>): <reason>`). The player's own NetBox permissions are not checked, so
+  run a write-enabled proxy only for people who may edit.
+* No other site may frame the game, the editor or the proxy (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`).
 * Reads are cached per route for `RACKWALKER_CACHE_TTL` seconds (default 10, `0` = off); an apply clears the cache.
 * In the dev stacks the proxy talks to NetBox as its own user `rackwalker-proxy` (created by
   `devnetbox/proxy_tokens.py`): view on the object types it reads, change on the six it may edit, add on racks;

@@ -12,6 +12,7 @@ from rackwalker_proxy import netbox as nb
 from rackwalker_proxy import scene
 from rackwalker_proxy.app import Settings, create_app
 from rackwalker_proxy.errors import ApiError
+from rackwalker_proxy.game import CSRF_HEADER
 
 from .conftest import LOCAL, load, schema_validator
 from .netbox_replay import RECORDED_HOST, Replay, load as recordings
@@ -148,9 +149,11 @@ def test_path_flattening():
     assert [(s[0][0].kind, s[1].id, s[2][0].kind) for s in segs] == [("interface", 10, "front_port"), ("rear_port", 11, "interface")]
 
 
-# ---- apply through the app, NetBox writes mocked on top of the recorded reads
+# ---- apply through the app, NetBox writes mocked on top of the recorded reads. A write-enabled proxy needs a player:
+# the single-user local mode (player "local") with its CSRF header stands in for a signed-in session here.
 def _app(on_write):
-    return TestClient(base_url=LOCAL, app=create_app(Settings(RECORDED_HOST, TOKEN, True, None, cache_ttl=0), transport=Replay(on_write=on_write)))
+    return TestClient(base_url=LOCAL, headers={CSRF_HEADER: "local"},
+                      app=create_app(Settings(RECORDED_HOST, TOKEN, True, None, cache_ttl=0, local_player=True), transport=Replay(on_write=on_write)))
 
 
 def test_apply_resolves_refs_writes_in_order_and_reads_back():
@@ -178,7 +181,7 @@ def test_apply_resolves_refs_writes_in_order_and_reads_back():
     assert [(m, p) for m, p, _ in writes] == [("PATCH", "/api/dcim/racks/2/"), ("POST", "/api/dcim/racks/"),
                                               ("PATCH", "/api/dcim/devices/27/")]
     assert writes[2][2] == {"rack": 501, "position": 20.0, "face": "front", "location": 1,
-                            "changelog_message": "rackwalker: fixture example"}  # @newrack -> 501
+                            "changelog_message": "rackwalker (local): fixture example"}  # @newrack -> 501
     assert writes[0][2]["custom_fields"] == {"iso_x": 4, "iso_y": 3}
     assert res["ops"][1]["target"]["id"] == 501 and res["ops"][5]["target"]["id"] == 501  # refs shown as real ids
     e = res["ops"][2]["error"]

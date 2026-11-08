@@ -7,10 +7,14 @@ who owns it (GET /api/authentication-check/, NetBox >= 4.3) and forgets the toke
   * it works the same for local, LDAP and SSO NetBox users, and a read-only token is enough.
 The proxy's own least-privilege token still does every NetBox read and write; the player's token is used once.
 
-Session: a random cookie value (HttpOnly, SameSite=Strict, Path=/api/game); only its SHA-256 is stored. Writes need
+Session: a random cookie value (HttpOnly, SameSite=Strict, Path=/api); only its SHA-256 is stored. Writes need
 the session's CSRF token in the X-RackWalker-CSRF header (a custom header cannot be sent cross-site without a CORS
 preflight, which the proxy never grants); sign-in needs the header too, and an Origin header, when sent, must name
 a host the proxy serves.
+
+NetBox writes: when the proxy runs with WRITE_ENABLED=1, the change routes (/api/changes/preview and /apply) need a
+signed-in player and the session's CSRF header as well (`change_player`), and every write names that player in its
+NetBox changelog message. The write itself still uses the proxy's token.
 
 RACKWALKER_LOCAL_PLAYER=1 turns on a single-user local mode (player id 0, no sign-in). It bypasses identity, so it
 is off by default.
@@ -18,6 +22,8 @@ is off by default.
 from __future__ import annotations
 
 import json
+import logging
+import sqlite3
 import threading
 from pathlib import Path
 from collections.abc import Callable
@@ -32,10 +38,13 @@ from fastapi.responses import JSONResponse
 
 from . import schema
 from .errors import ApiError
-from .gamestore import GameStore, Session, StoreError
+from .gamestore import GameStore, Session, StoreError, duplicate_key
 from .netbox import auth_header
 
+log = logging.getLogger("rackwalker_proxy.game")
+
 COOKIE = "rackwalker_session"
+COOKIE_PATH = "/api"
 CSRF_HEADER = "X-RackWalker-CSRF"
 LOCAL_PLAYER = {"id": 0, "username": "local", "display_name": "Local player"}
 Slot = Annotated[str, PathParam(pattern=r"^(auto|1|2|3)$")]
@@ -51,13 +60,11 @@ def _valid(defname: str, body: Any) -> Any:
 
 def check_bindings(settings: dict[str, Any]) -> dict[str, Any]:
     """Refuses settings that bind one key to two actions (the game could not tell which one the player meant)."""
-    seen: dict[str, str] = {}
-    for action, keys in settings["keys"].items():
-        for k in keys:
-            if k in seen and seen[k] != action:
-                raise ApiError("validation_failed", f"Key {k} is bound to both {seen[k]} and {action}.",
-                               {"errors": [{"path": f"/keys/{action}", "message": f"{k} is already bound to {seen[k]}"}]})
-            seen[k] = action
+    dup = duplicate_key(settings["keys"])
+    if dup:
+        k, first, second = dup
+        raise ApiError("validation_failed", f"Key {k} is bound to both {first} and {second}.",
+                       {"errors": [{"path": f"/keys/{second}", "message": f"{k} is already bound to {first}"}]})
     return settings
 
 
@@ -65,6 +72,9 @@ async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTranspor
     """The NetBox user who owns `token`, as a Player body. The token goes only into the Authorization header."""
     if not url:
         raise ApiError("netbox_unreachable", "The proxy has no NetBox configured (NETBOX_URL is empty).")
+    if not (token.isascii() and token.isprintable()):
+        # An HTTP header carries only printable ASCII; NetBox tokens never hold anything else.
+        raise ApiError("unauthorized", "That is not a NetBox token: it has characters NetBox tokens never contain.", None)
     extra = {"transport": transport} if transport is not None else {}
     try:
         async with httpx.AsyncClient(timeout=10, **extra) as hc:
@@ -78,8 +88,11 @@ async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTranspor
     try:
         u = r.json()
         name = " ".join(p for p in (u.get("first_name") or "", u.get("last_name") or "") if p).strip()
-        return {"id": int(u["id"]), "username": str(u["username"])[:150], "display_name": name[:300] or None}
-    except (ValueError, KeyError, TypeError):
+        uid = u["id"]
+        if isinstance(uid, bool) or not isinstance(uid, int) or uid < 1:
+            raise TypeError("id")
+        return {"id": uid, "username": str(u["username"])[:150], "display_name": name[:300] or None}
+    except (ValueError, KeyError, TypeError, AttributeError):
         raise ApiError("netbox_error", "NetBox's sign-in check answered in an unexpected shape.", None) from None
 
 
@@ -106,7 +119,14 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         # Opened on first use, so a proxy that never serves the game never creates the state file.
         with opening:
             if not opened:
-                st = open_store()
+                try:
+                    st = open_store()
+                except (StoreError, sqlite3.DatabaseError) as e:
+                    log.error("game state file cannot be used: %s", e)
+                    newer = isinstance(e, StoreError)
+                    raise ApiError("internal", "The game state file was written by a newer RackWalker: update RackWalker to play."
+                                   if newer else "The game state file cannot be read (damaged or not a SQLite file); the proxy log names it.",
+                                   {"store": "newer_schema" if newer else "unreadable"}) from None
                 if local_player:
                     st.upsert_player(LOCAL_PLAYER["id"], LOCAL_PLAYER["username"], LOCAL_PLAYER["display_name"])
                 opened.append(st)
@@ -141,6 +161,26 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
             raise ApiError("forbidden", f"Game writes need the session's {CSRF_HEADER} header.", None)
         return s.user_id
 
+    def change_player(request: Request) -> str:
+        """The player who asks for a NetBox write (the change routes with WRITE_ENABLED=1): a signed-in session with its
+        CSRF header and a same-host Origin, or the local mode with the header. Their name goes into the changelog."""
+        if not origin_ok(request):
+            raise ApiError("forbidden", "Cross-origin NetBox writes are refused.", None)
+        s = session_of(request)
+        if s is None:
+            if local_player:
+                if request.headers.get(CSRF_HEADER) is None:
+                    raise ApiError("forbidden", f"NetBox writes need the {CSRF_HEADER} header.", None)
+                return LOCAL_PLAYER["username"]
+            raise ApiError("unauthorized", "NetBox writes need a signed-in player: open the game (the page without ?view=) "
+                           "and sign in with your NetBox token.", None)
+        if request.headers.get(CSRF_HEADER) != s.csrf:
+            raise ApiError("forbidden", f"NetBox writes need the session's {CSRF_HEADER} header.", None)
+        p = get_store().player(s.user_id)
+        return p["username"] if p else f"user {s.user_id}"
+
+    app.state.change_player = change_player
+
     def session_body(s: Session | None) -> dict[str, Any]:
         if s is not None:
             return {"signed_in": True, "player": get_store().player(s.user_id), "csrf_token": s.csrf, "local_mode": local_player}
@@ -166,7 +206,7 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         del token, body  # used once, never kept
         value, s, resp_body = await run_in_threadpool(start_session, request.cookies.get(COOKIE), user)
         resp = no_store(JSONResponse(resp_body))
-        resp.set_cookie(COOKIE, value, max_age=int(s.expires_at - get_store().clock()), path="/api/game", httponly=True,
+        resp.set_cookie(COOKIE, value, max_age=int(s.expires_at - get_store().clock()), path=COOKIE_PATH, httponly=True,
                         samesite="strict", secure=cookie_secure)
         return resp
 
@@ -182,7 +222,7 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
             require(request, write=True)
         get_store().end_session(request.cookies.get(COOKIE))
         resp = no_store(JSONResponse(session_body(None)))
-        resp.delete_cookie(COOKIE, path="/api/game", httponly=True, samesite="strict", secure=cookie_secure)
+        resp.delete_cookie(COOKIE, path=COOKIE_PATH, httponly=True, samesite="strict", secure=cookie_secure)
         return resp
 
     def state_of(uid: int) -> dict[str, Any]:

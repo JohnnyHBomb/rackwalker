@@ -299,7 +299,10 @@ def render() -> dict[str, object]:
     # Game routes (contract 2.1.0). They answer from the game store in every mode, fixture mode included, so these
     # bodies are examples for both sides' schema checks, not canned answers ("store": true in the index).
     # players.json: synthetic tokens that fixture mode accepts at sign-in, and the NetBox users they stand for.
-    names = [("walker", "Rae Walker"), ("sorter", None), ("mapper", "Ida Mapper"), ("cabler", None), ("labeller", "Lee Labeller")]
+    names = [("walker", "Rae Walker"), ("sorter", None), ("mapper", "Ida Mapper"), ("cabler", None), ("labeller", "Lee Labeller"),
+             ("linker", None), ("racker", "Mo Racker"), ("patcher", None), ("tagger", "Kit Tagger"), ("planner", None),
+             ("auditor", "Ana Auditor"), ("cooler", None), ("mounter", "Sam Mounter"), ("splicer", None), ("tester", "Jo Tester"),
+             ("cataloguer", None), ("surveyor", "Pat Surveyor"), ("fixer", None), ("scout", "Ren Scout"), ("keeper", None)]
     players = [{"token": f"nbt_fixtureplayer{i}.synthetic-not-a-secret", "user": {"id": 10 + i, "username": u, "display_name": d}}
                for i, (u, d) in enumerate(names, 1)]
     out["players.json"] = {"$comment": "Fixture mode only: synthetic sign-in tokens -> the NetBox user each stands for. Not secrets.",

@@ -51,3 +51,14 @@ describe('vite dev server CORS (server.cors)', () => {
     expect(r.headers.get('access-control-allow-origin')).toBeNull();
   });
 });
+
+// No other site may frame the game or the editor: a framed editor could be steered into a drag and an Apply.
+describe('vite dev server framing', () => {
+  it('every page says it must not be framed', async () => {
+    for (const path of ['/', '/sheet.html', '/?view=rack:1&game=0']) {
+      const r = await fetch(`${base}${path}`);
+      expect(r.headers.get('x-frame-options')).toBe('DENY');
+      expect(r.headers.get('content-security-policy')).toBe("frame-ancestors 'none'");
+    }
+  });
+});

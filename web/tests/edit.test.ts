@@ -372,6 +372,7 @@ describe('HttpChangeApi', () => {
     const seen: RequestInit[] = [];
     const preview = fixture('changes-preview.json');
     const api = new HttpChangeApi('', async (url, init) => {
+      if (url === '/api/game/session') return reply(200, { signed_in: false, player: null, csrf_token: null, local_mode: false })();
       seen.push({ ...init!, body: init!.body });
       expect(url).toBe('/api/changes/preview');
       return reply(200, preview)();
@@ -388,5 +389,33 @@ describe('HttpChangeApi', () => {
       throw new TypeError('fetch failed');
     });
     await expect(down.health()).rejects.toMatchObject({ code: 'netbox_unreachable' });
+  });
+  it('reads the session CSRF token once before the first change request, and again when the proxy refuses it', async () => {
+    const calls: { url: string; csrf: string | null }[] = [];
+    let current = 'tok-1';
+    const api = new HttpChangeApi('', async (url, init) => {
+      const csrf = new Headers(init?.headers).get('X-RackWalker-CSRF');
+      calls.push({ url: String(url), csrf });
+      if (url === '/api/game/session') return reply(200, { signed_in: true, player: null, csrf_token: current, local_mode: false })();
+      if (csrf !== current) return reply(403, { error: { code: 'forbidden', message: 'no', details: null } })();
+      return reply(200, fixture('changes-preview.json'))();
+    });
+    const cs: Parameters<HttpChangeApi["preview"]>[0] = { ops: [move(1, 1, 1).op] };
+    await api.preview(cs);
+    await api.preview(cs);
+    expect(calls.map((c) => `${c.url} ${c.csrf}`)).toEqual(['/api/game/session null', '/api/changes/preview tok-1', '/api/changes/preview tok-1']);
+    current = 'tok-2'; // signed in again in another tab
+    await api.apply(cs);
+    expect(calls.slice(3).map((c) => `${c.url} ${c.csrf}`)).toEqual(['/api/changes/apply tok-1', '/api/game/session null', '/api/changes/apply tok-2']);
+  });
+  it('signed out: the proxy refusal reaches the editor unchanged, with no endless retry', async () => {
+    const urls: string[] = [];
+    const body = { error: { code: 'unauthorized', message: 'NetBox writes need a signed-in player.', details: null } };
+    const api = new HttpChangeApi('', async (url) => {
+      urls.push(String(url));
+      return url === '/api/game/session' ? reply(200, { signed_in: false, player: null, csrf_token: null, local_mode: false })() : reply(401, body)();
+    });
+    await expect(api.apply({ ops: [move(1, 1, 1).op] })).rejects.toMatchObject({ status: 401, code: 'unauthorized', message: body.error.message });
+    expect(urls).toEqual(['/api/game/session', '/api/changes/apply', '/api/game/session']);
   });
 });

@@ -563,16 +563,18 @@ async def preview(client: nb.NetBox, cs: c.ChangeSet) -> list[Planned]:
     return plan(cs.ops, await gather(client, cs.ops))
 
 
-async def apply(client: nb.NetBox, cs: c.ChangeSet, write_enabled: bool) -> c.ChangeResult:
+async def apply(client: nb.NetBox, cs: c.ChangeSet, write_enabled: bool, player: str | None = None) -> c.ChangeResult:
     planned = await preview(client, cs)
     if any(p.status == "error" for p in planned):
         for p in planned:
             if p.status != "error":
                 p.status, p.after = "skipped", None
         return result("apply", planned, write_enabled)
-    log.info("apply: %d ops, reason=%r", len(planned), cs.reason)
-    # NetBox >= 4.4 stores `changelog_message` on each ObjectChange (measured on 4.7.4): the reason lands in the audit trail.
-    message = f"rackwalker: {cs.reason}"[:200] if cs.reason else "rackwalker apply"
+    log.info("apply: %d ops, player=%r, reason=%r", len(planned), player, cs.reason)
+    # NetBox >= 4.4 stores `changelog_message` on each ObjectChange (measured on 4.7.4): the reason lands in the audit
+    # trail. NetBox records the proxy's own user as the author, so the message names the player who asked for the write.
+    who = f"rackwalker ({player})" if player else "rackwalker"
+    message = (f"{who}: {cs.reason}" if cs.reason else f"{who} apply")[:200]
     real: dict[Key, int] = {}
     ids: dict[int, Any] = {}
     written: list[int] = []

@@ -4,7 +4,9 @@ Routes and bodies follow the frozen contract (contracts/api.md, contracts/openap
 Two backends:
   * fixture mode (RACKWALKER_FIXTURES=1 or a directory): serves fixtures/*.json, no NetBox needed;
   * netbox mode (NETBOX_URL + NETBOX_TOKEN): every route reads NetBox through the typed client (netbox.py).
-Apply is refused unless WRITE_ENABLED=1 (dry-run is the default), in every mode.
+Apply is refused unless WRITE_ENABLED=1 (dry-run is the default), in every mode. With WRITE_ENABLED=1 the change routes
+also need a signed-in player and the session's CSRF header (game.py), and each write names that player in NetBox's
+changelog message.
 Reads are cached for RACKWALKER_CACHE_TTL seconds (default 10; 0 = off), keyed by route path; any apply clears it.
 """
 from __future__ import annotations
@@ -23,6 +25,7 @@ from urllib.parse import urlsplit, urlunsplit
 import httpx
 from fastapi import Body, FastAPI, Request
 from fastapi import Path as PathParam
+from fastapi.concurrency import run_in_threadpool
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
@@ -184,6 +187,15 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
                           {"allowed_hosts": sorted(allowed_hosts)}, 400)
         return await call_next(request)
 
+    @app.middleware("http")
+    async def _no_framing(request: Request, call_next):
+        # No other site may frame anything the proxy serves (the docs pages included). Added last, so it
+        # wraps every other middleware and also marks the Host refusal.
+        resp = await call_next(request)
+        resp.headers["X-Frame-Options"] = "DENY"
+        resp.headers["Content-Security-Policy"] = "frame-ancestors 'none'"
+        return resp
+
     @app.exception_handler(ApiError)
     async def _api_error(_: Request, e: ApiError):
         return _error(e.code, e.message, e.details, e.status)
@@ -270,8 +282,14 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             raise ApiError("bad_request", f"Unknown port kind {kind!r}.", {"allowed": PORT_KINDS})
         return await read(f"/api/trace/{kind}/{port_id}", lambda nb: scene.trace(nb, kind, port_id))
 
+    async def writer(request: Request) -> str:
+        """The signed-in player behind a change request (the store may touch the disk, so off the event loop)."""
+        return await run_in_threadpool(app.state.change_player, request)
+
     @app.post("/api/changes/preview", response_model=c.ChangeResult)
-    async def preview(body: ChangeBody):
+    async def preview(request: Request, body: ChangeBody):
+        if s.write_enabled:
+            await writer(request)  # a write-enabled proxy shows NetBox's state for writes only to a signed-in player
         cs = changeset(body)
         if s.fixtures_dir:
             return fixture("POST", "/api/changes/preview")
@@ -279,14 +297,15 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
         return JSONResponse(_dump(changes.result("preview", planned, s.write_enabled)))
 
     @app.post("/api/changes/apply", response_model=c.ChangeResult)
-    async def apply(body: ChangeBody):
+    async def apply(request: Request, body: ChangeBody):
         if not s.write_enabled:
             raise ApiError("write_disabled", "Apply is refused: the proxy runs in dry-run mode (WRITE_ENABLED is not 1).")
+        player = await writer(request)
         if s.fixtures_dir:
             raise ApiError("bad_request", "Fixture mode never writes.")
         cs = changeset(body)
         try:
-            res = await changes.apply(need_client(), cs, s.write_enabled)
+            res = await changes.apply(need_client(), cs, s.write_enabled, player=player)
         finally:
             cache.clear()  # also after a refused or partial apply: never serve pre-write state as current
         return JSONResponse(_dump(res))

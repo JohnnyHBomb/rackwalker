@@ -57,12 +57,12 @@ Every non-2xx response is an `ErrorResponse`:
 | `validation_failed` | 422 | request body does not match the schema (FastAPI body validation is mapped to this) |
 | `conflict` | 409 | reserved for whole-request conflicts; per-op conflicts go inside `ChangeResult.ops[].error` |
 | `write_disabled` | 403 | `POST /api/changes/apply` while `WRITE_ENABLED` is not `1` |
-| `unauthorized` | 401 | a game route without a valid session; a sign-in token NetBox does not accept |
-| `forbidden` | 403 | a game write without the session's `X-RackWalker-CSRF` header, or with a foreign `Origin` |
+| `unauthorized` | 401 | a game route without a valid session; a sign-in token NetBox does not accept (or that holds characters no NetBox token has); a change route of a write-enabled proxy without a signed-in player |
+| `forbidden` | 403 | a game write, or a change request to a write-enabled proxy, without the session's `X-RackWalker-CSRF` header or with a foreign `Origin` |
 | `netbox_unreachable` | 502 | NetBox did not answer (timeout, connection refused) |
 | `netbox_error` | 502 | NetBox answered 4xx/5xx to a read the proxy expected to work |
 | `unsupported_netbox_version` | 502 | NetBox is not 4.7.x |
-| `internal` | 500 (501 for not-yet-built routes) | anything else |
+| `internal` | 500 (501 for not-yet-built routes) | anything else; also a game state file the proxy cannot use (`details.store`: `newer_schema` or `unreadable`, the message says which) |
 
 `message` is one human sentence; `details` is machine detail or `null`. `request_id` is always a string
 (never `null`; the schema forbids it).
@@ -114,6 +114,12 @@ Semantics:
   `last_updated`) is `conflict` with `details.field: "if_unmodified_since"`, `last_updated` and
   `if_unmodified_since`; its message names the object for people and carries no ids or raw timestamps. Per-op problems are `status: "error"` with an
   `ErrorBody`; the HTTP status is still 200.
+* **Who may write.** A proxy with `WRITE_ENABLED=1` answers both change routes only for a signed-in player (the
+  game's session cookie, see "Game state") with the session's `X-RackWalker-CSRF` header and no foreign `Origin`:
+  without a session 401 `unauthorized`, without the header 403 `forbidden`. In the single-user local mode the header
+  alone is enough (`local`). A dry-run proxy previews for anyone, as before. The write itself still uses the proxy's
+  NetBox token, so NetBox records the proxy's user as the author; the changelog message names the player (below).
+  The player's own NetBox permissions are not checked: give a write-enabled proxy only to people who may edit.
 * **Apply** is refused with 403 `write_disabled` unless the proxy runs with `WRITE_ENABLED=1` (dry-run is the
   default). Otherwise it runs the preview first; if any op errors, nothing is written and the answer is 200
   with `applied: false`. Then it writes ops in order. If a write fails, later ops are `skipped` and
@@ -133,8 +139,8 @@ Semantics:
   `reason: "U<n> occupied by device <id>"`, `device_id`); outside the rack's units, a zero-U device, a rack in
   another site -> `validation_failed`.
 * `status` per op: `ok`, `no_change` (target already had those values), `error`, `skipped`.
-* The NetBox changelog is the audit trail; the proxy logs `reason` with each apply and sends it to NetBox as
-  each write's `changelog_message` (`"rackwalker: <reason>"`, at most 200 characters).
+* The NetBox changelog is the audit trail; the proxy logs the player and `reason` with each apply and sends both to
+  NetBox as each write's `changelog_message` (`"rackwalker (<username>): <reason>"`, at most 200 characters).
 
 ## Caching (proxy-internal, visible only as `meta.source`)
 
@@ -155,9 +161,11 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   than a password: no password ever reaches the game; NetBox has no side-effect-free password check over the API
   (token provisioning creates a token); and it works the same for local, LDAP and SSO users. A read-only token is
   enough. NetBox answering 401/403 -> `unauthorized`.
-* **Session.** A random cookie `rackwalker_session` (HttpOnly, SameSite=Strict, Path=/api/game, 7 days;
-  `RACKWALKER_COOKIE_SECURE=1` adds Secure behind https). Only its SHA-256 is stored, with the player id and a CSRF
-  token. Sign-out deletes it.
+* **Session.** A random cookie `rackwalker_session` (HttpOnly, SameSite=Strict, Path=/api, 7 days;
+  `RACKWALKER_COOKIE_SECURE=1` adds Secure behind https). Path `/api` so the change routes see it too (writes need a
+  player). Only its SHA-256 is stored, with the player id and a CSRF token. Sign-out deletes it, and signing in again
+  ends the previous session of that browser. The session is not checked against NetBox again after sign-in: a user
+  deactivated in NetBox keeps an open session until it expires or they sign out.
 * **CSRF.** Every write (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/game/`) needs the `X-RackWalker-CSRF` header: the
   session's `csrf_token` (from `GameSession`), or any value on sign-in. A custom header cannot be sent cross-site
   without a CORS preflight, which the proxy never grants; an `Origin` header, when present, must name an allowed host.
@@ -166,6 +174,11 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   change of place) and `1`-`3`; each write bumps `rev`; last write wins. Settings default as in
   `game-settings.json`. Flags: names `^[a-z0-9][a-z0-9_.:-]{0,63}$`, values boolean, integer or short string, at most
   500 per player. `PUT /api/game/settings` refuses a key bound to two actions (`validation_failed`).
+* **Stored rows are checked when they are read**, not only when they are written, so `GET /api/game/state` always
+  answers a valid `GameState`: settings keep every part that is still valid and take the default for the rest (a
+  setting added in a later version reaches existing players with its default; keys bound to two actions fall back to
+  the default keys); a save slot or flag that does not match the contract is left out of the answer and logged (the
+  row stays in the file until the next write to it).
 * **The file is created at the first sign-in**, not before: `GET /api/game/session` without a session cookie answers
   `signed_in: false` without touching it. Store work runs off the request loop, so a slow disk delays only the game
   call that is waiting for it, never the scene routes or `/api/health`.

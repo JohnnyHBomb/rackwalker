@@ -47,7 +47,7 @@ def test_sign_in_sets_httponly_strict_cookie_and_never_stores_the_token(tmp_path
     cookie = cl.cookies.get(COOKIE)
     raw = [h for k, h in cl.post("/api/game/session", json={"token": PLAYER_TOKEN}, headers={CSRF_HEADER: "x"}).headers.multi_items()
            if k == "set-cookie"][0]
-    assert "HttpOnly" in raw and "SameSite=strict" in raw and "Path=/api/game" in raw
+    assert "HttpOnly" in raw and "SameSite=strict" in raw and "Path=/api;" in raw
     assert cookie
     db = (tmp_path / "game.sqlite3").read_bytes() + b"".join(p.read_bytes() for p in tmp_path.glob("game.sqlite3-*"))
     assert PLAYER_TOKEN.encode() not in db

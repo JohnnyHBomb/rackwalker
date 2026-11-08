@@ -106,7 +106,7 @@ paths:
         default: {$ref: "#/components/responses/Error"}
   /api/changes/apply:
     post:
-      summary: Preview, then write the ops in order. 403 write_disabled unless the proxy runs with WRITE_ENABLED=1.
+      summary: Preview, then write the ops in order. 403 write_disabled unless the proxy runs with WRITE_ENABLED=1; then it needs a signed-in player (session cookie, else 401) and the session's X-RackWalker-CSRF header (else 403).
       requestBody:
         required: true
         content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeSet"}}}

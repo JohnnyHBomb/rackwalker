@@ -92,7 +92,7 @@ Rules that both sides rely on:
 | Version | Date | Change |
 |---|---|---|
 | 2.0.0 | 2026-11-08 | First public contract of World of Confusion: RackWalker. Bodies cover NetBox data only (sites, locations, racks, devices, ports, cables, traces, change sets); targets NetBox 4.7.x. |
-| 2.1.0 | 2026-11-08 | Additive: the game shell. Seven `/api/game/*` routes (sign-in as a NetBox user, sign-out, game state, save slots, settings, flags), their `$defs` (`GameSession`, `SignInRequest`, `Player`, `GameState`, `GameSettings`, `KeyBindings`, `SaveData`, `SaveSlot`, `Flags`, `FlagsPatch`, ...), error codes `unauthorized` (401) and `forbidden` (403), fixtures `game-*.json`, `players.json`, `error-unauthorized.json`. Scene and change bodies are unchanged apart from `contract_version`. |
+| 2.1.0 | 2026-11-08 | Additive: the game shell. Seven `/api/game/*` routes (sign-in as a NetBox user, sign-out, game state, save slots, settings, flags), their `$defs` (`GameSession`, `SignInRequest`, `Player`, `GameState`, `GameSettings`, `KeyBindings`, `SaveData`, `SaveSlot`, `Flags`, `FlagsPatch`, ...), error codes `unauthorized` (401) and `forbidden` (403), fixtures `game-*.json`, `players.json`, `error-unauthorized.json`. Scene and change bodies are unchanged apart from `contract_version`. Rules (`api.md`): with `WRITE_ENABLED=1` the change routes need a signed-in player and the session's CSRF header, and the changelog message names the player (`rackwalker (<username>): <reason>`); the session cookie's path is `/api`; stored game rows are checked on read. |
 
 ## NetBox 4.7 notes
 

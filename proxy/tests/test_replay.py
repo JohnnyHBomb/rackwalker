@@ -10,6 +10,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from rackwalker_proxy.app import Settings, create_app
+from rackwalker_proxy.game import CSRF_HEADER
 
 from .conftest import INDEX, LOCAL, load, schema_validator
 from .netbox_replay import RECORDED_HOST, Replay, load as recordings, strip
@@ -19,8 +20,10 @@ TOKEN = "nbt_abcdef123456.0123456789abcdef0123456789abcdef01234567"
 
 
 def client(transport: httpx.AsyncBaseTransport, write: bool = False, ttl: float = 0) -> TestClient:
-    """The proxy on recorded NetBox answers."""
-    return TestClient(base_url=LOCAL, app=create_app(Settings(RECORDED_HOST, TOKEN, write, None, cache_ttl=ttl), transport=transport))
+    """The proxy on recorded NetBox answers. A write-enabled one runs in the single-user local mode (player "local"),
+    which stands in for a signed-in session, and sends that mode's CSRF header."""
+    return TestClient(base_url=LOCAL, headers={CSRF_HEADER: "local"} if write else None,
+                      app=create_app(Settings(RECORDED_HOST, TOKEN, write, None, cache_ttl=ttl, local_player=write), transport=transport))
 
 
 @pytest.fixture
@@ -196,8 +199,8 @@ def test_read_started_before_an_apply_is_not_cached_after_it():
         def on_write(req):
             return httpx.Response(200, json=recordings()[RACK2]["json"]["results"][0], request=req)
 
-        app = create_app(Settings(RECORDED_HOST, TOKEN, True, None, cache_ttl=60), transport=Slow(on_write=on_write))
-        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=LOCAL) as ac:
+        app = create_app(Settings(RECORDED_HOST, TOKEN, True, None, cache_ttl=60, local_player=True), transport=Slow(on_write=on_write))
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url=LOCAL, headers={CSRF_HEADER: "local"}) as ac:
             slow_read = asyncio.create_task(ac.get("/api/scene/rack/2"))
             await asyncio.wait_for(entered.wait(), 5)
             res = (await ac.post("/api/changes/apply", json=DESCRIBE_RACK2)).json()

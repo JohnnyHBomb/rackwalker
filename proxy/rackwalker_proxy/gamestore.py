@@ -7,11 +7,18 @@ dialogue flags. Sign-in sessions live here too, stored only as a SHA-256 of the 
 The schema is versioned with `PRAGMA user_version`; `MIGRATIONS[i]` takes the file from version i to i + 1 inside one
 transaction. A file written by a newer RackWalker (user_version above what this code knows) is refused, never
 rewritten. The default location is `<repo>/data/game.sqlite3` (gitignored); RACKWALKER_STATE_DIR moves it.
+
+Rows are JSON checked against the contract when they are read, not only when they are written, so a damaged row or
+one in an older shape never reaches the game: settings keep every part that is still valid and take the default for
+the rest (a newly added setting therefore reaches existing players with its default); a save slot or flag that does
+not match the contract is left out of the answer (the row stays in the file) and logged.
 """
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
+import logging
 import re
 import secrets
 import sqlite3
@@ -21,6 +28,10 @@ from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+
+from . import schema
+
+log = logging.getLogger("rackwalker_proxy.gamestore")
 
 MIGRATIONS: list[str] = [
     # 0 -> 1: players, sessions, saves, settings, flags.
@@ -78,6 +89,58 @@ DEFAULT_SETTINGS: dict[str, Any] = {
 
 class StoreError(Exception):
     pass
+
+
+def _json(text: str) -> tuple[bool, Any]:
+    try:
+        return True, json.loads(text)
+    except (ValueError, TypeError):
+        return False, None
+
+
+def duplicate_key(keys: dict[str, list[str]]) -> tuple[str, str, str] | None:
+    """(key, first action, second action) when one key is bound to two actions, else None."""
+    seen: dict[str, str] = {}
+    for action, codes in keys.items():
+        for k in codes:
+            if k in seen and seen[k] != action:
+                return k, seen[k], action
+            seen[k] = action
+    return None
+
+
+def upgrade_settings(raw: Any) -> dict[str, Any]:
+    """Stored settings as a valid GameSettings body: every part of `raw` that is still valid on its own is kept, every
+    other part (missing, from an older shape, damaged) takes its default. Keys that end up bound to two actions fall
+    back to the default bindings as a whole."""
+    out = copy.deepcopy(DEFAULT_SETTINGS)
+    if not isinstance(raw, dict):
+        return out
+
+    def keep(path: tuple[str, ...], value: Any) -> None:
+        trial = copy.deepcopy(out)
+        node = trial
+        for k in path[:-1]:
+            node = node[k]
+        node[path[-1]] = value
+        if not schema.errors("GameSettings", trial, limit=1):
+            node = out
+            for k in path[:-1]:
+                node = node[k]
+            node[path[-1]] = value
+
+    for key, default in DEFAULT_SETTINGS.items():
+        if key not in raw:
+            continue
+        if isinstance(default, dict) and isinstance(raw[key], dict):
+            for sub in default:
+                if sub in raw[key]:
+                    keep((key, sub), raw[key][sub])
+        else:
+            keep((key,), raw[key])
+    if duplicate_key(out["keys"]):
+        out["keys"] = copy.deepcopy(DEFAULT_SETTINGS["keys"])
+    return out
 
 
 def _now_iso() -> str:
@@ -215,7 +278,13 @@ class GameStore:
     def settings(self, user_id: int) -> dict[str, Any]:
         with self._tx() as db:
             r = db.execute("SELECT data FROM settings WHERE user_id=?", (user_id,)).fetchone()
-        return json.loads(r["data"]) if r else json.loads(json.dumps(DEFAULT_SETTINGS))
+        if r is None:
+            return copy.deepcopy(DEFAULT_SETTINGS)
+        ok, raw = _json(r["data"])
+        out = upgrade_settings(raw)
+        if not ok or out != raw:
+            log.warning("settings of player %d did not match the contract; the invalid parts read as their defaults", user_id)
+        return out
 
     def put_settings(self, user_id: int, data: dict[str, Any]) -> dict[str, Any]:
         with self._tx() as db:
@@ -226,7 +295,14 @@ class GameStore:
     def flags(self, user_id: int) -> dict[str, Any]:
         with self._tx() as db:
             rows = db.execute("SELECT name, value FROM flag WHERE user_id=? ORDER BY name", (user_id,)).fetchall()
-        return {r["name"]: json.loads(r["value"]) for r in rows}
+        out: dict[str, Any] = {}
+        for r in rows:
+            ok, value = _json(r["value"])
+            if ok and not schema.errors("Flags", {r["name"]: value}, limit=1):
+                out[r["name"]] = value
+            else:
+                log.warning("flag %r of player %d does not match the contract; left out", r["name"], user_id)
+        return out
 
     def patch_flags(self, user_id: int, patch: dict[str, Any]) -> dict[str, Any]:
         """Sets each flag; a null value deletes it. Refuses to grow past MAX_FLAGS."""
@@ -246,7 +322,15 @@ class GameStore:
         with self._tx() as db:
             rows = db.execute("SELECT slot, rev, data, updated_at FROM save WHERE user_id=? ORDER BY slot='auto' DESC, slot",
                               (user_id,)).fetchall()
-        return [{"slot": r["slot"], "rev": r["rev"], "updated_at": r["updated_at"], "data": json.loads(r["data"])} for r in rows]
+        out = []
+        for r in rows:
+            ok, data = _json(r["data"])
+            body = {"slot": r["slot"], "rev": r["rev"], "updated_at": r["updated_at"], "data": data}
+            if ok and not schema.errors("SaveSlot", body, limit=1):
+                out.append(body)
+            else:
+                log.warning("save slot %s of player %d does not match the contract; left out (the row stays in the file)", r["slot"], user_id)
+        return out
 
     def put_save(self, user_id: int, slot: str, data: dict[str, Any]) -> dict[str, Any]:
         now = _now_iso()
