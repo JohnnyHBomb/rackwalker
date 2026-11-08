@@ -4,6 +4,12 @@ Ilatea is the RackWalker's guide. She is a re-imagined Athena for an age of code
 fierce. She appears in speech bubbles with a portrait. She teaches the mechanics early on, and later
 offers lore, hints and XP spending.
 
+## Motto and voice
+- Motto: "Small things matter." Variants such as "Little things matter" are fine.
+- Her help always points at the next small, concrete fix: one serial, one label, one cable. Big
+  confusion is cleared one small thing at a time. This is the game's core loop in her words.
+- Voice: calm, warm, encouraging, a little dry. She never scolds.
+
 ## Visual traits (the base for generated options)
 - Core: a calm yet fierce woman, a goddess of wisdom and strategy reborn; a warm, knowing smile.
 - Eyes: bright and glowing. Variants: owl-gold, or blue-grey.
