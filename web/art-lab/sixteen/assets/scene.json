@@ -310,18 +310,18 @@
 {
 "sprite": "windmill",
 "x": 216,
-"y": 76,
+"y": 77,
 "shadow": [
-5,
+6,
 -1,
-18,
+21,
 4
 ]
 },
 {
 "sprite": "sails",
 "x": 216,
-"y": 30,
+"y": 28,
 "anim": {
 "fps": 8
 },
@@ -2585,6 +2585,127 @@
 "y": 148,
 "ay": 0,
 "flat": true
+},
+{
+"sprite": "reeds",
+"x": 8,
+"y": 199,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 30,
+"y": 197,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 70,
+"y": 198,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 126,
+"y": 197,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 188,
+"y": 199,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 240,
+"y": 198,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 150,
+"y": 160,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 224,
+"y": 160,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "lilypad",
+"x": 40,
+"y": 178,
+"flat": true
+},
+{
+"sprite": "lilypad_flower",
+"x": 52,
+"y": 184,
+"flat": true
+},
+{
+"sprite": "lilypad",
+"x": 200,
+"y": 186,
+"flat": true
+},
+{
+"sprite": "lilypad_flower",
+"x": 244,
+"y": 176,
+"flat": true
+},
+{
+"sprite": "lilypad",
+"x": 64,
+"y": 176,
+"flat": true
+},
+{
+"sprite": "boat",
+"x": 168,
+"y": 182,
+"anim": {
+"fps": 2
+}
+},
+{
+"sprite": "mooring_post",
+"x": 148,
+"y": 166,
+"shadow": [
+2,
+0,
+3,
+1
+]
 },
 {
 "sprite": "daisy",

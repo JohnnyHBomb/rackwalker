@@ -157,8 +157,8 @@ MAP = [
     "......P.........",  # 9
     "WWWWWWWWWWWWWWWW",  # 10
     "WWWWWWWWWWWWWWWW",  # 11
-    "FFFF..P..SS.FFFF",  # 12
-    "FFFF..P...S.FFFF",  # 13
+    "FFFF..P.SSSSFFFF",  # 12
+    "FFFF..P.....FFFF",  # 13
 ]
 # path on the plateau up to the windmill door
 HIGH_PATH = {(11, 4), (12, 4), (13, 4)}
@@ -329,16 +329,19 @@ def build_ground():
                     # long slow swell bands and short lit ripples, both drifting with the frame
                     # ripples: short lit dashes on staggered rows, a dark trough under each; they drift
                     # one pixel a frame and the brightest pixel moves along the dash (the shimmer)
-                    row = y % 6
-                    lane = (y // 6) * 7
-                    u = (x + lane + (fr if (y // 6) % 2 else -fr)) % 16
-                    if row == 0 and u < 5:
-                        col = "b4" if u == (fr + 1) % 5 else "b3"
-                    elif row == 1 and 1 <= u < 4:
+                    row = y % 5
+                    lane = y // 5
+                    drift = fr if lane % 2 else -fr
+                    xx = x + drift + hsh(lane, 1) % 32
+                    seg = xx // 20
+                    u = xx % 20
+                    dash = 3 + hsh(seg, lane, 2) % 4
+                    on = hsh(seg, lane, 3) % 3 != 0
+                    if row == 0 and on and u < dash:
+                        col = "b4" if u == fr % dash else "b3"
+                    elif row == 1 and on and 1 <= u < dash - 1:
                         col = "b1"
-                    elif row == 3 and (x + lane * 3 - fr) % 24 in (0, 1):
-                        col = "b3"
-                    if row == 0 and u == (fr + 1) % 5 and (x // 16 + y // 6 + fr) % 5 == 0:
+                    if row == 0 and on and u == fr % dash and hsh(seg, lane, fr) % 6 == 0:
                         col = "b5"
                     if du <= 6 and C(x, y - du) not in ("sand",):
                         # quay: coping stone, then four courses of stone blocks, then the dark waterline
@@ -413,11 +416,11 @@ def build_ground():
                 elif c == "steps":
                     k = face_k(x, y)
                     s = (k - 1) % 4
-                    col = ["s4", "s3", "s2", "s0"][s]
-                    if C(x - 1, y) != "steps":
-                        col = "s1"
-                    if C(x + 1, y) != "steps":
-                        col = "s0"
+                    col = ["s3", "s2", "s1", "s0"][s]
+                    if C(x - 1, y) != "steps" or C(x - 2, y) != "steps":
+                        col = "d2"   # earth cheeks either side of the flight
+                    if C(x + 1, y) != "steps" or C(x + 2, y) != "steps":
+                        col = "d0"
                     if k == 1 and hsh(x, 3) % 2:
                         col = "g2"
                 img.set(x, y, col)
@@ -806,11 +809,13 @@ def make_cottage():
             u = (x - (x0 - 3)) % 4 if west else ((x1 + 3) - x) % 4
             c = (y - rt) % 5
             if west:
-                col = ("o3", "o3", "o2", "o1")[u]
+                col = ("o3", "o2", "o2", "o1")[u]
             else:
-                col = ("o1", "o1", "o1", "o0")[u]
-            if c == 4:
+                col = ("o2", "o1", "o1", "o0")[u]
+            if c == 4 and u >= 2:
                 col = "o1" if west else "o0"
+            if c == 0 and u == 0:
+                col = "o3" if west else "o2"
             if hsh(x, y, 5) % 41 == 0:
                 col = "o0"
             if y > gtop + 9 and hsh(x, y, 6) % 7 == 0:
@@ -942,74 +947,91 @@ def make_cottage():
 
 
 def make_windmill():
-    """Smock mill: brick base, tapering reed-thatched body with cylinder shading, a wooden stage,
-    boat-shaped cap. Sails are separate frames."""
-    w, h = 40, 52
+    """Octagonal smock mill: brick base with a wooden stage round it, a reed-thatched body drawn as flat
+    facets (lit left, shaded right) with binding lines, white-framed door and window, and a boat-shaped
+    shingled cap with a white windboard behind the hub. The sails are separate frames."""
+    w, h = 44, 56
     img = Img(w, h)
-    cx = 20
-    top, base_y = 8, 51
+    cx = 22
+    top, base_y = 10, 55
+    brick_top = base_y - 11
+    facet_cols = ["d4", "d3", "d2", "d1", "d0"]
     for y in range(top, base_y + 1):
         t = (y - top) / (base_y - top)
-        half = 7 + t * 8
+        half = 7 + t * 8 if y < brick_top else 15.5
         for x in range(int(cx - half), int(cx + half) + 1):
-            u = (x + 0.5 - cx) / half  # -1..1 across the body
-            light = -u * 0.8 + 0.3
-            if y > base_y - 10:
-                # brick base
+            u = (x + 0.5 - cx) / half
+            # five visible facets of the octagon
+            f = 0 if u < -0.78 else 1 if u < -0.3 else 2 if u < 0.3 else 3 if u < 0.78 else 4
+            if y >= brick_top:
+                fb = ["r4", "r3", "r2", "r1", "r0"][f]
                 row = (base_y - y) // 2
-                col = "r3" if light > 0.4 else ("r2" if light > -0.2 else "r1")
+                col = fb
                 if (base_y - y) % 2 == 1 or (x + (2 if row % 2 else 0)) % 5 == 0:
-                    col = "r1" if light > -0.2 else "r0"
+                    col = NAMES[DARKER[IDX[fb]]]
             else:
-                # thatch: vertical reed strokes, lit left, shade right
-                lv = light + 0.18 * math.sin(x * 2.3 + y * 0.31) + (0.15 if (y // 3) % 5 == 0 else 0)
-                col = "d4" if lv > 0.75 else "d3" if lv > 0.35 else "d2" if lv > -0.15 else "d1" if lv > -0.6 else "d0"
-            if abs(u) > 0.94:
-                col = "d0" if u > 0 else "d1"
+                col = facet_cols[f]
+                if (x + (y // 2)) % 3 == 0:          # reed strokes
+                    col = NAMES[DARKER[IDX[col]]] if f > 0 else "d3"
+                if (y - top) % 7 == 6:                # binding lines
+                    col = NAMES[DARKER[IDX[facet_cols[min(4, f + 1)]]]]
+                if (y - top) % 7 == 0 and f < 2:
+                    col = "d5" if f == 0 else "d4"
             img.set(x, y, col)
-    # stage (gallery) round the waist
-    sy = 34
-    for x in range(cx - 18, cx + 19):
-        img.set(x, sy, "wd3" if x < cx + 6 else "wd2")
-        img.set(x, sy + 1, "wd1")
-        if (x - cx) % 6 == 0:
-            img.vline(x, sy + 2, sy + 5, "wd1")
-    img.hline(cx - 18, cx + 18, sy - 3, "wd2")
-    for x in range(cx - 18, cx + 19, 3):
-        img.vline(x, sy - 2, sy - 1, "wd1")
-    img.set(cx - 18, sy, "wd0"); img.set(cx + 18, sy, "wd0")
-    # door and window
-    for y in range(42, 52):
+        # facet edges
+        for ue in (-0.78, -0.3, 0.3, 0.78):
+            xe = int(cx + ue * half)
+            if y < brick_top:
+                img.set(xe, y, "d0" if ue > 0 else "d2")
+    # stage (gallery) at the top of the brick base, with its railing and the shadow it casts
+    sy = brick_top - 1
+    for x in range(cx - 21, cx + 22):
+        img.set(x, sy, "wd4" if x < cx - 4 else ("wd3" if x < cx + 10 else "wd2"))
+        img.set(x, sy + 1, "wd2" if x < cx + 10 else "wd1")
+        img.set(x, sy + 2, "wd0")
+        if x >= cx - 15 and x <= cx + 15:
+            img.set(x, sy + 3, NAMES[DARKER[img.get(x, sy + 3)]] if img.get(x, sy + 3) else 0)
+    for x in range(cx - 21, cx + 22, 4):
+        img.vline(x, sy - 5, sy - 1, "wd2" if x < cx + 8 else "wd1")
+        img.vline(x, sy + 3, sy + 7, "wd1")       # struts under the stage
+    img.hline(cx - 21, cx + 21, sy - 5, "wd3")
+    img.hline(cx - 21, cx + 21, sy - 6, "wd4")
+    # door and window, white frames
+    for y in range(base_y - 9, base_y + 1):
         for x in range(cx - 3, cx + 3):
-            img.set(x, y, "wd1" if x > cx - 3 else "wd2")
-    img.hline(cx - 4, cx + 3, 41, "w")
-    img.vline(cx - 4, 41, 51, "w")
-    img.vline(cx + 3, 41, 51, "s3")
-    for y in range(20, 25):
+            img.set(x, y, "wd2" if x < cx else "wd1")
+    img.hline(cx - 4, cx + 3, base_y - 10, "w")
+    img.vline(cx - 4, base_y - 10, base_y, "w")
+    img.vline(cx + 3, base_y - 10, base_y, "s3")
+    img.set(cx + 1, base_y - 4, "ye2")
+    wy = 22
+    for y in range(wy, wy + 5):
         for x in range(cx - 2, cx + 2):
             img.set(x, y, "l1")
-    img.hline(cx - 3, cx + 2, 19, "w"); img.vline(cx - 3, 19, 25, "w"); img.hline(cx - 3, cx + 2, 25, "s3")
-    img.set(cx - 2, 21, "b4")
-    # cap
-    for y in range(0, 10):
-        half = 9 - abs(y - 6) * 0.9 if y > 3 else 6 + y
+    img.hline(cx - 3, cx + 2, wy - 1, "w"); img.vline(cx - 3, wy - 1, wy + 5, "w"); img.hline(cx - 3, cx + 2, wy + 5, "s3")
+    img.vline(cx + 2, wy - 1, wy + 5, "s3")
+    img.set(cx - 2, wy, "b4")
+    # cap: boat shape, shingles, white windboard (beard) behind the hub
+    for y in range(0, 12):
+        half = 4 + y * 1.2 if y < 6 else 11 - (y - 6) * 0.6
         for x in range(int(cx - half), int(cx + half) + 1):
-            u = (x - cx) / max(1, half)
-            col = "wd3" if u < -0.3 else ("wd2" if u < 0.4 else "wd1")
-            if y == 0:
-                col = "wd2"
-            if y >= 8:
-                col = "wd1" if u < 0.3 else "wd0"
+            u = (x + 0.5 - cx) / max(1, half)
+            col = "wd3" if u < -0.35 else ("wd2" if u < 0.35 else "wd1")
+            if (y % 3 == 2) and abs(u) < 0.95:
+                col = NAMES[DARKER[IDX[col]]]
+            if y == 0 or (u < -0.6 and y < 6):
+                col = "wd4"
             img.set(x, y, col)
-    img.hline(cx - 9, cx + 9, 10, "wd0")
-    # outline (dark brown, not black)
-    out = img.outline({}, "wd0")
-    return out
+    img.hline(cx - 10, cx + 10, 12, "wd0")
+    for y in range(4, 13):
+        img.set(cx - 1, y, "w"); img.set(cx, y, "s4"); img.set(cx + 1, y, "s3")
+    return img.outline({}, "wd0")
 
 
 def make_sails(n=8):
-    """Four sails on two stocks; 8 frames cover a quarter turn, which loops."""
-    R = 26
+    """Four sails on two stocks: lattice frames with cloth spread on the outer part. 8 frames cover a
+    quarter turn, which loops because the sails are four-fold symmetric."""
+    R = 27
     size = 2 * R + 5
     c = size // 2
     frames = []
@@ -1027,27 +1049,28 @@ def make_sails(n=8):
                     v = -px * uy + py * ux
                     if u < 0:
                         continue
-                    if abs(v) <= 0.75 and u <= R + 1:
-                        best = "wd1" if u > 3 else "wd2"
-                    elif 1.2 <= v <= 7.2 and 5 <= u <= R:
-                        lattice = (int(u) % 4 == 0) or v > 6.3 or v < 2.0
-                        # sail cloth reefed on the outer half, lattice bare near the stock
-                        cloth = u > 9
-                        lit = (math.cos(a + 0.8) > -0.2)
-                        if lattice:
+                    lit = math.cos(a + 2.4) > -0.1
+                    if abs(v) <= 1.0 and u <= R + 1:
+                        best = "wd2" if v < 0 else "wd1"
+                    elif 1.0 < v <= 7.5 and 4 <= u <= R:
+                        edge = v > 6.6
+                        bar = (u - 4) % 4 < 1.0
+                        if edge or bar:
                             best = "wd3" if lit else "wd2"
-                        elif cloth:
-                            best = ("w" if lit else "s4") if (int(u) % 4) != 1 else ("s4" if lit else "s3")
-                        elif best is None:
+                        elif u >= 9:
+                            best = ("w" if v < 4.5 else "s4") if lit else ("s4" if v < 4.5 else "s3")
+                        else:
                             best = None
                 if best:
                     img.set(x, y, best)
         out = img.outline({}, "wd0")
-        # hub
-        for y in range(c - 3, c + 3):
-            for x in range(c - 3, c + 3):
-                if (x + 0.5 - c) ** 2 + (y + 0.5 - c) ** 2 <= 7:
-                    out.set(x, y, "s3" if (x < c and y < c) else "s1")
+        for y in range(c - 3, c + 4):
+            for x in range(c - 3, c + 4):
+                d = (x + 0.5 - c - 0.5) ** 2 + (y + 0.5 - c - 0.5) ** 2
+                if d <= 8:
+                    out.set(x, y, "s3" if (x <= c and y <= c) else "s1")
+                elif d <= 11:
+                    out.set(x, y, "s0")
         out.set(c - 1, c - 1, "w")
         out.set(c, c, "k1")
         frames.append(out)
@@ -1283,6 +1306,74 @@ def make_props():
         add_sprite(name, fr, 2, 7)
 
 
+def make_waterside():
+    # reeds with cattails, two sway frames
+    fr = []
+    for f in range(2):
+        img = Img(11, 16)
+        for i, (bx, hgt, lean) in enumerate(((2, 12, -1), (5, 15, 0), (8, 11, 1))):
+            for k in range(hgt):
+                xx = bx + (lean * k // 8 if f == 0 else (lean + (1 if i == 1 else 0)) * k // 7)
+                img.set(xx, 15 - k, "g2" if k < hgt - 4 else "g3")
+                if k == hgt - 4 and i != 2:
+                    img.set(xx, 15 - k, "wd1"); img.set(xx, 14 - k, "wd2"); img.set(xx, 13 - k, "wd2")
+                    img.set(xx, 12 - k, "wd3")
+        for (x, y) in ((1, 15), (0, 14), (9, 15), (10, 14), (4, 15), (6, 15), (3, 13)):
+            img.set(x, y, "g3")
+        img.set(0, 13, "g4"); img.set(10, 13, "g4")
+        fr.append(img.outline({}, "g0"))
+    add_sprite("reeds", fr, 5, 15)
+    lp = from_rows(["..4433..", ".43332..", "4332.21.", ".3222211", "..1111.."],
+                   {"4": "g4", "3": "g3", "2": "g2", "1": "g1"})
+    add_sprite("lilypad", lp, 4, 3)
+    lf = lp.copy()
+    lf.set(3, 0, "pk1"); lf.set(4, 0, "pk2"); lf.set(3, 1, "pk1"); lf.set(4, 1, "w"); lf.set(5, 1, "pk1")
+    add_sprite("lilypad_flower", lf, 4, 3)
+    # a small rowing boat, green with a white rim, moored; bobs one pixel
+    frames = []
+    for f in range(2):
+        img = Img(32, 15)
+        oy = f
+        for y in range(13):
+            for x in range(32):
+                u = (x + 0.5 - 16) / 15.5
+                v = (y + 0.5 - 6) / 6.0
+                if u * u + v * v * (1.0 if u < 0 else 0.8) > 1:
+                    continue
+                col = "g2"
+                inner = (u / 0.84) ** 2 + ((y + 0.5 - 5.5) / 4.0) ** 2 < 1
+                if inner:
+                    col = "wd2"
+                    if x % 9 == 4 and abs(u) < 0.7:
+                        col = "wd4"   # thwarts
+                    elif x % 9 == 5 and abs(u) < 0.7:
+                        col = "wd1"
+                    elif y < 4:
+                        col = "wd1"   # inner shadow under the near gunwale
+                else:
+                    if y < 6:
+                        col = "w" if y <= 2 or (y < 5 and abs(u) > 0.8) else "s4"
+                    else:
+                        col = "g2" if u < 0.2 else "g1"
+                        if y >= 10:
+                            col = "g0"
+                img.set(x, y + oy, col)
+        img = img.outline({}, "g0")
+        for x in range(4, 28):
+            img.set(x, 13 + oy, "b1")
+            if x % 4 == 0:
+                img.set(x + f, 14, "b4")
+        img.set(1, 6 + oy, "wd1"); img.set(0, 6 + oy, "wd1")   # mooring rope
+        frames.append(img)
+    add_sprite("boat", frames, 16, 13)
+    post = Img(4, 12)
+    for y in range(12):
+        post.set(0, y, "wd3"); post.set(1, y, "wd2"); post.set(2, y, "wd1")
+    post.hline(0, 2, 0, "wd4")
+    post.hline(0, 2, 4, "s3")
+    add_sprite("mooring_post", post.outline({}, "wd0"), 1, 11)
+
+
 def LIGHTER_N(n):
     return NAMES[LIGHTER[IDX[n]]]
 
@@ -1290,15 +1381,38 @@ def LIGHTER_N(n):
 # ---------------------------------------------------------------- characters (from the hand data)
 def make_characters():
     compose_player()
-    # Ilatea: four glow-pulse frames (circuit lines c1 -> c2 -> c1 -> c0)
-    base0, base1 = HAND["guide_0"], HAND["guide_1"]
+    # Ilatea: the body is hand-drawn; the spear-stylus and Byte on her shoulder are composed on top.
+    # Four glow-pulse frames: circuit lines c1 -> c2 -> c1 -> c0, the stylus tip flickers.
+    body = HAND["guide_0"]
     frames = []
-    for f, (src, cmap) in enumerate(((base0, "c1"), (base1, "c2"), (base0, "c1"), (base1, "c0"))):
-        img = src.copy()
+    for f, cmap in enumerate(("c1", "c2", "c1", "c0")):
+        img = Img(body.w, body.h)
+        sx = 17
+        img.vline(sx, 5, 27, "s3")
+        img.vline(sx + 1, 6, 27, "s1")
+        img.set(sx, 4, "s1")
+        tip = [(0, 0, "c2"), (0, 1, "w"), (-1, 1, "c1"), (1, 1, "c1"), (0, 2, "c2"), (0, 3, "c1")]
+        for dx, dy, c in tip:
+            img.set(sx + dx, dy, c)
+        if f % 2 == 0:
+            img.set(sx - 2, 2, "c0"); img.set(sx + 2, 0, "c0")
+        else:
+            img.set(sx + 2, 3, "c0"); img.set(sx - 2, 0, "c1")
+        img.blit(body, 0, 0)
+        img.blit(HAND["owl_small"], 1, 8)
         for i, v in enumerate(img.px):
-            if v == IDX["c1"]:
+            if v == IDX["c1"] and i // img.w > 5:
                 img.px[i] = IDX[cmap]
         frames.append(img)
+    # a faint dithered aura round her silhouette (not round the spear), shimmering frame to frame
+    for f, img in enumerate(frames):
+        src = img.copy()
+        for y in range(4, src.h - 2):
+            for x in range(0, 17):
+                if src.get(x, y):
+                    continue
+                if any(src.get(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))) and (x + y + f) % 2 == 0:
+                    img.set(x, y, "c0" if y > 12 else "c1")
     add_sprite("guide", frames, 11, frames[0].h - 1)
     add_sprite("hog", [HAND["hog_0"], HAND["hog_1"]], 8, 14)
     for o in ("byte", "nocti"):
@@ -1528,8 +1642,8 @@ def scene_objects():
     o("bicycle", 112, 118, shadow=[2, 0, 10, 2])
     o("signpost", 198, 128, shadow=[2, 0, 5, 2])
     # windmill on the plateau, sails turn over it
-    o("windmill", 216, 76, shadow=[5, -1, 18, 4])
-    o("sails", 216, 30, anim={"fps": 8}, layer="top")
+    o("windmill", 216, 77, shadow=[6, -1, 21, 4])
+    o("sails", 216, 28, anim={"fps": 8}, layer="top")
     # tulip field to the east, fenced
     for x in range(206, 256, 16):
         o("fence_h", x + 2, 98)
@@ -1552,6 +1666,13 @@ def scene_objects():
     o("bridge_deck", 91, 150, flat=True, ax=0, ay=0)
     o("bridge_rail", 92, 148, ay=0, flat=True)
     o("bridge_rail", 114, 148, ay=0, flat=True)
+    # waterside: reeds on the banks, lily pads, a moored boat
+    for x, y in ((8, 199), (30, 197), (70, 198), (126, 197), (188, 199), (240, 198), (150, 160), (224, 160)):
+        o("reeds", x, y, anim={"fps": 2, "phase": x % 2})
+    for x, y in ((40, 178), (52, 184), (200, 186), (244, 176), (64, 176)):
+        o("lilypad_flower" if x in (52, 244) else "lilypad", x, y, flat=True)
+    o("boat", 168, 182, anim={"fps": 2})
+    o("mooring_post", 148, 166, shadow=[2, 0, 3, 1])
     # ground detail: flowers, stones, tufts
     det = [("daisy", 30, 140), ("daisy", 36, 146), ("violet", 22, 132), ("buttercup", 124, 140),
            ("daisy", 152, 148), ("tuft", 88, 146), ("tuft", 178, 150), ("stone", 74, 152), ("stone_big", 182, 100),
@@ -1573,9 +1694,10 @@ def main():
     make_trees()
     add_sprite("datacentre", make_datacentre(), 42, 85)
     add_sprite("cottage", make_cottage(), 27, 75)
-    add_sprite("windmill", make_windmill(), 21, 63)
+    add_sprite("windmill", make_windmill(), 22, 55)
     make_sails()
     make_props()
+    make_waterside()
     make_portrait()
     frames, _ = build_ground()
     tiles, maps = slice_tiles(frames)

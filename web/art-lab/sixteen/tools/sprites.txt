@@ -7,9 +7,9 @@ q o0
 Q o1
 o o2
 O o3
-h d0
-H d1
-I d2
+h k1
+H d0
+I d1
 Z sk0
 z sk1
 s sk2
@@ -175,66 +175,45 @@ F wd2
 f wd1
 
 == guide_0 guide
-...................O..
-..................COC.
-.................c.O.c
-...................C..
-.......kkkkkk......t..
-......kDDDDDDk.....T..
-.....kDdADDDDDk....T..
-.....kDdDDDDDDk....T..
-....kDDSSSSSSDDk...T..
-....kDSSGSSGSsDk...T..
-....kDSSxSSxszDk...T..
-....kDdSSszSszDk...T..
-.b...bDkSsszkDDk...T..
-.bBBBbDdkzzkdDDDk..T..
-bWYWYWbAdCnnnnNdDk.T..
-bWWoWWbdMnCnnnnNDk.T..
-.bVWVbdzMnnCnnnNzSkT..
-..bVbkzsMnnnOnnNszST..
-...kdkkkMnnnnCnNkk.T..
-...kDk..MnnnnnCN...T..
-........MnnnnnnN...T..
-........MnnnnnnN...T..
-.......MnnnnnnnnN..T..
-.......MnnnnnnnnN..T..
-.......MCCCCCCCCN..t..
-.......NNNNNNNNNN..t..
-.........zs..sz....t..
-.........Ff..fF.......
-........ffF..Fff......
+......................
+......................
+......................
+......................
+.......kkkkkk.........
+......kDDDDDDk........
+.....kDdADDDDDk.......
+.....kDdDDDDDDk.......
+....kDDSSSSSSDDk......
+....kDSSxSSxSsDk......
+....kDSSGSSGszDk......
+....kDdSSszSszDk......
+....kDDkSsszkDDk......
+...kDDDdkzzkdDDDk.....
+...kDdzsNnnnnNszDk....
+...kDzsMnnnnnnNszk....
+...kdzsMnCnnnnNsSk....
+...kdksMnnCnnnNSSSk...
+...kDksMnnnOnnNkzk....
+....kkzMnnnnCnNk......
+......kMnnnnnCNk......
+......kMnnnnnnNk......
+......kMnnnnnnnNk.....
+.....kMnnnnnnnnNk.....
+.....kMCCCCCCCCNk.....
+.....kNNNNNNNNNNk.....
+........kzs.szk.......
+........kFf.fFk.......
+.......kffF.Fffk......
+......................
 
-== guide_1 guide
-...................O..
-..................cOc.
-...................O..
-...................C..
-.......kkkkkk......t..
-......kDDDDDDk.....T..
-.....kDdADDDDDk....T..
-.....kDdDDDDDDk....T..
-....kDDSSSSSSDDk...T..
-....kDSSGSSGSsDk...T..
-....kDSSxSSxszDk...T..
-....kDdSSszSszDk...T..
-.b...bDkSsszkDDk...T..
-.bBBBbDdkzzkdDDDk..T..
-bWYWYWbAdCnnnnNdDk.T..
-bWWoWWbdMnCnnnnNDk.T..
-.bVWVbdzMnnCnnnNzSkT..
-..bVbkzsMnnnOnnNszST..
-...kdkkkMnnnnCnNkk.T..
-...kDk..MnnnnnCN...T..
-........MnnnnnnN...T..
-........MnnnnnnN...T..
-.......MnnnnnnnnN..T..
-.......MnnnnnnnnN..T..
-.......MCCCCCCCCN..t..
-.......NNNNNNNNNN..t..
-.........zs..sz....t..
-.........Ff..fF.......
-........ffF..Fff......
+== owl_small guide
+b.....b
+bBb.bBb
+bBBBBBb
+BYxBxYB
+BWWaWWB
+.BWWWB.
+..bVb..
 
 # ---- villager: a hedgehog ringing a bicycle bell ----
 @legend hog
