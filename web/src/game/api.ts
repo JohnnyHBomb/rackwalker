@@ -42,6 +42,7 @@ export class HttpGameApi implements GameApi {
     }
     const json: unknown = await res.json().catch(() => null);
     if (!res.ok) throw errorFrom(res.status, json);
+    if (json === null || typeof json !== 'object') throw new SceneSourceError(res.status, 'internal', 'The proxy sent an answer that is not a JSON object.');
     return json as T;
   }
 

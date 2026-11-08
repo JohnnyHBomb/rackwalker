@@ -109,6 +109,8 @@ export interface OverworldEvents {
   moved(p: Pos, facing: Dir): void;
   /** The player reached Ilatea after tapping her. */
   talk(): void;
+  /** True while something covers the green (a talk, the menu): taps then do not walk the player. */
+  blocked?(): boolean;
 }
 
 export class OverworldView {
@@ -133,6 +135,12 @@ export class OverworldView {
   private active = false;
   private frame = 0;
   private lastStepAt = 0;
+  /**
+   * Set when the player steps onto a door: nobody walks until the shell either takes them inside (show(false)) or,
+   * when the building cannot be opened, puts them back outside with `resume`. The frame loop keeps running either
+   * way, so a failed entry never leaves the green frozen.
+   */
+  private atDoor = false;
 
   constructor(
     host: HTMLElement,
@@ -156,7 +164,7 @@ export class OverworldView {
       this.labels.set(d.siteId, bufferCanvas(labelBuffer(d.name, pal)));
     }
     this.canvas.addEventListener('pointerdown', (e) => {
-      if (!this.active) return;
+      if (!this.active || this.atDoor || this.events.blocked?.()) return;
       const t = this.tileAtClient(e.clientX, e.clientY);
       if (t.x === this.map.guide.x && t.y === this.map.guide.y) this.walkToGuide();
       else this.walkTo(t);
@@ -179,13 +187,25 @@ export class OverworldView {
   }
 
   show(on: boolean): void {
+    const was = this.active;
     this.active = on;
     this.canvas.style.display = on ? 'block' : 'none';
     this.held = null;
     this.queue = [];
     this.talkOnArrival = false;
+    this.atDoor = false;
+    cancelAnimationFrame(this.raf);
     if (on) this.loop();
-    else cancelAnimationFrame(this.raf);
+    else if (was) this.stepFrom = null;
+  }
+  /** After a door that could not be opened: the player stands on `p` and may walk again. */
+  resume(p: Pos, facing: Dir): void {
+    this.atDoor = false;
+    this.place(p, facing);
+  }
+  /** True between stepping onto a door and the shell's answer (inside, or back outside). */
+  get entering(): boolean {
+    return this.atDoor;
   }
   get shown(): boolean {
     return this.active;
@@ -203,6 +223,7 @@ export class OverworldView {
 
   /** Held direction (key down / up); a fresh press steps at once, holding repeats every STEP_MS. */
   hold(d: Dir | null): void {
+    if (d && this.atDoor) return;
     if (d) this.talkOnArrival = false;
     if (d && d !== this.held) {
       this.queue = [];
@@ -212,6 +233,7 @@ export class OverworldView {
   }
 
   walkTo(t: Pos): void {
+    if (this.atDoor) return;
     this.queue = this.map.path(this.pos, t);
     this.held = null;
     this.talkOnArrival = false;
@@ -273,11 +295,15 @@ export class OverworldView {
       if (door) {
         this.queue = [];
         this.held = null;
-        this.draw();
+        this.atDoor = true;
         this.events.door(door);
-        return;
-      }
-      this.events.moved(this.pos, this.facing);
+      } else this.events.moved(this.pos, this.facing);
+    }
+    if (!this.active) return; // the door took the player inside
+    if (this.atDoor) {
+      this.draw();
+      this.raf = requestAnimationFrame(this.loop);
+      return;
     }
     if (!this.stepFrom) {
       const next = this.queue.shift();

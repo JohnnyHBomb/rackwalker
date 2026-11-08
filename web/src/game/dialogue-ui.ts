@@ -34,6 +34,11 @@ export class DialogueBox {
   reduceMotion = false;
   /** Called as soon as a choice with an action is picked (a hint-level change applies while the talk goes on). */
   onAction: ((a: Action) => void) | null = null;
+  /**
+   * Client points the bubble should not cover (the speaker and the player on the green). The bubble sits at the
+   * bottom; when that hides one of them it moves to the top, unless the top hides one too.
+   */
+  avoid: (() => readonly { x: number; y: number }[]) | null = null;
 
   constructor(private readonly host: HTMLElement) {
     if (!document.getElementById('dialogue-css')) {
@@ -176,6 +181,7 @@ export class DialogueBox {
     el.append(body, close);
     this.host.append(el);
     this.el = el;
+    this.place();
     this.sel = 0;
     this.shownChars = this.reduceMotion ? this.run!.text.length : 0;
     this.paintText();
@@ -186,6 +192,27 @@ export class DialogueBox {
         this.paintText();
         if (!this.typing) clearInterval(this.timer);
       }, TYPE_MS);
+  }
+
+  /** Bottom unless that covers a point to avoid and the top does not. */
+  private place(): void {
+    const el = this.el;
+    const pts = this.avoid?.() ?? [];
+    if (!el || !pts.length) return;
+    const covers = () => {
+      const r = el.getBoundingClientRect();
+      const m = 24; // a sprite is drawn around its centre point
+      return pts.some((p) => p.x >= r.left - m && p.x <= r.right + m && p.y >= r.top - m && p.y <= r.bottom + m);
+    };
+    if (!covers()) return;
+    el.style.top = '16px';
+    el.style.bottom = 'auto';
+    el.dataset.place = 'top';
+    if (covers()) {
+      el.style.top = '';
+      el.style.bottom = '';
+      delete el.dataset.place;
+    }
   }
 
   private paintText(): void {

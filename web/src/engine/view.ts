@@ -198,6 +198,8 @@ export class RackWalkerView {
   get selection(): Entity | null {
     return this.selected?.entity ?? null;
   }
+  /** The player's "reduce motion" setting: level changes cut instead of zooming. */
+  reduceMotion = false;
   get lastError(): string | null {
     return this.error;
   }
@@ -329,7 +331,7 @@ export class RackWalkerView {
     this.hoverTile = null;
     this.redrawMarks();
     this.levelLayer.addChild(next.view.root);
-    if (prev && prev !== next && this.opts.animate !== false && direction !== 'none') {
+    if (prev && prev !== next && this.opts.animate !== false && !this.reduceMotion && direction !== 'none') {
       const oldFocus = direction === 'in' && from ? centre(unionBox([from])!) : { x: prev.cam.cx, y: prev.cam.cy };
       await this.animate(prev, next, planTransition(direction, prev.cam, oldFocus, next.cam));
     }

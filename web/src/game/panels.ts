@@ -27,6 +27,13 @@ const CSS = `
 .game-panel .guide{display:flex;gap:12px;align-items:flex-start}
 .game-panel kbd{border:1px solid #1d1a14;padding:0 4px;background:#fffaf0}
 #game-button{position:fixed;right:8px;bottom:8px;z-index:15;font:14px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:6px 10px;min-height:40px;cursor:pointer}
+#game-notice{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:35;width:min(620px,calc(100vw - 24px));box-sizing:border-box;
+  background:#f6efd9;color:#1d1a14;border:4px solid #8a1c12;box-shadow:0 0 0 2px #f6efd9;padding:8px 12px;font:14px/1.4 ui-monospace,monospace;
+  display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+#game-notice p{margin:0;flex:1 1 260px;font-weight:bold}
+#game-notice p::before{content:"⚠ "}
+#game-notice button{font:inherit;color:#1d1a14;background:#fffaf0;border:2px solid #1d1a14;padding:4px 9px;min-height:32px;cursor:pointer}
+#game-notice button:focus-visible{outline:3px dashed #1d1a14;outline-offset:2px}
 #scene-card{position:fixed;inset:0;z-index:25;background:#0e1410;color:#f6efd9;display:flex;align-items:center;justify-content:center;font:18px ui-monospace,monospace;letter-spacing:1px}
 `;
 
@@ -114,6 +121,41 @@ export function signInPanel(host: HTMLElement, submit: (token: string) => Promis
   });
 }
 
+/**
+ * A message the player must see (a save that failed, a building that would not open) at the top of the screen, with
+ * optional buttons. One at a time: a new notice replaces the old one. Never blocks play.
+ */
+export function showNotice(host: HTMLElement, text: string, actions: readonly { label: string; id: string; run: () => void }[] = []): HTMLElement {
+  ensureCss();
+  document.getElementById('game-notice')?.remove();
+  const el = document.createElement('div');
+  el.id = 'game-notice';
+  el.className = 'game-ui';
+  el.setAttribute('role', 'alert');
+  el.append(para(text));
+  for (const a of actions) el.append(button(a.label, a.run, a.id));
+  host.append(el);
+  return el;
+}
+export function clearNotice(): void {
+  document.getElementById('game-notice')?.remove();
+}
+
+/** The game could not load (proxy or NetBox down): says why and waits for "Try again". */
+export function loadFailedPanel(host: HTMLElement, problem: string): Promise<void> {
+  const el = panel('load-failed', 'The game could not load');
+  const msg = para(problem);
+  msg.className = 'error';
+  msg.setAttribute('role', 'alert');
+  el.append(msg, para('Nothing is lost: your progress is kept by the proxy. Check that the proxy and NetBox are running, then try again.'));
+  return new Promise((resolve) => {
+    const again = button('Try again', () => (el.remove(), resolve()), 'load-retry');
+    el.append(again);
+    host.append(el);
+    again.focus();
+  });
+}
+
 export interface MenuActions {
   talk(): void;
   guide(who: 'byte' | 'nocti'): void;
@@ -122,9 +164,14 @@ export interface MenuActions {
   close(): void;
 }
 
-export function menuPanel(host: HTMLElement, player: string, a: MenuActions): HTMLElement {
+/** `saveProblem` is null while saving works; otherwise why progress is not being saved right now. */
+export function menuPanel(host: HTMLElement, player: string, a: MenuActions, saveProblem: string | null = null): HTMLElement {
   const el = panel('game-menu', 'Menu');
-  el.append(para(`Playing as ${player}. Progress saves by itself.`));
+  el.append(para(`Playing as ${player}.`));
+  const save = para(saveProblem ? `Progress is not being saved right now: ${saveProblem}` : 'Progress saves by itself.');
+  save.id = 'menu-save';
+  if (saveProblem) save.className = 'error';
+  el.append(save);
   const list = document.createElement('div');
   list.className = 'menu-list';
   list.append(

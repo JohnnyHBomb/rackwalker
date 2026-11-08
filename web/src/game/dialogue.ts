@@ -23,6 +23,11 @@ export const HINT_LEVELS: readonly HintLevel[] = ['off', 'low', 'normal', 'high'
 export const MAX_TEXT = 160;
 export const MAX_CHOICES = 4;
 const FLAG = /^[a-z0-9][a-z0-9_.:-]{0,63}$/;
+/** The longest string flag value the game store keeps (contracts: FlagValue). */
+export const MAX_FLAG_TEXT = 200;
+const isNode = (nodes: object, name: unknown): name is string => typeof name === 'string' && Object.hasOwn(nodes, name);
+/** A value the game store accepts for a flag: boolean, integer, or a string of at most MAX_FLAG_TEXT characters. */
+const flagValue = (v: unknown) => typeof v === 'boolean' || Number.isSafeInteger(v) || (typeof v === 'string' && v.length <= MAX_FLAG_TEXT);
 const NAME = /^[a-z][a-z0-9_-]{0,31}$/;
 /** `{key:<action>}` in a line: replaced by the key(s) the player has bound to that action. */
 export const KEY_TOKEN = /\{key:([a-z]+)\}/g;
@@ -67,13 +72,13 @@ export function validateScript(s: unknown): string[] {
   const nodes = (o.nodes && typeof o.nodes === 'object' ? o.nodes : {}) as Record<string, DialogueNode>;
   const names = Object.keys(nodes);
   if (!names.length) e.push('nodes: none');
-  if (typeof o.start !== 'string' || !(o.start in nodes)) e.push(`start: no node ${String(o.start)}`);
+  if (!isNode(nodes, o.start)) e.push(`start: no node ${String(o.start)}`);
   const flags = (where: string, set: unknown) => {
     if (set === undefined) return;
     if (!set || typeof set !== 'object') return void e.push(`${where}.set: not an object`);
     for (const [k, v] of Object.entries(set)) {
       if (!FLAG.test(k)) e.push(`${where}.set: bad flag name ${k}`);
-      if (!['boolean', 'number', 'string'].includes(typeof v)) e.push(`${where}.set.${k}: not a flag value`);
+      if (!flagValue(v)) e.push(`${where}.set.${k}: not a flag value (boolean, integer, or text of at most ${MAX_FLAG_TEXT} characters)`);
     }
   };
   const targets = (where: string, n: Next | undefined): (string | null)[] => {
@@ -112,14 +117,14 @@ export function validateScript(s: unknown): string[] {
         if (n.choices.every((c) => c.if !== undefined || c.unless !== undefined)) e.push(`${w}.choices: every choice is conditional`);
       }
     } else out = targets(w, n.next);
-    for (const t of out) if (t !== null && !(t in nodes)) e.push(`${w}: next names missing node ${t}`);
+    for (const t of out) if (t !== null && !isNode(nodes, t)) e.push(`${w}: next names missing node ${t}`);
     edges.set(name, out);
   }
   // Reachability from start.
-  if (typeof o.start === 'string' && o.start in nodes) {
+  if (isNode(nodes, o.start)) {
     const seen = new Set<string>([o.start]);
     const todo = [o.start];
-    while (todo.length) for (const t of edges.get(todo.pop()!) ?? []) if (t !== null && t in nodes && !seen.has(t)) seen.add(t), todo.push(t);
+    while (todo.length) for (const t of edges.get(todo.pop()!) ?? []) if (t !== null && isNode(nodes, t) && !seen.has(t)) seen.add(t), todo.push(t);
     for (const n of names) if (!seen.has(n)) e.push(`nodes.${n}: unreachable from start`);
   }
   // Every node can reach an end (a null next), so no loop of lines can hold the player in a conversation.

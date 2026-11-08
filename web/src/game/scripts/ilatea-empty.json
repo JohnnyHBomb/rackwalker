@@ -1,0 +1,17 @@
+{
+  "$schema": "../../../../contracts/dialogue.schema.json",
+  "id": "ilatea-empty",
+  "once": "ilatea.empty.seen",
+  "min_hint": "low",
+  "start": "hello",
+  "nodes": {
+    "hello": {
+      "speaker": "ilatea",
+      "text": "I am Ilatea. Small things matter, and the first one is yours: add one site in NetBox, then reload. Its building will stand here.",
+      "choices": [
+        {"label": "I will add a site", "next": null},
+        {"label": "Fewer hints, please", "do": "hints_low", "next": null}
+      ]
+    }
+  }
+}

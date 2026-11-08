@@ -111,8 +111,13 @@ async function main() {
   await ready;
 }
 
+// Whatever stops the page from starting is said on the page, never only in the console (#status is gone by then).
 main().catch((e) => {
-  const s = document.getElementById('status');
-  if (s) s.textContent = `error: ${String(e)}`;
   console.error(e);
+  const s = document.getElementById('status') ?? document.body.appendChild(document.createElement('p'));
+  s.id = 'status';
+  s.className = 'game-ui';
+  s.setAttribute('role', 'alert');
+  s.style.cssText = 'position:fixed;left:12px;right:12px;top:12px;z-index:50;margin:0;padding:10px 12px;background:#f6efd9;color:#8a1c12;border:4px solid #8a1c12;font:15px/1.4 ui-monospace,monospace';
+  s.textContent = `RackWalker could not start: ${e instanceof Error ? e.message : String(e)} Reload the page to try again.`;
 });

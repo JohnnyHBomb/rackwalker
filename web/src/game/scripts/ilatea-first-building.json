@@ -7,7 +7,7 @@
   "nodes": {
     "inside": {
       "speaker": "ilatea",
-      "text": "Inside. Double-click a rack to look closer; {key:cancel} steps back out.",
+      "text": "Inside. Double-click a rack, or press / to find one, to look closer. {key:cancel} zooms out; from the site level it takes you outside.",
       "next": null
     }
   }

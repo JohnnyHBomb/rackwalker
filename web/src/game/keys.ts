@@ -23,7 +23,7 @@ export const ACTION_LABELS: Readonly<Record<KeyAction, string>> = {
 };
 
 export function actionOf(keys: KeyBindings, code: string): KeyAction | null {
-  return KEY_ACTIONS.find((a) => keys[a].includes(code)) ?? null;
+  return KEY_ACTIONS.find((a) => keys[a]?.includes(code)) ?? null; // a missing action (older settings) has no key
 }
 
 /** Codes that are never bound: they belong to the browser or to text entry. */

@@ -1,6 +1,9 @@
 // The game shell: sign-in, the placeholder overworld <-> the isometric levels, the shared dialogue bubble, the menu,
 // and autosave. The player's place is saved by the proxy's game store (never NetBox) on every change of place, so a
 // reload puts them back where they were. Started by main.ts when the page opens without ?view= on the live proxy.
+// Nothing fails silently: a write the proxy refuses or cannot take (autosave, flags, settings) shows a notice at the
+// top and is kept and sent again; a stale CSRF token (another tab signed in) is refreshed; a signed-out session asks
+// the player to sign in again without a reload, so the unsaved place is not lost.
 import type { RenderScale } from '../contracts/iso';
 import type { FlagValue, Flags, GameSettings, GameState, IsoCamera, IsoFacing, SaveData } from '../contracts/scene.gen';
 import { formatView, parseView, type Target } from '../engine/nav';
@@ -13,7 +16,8 @@ import { DialogueBox } from './dialogue-ui';
 import { actionOf, DEFAULT_SETTINGS, keysLabel } from './keys';
 import { OverworldMap, type Dir, type Door, type Pos } from './overworld';
 import { OverworldView } from './overworld-view';
-import { capturingKey, ensureCss, guidePanel, menuPanel, settingsPanel, signInPanel } from './panels';
+import { capturingKey, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
+import emptyJson from './scripts/ilatea-empty.json';
 import introJson from './scripts/ilatea-intro.json';
 import firstBuildingJson from './scripts/ilatea-first-building.json';
 import menuJson from './scripts/ilatea-menu.json';
@@ -21,6 +25,7 @@ import stuckJson from './scripts/ilatea-stuck.json';
 
 export const SCRIPTS = {
   intro: loadScript(introJson),
+  empty: loadScript(emptyJson),
   firstBuilding: loadScript(firstBuildingJson),
   stuck: loadScript(stuckJson),
   menu: loadScript(menuJson),
@@ -29,6 +34,12 @@ export const SCRIPTS = {
 export type Scene = 'loading' | 'signin' | 'overworld' | 'iso';
 export const VISITED = 'game.visited-building';
 const SAVE_DEBOUNCE_MS = 250;
+/** A failed game write (proxy or disk trouble) is tried again this often until it lands. */
+export const RETRY_MS = 10_000;
+type Write = 'save' | 'flags' | 'settings';
+const WRITE_NAMES: Readonly<Record<Write, string>> = { save: 'Autosave', flags: 'Saving your progress flags', settings: 'Saving your settings' };
+
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
 
 const SCENE_CSS = `
 body[data-scene=overworld]>:not(.game-ui):not(#overworld):not(#dialogue):not(#game-button):not(#scene-card){display:none!important}
@@ -57,7 +68,17 @@ export class GameShell {
   /** Time on the overworld without entering any building before Ilatea offers one nudge. */
   stuckMs = 40_000;
   private owSince = 0;
+  /** The last write problem the player was told about (null when every write has landed). */
   error: string | null = null;
+  /** Writes that failed and wait to be sent again, with why. */
+  private readonly failing = new Map<Write, string>();
+  private retryTimer = 0;
+  private signedOut = false;
+  /** Flags set during play that the proxy has not confirmed yet. */
+  private unsentFlags: Record<string, FlagValue> = {};
+  /** Settings the player changed that the proxy has not confirmed yet (top-level keys only). */
+  private unsentSettings: Partial<GameSettings> = {};
+  private settingsSending: Promise<void> = Promise.resolve();
 
   constructor(
     private readonly host: HTMLElement,
@@ -66,6 +87,11 @@ export class GameShell {
   ) {
     this.dialogue = new DialogueBox(host);
     this.dialogue.onAction = (a) => this.act(a);
+    this.dialogue.avoid = () => {
+      const ow = this.overworld;
+      if (this.scene !== 'overworld' || !ow || !this.map) return [];
+      return [ow.clientOf(ow.pos), ow.clientOf(this.map.guide)];
+    };
   }
 
   // ------------------------------------------------------------------------------------------- boot
@@ -75,26 +101,27 @@ export class GameShell {
     const css = document.createElement('style');
     css.textContent = SCENE_CSS;
     document.head.append(css);
-    this.setScene('loading');
-    let session = await this.api.session();
-    if (!session.signed_in) {
-      this.setScene('signin');
-      await signInPanel(this.host, async (token) => {
-        try {
-          session = await this.api.signIn(token);
-          return null;
-        } catch (e) {
-          return e instanceof SceneSourceError && e.code === 'unauthorized'
-            ? 'NetBox did not accept that token. Check it in NetBox (your user menu, API Tokens) and try again.'
-            : `Sign-in failed: ${e instanceof Error ? e.message : String(e)}`;
+    // Until the session, the game state and the world have all loaded, a failure says why and offers "Try again".
+    let world: Awaited<ReturnType<RackWalkerView['data']['world']>>;
+    for (;;) {
+      this.setScene('loading');
+      try {
+        const session = await this.api.session();
+        if (!session.signed_in) {
+          this.setScene('signin');
+          await this.signIn();
+          this.setScene('loading');
         }
-      });
+        this.state = await this.api.state();
+        world = await this.view.data.world();
+        break;
+      } catch (e) {
+        await loadFailedPanel(this.host, errText(e));
+      }
     }
-    this.state = await this.api.state();
     this.settings = this.state.settings;
     this.flags = { ...this.state.flags };
-    this.dialogue.reduceMotion = this.settings.reduce_motion;
-    const world = await this.view.data.world();
+    this.applyMotion();
     const sites = world.sites.map((w) => w.site);
     this.map = new OverworldMap(sites.map((s) => ({ id: s.id, name: s.name })));
     const palette = (id: number) => {
@@ -104,22 +131,64 @@ export class GameShell {
     const save = this.state.saves.find((s) => s.slot === 'auto')?.data ?? null;
     this.owPos = this.map.clampPos(save ? { x: save.overworld.x, y: save.overworld.y } : this.map.start);
     this.owFacing = save?.overworld.facing ?? 'N';
-    this.overworld = new OverworldView(this.host, this.map, palette, { door: (d) => void this.enter(d), moved: (p, f) => this.moved(p, f), talk: () => this.talkToGuide() }, this.owPos, this.owFacing);
+    this.overworld = new OverworldView(this.host, this.map, palette, {
+      door: (d) => void this.enter(d),
+      moved: (p, f) => this.moved(p, f),
+      talk: () => this.talkToGuide(),
+      blocked: () => this.dialogue.open || !!this.menu,
+    }, this.owPos, this.owFacing);
     this.view.navGuard = (t) => this.guard(t);
     const prevUpdate = this.view.onUpdate;
     this.view.onUpdate = () => {
       prevUpdate?.();
-      if (this.scene === 'iso') this.scheduleSave();
+      if (this.scene !== 'iso') return;
+      // The building is the site on screen (a search pick can take the player to another site's rack).
+      const site = this.view.crumbs.find((c) => c.target.level === 'site')?.target;
+      if (site?.level === 'site') this.siteId = site.siteId;
+      this.scheduleSave();
     };
     this.menuButton();
     window.addEventListener('keydown', (e) => this.keydown(e), true);
     window.addEventListener('keyup', (e) => this.keyup(e), true);
+    // A key held while the page loses focus never sends its keyup: stop walking.
+    window.addEventListener('blur', () => this.overworld?.hold(null));
+    document.addEventListener('visibilitychange', () => this.overworld?.hold(null));
+    let restored = false;
     if (save?.scene === 'iso' && save.iso && parseView(save.iso.view)) {
-      await this.showIso(save.iso.site_id, parseView(save.iso.view)!, save.iso.camera);
-    } else this.showOverworld();
+      try {
+        await this.showIso(save.iso.site_id, parseView(save.iso.view)!, save.iso.camera);
+        restored = true;
+      } catch (e) {
+        this.notice(`Your saved place inside a building cannot be opened (${errText(e)}). You are back on the green.`);
+      }
+    }
+    if (!restored) this.showOverworld();
     this.lastSaved = JSON.stringify(this.saveData());
-    if (this.scene === 'overworld') void this.autoTalk(SCRIPTS.intro);
+    if (this.scene === 'overworld') void this.autoTalk(this.map.doors.length ? SCRIPTS.intro : SCRIPTS.empty);
     window.setInterval(() => this.stuckCheck(), 1000);
+  }
+
+  /** The sign-in panel until NetBox accepts a token (also when a session ends mid-game). */
+  private async signIn(): Promise<void> {
+    await signInPanel(this.host, async (token) => {
+      try {
+        await this.api.signIn(token);
+        return null;
+      } catch (e) {
+        return e instanceof SceneSourceError && e.code === 'unauthorized'
+          ? 'NetBox did not accept that token. Check it in NetBox (your user menu, API Tokens) and try again.'
+          : `Sign-in failed: ${errText(e)}`;
+      }
+    });
+  }
+
+  private applyMotion(): void {
+    this.dialogue.reduceMotion = this.settings.reduce_motion;
+    this.view.reduceMotion = this.settings.reduce_motion;
+  }
+
+  private notice(text: string, actions: Parameters<typeof showNotice>[2] = []): void {
+    showNotice(this.host, text, actions);
   }
 
   private setScene(s: Scene): void {
@@ -143,16 +212,17 @@ export class GameShell {
   private showOverworld(): void {
     this.siteId = null;
     this.setScene('overworld');
-    this.overworld!.place(this.owPos, this.owFacing);
     this.overworld!.show(true);
+    this.overworld!.place(this.owPos, this.owFacing);
     this.owSince = performance.now();
   }
 
+  /** Opens a level inside a building; the overworld stays as it was until the level has loaded. */
   private async showIso(siteId: number, t: Target, camera: IsoCamera | null): Promise<void> {
+    await this.view.goto(t, 'none');
     this.overworld?.show(false);
     this.siteId = siteId;
     this.setScene('iso');
-    await this.view.goto(t, 'none');
     if (camera) this.view.setCamera({ cx: camera.cx, cy: camera.cy, scale: camera.scale as RenderScale });
   }
 
@@ -171,18 +241,29 @@ export class GameShell {
     c.remove();
   }
 
-  /** Walking into a door: that site's first room (its site level if it has none). */
+  /**
+   * Walking into a door: that site's first room (its site level if it has none). When the building cannot be opened
+   * (NetBox or the proxy did not answer), the player stays outside its door with a notice and can simply try again.
+   */
   async enter(d: Door): Promise<void> {
     if (this.scene !== 'overworld') return;
     this.dialogue.close();
     this.owPos = this.map!.outside(d);
     this.owFacing = 'S';
-    const ss = await this.view.data.site(d.siteId);
-    const room = [...ss.locations].sort((a, b) => a.id - b.id)[0];
-    const t: Target = room ? { level: 'room', siteId: d.siteId, locationId: room.id } : { level: 'site', siteId: d.siteId };
     const card = this.card(`Entering ${d.name}`);
-    this.overworld!.show(false);
-    await this.showIso(d.siteId, t, null);
+    try {
+      const ss = await this.view.data.site(d.siteId);
+      const room = [...ss.locations].sort((a, b) => a.id - b.id)[0];
+      const t: Target = room ? { level: 'room', siteId: d.siteId, locationId: room.id } : { level: 'site', siteId: d.siteId };
+      await this.showIso(d.siteId, t, null);
+    } catch (e) {
+      await card;
+      this.showOverworld();
+      this.notice(`${d.name} cannot be opened right now: ${errText(e)} Walk into the door to try again.`);
+      this.scheduleSave();
+      return;
+    }
+    clearNotice();
     await card;
     const first = !this.flags[VISITED];
     if (first) this.persistFlags({ [VISITED]: true });
@@ -247,30 +328,116 @@ export class GameShell {
       const data = this.saveData();
       const json = JSON.stringify(data);
       if (json === this.lastSaved) return;
-      try {
-        await this.api.save('auto', data);
-        this.lastSaved = json;
-        this.error = null;
-      } catch (e) {
-        this.error = `Autosave failed: ${e instanceof Error ? e.message : String(e)}`;
-      }
+      if (await this.write('save', () => this.api.save('auto', data))) this.lastSaved = json;
     });
   }
 
-  /** Resolves when no save is waiting or in flight. */
+  /**
+   * Sends one game write. A refused CSRF token (another tab signed in since this page loaded) is refreshed from the
+   * session and the write sent once more; a signed-out session asks the player to sign in again; any other failure
+   * shows a notice and is retried every RETRY_MS. True when the proxy took the write.
+   */
+  private async write(what: Write, send: () => Promise<unknown>): Promise<boolean> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await send();
+        this.landed(what);
+        return true;
+      } catch (e) {
+        const code = e instanceof SceneSourceError ? e.code : null;
+        if (attempt === 0 && code === 'forbidden') {
+          const s = await this.api.session().catch(() => null);
+          if (s?.signed_in) continue;
+        }
+        if (code === 'unauthorized' || code === 'forbidden') this.lostSession(what);
+        else this.failed(what, `${WRITE_NAMES[what]} failed: ${errText(e)}`);
+        return false;
+      }
+    }
+  }
+
+  private landed(what: Write): void {
+    if (!this.failing.delete(what)) return;
+    if (this.failing.size) return this.showFailing();
+    this.error = null;
+    this.signedOut = false;
+    clearTimeout(this.retryTimer);
+    clearNotice();
+  }
+
+  private failed(what: Write, why: string): void {
+    this.failing.set(what, why);
+    this.error = why;
+    if (this.signedOut) return;
+    this.showFailing();
+    clearTimeout(this.retryTimer);
+    this.retryTimer = window.setTimeout(() => this.retryWrites(), RETRY_MS);
+  }
+
+  private showFailing(): void {
+    const why = [...this.failing.values()][0]!;
+    this.notice(`${why} Your progress is kept in this page and is sent again on its own.`, [
+      { label: 'Try again now', id: 'notice-retry', run: () => this.retryWrites() },
+    ]);
+  }
+
+  /** The session ended (signed out in another tab, expired): sign in again here, then everything waiting is sent. */
+  private lostSession(what: Write): void {
+    this.failing.set(what, 'you are signed out');
+    this.error = `${WRITE_NAMES[what]} failed: the game session has ended (signed out, perhaps in another tab).`;
+    if (this.signedOut) return;
+    this.signedOut = true;
+    clearTimeout(this.retryTimer);
+    this.notice('You are signed out (perhaps in another tab), so your progress is not being saved. Sign in again to keep it.', [
+      { label: 'Sign in again', id: 'notice-signin', run: () => void this.signInAgain() },
+    ]);
+  }
+
+  private async signInAgain(): Promise<void> {
+    clearNotice();
+    this.overworld?.hold(null);
+    await this.signIn();
+    this.signedOut = false;
+    this.retryWrites();
+  }
+
+  /** Sends every write that failed (and anything waiting behind it) again. */
+  retryWrites(): void {
+    clearTimeout(this.retryTimer);
+    const waiting = [...this.failing.keys()];
+    if (waiting.includes('save')) {
+      this.lastSaved = '';
+      this.saveNow();
+    }
+    if (waiting.includes('flags')) this.sendFlags();
+    if (waiting.includes('settings')) this.sendSettings();
+  }
+
+  /** Resolves when no save is waiting or in flight (settings writes included). */
   async idle(): Promise<void> {
     while (this.pendingSave) {
       this.saveNow();
       await this.saving;
     }
     await this.saving;
+    await this.settingsSending;
   }
 
   // ------------------------------------------------------------------------------------------- dialogue
 
   private persistFlags(set: Record<string, FlagValue>): void {
     Object.assign(this.flags, set);
-    this.api.flags(set).catch((e) => (this.error = `Could not save flags: ${String(e)}`));
+    Object.assign(this.unsentFlags, set);
+    this.sendFlags();
+  }
+
+  private sendFlags(): void {
+    const batch = { ...this.unsentFlags };
+    if (!Object.keys(batch).length) return;
+    void this.write('flags', () => this.api.flags(batch)).then((ok) => {
+      if (!ok) return;
+      for (const [k, v] of Object.entries(batch)) if (this.unsentFlags[k] === v) delete this.unsentFlags[k];
+    });
   }
 
   /** Starts a script if the hint level and its `once` flag allow it. */
@@ -286,6 +453,7 @@ export class GameShell {
     const playing = this.dialogue.play(s, this.flags, (a) => keysLabel(this.settings.keys, a));
     if (s.once) this.persistFlags({ [s.once]: true }); // seen as soon as it shows: never repeats, even after a reload
     const eff: Effects = await playing;
+    this.owSince = performance.now(); // the stuck clock starts when a talk ends, never while one was open
     const rest = Object.fromEntries(Object.entries(eff.set).filter(([k]) => k !== s.once));
     if (Object.keys(rest).length) this.persistFlags(rest);
   }
@@ -305,17 +473,43 @@ export class GameShell {
 
   private stuckCheck(): void {
     if (this.scene !== 'overworld' || this.flags[VISITED] || this.dialogue.open || this.menu || this.overworld?.walking) return;
+    if (!this.map?.doors.length) return; // no building to point at: the empty-world line already said what to do
     if (performance.now() - this.owSince >= this.stuckMs) void this.autoTalk(SCRIPTS.stuck);
   }
 
   // ------------------------------------------------------------------------------------------- menu
 
+  /**
+   * Applies new settings here and sends only what changed: the proxy's current settings are read first and the
+   * changed parts laid over them, so a change made meanwhile in another tab is kept, not reverted.
+   */
   saveSettings(s: GameSettings): void {
+    const prev = this.settings;
+    for (const k of Object.keys(s) as (keyof GameSettings)[])
+      if (JSON.stringify(s[k]) !== JSON.stringify(prev[k])) (this.unsentSettings as Record<string, unknown>)[k] = s[k];
     this.settings = s;
-    this.dialogue.reduceMotion = s.reduce_motion;
+    this.applyMotion();
     const b = document.getElementById('game-button');
     if (b) b.title = `Menu (${keysLabel(s.keys, 'menu')})`;
-    this.api.settings(s).catch((e) => (this.error = `Could not save settings: ${String(e)}`));
+    this.sendSettings();
+  }
+
+  private sendSettings(): void {
+    this.settingsSending = this.settingsSending.then(async () => {
+      const changes = { ...this.unsentSettings };
+      if (!Object.keys(changes).length) return;
+      let merged: GameSettings | null = null;
+      const ok = await this.write('settings', async () => {
+        const current = (await this.api.state()).settings;
+        merged = { ...current, ...changes };
+        await this.api.settings(merged);
+      });
+      if (!ok || !merged) return;
+      for (const k of Object.keys(changes)) if ((this.unsentSettings as Record<string, unknown>)[k] === (changes as Record<string, unknown>)[k]) delete (this.unsentSettings as Record<string, unknown>)[k];
+      // Take what other tabs changed, keeping anything changed here since this write began.
+      this.settings = { ...(merged as GameSettings), ...this.unsentSettings };
+      this.applyMotion();
+    });
   }
 
   toggleMenu(): void {
@@ -338,7 +532,7 @@ export class GameShell {
         guide: (who) => this.openMenu(who),
         settings: () => this.openMenu('settings'),
         signOut: () => void this.api.signOut().then(() => location.reload()),
-      });
+      }, this.failing.size ? (this.error ?? 'a write failed') : null);
     }
   }
 
@@ -358,12 +552,20 @@ export class GameShell {
     if (this.scene === 'signin' || this.scene === 'loading' || capturingKey()) return;
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+    if (document.getElementById('signin')) return; // signing in again mid-game: keys belong to the form
+    // Ctrl, Alt and Meta combinations are the browser's (Ctrl+D, Alt+←): never game moves, never swallowed.
+    if (e.ctrlKey || e.altKey || e.metaKey) return;
     const a = actionOf(this.settings.keys, e.code);
     const eat = () => (e.preventDefault(), e.stopImmediatePropagation());
     if (this.dialogue.open) {
+      if (a === 'menu') {
+        this.dialogue.close(); // the menu takes over: its keys must never reach a hidden talk
+        return this.openMenu(), eat();
+      }
       const digit = /^(Digit|Numpad)([1-4])$/.exec(e.code);
-      const used = digit ? this.dialogue.key('digit', Number(digit[2])) : a === 'up' || a === 'down' || a === 'interact' || a === 'cancel' ? this.dialogue.key(a) : false;
-      if (used || a !== 'menu') return eat();
+      if (digit) this.dialogue.key('digit', Number(digit[2]));
+      else if (a === 'up' || a === 'down' || a === 'interact' || a === 'cancel') this.dialogue.key(a);
+      return eat();
     }
     if (this.menu) {
       if (a === 'cancel' || a === 'menu') return this.closeMenu(), eat();
@@ -384,8 +586,10 @@ export class GameShell {
       return e.stopImmediatePropagation();
     }
     if (this.scene === 'iso' && a === 'cancel' && e.code !== 'Escape') {
-      void this.view.back().catch(() => undefined); // a remapped "back" key does what Esc does
-      return eat();
+      // A remapped "back" key does exactly what Esc does, layers included: an open panel or a drag ends first.
+      eat();
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
+      return;
     }
   }
 
