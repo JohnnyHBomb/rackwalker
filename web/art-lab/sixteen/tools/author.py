@@ -90,7 +90,25 @@ def compose_player():
             img.blit(HAND[legs[d][f]], 0, 20)
             top = HAND[tops[d]]
             img.blit(top, 0, bob)
-            # arm swing: on strides the hands move 1 px against the leading leg
+            # arm swing: on strides one hand rises a pixel (against the leading leg); the sleeve
+            # colour fills the gap it leaves
+            if f in (1, 3) and d in ("down", "up"):
+                side = (f == 1) != (d == "up")
+                xs = range(0, 4) if side else range(12, 16)
+                skin = {IDX["sk0"], IDX["sk1"], IDX["sk2"], IDX["sk3"]}
+                for x in xs:
+                    for y in range(14, 21):
+                        if img.get(x, y) in skin:
+                            img.set(x, y - 1, img.get(x, y))
+                            img.set(x, y, "b1" if img.get(x, y + 1) not in skin else img.get(x, y + 1))
+            if f in (1, 3) and d == "right":
+                for y in range(16, 20):
+                    for x in range(6, 11):
+                        if img.get(x, y) in (IDX["sk2"], IDX["sk3"], IDX["sk0"]):
+                            dx = 1 if f == 1 else -1
+                            v = img.get(x, y)
+                            img.set(x, y, "b2")
+                            img.set(x + dx, y, v)
             frames.append(img)
         out[d] = frames
     out["left"] = [f.mirror() for f in out["right"]]
@@ -806,15 +824,17 @@ def make_cottage():
     for y in range(rt, gtop + 14):
         for x in range(x0 - 3, x1 + 4):
             west = x <= ridge
-            u = (x - (x0 - 3)) % 4 if west else ((x1 + 3) - x) % 4
+            course = (y - rt) // 5
+            stag = 2 if course % 2 else 0
+            u = (x - (x0 - 3) + stag) % 4 if west else ((x1 + 3) - x + stag) % 4
             c = (y - rt) % 5
             if west:
                 col = ("o3", "o2", "o2", "o1")[u]
             else:
                 col = ("o2", "o1", "o1", "o0")[u]
-            if c == 4 and u >= 2:
-                col = "o1" if west else "o0"
-            if c == 0 and u == 0:
+            if c == 4 and u >= 1:
+                col = "o1" if west else "o0"     # the curled lower lip of each tile
+            if c == 0 and u <= 1:
                 col = "o3" if west else "o2"
             if hsh(x, y, 5) % 41 == 0:
                 col = "o0"
@@ -1414,6 +1434,14 @@ def make_characters():
                 if any(src.get(x + dx, y + dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1))) and (x + y + f) % 2 == 0:
                     img.set(x, y, "c0" if y > 12 else "c1")
     add_sprite("guide", frames, 11, frames[0].h - 1)
+    # talk frames: the mouth opens on alternate frames
+    talk = []
+    for f, img in enumerate(frames):
+        t = img.copy()
+        if f % 2 == 1:
+            t.set(9, 11, "sk0"); t.set(10, 11, "sk0"); t.set(9, 12, "pk1")
+        talk.append(t)
+    add_sprite("guide_talk", talk, 11, frames[0].h - 1)
     add_sprite("hog", [HAND["hog_0"], HAND["hog_1"]], 8, 14)
     for o in ("byte", "nocti"):
         add_sprite(o + "_perch", HAND[o + "_perch"], 8, 15)
@@ -1422,192 +1450,240 @@ def make_characters():
 
 # ---------------------------------------------------------------- portrait
 def make_portrait():
+    """Ilatea's 64x64 dialogue portrait: head and shoulders, light from the top-left. Hair is built from
+    tapered clumps (each lit on its left edge, with a sheen band across the crown and silver strands that
+    glint like fibre); the face is a shaded oval with large owl-gold eyes; a dark chiton with glowing
+    circuit traces, a hexagon clasp of her aegis, the stylus tip at the right and Byte on her shoulder."""
     S = 64
     img = Img(S, S)
-    # background: night-blue with a soft stream of light behind her, a cracked marble column at left,
-    # a rack with blinking lights at right
+    cx = 31
+    # ---- background: deep blue, a soft stream of light behind her, cracked marble column, a rack
     for y in range(S):
         for x in range(S):
-            d = (x - 40) * 0.6 + (y - 10) * -0.4
             col = "l0"
-            st = math.sin((x * 0.12 - y * 0.18)) * 6 + (x - 2 * y + 70)
-            if abs(st) < 9:
-                col = "l1"
-            if abs(st) < 4:
-                col = "l2" if dith(x, y, 0.5) else "l1"
-            if abs(st) < 1.5:
-                col = "c0" if dith(x, y, 0.5) else "l2"
+            st = x - 34 - math.sin(y * 0.11) * 5 - (y - 32) * 0.35
+            a_ = abs(st)
+            if a_ < 13:
+                col = "l1" if (a_ > 9 and dith(x, y, 0.5)) or a_ <= 9 else col
+            if a_ < 5:
+                col = "l2" if (a_ > 3 and dith(x, y, 0.5)) or a_ <= 3 else "l1"
             img.set(x, y, col)
     for y in range(S):
-        for x in range(1, 9):
-            u = (x - 1) / 7
-            col = "s4" if u < 0.3 else ("s3" if u < 0.7 else "s2")
-            if x in (3, 6):
-                col = "s2" if u < 0.7 else "s1"
-            if x == 8:
-                col = "s0"
+        for x in range(2, 10):
+            u = x - 2
+            col = ("s4", "s4", "s3", "s3", "s2", "s3", "s2", "s1")[u]
+            if u in (1, 4):
+                col = "s2" if u == 4 else "w"
             img.set(x, y, col)
-    for y in range(18, 40):
-        img.set(4 + (y // 5) % 2, y, "s1")
-    for y in range(4, 60):
-        for x in range(54, 63):
-            col = "k1" if x in (54, 62) else "l0"
-            if (y - 4) % 6 == 0:
-                col = "s0"
-            img.set(x, y, col)
-        if (y - 4) % 6 == 3:
-            img.set(57, y, ["g4", "c1", "ye1", "g4", "tu2"][(y // 6) % 5])
-            img.set(59, y, ["c1", "g4", "g4", "ye1", "c1"][(y // 6) % 5])
-
-    cx, cy = 32, 30
-    # hair, back layer: long dark flowing hair framing the face down past the shoulders
+        img.set(10, y, "s0")
+    for i, (x, y) in enumerate(((6, 20), (5, 21), (5, 22), (6, 23), (7, 24), (7, 25), (6, 26), (4, 40), (5, 41), (5, 42))):
+        img.set(x, y, "s1")
     for y in range(6, 62):
-        for x in range(10, 54):
-            dx = (x + 0.5 - cx)
-            dy = (y + 0.5 - cy)
-            wide = 17 + max(0, (y - 26)) * 0.18
-            if y < 14:
-                wide = 6 + (y - 6) * 1.6
-            if abs(dx) < wide and y < 56 - abs(dx) * 0.2:
-                strand = math.sin(dx * 0.9 + y * 0.15) * 0.5 + 0.5
-                col = "l1" if strand > 0.55 else "l0"
-                if dx < -4 and strand > 0.85:
-                    col = "l2"
-                if abs((dx * 3.0 + y * 0.6) % 11 - 5) < 0.5:
-                    col = "s3"   # silver strand like a fibre
-                img.set(x, y, col)
-    # neck and shoulders, chiton
-    for y in range(40, 64):
-        for x in range(8, 57):
+        for x in range(53, 62):
+            col = "k1" if x in (53, 61) else ("l0" if (y - 6) % 5 else "s0")
+            img.set(x, y, col)
+        if (y - 6) % 5 == 2:
+            img.set(56, y, ["g4", "c1", "ye1", "g4", "tu2", "c1"][(y // 5) % 6])
+            img.set(58, y, ["c1", "g4", "g4", "ye1", "c1", "g4"][(y // 5) % 6])
+
+    # ---- hair behind the head and shoulders
+    def clumps(spec, mark):
+        for k, (p0, p1, p2, w0) in enumerate(spec):
+            for i in range(0, 121):
+                t = i / 120
+                bx = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]
+                by = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]
+                dx = 2 * (1 - t) * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0])
+                dy = 2 * (1 - t) * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1])
+                ln = math.hypot(dx, dy) or 1
+                nx, ny = -dy / ln, dx / ln
+                r = w0 * (1 - t) ** 0.6 + 0.4
+                for yy in range(int(by - r - 1), int(by + r + 2)):
+                    for xx in range(int(bx - r - 1), int(bx + r + 2)):
+                        d = math.hypot(xx + 0.5 - bx, yy + 0.5 - by)
+                        if d <= r:
+                            across = ((xx + 0.5 - bx) * nx + (yy + 0.5 - by) * ny) / r
+                            mark(xx, yy, k, across, t)
+    hair = {}
+    def mark_hair(x, y, k, across, t):
+        if 0 <= x < S and 0 <= y < S:
+            hair[(x, y)] = (k, across, t)
+    back = [((cx - 6, 8), (cx - 22, 22), (cx - 19, 63), 9), ((cx + 6, 8), (cx + 22, 22), (cx + 19, 63), 9),
+            ((cx - 2, 6), (cx - 16, 30), (cx - 12, 60), 7), ((cx + 2, 6), (cx + 17, 30), (cx + 13, 60), 7),
+            ((cx, 5), (cx - 4, 14), (cx - 8, 30), 10), ((cx, 5), (cx + 5, 14), (cx + 9, 30), 10)]
+    clumps(back, mark_hair)
+
+    def hair_col(x, y, k, across, t, front=False):
+        # clump-local lighting (left edge lit) plus the light on the whole mass from the top-left
+        g = -(x - cx) / 22.0 * 0.6 - (y - 18) / 40.0 * 0.6
+        v = -across * 0.55 + g + (0.25 if front else 0.0)
+        col = "l3" if v > 0.75 else "l2" if v > 0.25 else "l1" if v > -0.35 else "l0"
+        # sheen: a short arc across the lit side of the crown
+        sy = 12 + ((x - cx) / 14.0) ** 2 * 5
+        if abs(y - sy) < 1.0 and x < cx + 4 and across < 0.6:
+            col = "s3" if (x + y) % 3 else "l3"
+        return col
+    for (x, y), (k, across, t) in hair.items():
+        img.set(x, y, hair_col(x, y, k, across, t))
+
+    # ---- neck, shoulders and chiton
+    for y in range(36, S):
+        for x in range(0, S):
             dx = x + 0.5 - cx
-            sh = 10 + (y - 40) * 1.6
-            if abs(dx) < sh:
-                if abs(dx) < 4.5 and y < 47:
-                    col = "sk2" if dx < 1 else "sk1"
-                    if dx < -2.5:
-                        col = "sk3"
-                    img.set(x, y, col)
-                elif y >= 46 or abs(dx) > 6:
-                    # bare shoulders at the sides, chiton over the chest from a shoulder clasp
-                    chit = abs(dx) < 11 + (y - 46) * 1.0 and y >= 46
-                    if chit:
-                        col = "l1" if dx < 3 else "l0"
-                        if dx < -6:
-                            col = "l2"
-                        # folds
-                        if (int(dx + 40) + (y // 4)) % 7 == 0:
-                            col = "l0"
-                    else:
-                        col = "sk2" if dx < 0 else "sk1"
-                        if dx < -14:
-                            col = "sk3"
-                        if abs(dx) > sh - 1.5:
-                            col = "sk0"
-                    img.set(x, y, col)
-    # circuit lines on the chiton
-    for (x0, y0, x1, y1) in ((24, 50, 30, 50), (30, 50, 30, 56), (30, 56, 38, 56), (36, 48, 36, 53),
-                             (36, 53, 42, 53), (20, 58, 26, 58), (26, 58, 26, 63), (40, 59, 46, 59)):
-        for t in range(0, 41):
-            xx = round(x0 + (x1 - x0) * t / 40)
-            yy = round(y0 + (y1 - y0) * t / 40)
-            img.set(xx, yy, "c1")
-    for (x, y) in ((30, 56), (36, 53), (26, 58)):
-        img.set(x, y, "c2")
-    # aegis clasp on the shoulder: a small hex
-    for (x, y, c) in ((19, 47, "c1"), (20, 46, "c2"), (21, 47, "c1"), (19, 48, "c0"), (21, 48, "c0"), (20, 49, "c1"), (20, 47, "w")):
-        img.set(x, y, c)
-    # face: shaded oval
-    for y in range(13, 43):
-        for x in range(18, 47):
-            dx = (x + 0.5 - cx) / 10.5
-            dy = (y + 0.5 - 28) / 13.5
-            jaw = 1.0 if dy < 0.3 else 1.0 - (dy - 0.3) * 0.75
-            if dx * dx + dy * dy <= 1 and abs(dx) <= jaw:
-                nz = math.sqrt(max(0, 1 - dx * dx - dy * dy))
-                li = -dx * 0.55 - dy * 0.35 + nz * 0.55
-                col = "sk3" if li > 0.62 else "sk2" if li > 0.25 else "sk1" if li > -0.1 else "sk0"
+            if y < 48 and abs(dx) < 4.5:
+                col = "sk2" if dx < 1.5 else "sk1"
+                if y < 40:
+                    col = "sk1" if dx < 2 else "sk0"   # shadow under the chin
                 img.set(x, y, col)
-    # face outline on the shadow side only
-    for y in range(13, 44):
-        for x in range(18, 48):
-            if img.name(x, y).startswith("sk") and not img.name(x + 1, y).startswith("sk") and x > cx:
-                img.set(x, y, "sk0")
-            if img.name(x, y).startswith("sk") and not img.name(x, y + 1).startswith("sk") and y > 36 and abs(x - cx) < 9:
-                img.set(x, y + 1, "sk0") if img.name(x, y + 1)[0] in "l" else None
-    # fringe: hair falling over the forehead in two sweeps, parted a little left of centre
-    for y in range(10, 24):
-        for x in range(14, 50):
-            dx = x + 0.5 - 29
-            lim = 22 - (y - 10) * 1.1 - abs(dx) * 0.55 + math.sin(x * 0.8) * 1.2
-            if y < 13 + abs(dx) * 0.0 or (y - 10) < (8 - abs(dx) * 0.25 + math.sin(x * 0.9) * 1.5):
-                if abs(x + 0.5 - cx) < 17:
-                    col = "l1" if dx < -2 else "l0"
-                    if (x + y) % 5 == 0 and dx < 0:
+            sh = 7 + (y - 44) * 2.1 if y >= 44 else -1
+            if y >= 44 and abs(dx) < sh:
+                chit = abs(dx) < 9 + (y - 47) * 0.9 and y >= 47
+                if chit:
+                    col = "l1" if dx < 0 else "l0"
+                    if dx < -7 and dx > -11:
                         col = "l2"
-                    if abs((x * 2 + y) % 13 - 6) < 0.6:
-                        col = "s3"
-                    img.set(x, y, col)
-    # hair sides covering the face edges
-    for y in range(18, 44):
-        for x in range(16, 49):
-            dx = x + 0.5 - cx
-            edge = 10.5 - (0 if y < 30 else (y - 30) * 0.15)
-            if abs(dx) > edge and abs(dx) < edge + 4 + (y - 18) * 0.12:
-                col = "l1" if dx < 0 else "l0"
-                if (y + x) % 7 == 0:
-                    col = "s4" if dx < 0 else "s2"
+                    if (int(dx * 0.7 + y * 0.25)) % 5 == 0 and dx > -6:
+                        col = "l0"
+                else:
+                    col = "sk2" if dx < 0 else "sk1"
+                    if dx < -12 and y < 54:
+                        col = "sk3"
+                    if abs(dx) > sh - 1.2:
+                        col = "sk0" if dx > 0 else "sk1"
                 img.set(x, y, col)
-    # glowing circlet (a thin line of light on the brow)
-    for x in range(22, 43):
-        y = 17 + round(((x - 32.5) / 10.0) ** 2 * 2)
-        img.set(x, y, "c1" if x % 4 else "c2")
-    img.set(32, 17, "w"); img.set(33, 17, "c2")
-    # eyes: owl-gold and glowing, calm
-    for ex, sgn in ((26, -1), (37, 1)):
-        img.hline(ex - 2, ex + 2, 27, "l0")       # upper lid / lashes
-        img.set(ex - 3, 27 + (0 if sgn < 0 else 0), "l0") if sgn < 0 else img.set(ex + 3, 27, "l0")
-        img.hline(ex - 2, ex + 2, 28, "w")
-        img.set(ex - 1, 28, "ye1"); img.set(ex, 28, "ye2"); img.set(ex + 1, 28, "ye1")
-        img.set(ex - 1, 29, "ye0"); img.set(ex, 29, "ye1"); img.set(ex + 1, 29, "ye0")
-        img.set(ex, 29, "k0"); img.set(ex - 1 + (1 if sgn < 0 else 0), 28, "w")
-        img.hline(ex - 1, ex + 1, 30, "sk1")
-        # brows
-        img.hline(ex - 2, ex + 2, 24, "l1")
-        img.set(ex + 3 * sgn, 25 if sgn < 0 else 25, "l1")
-    # nose (light from top-left: shadow on the right)
-    img.set(32, 30, "sk2"); img.set(33, 31, "sk1"); img.set(33, 32, "sk1"); img.set(32, 33, "sk1"); img.set(33, 33, "sk0")
-    # warm knowing smile
-    img.hline(29, 35, 36, "sk0")
-    img.set(28, 35, "sk0"); img.set(36, 35, "sk0")
-    img.hline(30, 34, 37, "pk1")
-    img.set(31, 37, "pk2")
-    # cheeks
-    img.set(24, 32, "pk2"); img.set(25, 33, "pk1"); img.set(40, 32, "pk1"); img.set(39, 33, "pk1")
-    # spear-stylus across the lower right, tip glowing with a traced glyph
-    for t in range(0, 60):
-        x = 63 - t * 0.48
-        y = 63 - t * 0.98
-        if y < 2:
+    # chiton neckline edge
+    for y in range(47, 52):
+        img.set(round(cx - 9 - (y - 47) * 0.9), y, "l3")
+    # circuit traces with nodes
+    # one trace follows the neckline; short drops end in glowing nodes
+    traces = [[(cx - 8, 49), (cx + 8, 49)], [(cx - 5, 49), (cx - 5, 54)], [(cx + 1, 49), (cx + 1, 57)],
+              [(cx + 6, 49), (cx + 6, 53)], [(cx - 11, 60), (cx - 5, 60)], [(cx + 9, 61), (cx + 14, 61)]]
+    for tr in traces:
+        for (x0, y0), (x1, y1) in zip(tr, tr[1:]):
+            for i in range(0, 41):
+                img.set(round(x0 + (x1 - x0) * i / 40), round(y0 + (y1 - y0) * i / 40), "c1")
+        img.set(tr[0][0], tr[0][1], "c2")
+        img.set(tr[-1][0], tr[-1][1], "c2")
+    # aegis: a hexagon clasp on her right shoulder and a few translucent hex cells
+    for (hx, hy, big) in ((cx - 15, 47, True), (cx - 21, 52, False), (cx - 18, 57, False), (cx + 17, 54, False)):
+        pts = [(-1, -2), (0, -2), (1, -2), (2, -1), (2, 0), (1, 1), (0, 1), (-1, 1), (-2, 0), (-2, -1)] if big else \
+              [(0, -1), (1, -1), (1, 0), (0, 1), (-1, 1), (-1, 0)]
+        for dx, dy in pts:
+            img.set(hx + dx, hy + dy, "c1" if big else "c0")
+        if big:
+            img.set(hx, hy - 1, "w"); img.set(hx - 1, hy - 1, "c2"); img.set(hx, hy, "c2"); img.set(hx + 1, hy - 1, "c1")
+            img.set(hx - 1, hy, "c0"); img.set(hx + 1, hy, "c0")
+
+    # ---- face
+    fcx, fcy, rx, ry = cx, 26, 10.5, 13
+    face = set()
+    for y in range(10, 42):
+        for x in range(16, 48):
+            dx = (x + 0.5 - fcx) / rx
+            dy = (y + 0.5 - fcy) / ry
+            jaw = 1.0 if dy < 0.25 else max(0.0, 1.0 - (dy - 0.25) * 1.05)
+            if dx * dx + dy * dy <= 1.0 and abs(dx) <= jaw + 0.02:
+                nz = math.sqrt(max(0.0, 1 - dx * dx - dy * dy))
+                li = -dx * 0.6 - dy * 0.3 + nz * 0.5
+                col = "sk3" if li > 0.55 else "sk2" if li > 0.12 else "sk1" if li > -0.25 else "sk0"
+                img.set(x, y, col)
+                face.add((x, y))
+    # jaw outline on the shadow side and the chin
+    for (x, y) in list(face):
+        if (x + 1, y) not in face and x > fcx:
+            img.set(x, y, "sk0")
+        if (x, y + 1) not in face and y > fcy + 6:
+            img.set(x, y, "sk0" if x > fcx - 4 else "sk1")
+    # ears hidden by hair; fringe: tapered clumps falling from the parting, side-swept to her left
+    front = []
+    part = (cx - 3, 9)
+    for i, (ex, ey, w0) in enumerate(((cx - 13, 30, 4.5), (cx - 10, 21, 3.5), (cx - 5, 18, 3.0), (cx + 2, 19, 3.5),
+                                      (cx + 9, 19, 4.0), (cx + 13, 28, 4.5), (cx + 14, 38, 3.5), (cx - 14, 40, 3.5))):
+        c1 = ((part[0] + ex) / 2 + (2 if ex > cx else -3), (part[1] + ey) / 2 - 3)
+        front.append((part, c1, (ex, ey), w0))
+    fh = {}
+    def mark_front(x, y, k, across, t):
+        if 0 <= x < S and 0 <= y < S:
+            fh[(x, y)] = (k, across, t)
+    clumps(front, mark_front)
+    for (x, y), (k, across, t) in fh.items():
+        img.set(x, y, hair_col(x, y, k, across, t, True))
+    # seams between clumps and the hair outline (dark navy, not black)
+    for (x, y), (k, across, t) in fh.items():
+        for dx, dy in ((1, 0), (0, 1)):
+            q = fh.get((x + dx, y + dy))
+            if q and q[0] != k and q[1] > -0.2:
+                img.set(x, y, "l0")
+    allhair = set(hair) | set(fh)
+    for (x, y) in list(allhair):
+        for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            p = (x + dx, y + dy)
+            if p not in allhair and 0 <= p[0] < S and 0 <= p[1] < S and p not in face and img.name(*p) in ("l0", "l1", "l2"):
+                img.set(p[0], p[1], "k1")
+    # silver strands that glint like fibre
+    for (p0, p1, p2) in (((cx - 9, 24), (cx - 19, 36), (cx - 15, 52)), ((cx + 13, 30), (cx + 18, 42), (cx + 14, 54)),
+                         ((cx - 1, 8), (cx + 7, 11), (cx + 11, 18))):
+        for i in range(0, 90):
+            t = i / 89
+            bx = (1 - t) ** 2 * p0[0] + 2 * (1 - t) * t * p1[0] + t * t * p2[0]
+            by = (1 - t) ** 2 * p0[1] + 2 * (1 - t) * t * p1[1] + t * t * p2[1]
+            xi, yi = int(bx), int(by)
+            if (xi, yi) in face:
+                continue
+            img.set(xi, yi, "c2" if i in (30, 31) else ("s4" if i < 20 else "s3"))
+    # glowing circlet across the brow
+    for x in range(cx - 9, cx + 10):
+        y = 17 + round(((x - cx) / 9.0) ** 2 * 1.5)
+        if (x, y) in face or (x, y) in fh:
+            img.set(x, y, "c1" if (x - cx) % 3 else "c2")
+    img.set(cx, 16, "w"); img.set(cx, 17, "c2"); img.set(cx - 1, 17, "c2"); img.set(cx + 1, 17, "c2")
+    # eyes: calm, large, owl-gold; lash line thick, glint top-left
+    for ex, sgn in ((cx - 5, -1), (cx + 5, 1)):
+        ey = 26
+        # lash line, thick, flicking outward
+        img.hline(ex - 2, ex + 2, ey - 2, "k1")
+        img.set(ex + 3 * sgn, ey - 2, "k1"); img.set(ex + 3 * sgn, ey - 3, "k1")
+        # iris: owl-gold, lit from the top-left, dark centre, a white glint
+        img.hline(ex - 2, ex + 2, ey - 1, "ye1")
+        img.hline(ex - 2, ex + 2, ey, "ye1")
+        img.hline(ex - 2, ex + 2, ey + 1, "ye0")
+        img.set(ex - 2, ey - 1, "w"); img.set(ex + 2, ey - 1, "ye0"); img.set(ex + 2, ey, "ye0")
+        img.set(ex, ey, "k1"); img.set(ex, ey - 1, "ye0"); img.set(ex - 1, ey, "ye2"); img.set(ex + 1, ey + 1, "ye1")
+        img.set(ex - 1, ey - 1, "w")
+        img.hline(ex - 1, ex + 1, ey + 2, "sk1")
+        img.set(ex - 2 * sgn, ey + 2, "sk0")
+        img.hline(ex - 2, ex + 1, ey - 5, "l1")      # brows, calm and level
+        img.set(ex + 2 * sgn, ey - 5, "l0")
+    # nose and smile
+    img.set(cx + 1, 29, "sk1"); img.set(cx + 1, 30, "sk1"); img.set(cx, 31, "sk0"); img.set(cx + 1, 31, "sk0")
+    img.hline(cx - 3, cx + 3, 35, "sk0")
+    img.set(cx - 4, 34, "sk0"); img.set(cx + 4, 34, "sk0")
+    img.hline(cx - 2, cx + 2, 36, "pk1")
+    img.set(cx - 1, 36, "pk2")
+    for (x, y) in ((cx - 8, 30), (cx - 7, 30)):
+        img.set(x, y, "pk2")
+    # stylus at the right: shaft rising to a glowing tip that has just traced a small glyph
+    for i in range(0, 64):
+        x = 50 - i * 0.18
+        y = 63 - i
+        if y < 6:
             break
         xi, yi = round(x), round(y)
-        if yi < 44 and xi < 52:
-            pass
         img.set(xi, yi, "s3"); img.set(xi + 1, yi, "s1")
-    tipx, tipy = 34, 4
-    for (x, y, c) in ((44, 2, "c2"), (45, 3, "w"), (44, 4, "c1"), (43, 3, "c1"), (46, 2, "c0"), (42, 5, "c0"),
-                      (45, 1, "c1")):
-        img.set(x, y, c)
-    # traced constellation glyph
-    for (x, y) in ((48, 6), (51, 9), (49, 12), (52, 14)):
+    tx, ty = 49, 5
+    for dx, dy, c in ((0, 0, "w"), (-1, 0, "c2"), (1, 0, "c2"), (0, -1, "c2"), (0, 1, "c2"), (-2, 0, "c0"),
+                      (2, 0, "c0"), (0, -2, "c1"), (0, 2, "c1"), (-1, -1, "c1"), (1, 1, "c1")):
+        img.set(tx + dx, ty + dy, c)
+    for (x, y) in ((44, 9), (41, 12), (45, 14), (43, 17)):
         img.set(x, y, "c2")
-    for (x, y) in ((49, 7), (50, 8), (50, 10), (50, 11), (51, 13)):
+    for (x, y) in ((43, 10), (42, 11), (43, 13), (44, 13), (44, 16)):
         img.set(x, y, "c0")
-    # Byte the owl on her shoulder (left of the picture)
-    owl = HAND["byte_perch"]
-    img.blit(owl, 3, 38)
-    # frame
+    # Byte on her shoulder
+    img.blit(HAND["byte_perch"], 4, 44)
+    # bevelled frame
     for i in range(S):
-        img.set(i, 0, "s1"); img.set(i, S - 1, "k0"); img.set(0, i, "s1"); img.set(S - 1, i, "k0")
+        img.set(i, 0, "s3"); img.set(0, i, "s3"); img.set(i, S - 1, "s0"); img.set(S - 1, i, "s0")
+        img.set(i, 1, "s1") if 0 < i < S - 1 else None
     add_sprite("portrait", img, 0, 0)
 
 
@@ -1631,8 +1707,8 @@ def scene_objects():
     o("bush", 188, 56, shadow=[3, 0, 8, 3])
     o("bush", 246, 150, shadow=[3, 0, 8, 3])
     # buildings
-    o("datacentre", 56, 112, shadow=[6, -2, 44, 5], kind="building")
-    o("cottage", 134, 112, shadow=[5, -2, 27, 4], kind="building")
+    o("datacentre", 56, 112, kind="building", shade=[[99, 74], [105, 80], [105, 115], [99, 115]])
+    o("cottage", 134, 112, kind="building", shade=[[157, 68], [162, 73], [162, 115], [157, 115]])
     o("doormat", 56, 116, flat=True)
     o("condenser", 102, 111, shadow=[3, 0, 10, 3])
     o("cable_drum", 12, 117, shadow=[3, 0, 8, 3])
@@ -1642,17 +1718,17 @@ def scene_objects():
     o("bicycle", 112, 118, shadow=[2, 0, 10, 2])
     o("signpost", 198, 128, shadow=[2, 0, 5, 2])
     # windmill on the plateau, sails turn over it
-    o("windmill", 216, 77, shadow=[6, -1, 21, 4])
+    o("windmill", 216, 77, shade=[[234, 58], [242, 64], [242, 79], [230, 79]])
     o("sails", 216, 28, anim={"fps": 8}, layer="top")
     # tulip field to the east, fenced
     for x in range(206, 256, 16):
-        o("fence_h", x + 2, 98)
+        o("fence_h", x + 2, 101)
         o("fence_h", x + 2, 144)
-    o("fence_v", 205, 120)
+    o("fence_v", 205, 123)
     o("fence_v", 205, 142)
     rows = ["tulip_red", "tulip_yellow", "tulip_pink", "tulip_red", "tulip_yellow", "tulip_pink", "tulip_red", "tulip_yellow"]
     for r in range(8):
-        yy = 105 + r * 5
+        yy = 107 + r * 5
         for x in range(212, 256, 4):
             o(rows[r], x + (r % 2) * 2, yy, anim={"fps": 5, "phase": (x // 4 + r) % 4})
     # tulip fields south of the canal
@@ -1666,6 +1742,12 @@ def scene_objects():
     o("bridge_deck", 91, 150, flat=True, ax=0, ay=0)
     o("bridge_rail", 92, 148, ay=0, flat=True)
     o("bridge_rail", 114, 148, ay=0, flat=True)
+    # on the plateau: a poplar at the edge, flowers, a stone
+    o("poplar", 250, 66, shadow=[4, -1, 6, 3])
+    o("tree_b", 168, 46, shadow=[5, -1, 12, 4])
+    for s_, x, y in (("daisy", 196, 66), ("buttercup", 204, 70), ("violet", 240, 76), ("stone_big", 184, 76),
+                     ("tuft", 150, 70), ("daisy", 246, 30), ("tuft", 176, 14), ("buttercup", 140, 58)):
+        o(s_, x, y, anim={"fps": 2, "phase": x % 2} if not s_.startswith("stone") else None)
     # waterside: reeds on the banks, lily pads, a moored boat
     for x, y in ((8, 199), (30, 197), (70, 198), (126, 197), (188, 199), (240, 198), (150, 160), (224, 160)):
         o("reeds", x, y, anim={"fps": 2, "phase": x % 2})

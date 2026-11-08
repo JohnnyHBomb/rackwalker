@@ -58,6 +58,23 @@ class Frame {
       }
     }
   }
+  // remap every pixel inside a polygon (even-odd rule, pixel centres) through a palette table
+  polygon(pts, table) {
+    const ys = pts.map((p) => p[1]), y0 = Math.max(0, Math.min(...ys)), y1 = Math.min(this.h - 1, Math.max(...ys));
+    for (let y = y0; y <= y1; y++) {
+      const cy = y + 0.5, xs = [];
+      for (let i = 0; i < pts.length; i++) {
+        const [ax, ay] = pts[i], [bx, by] = pts[(i + 1) % pts.length];
+        if ((ay <= cy && by > cy) || (by <= cy && ay > cy)) xs.push(ax + ((cy - ay) / (by - ay)) * (bx - ax));
+      }
+      xs.sort((a, b) => a - b);
+      for (let k = 0; k + 1 < xs.length; k += 2) {
+        for (let x = Math.max(0, Math.ceil(xs[k] - 0.5)); x <= Math.min(this.w - 1, Math.floor(xs[k + 1] - 0.5)); x++) {
+          const i = y * this.w + x; this.px[i] = table[this.px[i]];
+        }
+      }
+    }
+  }
   toImageData() {
     const out = new ImageData(this.w, this.h);
     for (let i = 0; i < this.px.length; i++) {
@@ -102,6 +119,7 @@ export function renderScene(t, opts = {}) {
     Object.assign(p, { x: w.x, y: w.y, sprite: 'player_' + w.dir, frameNo: w.frame });
   }
   for (const o of objs) if (o.flat) f.sprite(o.sprite, 0, o.x, o.y, false, o.ax, o.ay);
+  for (const o of objs) if (o.shade) f.polygon(o.shade, PAL.darker);
   for (const o of objs) if (o.shadow) f.ellipse(o.x + o.shadow[0], o.y + o.shadow[1], o.shadow[2], o.shadow[3], PAL.darker);
   for (const o of objs) if (o.glow) f.ellipse(o.x + o.glow[0], o.y + o.glow[1], o.glow[2], o.glow[3], PAL.glow);
   const sorted = objs.filter((o) => !o.flat && o.layer !== 'top').sort((a, b) => a.y - b.y || a.x - b.x);

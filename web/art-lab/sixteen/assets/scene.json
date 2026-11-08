@@ -204,25 +204,49 @@
 "sprite": "datacentre",
 "x": 56,
 "y": 112,
-"shadow": [
-6,
--2,
-44,
-5
+"kind": "building",
+"shade": [
+[
+99,
+74
 ],
-"kind": "building"
+[
+105,
+80
+],
+[
+105,
+115
+],
+[
+99,
+115
+]
+]
 },
 {
 "sprite": "cottage",
 "x": 134,
 "y": 112,
-"shadow": [
-5,
--2,
-27,
-4
+"kind": "building",
+"shade": [
+[
+157,
+68
 ],
-"kind": "building"
+[
+162,
+73
+],
+[
+162,
+115
+],
+[
+157,
+115
+]
+]
 },
 {
 "sprite": "doormat",
@@ -311,11 +335,23 @@
 "sprite": "windmill",
 "x": 216,
 "y": 77,
-"shadow": [
-6,
--1,
-21,
-4
+"shade": [
+[
+234,
+58
+],
+[
+242,
+64
+],
+[
+242,
+79
+],
+[
+230,
+79
+]
 ]
 },
 {
@@ -330,7 +366,7 @@
 {
 "sprite": "fence_h",
 "x": 208,
-"y": 98
+"y": 101
 },
 {
 "sprite": "fence_h",
@@ -340,7 +376,7 @@
 {
 "sprite": "fence_h",
 "x": 224,
-"y": 98
+"y": 101
 },
 {
 "sprite": "fence_h",
@@ -350,7 +386,7 @@
 {
 "sprite": "fence_h",
 "x": 240,
-"y": 98
+"y": 101
 },
 {
 "sprite": "fence_h",
@@ -360,7 +396,7 @@
 {
 "sprite": "fence_h",
 "x": 256,
-"y": 98
+"y": 101
 },
 {
 "sprite": "fence_h",
@@ -370,7 +406,7 @@
 {
 "sprite": "fence_v",
 "x": 205,
-"y": 120
+"y": 123
 },
 {
 "sprite": "fence_v",
@@ -380,7 +416,7 @@
 {
 "sprite": "tulip_red",
 "x": 212,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -389,7 +425,7 @@
 {
 "sprite": "tulip_red",
 "x": 216,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -398,7 +434,7 @@
 {
 "sprite": "tulip_red",
 "x": 220,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -407,7 +443,7 @@
 {
 "sprite": "tulip_red",
 "x": 224,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -416,7 +452,7 @@
 {
 "sprite": "tulip_red",
 "x": 228,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -425,7 +461,7 @@
 {
 "sprite": "tulip_red",
 "x": 232,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -434,7 +470,7 @@
 {
 "sprite": "tulip_red",
 "x": 236,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -443,7 +479,7 @@
 {
 "sprite": "tulip_red",
 "x": 240,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -452,7 +488,7 @@
 {
 "sprite": "tulip_red",
 "x": 244,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -461,7 +497,7 @@
 {
 "sprite": "tulip_red",
 "x": 248,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -470,7 +506,7 @@
 {
 "sprite": "tulip_red",
 "x": 252,
-"y": 105,
+"y": 107,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -479,7 +515,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 214,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -488,7 +524,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 218,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -497,7 +533,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 222,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -506,7 +542,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 226,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -515,7 +551,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 230,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -524,7 +560,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 234,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -533,7 +569,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 238,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -542,7 +578,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 242,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -551,7 +587,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 246,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -560,7 +596,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 250,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -569,7 +605,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 254,
-"y": 110,
+"y": 112,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -578,7 +614,7 @@
 {
 "sprite": "tulip_pink",
 "x": 212,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -587,7 +623,7 @@
 {
 "sprite": "tulip_pink",
 "x": 216,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -596,7 +632,7 @@
 {
 "sprite": "tulip_pink",
 "x": 220,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -605,7 +641,7 @@
 {
 "sprite": "tulip_pink",
 "x": 224,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -614,7 +650,7 @@
 {
 "sprite": "tulip_pink",
 "x": 228,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -623,7 +659,7 @@
 {
 "sprite": "tulip_pink",
 "x": 232,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -632,7 +668,7 @@
 {
 "sprite": "tulip_pink",
 "x": 236,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -641,7 +677,7 @@
 {
 "sprite": "tulip_pink",
 "x": 240,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -650,7 +686,7 @@
 {
 "sprite": "tulip_pink",
 "x": 244,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -659,7 +695,7 @@
 {
 "sprite": "tulip_pink",
 "x": 248,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -668,7 +704,7 @@
 {
 "sprite": "tulip_pink",
 "x": 252,
-"y": 115,
+"y": 117,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -677,7 +713,7 @@
 {
 "sprite": "tulip_red",
 "x": 214,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -686,7 +722,7 @@
 {
 "sprite": "tulip_red",
 "x": 218,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -695,7 +731,7 @@
 {
 "sprite": "tulip_red",
 "x": 222,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -704,7 +740,7 @@
 {
 "sprite": "tulip_red",
 "x": 226,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -713,7 +749,7 @@
 {
 "sprite": "tulip_red",
 "x": 230,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -722,7 +758,7 @@
 {
 "sprite": "tulip_red",
 "x": 234,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -731,7 +767,7 @@
 {
 "sprite": "tulip_red",
 "x": 238,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -740,7 +776,7 @@
 {
 "sprite": "tulip_red",
 "x": 242,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -749,7 +785,7 @@
 {
 "sprite": "tulip_red",
 "x": 246,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -758,7 +794,7 @@
 {
 "sprite": "tulip_red",
 "x": 250,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -767,7 +803,7 @@
 {
 "sprite": "tulip_red",
 "x": 254,
-"y": 120,
+"y": 122,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -776,7 +812,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 212,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -785,7 +821,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 216,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -794,7 +830,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 220,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -803,7 +839,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 224,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -812,7 +848,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 228,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -821,7 +857,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 232,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -830,7 +866,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 236,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -839,7 +875,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 240,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -848,7 +884,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 244,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -857,7 +893,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 248,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -866,7 +902,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 252,
-"y": 125,
+"y": 127,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -875,7 +911,7 @@
 {
 "sprite": "tulip_pink",
 "x": 214,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -884,7 +920,7 @@
 {
 "sprite": "tulip_pink",
 "x": 218,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -893,7 +929,7 @@
 {
 "sprite": "tulip_pink",
 "x": 222,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -902,7 +938,7 @@
 {
 "sprite": "tulip_pink",
 "x": 226,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -911,7 +947,7 @@
 {
 "sprite": "tulip_pink",
 "x": 230,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -920,7 +956,7 @@
 {
 "sprite": "tulip_pink",
 "x": 234,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -929,7 +965,7 @@
 {
 "sprite": "tulip_pink",
 "x": 238,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -938,7 +974,7 @@
 {
 "sprite": "tulip_pink",
 "x": 242,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -947,7 +983,7 @@
 {
 "sprite": "tulip_pink",
 "x": 246,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -956,7 +992,7 @@
 {
 "sprite": "tulip_pink",
 "x": 250,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -965,7 +1001,7 @@
 {
 "sprite": "tulip_pink",
 "x": 254,
-"y": 130,
+"y": 132,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -974,7 +1010,7 @@
 {
 "sprite": "tulip_red",
 "x": 212,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -983,7 +1019,7 @@
 {
 "sprite": "tulip_red",
 "x": 216,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -992,7 +1028,7 @@
 {
 "sprite": "tulip_red",
 "x": 220,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -1001,7 +1037,7 @@
 {
 "sprite": "tulip_red",
 "x": 224,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -1010,7 +1046,7 @@
 {
 "sprite": "tulip_red",
 "x": 228,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -1019,7 +1055,7 @@
 {
 "sprite": "tulip_red",
 "x": 232,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -1028,7 +1064,7 @@
 {
 "sprite": "tulip_red",
 "x": 236,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -1037,7 +1073,7 @@
 {
 "sprite": "tulip_red",
 "x": 240,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -1046,7 +1082,7 @@
 {
 "sprite": "tulip_red",
 "x": 244,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -1055,7 +1091,7 @@
 {
 "sprite": "tulip_red",
 "x": 248,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -1064,7 +1100,7 @@
 {
 "sprite": "tulip_red",
 "x": 252,
-"y": 135,
+"y": 137,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -1073,7 +1109,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 214,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -1082,7 +1118,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 218,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -1091,7 +1127,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 222,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -1100,7 +1136,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 226,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -1109,7 +1145,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 230,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -1118,7 +1154,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 234,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -1127,7 +1163,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 238,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -1136,7 +1172,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 242,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 3
@@ -1145,7 +1181,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 246,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 0
@@ -1154,7 +1190,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 250,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 1
@@ -1163,7 +1199,7 @@
 {
 "sprite": "tulip_yellow",
 "x": 254,
-"y": 140,
+"y": 142,
 "anim": {
 "fps": 5,
 "phase": 2
@@ -2585,6 +2621,97 @@
 "y": 148,
 "ay": 0,
 "flat": true
+},
+{
+"sprite": "poplar",
+"x": 250,
+"y": 66,
+"shadow": [
+4,
+-1,
+6,
+3
+]
+},
+{
+"sprite": "tree_b",
+"x": 168,
+"y": 46,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "daisy",
+"x": 196,
+"y": 66,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 204,
+"y": 70,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "violet",
+"x": 240,
+"y": 76,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "stone_big",
+"x": 184,
+"y": 76,
+"anim": null
+},
+{
+"sprite": "tuft",
+"x": 150,
+"y": 70,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "daisy",
+"x": 246,
+"y": 30,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 176,
+"y": 14,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 140,
+"y": 58,
+"anim": {
+"fps": 2,
+"phase": 0
+}
 },
 {
 "sprite": "reeds",
