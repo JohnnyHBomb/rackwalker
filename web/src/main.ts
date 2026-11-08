@@ -1,0 +1,109 @@
+// World of Confusion: RackWalker web entry. Query parameters:
+//   source=http (default) | fixture      where scenes come from (http = the proxy's /api; fixture = canned data)
+//   view=world | site:1 | room:1:1 | rack:1 | device:2     the level to open (default world); every navigation
+//                                        writes it back (history entries), so reload and Back/Forward follow
+//   anim=0                               no transition animation (golden screenshots)
+//   perf=<n>                             synthetic site with n devices (performance check)
+//   theme=<id>                           theme override on every level (see themes/index.ts for the normal choice)
+// Editing (drag and drop, change basket, field edits) talks to the proxy's /api/changes and /api/health, so it is on
+// only with source=http: on canned fixture data (or perf=) the editor is read-only and says so, because a fixture id
+// sent to a proxy names a live NetBox object (previously: a fixture-view cable edit wrote NetBox cable 6).
+import type { ZoomLevel } from './contracts/iso';
+import { HttpChangeApi } from './edit/api';
+import { Editor } from './edit/editor';
+import { entityKey } from './engine/entity';
+import { fixtureSource } from './engine/fixtures';
+import { WORLD, parseView } from './engine/nav';
+import { HttpSceneSource, type SceneSource } from './engine/source';
+import { SyntheticSceneSource } from './engine/synthetic';
+import { RackWalkerView } from './engine/view';
+import { ThemeChoice, browserStorage, urlTheme } from './themes/index';
+import { NavUrl } from './ui/nav-url';
+import { SearchBox } from './ui/search';
+import { ThemePicker } from './ui/theme-picker';
+
+declare global {
+  interface Window {
+    __iso?: {
+      view: RackWalkerView;
+      editor: Editor;
+      ready: Promise<void>;
+      choice: ThemeChoice;
+      state(): { level: ZoomLevel | null; crumbs: string[]; selected: string | null; scale: number | null; error: string | null; theme: string };
+      screenOf(key: string): { x: number; y: number } | null;
+      fps(ms: number): Promise<{ fps: number; frames: number; ms: number; worstMs: number }>;
+    };
+  }
+}
+
+async function main() {
+  const q = new URLSearchParams(location.search);
+  const perf = Number(q.get('perf') ?? 0);
+  const kind = perf > 0 ? 'synthetic' : q.get('source') === 'fixture' ? 'fixture' : 'http';
+  const source: SceneSource = kind === 'synthetic' ? new SyntheticSceneSource(perf) : kind === 'fixture' ? await fixtureSource() : new HttpSceneSource('');
+  const choice = new ThemeChoice(urlTheme(location.search), browserStorage());
+  const readOnly = {
+    http: null,
+    fixture: 'Canned fixture data, not your NetBox: editing is off (open the page without source=fixture for the live NetBox).',
+    synthetic: 'Synthetic perf data, not your NetBox: editing is off.',
+  }[kind];
+  const editor = new Editor(document.body, new HttpChangeApi(''), readOnly);
+  const view = new RackWalkerView(document.body, source, (tq) => choice.theme(tq), { animate: q.get('anim') !== '0', wrap: editor.wrap });
+  await view.init();
+  const picker = new ThemePicker(view.hudSlot, choice, view);
+  const search = new SearchBox(view.hudSlot, view);
+  const url = new NavUrl(view);
+  editor.attach(view);
+  view.onUpdate = () => {
+    picker.update();
+    search.restyle();
+    url.sync(); // the level on screen is in the URL: reload and Back/Forward work
+    editor.syncTheme(); // the panels follow the theme on screen
+  };
+  document.getElementById('status')?.remove();
+  const ready = view.goto(parseView(q.get('view')) ?? WORLD);
+  window.__iso = {
+    view,
+    editor,
+    ready,
+    choice,
+    state: () => ({
+      level: view.level,
+      crumbs: view.crumbs.map((c) => c.name),
+      selected: view.selection ? entityKey(view.selection) : null,
+      scale: view.camera?.scale ?? null,
+      error: view.lastError,
+      theme: view.theme.id,
+    }),
+    screenOf: (k) => view.screenOf(k),
+    // Frames rendered in `ms` while the camera pans one pixel per frame (so every frame really re-renders).
+    fps: (ms) =>
+      new Promise((resolve) => {
+        let frames = 0;
+        let worstMs = 0;
+        const t0 = performance.now();
+        let last = t0;
+        const tick = () => {
+          const now = performance.now();
+          worstMs = Math.max(worstMs, now - last);
+          last = now;
+          const cam = view.camera;
+          if (cam) view.setCamera({ ...cam, cx: cam.cx + (frames % 2 ? 1 : -1) });
+          frames++;
+          const dt = now - t0;
+          if (dt >= ms) {
+            view.app.ticker.remove(tick);
+            resolve({ fps: (frames * 1000) / dt, frames, ms: dt, worstMs });
+          }
+        };
+        view.app.ticker.add(tick);
+      }),
+  };
+  await ready;
+}
+
+main().catch((e) => {
+  const s = document.getElementById('status');
+  if (s) s.textContent = `error: ${String(e)}`;
+  console.error(e);
+});
