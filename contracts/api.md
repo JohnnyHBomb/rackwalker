@@ -186,7 +186,8 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
 * **`GET /api/game/quests?scope=netbox|practice&site_id=&fresh=`**: the quest log (`fresh=true` reads NetBox now, for a
   change made in NetBox itself within the last minute). Without `site_id`, the lines open at
   every site. At most three fresh lines are listed per site (the most valuable first: connectivity, identity,
-  layout), parked and practised lines beside them, the rest counted in `queued`; then the last finished lines.
+  layout; the first line of each kind before a second line of any kind), parked and practised lines beside them, the
+  rest counted in `queued`; then the last finished lines.
   `next_quest_id` is the most valuable fresh line of the scope. `can_write` is false, with `write_blocked` saying why,
   on the practice island, in fixture mode and on a dry-run proxy.
 * **Statuses.** `offered` (not started), `active` (a question waits), `ready` (a change waits for preview and apply;

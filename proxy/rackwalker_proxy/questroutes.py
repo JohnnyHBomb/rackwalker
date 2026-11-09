@@ -62,6 +62,18 @@ def xp_for(line_xp: int, newly: int, total: int, repeats: int) -> int:
     return round(line_xp * newly / max(1, total) * REPEAT[min(repeats, len(REPEAT) - 1)])
 
 
+def offer(fresh: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The few lines offered at one site out of all that are open, most valuable first: the first line of each kind
+    before a second line of any kind, so a site with twelve unpowered racks does not offer the same quest three times."""
+    seen: set[str] = set()
+    first, more = [], []
+    for line in fresh:
+        (more if line["kind"] in seen else first).append(line)
+        seen.add(line["kind"])
+    chosen = (first + more)[:MAX_OPEN]
+    return [line for line in fresh if any(line is c for c in chosen)]
+
+
 def finding_body(f: dict[str, Any]) -> dict[str, Any]:
     return {k: f[k] for k in ("id", "kind", "rank", "site_id", "title", "evidence")}
 
@@ -171,7 +183,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 if spot is not None:
                     (waiting if parked_spot else fresh).append(spot)
             real_open = len(open_lines)
-            shown = fresh[:MAX_OPEN] + waiting[:MAX_PARKED]
+            shown = offer(fresh) + waiting[:MAX_PARKED]
             if site_id in (None, sid):
                 queued += max(0, len(open_lines) - len(shown))
                 for line in shown:

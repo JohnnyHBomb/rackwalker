@@ -409,3 +409,20 @@ def test_a_site_in_order_gets_spot_checks_not_invented_work(cl):
     after = board(cl)
     assert after["rewards"]["xp"] == 0 and after["all_in_order"]
     assert [x["title"] for x in after["quests"] if x["status"] == "offered"] == ["Spot check: sw-quay-2"]
+
+
+def test_a_site_offers_different_kinds_of_line_before_a_second_of_one_kind(cl):
+    from rackwalker_proxy.questroutes import offer
+
+    def L(kind: str, n: int) -> dict:
+        return {"id": f"{kind}:{n}", "kind": kind}
+    power = [L("device_no_power", i) for i in range(5)]
+    assert [x["id"] for x in offer(power)] == ["device_no_power:0", "device_no_power:1", "device_no_power:2"]
+    mixed = [L("interface_no_cable", 1), L("interface_no_cable", 2), L("device_no_power", 1), L("device_no_power", 2), L("site_record", 1)]
+    # most valuable first, one of each kind; never more than three
+    assert [x["id"] for x in offer(mixed)] == ["interface_no_cable:1", "device_no_power:1", "site_record:1"]
+    assert [x["id"] for x in offer(mixed[:3])] == ["interface_no_cable:1", "interface_no_cable:2", "device_no_power:1"]
+    # the seed's North Depot has seven management ports with no cable and three unpowered racks: it offers one of each
+    b = board(cl, "netbox", site_id=1)
+    assert [q["kind"] for q in b["quests"]] == ["interface_no_cable", "device_no_power", "address_no_prefix"]
+    assert b["next_quest_id"] == b["quests"][0]["id"] and b["queued"] == len(b["findings"]) + 7 - 3

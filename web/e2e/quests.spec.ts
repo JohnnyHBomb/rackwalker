@@ -75,7 +75,7 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await typed(page);
   let d = (await game(page)).dialogue!;
   expect(d.text).toBe('A port is marked as in use, but nobody recorded what it connects to.');
-  expect(d.choices).toEqual(["Let's find out", 'Or: The other end of nd-acc-nd-r3 mgmt0', 'Show me the quest log', 'Not now']);
+  expect(d.choices).toEqual(["Let's find out", 'Or: What powers rack ND-R2', 'Show me the quest log', 'Not now']);
   await expect(page.locator('#dialogue .name')).toHaveText('Tansy');
   await expect(page.locator('#dialogue .portrait-giver')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/giver-dialogue.png` });

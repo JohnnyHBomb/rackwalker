@@ -123,7 +123,9 @@ completeness. A device with no cable at all is the finding `device_unconnected` 
   shows it.
 * **An answer that no longer fits** (the port got a cable in the meantime) is asked again.
 
-At most three lines are open per site at a time, the most valuable first. Parked lines wait beside them.
+At most three lines are open per site at a time, the most valuable first, and of different kinds where the site has
+more than one kind of thing to find out (so a site with twelve unpowered racks does not offer the same quest three
+times). Parked lines wait beside them.
 
 ## What is written, and who may write
 
