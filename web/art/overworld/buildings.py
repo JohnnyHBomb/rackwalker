@@ -645,9 +645,9 @@ def windmill_base(base):
     for y in range(btop - 1, btop + 4):
         for x in range(xl - 1, xr + 2):
             u = x % 5
-            col = ("o1", "o3", "o2", "o2", "o1")[u]
+            col = ("o0", "o2", "o1", "o1", "o0")[u] if y > btop else ("o1", "o2", "o2", "o2", "o1")[u]
             if y == btop + 3:
-                col = "o1" if u in (1, 2) else "o0"
+                col = "o0" if u in (1, 2) else "r0"
             img.set(x, y, col)
     img.hline(xl - 1, xr + 1, btop + 4, "wd1")
     remap_dark(img, xl, btop + 5, xr, btop + 6)

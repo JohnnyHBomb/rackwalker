@@ -11,8 +11,8 @@ RackWalker is a locally hosted, browser-based 8/16-bit open-world game that play
 
 Fill a gap in NetBox, verified against the real data, to earn XP, potions and tools.
 
-Status: early development. What works today: the game shell (sign in as your NetBox user, a placeholder overworld
-with one building per site, walk through a door into that site's isometric room and back out, Ilatea's first
+Status: early development. What works today: the game shell (sign in as your NetBox user, a 16-bit overworld
+derived from your sites' GPS, with one building per site in its theme, walk through a door into that site's isometric room and back out, Ilatea's first
 lines, autosave) on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
 rooms, racks, devices, cables and cable traces) in four original art themes plus a plain debug theme, with
 drag-and-drop edits written back to NetBox after a diff preview.
@@ -43,7 +43,7 @@ token never reaches the browser, a response body or a log line.
 
 | Path | What |
 |---|---|
-| `contracts/` | Contract 2.1.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
+| `contracts/` | Contract 2.2.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
 | `web/` | The game in the browser: TypeScript + Vite + PixiJS 8, Vitest and Playwright; npm with a pinned `package-lock.json` |
 | `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in and the game store (SQLite); pytest; pinned `requirements.lock` |
 | `fixtures/` | Canned responses for every route, rendered from the synthetic seed model; the web side can run on them alone |
@@ -108,9 +108,13 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   the dev stack, `devnetbox/nb.sh env admin` prints a token of the `admin` user; with `make dev-fixtures` use a
   synthetic token from `fixtures/players.json`. `RACKWALKER_LOCAL_PLAYER=1` skips sign-in for a NetBox only you use
   (off by default).
-* **Overworld (placeholder).** A code-drawn meadow with one building per site, labelled with the site's name and drawn
-  in its theme's colours. Walk with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has an arch
-  and a marker above it. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
+* **Overworld.** A 16-bit tile world (256 x 224, whole-number scaling) made from your sites: sites within 250 km of
+  each other share a walkable region with compressed distances, joined by paths over bridges, filled with forest,
+  water, fields and the landmarks and animal villagers of the region's country (`Site.country`); one front-facing
+  building per site in its theme, labelled with the site's name. Distant regions are reached through an airfield pad
+  (a placeholder until flights). How it is built: [`web/art/overworld/README.md`](web/art/overworld/README.md). Walk
+  with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has a marker above
+  it. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
   the back button or the "World" crumb) leaves the building, and you stand in front of its door.
 * **Ilatea** speaks one line on your first visit ("Small things matter"; in a NetBox with no sites yet, she asks you to add one) and then lets you act. She speaks again only
   on your first building, or once if you seem stuck on the green, and never repeats herself. She stands on the green
@@ -122,7 +126,7 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   hardening) and Nocti (hardware and best practice) as placeholders, settings, sign out.
 * **Settings**: Ilatea's hint level (off, low, normal, high), sound (mute, volume; for the music to come), reduce
   motion (text at once, scene changes and zooms cut), and every overworld and menu key remappable (up to three keys
-  per action; inside a building the back key follows the remap, the zoom, enter and search keys are fixed for now). Nothing flashes;
+  per action; inside a building every key follows the remap too: back, zoom, enter, search, rotate, trace, unrack and undo). Nothing flashes;
   the selected choice and the doors are marked by shapes, not only colour.
 * **Autosave**: your place (overworld tile, or the level and camera inside a building) is saved by the proxy on every
   change of place, so a reload puts you back where you were. No save points. A write that fails (proxy or NetBox down,

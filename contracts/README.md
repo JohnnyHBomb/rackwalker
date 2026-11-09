@@ -1,4 +1,4 @@
-# Contracts (version 2.1.0)
+# Contracts (version 2.2.0)
 
 These files are the interface between the two halves of RackWalker: the Python proxy (`proxy/`) and the browser
 game (`web/`). Each side builds and tests against them on its own, so a change here is deliberate and versioned
@@ -69,6 +69,7 @@ Rules that both sides rely on:
    | `iso_w`, `iso_h` | integer (min 1) | Location | `iso_w`, `iso_h` |
    | `iso_facing` | selection (choice set `iso-facing`: N, E, S, W) | Location, Rack | `iso_facing` |
    | `iso_theme` | selection (choice set `iso-theme`) | Site | `iso_theme` |
+   | `iso_country` | text (`^[A-Z]{2}$`) | Site | `country` (else the site's region slug when it is two letters; `api.md`) |
    | `iso_latitude`, `iso_longitude` | decimal | Location, Rack | `latitude`, `longitude` |
 
    NetBox 4.7 returns a selection custom field as `{"value": "N", "label": "North (-y)"}` (it still accepts
@@ -80,7 +81,7 @@ Rules that both sides rely on:
    are `#rrggbb`.
 5. **Time** is RFC 3339 with an offset. `last_updated` on Site/Location/Rack/Device feeds the optimistic lock
    `if_unmodified_since` on change ops.
-6. **Supported NetBox**: 4.7.x for contract 2.1.0 (`/api/health` reports `netbox.supported`). The proxy
+6. **Supported NetBox**: 4.7.x for contract 2.2.0 (`/api/health` reports `netbox.supported`). The proxy
    authenticates with a v2 token (`Authorization: Bearer nbt_<key>.<token>`, NetBox >= 4.5); a legacy v1 token
    (deprecated in 4.6, removed in 5.0) is still sent as `Token <hex>`.
 7. **Trace normalisation**: NetBox's `/trace/` segments become `hops` in order. Crossing a circuit is a hop with
@@ -93,6 +94,7 @@ Rules that both sides rely on:
 |---|---|---|
 | 2.0.0 | 2026-11-08 | First public contract of World of Confusion: RackWalker. Bodies cover NetBox data only (sites, locations, racks, devices, ports, cables, traces, change sets); targets NetBox 4.7.x. |
 | 2.1.0 | 2026-11-08 | Additive: the game shell. Seven `/api/game/*` routes (sign-in as a NetBox user, sign-out, game state, save slots, settings, flags), their `$defs` (`GameSession`, `SignInRequest`, `Player`, `GameState`, `GameSettings`, `KeyBindings`, `SaveData`, `SaveSlot`, `Flags`, `FlagsPatch`, ...), error codes `unauthorized` (401) and `forbidden` (403), fixtures `game-*.json`, `players.json`, `error-unauthorized.json`. Scene and change bodies are unchanged apart from `contract_version`. Rules (`api.md`): with `WRITE_ENABLED=1` the change routes need a signed-in player and the session's CSRF header, and the changelog message names the player (`rackwalker (<username>): <reason>`); the session cookie's path is `/api`; stored game rows are checked on read. |
+| 2.2.0 | 2026-11-09 | Additive, for the overworld: `Site.country` (ISO 3166-1 alpha-2 or null; custom field `iso_country`, else a two-letter region slug). `KeyBindings` gains `zoom_in`, `zoom_out`, `search`, `rotate`, `trace`, `unrack`, `undo` so every key inside a building is remappable (`cancel` defaults to Escape and Backspace); stored settings from 2.1.0 are upgraded on read. Rules (`api.md`): the proxy rechecks a signed-in player's NetBox user (exists, active) every 60 s and before every write. Fixtures regenerated; the seed sets `iso_country` = `GB` on its three sites. |
 
 ## NetBox 4.7 notes
 

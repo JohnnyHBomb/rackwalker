@@ -25,7 +25,8 @@ describe('engine', () => {
   });
   it('tile keys reduce neighbours to what the centre cares about', () => {
     expect(tileKey('G', 'W', 'S', 'F', 'C', 1)).toBe('GLLLL1');
-    expect(tileKey('B', 'P', 'W', 'P', 'W', 3)).toBe('WLWLW0');
+    expect(tileKey('B', 'P', 'W', 'P', 'W', 3)).toBe('WLWLW3');
+    expect(tileKey('S', 'G', 'G', 'W', 'G', 3)).toBe('SGGWG1');
     expect(tileKey('P', 'B', 'G', 'P', 'S', 2)).toBe('PPGPG2');
   });
   it('draws sprites with transparency, clipping and mirroring', () => {

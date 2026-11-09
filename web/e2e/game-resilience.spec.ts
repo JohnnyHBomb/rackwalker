@@ -49,10 +49,10 @@ test('a building that does not open once: a notice, the player outside its door 
   const outside = await page.evaluate(() => window.__game!.shell.map!.outside(window.__game!.shell.map!.doorOf(1)!));
   expect(g.pos).toEqual(outside);
   // Keys walk again (one press is one step, and the step ends) and taps walk again.
-  await page.keyboard.press('ArrowLeft');
-  await expect.poll(() => page.evaluate(() => window.__game!.shell.overworld!.walking)).toBe(false);
-  expect((await pos(page)).x).toBe(outside.x - 1);
   await page.keyboard.press('ArrowRight');
+  await expect.poll(() => page.evaluate(() => window.__game!.shell.overworld!.walking)).toBe(false);
+  expect((await pos(page)).x).toBe(outside.x + 1);
+  await page.keyboard.press('ArrowLeft');
   await expect.poll(() => page.evaluate(() => window.__game!.shell.overworld!.walking)).toBe(false);
   // The second try goes in, and the notice goes away.
   await walkIntoDoor(page, 1);

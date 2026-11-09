@@ -27,7 +27,7 @@ SIDES = {
 # a reduced class back to a concrete class for the probe
 CONCRETE = {"G": "G", "P": "P", "L": "S", "W": "W", "S": "S", "O": "G", "F": "F", "C": "C"}
 CENTRE = {"G": "G", "P": "P", "W": "W", "S": "S", "F": "F", "C": "C"}   # B is drawn as W
-VARIANTS = {"G": 4, "P": 4, "W": 1, "S": 1, "F": 1, "C": 1}
+VARIANTS = {"G": 4, "P": 4, "W": 4, "S": 2, "F": 1, "C": 1}
 FRAMES = {"G": 1, "P": 1, "W": 4, "S": 1, "F": 4, "C": 4}
 WATERISH = ("W", "B")
 
@@ -93,7 +93,7 @@ def render_key(key, grass, tulips, crop_frames):
                             d = min(d, abs(ly - 7.5))
                         elif dy and (ly - 7.5) * dy >= 0:
                             d = min(d, abs(lx - 7.5))
-                wob = 0.45 * math.sin(lx * 0.785 + ly * 0.39 + 0.7) + 0.7 * ((hsh(lx, ly, 3) % 100) / 100 - 0.5)
+                wob = 0.45 * math.sin(lx * 0.785 + ly * 0.39 + 0.7 + variant * 1.7) + 0.7 * ((hsh(lx, ly, 3, variant) % 100) / 100 - 0.5)
                 k = "P" if d <= 6.0 + wob else "G"
             elif c in ("W", "B", "S", "F", "C"):
                 same = (lambda q: q in WATERISH) if c in WATERISH else (lambda q: q == c)
@@ -131,15 +131,15 @@ def render_key(key, grass, tulips, crop_frames):
                 elif c == "P":
                     up, lf, dn, rt = C(x, y - 1), C(x - 1, y), C(x, y + 1), C(x + 1, y)
                     soft = ("G", "F", "C", "S")
-                    hv = hsh(x // 3, y // 2, 11) % 100
+                    hv = hsh(lx // 3, ly // 2, 11, variant) % 100
                     col = "d3"
                     if hv < 10:
                         col = "d2"
                     elif hv < 16:
                         col = "d4"
-                    if hsh(lx, ly, 21) % 61 == 0:
+                    if hsh(lx, ly, 21, variant) % 61 == 0:
                         col = "d5"
-                    if hsh(lx - 1, ly - 1, 21) % 61 == 0:
+                    if hsh(lx - 1, ly - 1, 21, variant) % 61 == 0:
                         col = "d2"
                     if up in soft:
                         col = "d1"
@@ -149,7 +149,7 @@ def render_key(key, grass, tulips, crop_frames):
                         col = "d2"
                     elif dn in soft or rt in soft:
                         col = "d4"
-                    if up in soft and hsh(lx, ly, 4) % 4 == 0:
+                    if up in soft and hsh(lx, ly, 4, variant) % 4 == 0:
                         col = "g2"
                 elif c == "W":
                     du = next((k for k in range(1, 10) if C(x, y - k) != "W"), 99)
@@ -160,11 +160,11 @@ def render_key(key, grass, tulips, crop_frames):
                     row = ly % 5
                     lane = ly // 5
                     drift = fr if lane % 2 else -fr
-                    xx = (lx + drift + 32) % 16
+                    xx = (lx + drift + 32 + variant * 5) % 16
                     seg = xx // 8
                     u = xx % 8
-                    dash = 3 + hsh(seg, lane, 2) % 3
-                    on = hsh(seg, lane, 3) % 3 != 0
+                    dash = 3 + hsh(seg, lane, 2, variant) % 3
+                    on = hsh(seg, lane, 3, variant) % 3 != 0
                     if row == 0 and on and u < dash:
                         col = "b4" if u == fr % dash else "b3"
                     elif row == 1 and on and 1 <= u < dash - 1:
@@ -193,9 +193,9 @@ def render_key(key, grass, tulips, crop_frames):
                         col = "b4" if (x + fr) % 5 == 0 else "b3"
                 elif c == "S":
                     col = "d4"
-                    if hsh(lx, ly, 31) % 13 == 0:
+                    if hsh(lx, ly, 31, variant) % 13 == 0:
                         col = "d3"
-                    elif hsh(lx, ly, 32) % 11 == 0:
+                    elif hsh(lx, ly, 32, variant) % 11 == 0:
                         col = "d5"
                     if C(x, y + 1) == "W" or C(x - 1, y) == "W" or C(x + 1, y) == "W" or C(x, y - 1) == "W":
                         col = "d3"

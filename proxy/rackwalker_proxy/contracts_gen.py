@@ -1206,6 +1206,62 @@ class KeyBindings(BaseModel):
             min_length=1,
         ),
     ]
+    zoom_in: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    zoom_out: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    search: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    rotate: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    trace: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    unrack: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
+    undo: Annotated[
+        list[KeyListItem],
+        Field(
+            description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
+            max_length=3,
+            min_length=1,
+        ),
+    ]
 
 
 class GameSettings(BaseModel):

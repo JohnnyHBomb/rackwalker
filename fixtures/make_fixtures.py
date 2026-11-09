@@ -308,7 +308,9 @@ def render() -> dict[str, object]:
     out["players.json"] = {"$comment": "Fixture mode only: synthetic sign-in tokens -> the NetBox user each stands for. Not secrets.",
                            "players": players}
     keys = {"up": ["ArrowUp", "KeyW"], "down": ["ArrowDown", "KeyS"], "left": ["ArrowLeft", "KeyA"], "right": ["ArrowRight", "KeyD"],
-            "interact": ["Enter", "Space", "KeyE"], "cancel": ["Escape"], "menu": ["KeyM"]}
+            "interact": ["Enter", "Space", "KeyE"], "cancel": ["Escape", "Backspace"], "menu": ["KeyM"],
+            "zoom_in": ["Equal", "NumpadAdd"], "zoom_out": ["Minus", "NumpadSubtract"], "search": ["Slash"], "rotate": ["KeyR"],
+            "trace": ["KeyT"], "unrack": ["Delete"], "undo": ["KeyZ"]}
     settings = {"audio": {"muted": False, "volume": 0.6}, "hint_level": "normal", "keys": keys, "reduce_motion": False}
     save = {"iso": {"camera": {"cx": 48.0, "cy": 120.0, "scale": 2}, "site_id": 1, "view": "room:1:1"},
             "overworld": {"facing": "N", "x": 9, "y": 11}, "scene": "iso"}

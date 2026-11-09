@@ -27,10 +27,34 @@
       "KeyE"
     ],
     "cancel": [
-      "Escape"
+      "Escape",
+      "Backspace"
     ],
     "menu": [
       "KeyM"
+    ],
+    "zoom_in": [
+      "Equal",
+      "NumpadAdd"
+    ],
+    "zoom_out": [
+      "Minus",
+      "NumpadSubtract"
+    ],
+    "search": [
+      "Slash"
+    ],
+    "rotate": [
+      "KeyR"
+    ],
+    "trace": [
+      "KeyT"
+    ],
+    "unrack": [
+      "Delete"
+    ],
+    "undo": [
+      "KeyZ"
     ]
   },
   "reduce_motion": false

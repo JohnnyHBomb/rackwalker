@@ -38,8 +38,10 @@ export class WorldRenderer {
     const fallback = TILESET.keys.get('GGGGG0')!;
     for (let y = 0; y < map.h; y++)
       for (let x = 0; x < map.w; x++) {
-        const v = Math.floor(hash(x, y, 5) * 7);
-        const key = tileKey(T(x, y), T(x, y - 1), T(x + 1, y), T(x, y + 1), T(x - 1, y), [0, 0, 1, 1, 2, 3, 0][v]!);
+        const c = T(x, y);
+        // grass: the art direction's mix of its four variants; other terrains: an even mix
+        const variant = c === 'G' ? [0, 0, 1, 1, 2, 3, 0][Math.floor(hash(x, y, 5) * 7)]! : Math.floor(hash(x, y, 6) * 4);
+        const key = tileKey(c, T(x, y - 1), T(x + 1, y), T(x, y + 1), T(x - 1, y), variant);
         const ids = TILESET.keys.get(key) ?? fallback;
         for (let f = 0; f < ANIM_FRAMES; f++) this.cells[(y * map.w + x) * ANIM_FRAMES + f] = ids[f % ids.length]!;
       }

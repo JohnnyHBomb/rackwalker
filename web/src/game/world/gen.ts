@@ -496,10 +496,12 @@ export class WorldMap {
         const v = R(X, y, 10);
         // Groves: a coarse noise picks wooded patches, where most free tiles get a tree; elsewhere a few singles.
         const grove = valueNoise(X / 5, y / 5, seed) > 0.64;
-        if (!nearBusy && (grove ? v < 0.6 : v < 0.025)) {
+        if (!nearBusy && (grove ? v < 0.5 : v < 0.025)) {
           const s = trees[Math.floor(R(X, y, 11) * trees.length)]!;
           this.flag(X, y, SOLID);
-          this.objects.push({ sprite: s, x: X * TILE + 8, y: y * TILE + 14, kind: 'tree', shadow: s === 'poplar' ? [4, -1, 6, 3] : s === 'bush' ? [3, 0, 8, 3] : TREE_SHADOW });
+          // a few pixels off the tile centre, so a grove does not stand in rows
+          const jx = grove ? Math.floor(R(X, y, 15) * 7) - 3 : 0, jy = grove ? Math.floor(R(X, y, 16) * 5) - 3 : 0;
+          this.objects.push({ sprite: s, x: X * TILE + 8 + jx, y: y * TILE + 14 + jy, kind: 'tree', shadow: s === 'poplar' ? [4, -1, 6, 3] : s === 'bush' ? [3, 0, 8, 3] : TREE_SHADOW });
         } else if (v > 0.86 && !grove) {
           const kinds = ['daisy', 'violet', 'buttercup', 'tuft', 'daisy', 'tuft', 'stone'];
           const s = kinds[Math.floor(R(X, y, 12) * kinds.length)]!;

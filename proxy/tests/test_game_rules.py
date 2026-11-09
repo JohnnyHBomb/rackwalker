@@ -326,3 +326,15 @@ def test_no_proxy_answer_may_be_framed(tmp_path):
     for r in (cl.get("/api/health"), cl.get("/api/scene/world"), cl.get("/api/game/session"), cl.get("/api/nope"),
               cl.get("/api/health", headers={"Host": "evil.example"})):
         assert r.headers["x-frame-options"] == "DENY" and r.headers["content-security-policy"] == "frame-ancestors 'none'", r.url
+
+
+def test_settings_from_before_the_building_keys_keep_the_players_own_keys():
+    from rackwalker_proxy.gamestore import DEFAULT_SETTINGS, upgrade_settings
+    old = {"hint_level": "low", "audio": {"muted": True, "volume": 0.2}, "reduce_motion": False,
+           "keys": {"up": ["ArrowUp"], "down": ["ArrowDown"], "left": ["ArrowLeft"], "right": ["ArrowRight"],
+                    "interact": ["Enter"], "cancel": ["Escape"], "menu": ["Equal"]}}
+    up = upgrade_settings(old)
+    assert up["keys"]["menu"] == ["Equal"]                 # the player's key stays theirs
+    assert up["keys"]["zoom_in"] == ["NumpadAdd"]          # the new action's default gives way
+    assert up["keys"]["rotate"] == DEFAULT_SETTINGS["keys"]["rotate"]
+    assert up["keys"]["cancel"] == ["Escape"] and up["hint_level"] == "low"

@@ -931,6 +931,8 @@ export interface SignInRequest {
   token: string;
 }
 /**
+ * Up to three keys per action. up/down/left/right walk on the overworld; interact talks and chooses, and inside a building enters the selected object; cancel closes and goes back (inside a building: one level out); menu opens the menu; zoom_in, zoom_out, search, rotate (a rack), trace (a port), unrack (a device) and undo (with Ctrl or Cmd held) act inside buildings. Added in 2.2.0: zoom_in, zoom_out, search, rotate, trace, unrack, undo.
+ *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "KeyBindings".
  */
@@ -942,6 +944,13 @@ export interface KeyBindings {
   interact: KeyList;
   cancel: KeyList;
   menu: KeyList;
+  zoom_in: KeyList;
+  zoom_out: KeyList;
+  search: KeyList;
+  rotate: KeyList;
+  trace: KeyList;
+  unrack: KeyList;
+  undo: KeyList;
 }
 /**
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema

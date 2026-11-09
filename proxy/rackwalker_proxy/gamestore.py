@@ -81,8 +81,9 @@ DEFAULT_SETTINGS: dict[str, Any] = {
     "reduce_motion": False,
     "keys": {
         "up": ["ArrowUp", "KeyW"], "down": ["ArrowDown", "KeyS"], "left": ["ArrowLeft", "KeyA"],
-        "right": ["ArrowRight", "KeyD"], "interact": ["Enter", "Space", "KeyE"], "cancel": ["Escape"],
-        "menu": ["KeyM"],
+        "right": ["ArrowRight", "KeyD"], "interact": ["Enter", "Space", "KeyE"], "cancel": ["Escape", "Backspace"],
+        "menu": ["KeyM"], "zoom_in": ["Equal", "NumpadAdd"], "zoom_out": ["Minus", "NumpadSubtract"], "search": ["Slash"],
+        "rotate": ["KeyR"], "trace": ["KeyT"], "unrack": ["Delete"], "undo": ["KeyZ"],
     },
 }
 
@@ -138,6 +139,14 @@ def upgrade_settings(raw: Any) -> dict[str, Any]:
                     keep((key, sub), raw[key][sub])
         else:
             keep((key,), raw[key])
+    if duplicate_key(out["keys"]) and isinstance(raw.get("keys"), dict):
+        # Settings from before an action existed: the player's own keys win, the new action's default gives way.
+        mine = {k for a, codes in out["keys"].items() if a in raw["keys"] for k in codes}
+        for a in out["keys"]:
+            if a not in raw["keys"]:
+                left = [k for k in out["keys"][a] if k not in mine]
+                if left:
+                    out["keys"][a] = left
     if duplicate_key(out["keys"]):
         out["keys"] = copy.deepcopy(DEFAULT_SETTINGS["keys"])
     return out

@@ -148,11 +148,18 @@ Reads may be served from a short cache (`meta.source: "cache"`); every apply (al
 invalidates it, and a read that was still running when an apply finished is not cached.
 `meta.generated_at` is when the body was built.
 
+## Site country (2.2.0)
+
+`Site.country` is the site's ISO 3166-1 alpha-2 country code, upper case, or `null` when unknown. The proxy takes the
+site's custom field `iso_country` (text, `^[A-Z]{2}$`, created by `devnetbox/seed.py`) when it holds two letters, else
+the slug of the site's own region when that slug is two letters (a region named after its country code), else
+`null`. Only the overworld uses it, to pick a region's landmark and villager set; it is read-only for the editor.
+
 ## Game state (`/api/game/*`, added in 2.1.0)
 
 The game keeps its own state in one SQLite file owned by the proxy (`<RACKWALKER_STATE_DIR>/game.sqlite3`, default
 `data/game.sqlite3`, gitignored, mode 600). It is never written into NetBox and no game route sends a request to
-NetBox, except the one identity check at sign-in. The file is schema-versioned (`PRAGMA user_version`, forward
+NetBox, except the identity check at sign-in and the recheck of that user (below). The file is schema-versioned (`PRAGMA user_version`, forward
 migrations only); a file from a newer RackWalker is refused, never rewritten.
 
 * **Player = NetBox user.** `POST /api/game/session {token}`: the proxy calls NetBox `GET /api/authentication-check/`
@@ -164,8 +171,15 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
 * **Session.** A random cookie `rackwalker_session` (HttpOnly, SameSite=Strict, Path=/api, 7 days;
   `RACKWALKER_COOKIE_SECURE=1` adds Secure behind https). Path `/api` so the change routes see it too (writes need a
   player). Only its SHA-256 is stored, with the player id and a CSRF token. Sign-out deletes it, and signing in again
-  ends the previous session of that browser. The session is not checked against NetBox again after sign-in: a user
-  deactivated in NetBox keeps an open session until it expires or they sign out.
+  ends the previous session of that browser.
+* **Recheck (2.2.0).** The proxy asks NetBox, with its own token, whether the session's user still exists and is
+  active (`GET /api/users/users/<id>/`, `is_active`): on any request when the last good answer is older than 60 s,
+  and before every write (game writes and NetBox change writes) when it is older than 5 s. A user NetBox no longer
+  has (404) or has deactivated loses the session at once: the request answers 401 `unauthorized` (`GET
+  /api/game/session` answers signed out and clears the cookie). If NetBox cannot answer, reads go on, and writes go on
+  for 5 minutes after the last good answer, then 502 `netbox_unreachable` until NetBox answers again. The proxy's
+  NetBox user needs view permission on users (`devnetbox/proxy_tokens.py` grants it). In fixture mode a player whose
+  `fixtures/players.json` entry has `"active": false` cannot sign in.
 * **CSRF.** Every write (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/game/`) needs the `X-RackWalker-CSRF` header: the
   session's `csrf_token` (from `GameSession`), or any value on sign-in. A custom header cannot be sent cross-site
   without a CORS preflight, which the proxy never grants; an `Origin` header, when present, must name an allowed host.
@@ -174,6 +188,10 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   change of place) and `1`-`3`; each write bumps `rev`; last write wins. Settings default as in
   `game-settings.json`. Flags: names `^[a-z0-9][a-z0-9_.:-]{0,63}$`, values boolean, integer or short string, at most
   500 per player. `PUT /api/game/settings` refuses a key bound to two actions (`validation_failed`).
+* **Keys (2.2.0).** `KeyBindings` also holds the keys used inside buildings: `zoom_in`, `zoom_out`, `search`,
+  `rotate`, `trace`, `unrack` and `undo` (pressed with Ctrl or Cmd); `interact` enters the selected object and
+  `cancel` (now `Escape` and `Backspace` by default) goes one level out. Settings stored before 2.2.0 take the new
+  actions' defaults; where a new default key is already one of the player's own, the player's binding wins.
 * **Stored rows are checked when they are read**, not only when they are written, so `GET /api/game/state` always
   answers a valid `GameState`: settings keep every part that is still valid and take the default for the rest (a
   setting added in a later version reaches existing players with its default; keys bound to two actions fall back to

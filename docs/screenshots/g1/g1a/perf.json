@@ -1,0 +1,15 @@
+{
+ "viewport": "768x672 (3x)",
+ "cpu_throttle": 4,
+ "frames": 300,
+ "frame_p50": 16.6,
+ "frame_p95": 17.4,
+ "frame_max": 19.5,
+ "draw_p50": 2.7,
+ "draw_p95": 3.6,
+ "draw_max": 5.7,
+ "layout_shift": 0,
+ "trace_frames": 870,
+ "trace_gap_p95": 16.81,
+ "trace_long": 0
+}

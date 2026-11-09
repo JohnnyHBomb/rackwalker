@@ -55,9 +55,9 @@ test('first run: sign in, Ilatea once, door in and out, reload puts you back', a
   expect((await game(page)).flags['ilatea.intro.seen']).toBe(true);
   await page.screenshot({ path: `${SHOTS}/overworld.png` });
 
-  // Walk into the door of site 2 (on screen; a click walks there); the scene card shows on the way in.
+  // Walk into the door of site 1, beside Ilatea (on screen; a click walks there); the scene card shows on the way in.
   const door = await page.evaluate(() => {
-    const d = window.__game!.shell.map!.doorOf(2)!;
+    const d = window.__game!.shell.map!.doorOf(1)!;
     return { ...window.__game!.shell.overworld!.clientOf(d), x0: d.x, y0: d.y };
   });
   await page.evaluate(() => (window.__game!.shell.transitionMs = 1500));
@@ -68,7 +68,7 @@ test('first run: sign in, Ilatea once, door in and out, reload puts you back', a
   await expect(page.locator('#scene-card')).toHaveCount(0, { timeout: 5_000 });
   await page.evaluate(() => (window.__game!.shell.transitionMs = 0));
   g = await game(page);
-  expect(JSON.parse(g.view!)).toMatchObject({ level: 'room', siteId: 2 });
+  expect(JSON.parse(g.view!)).toMatchObject({ level: 'room', siteId: 1 });
   // Her one first-building line; the cancel key closes it and does not also leave the room.
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-first-building');
   await page.keyboard.press('Escape');
@@ -177,9 +177,10 @@ test('Ilatea names your own keys and stands on the green: walk up and press inte
   await expect(page.locator('#game-menu')).toHaveCount(0);
   expect(await page.locator('#game-button').getAttribute('title')).toBe('Menu (M)');
 
-  // One step left from the start puts Ilatea in reach; the (remapped) interact key talks to her.
+  // One step up from the start (onto the tile in front of the first door) puts Ilatea in reach, on the left; the
+  // (remapped) interact key talks to her.
   const guide = await page.evaluate(() => ({ ...window.__game!.shell.map!.guide }));
-  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowUp');
   await expect.poll(async () => (await game(page)).pos).toEqual({ x: guide.x + 1, y: guide.y });
   await page.keyboard.press('KeyF');
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-menu');
@@ -189,7 +190,7 @@ test('Ilatea names your own keys and stands on the green: walk up and press inte
 
   // Walk away, then click her: the player walks back beside her and she talks.
   await page.evaluate(() => window.__game!.shell.overworld!.walkTo({ x: window.__game!.shell.map!.start.x + 2, y: window.__game!.shell.map!.start.y }));
-  await expect.poll(async () => (await game(page)).pos.x).toBe(guide.x + 4);
+  await expect.poll(async () => (await game(page)).pos.x).toBe(guide.x + 3);
   const at = await page.evaluate((t) => window.__game!.shell.overworld!.clientOf(t), guide);
   await page.mouse.click(at.x, at.y);
   await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 10_000 }).toBe('ilatea-menu');
@@ -225,13 +226,13 @@ test.describe('touch', () => {
     expect((await game(page)).dialogue).toBeNull();
     // Tap a building: the player walks to its door and goes in.
     const p = await page.evaluate(() => {
-      const d = window.__game!.shell.map!.doorOf(2)!; // the door above the start tile, on screen at phone width
+      const d = window.__game!.shell.map!.doorOf(1)!; // the door above the start tile, on screen at phone width
       return window.__game!.shell.overworld!.clientOf({ x: d.bx + 1, y: d.by + 1 });
     });
     await page.evaluate(() => (window.__game!.shell.transitionMs = 0));
     await page.touchscreen.tap(p.x, p.y);
     await expect.poll(async () => (await game(page)).scene, { timeout: 15_000 }).toBe('iso');
-    expect(JSON.parse((await game(page)).view!).siteId).toBe(2);
+    expect(JSON.parse((await game(page)).view!).siteId).toBe(1);
   });
 });
 

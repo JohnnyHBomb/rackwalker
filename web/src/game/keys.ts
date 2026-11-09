@@ -2,7 +2,7 @@
 // layout), up to three per action, stored with the player's settings in the game store.
 import type { GameSettings, KeyBindings } from '../contracts/scene.gen';
 
-export const KEY_ACTIONS = ['up', 'down', 'left', 'right', 'interact', 'cancel', 'menu'] as const;
+export const KEY_ACTIONS = ['up', 'down', 'left', 'right', 'interact', 'cancel', 'menu', 'zoom_in', 'zoom_out', 'search', 'rotate', 'trace', 'unrack', 'undo'] as const;
 export type KeyAction = (typeof KEY_ACTIONS)[number];
 export const MAX_KEYS = 3;
 
@@ -12,14 +12,41 @@ export const DEFAULT_KEYS: KeyBindings = {
   left: ['ArrowLeft', 'KeyA'],
   right: ['ArrowRight', 'KeyD'],
   interact: ['Enter', 'Space', 'KeyE'],
-  cancel: ['Escape'],
+  cancel: ['Escape', 'Backspace'],
   menu: ['KeyM'],
+  zoom_in: ['Equal', 'NumpadAdd'],
+  zoom_out: ['Minus', 'NumpadSubtract'],
+  search: ['Slash'],
+  rotate: ['KeyR'],
+  trace: ['KeyT'],
+  unrack: ['Delete'],
+  undo: ['KeyZ'],
 };
+
+/**
+ * Inside a building the isometric view and the editor listen for these fixed keys; the shell turns the player's own
+ * key for each action into this one, so every key used inside a building follows the remap.
+ */
+export const ISO_KEYS: Readonly<Partial<Record<KeyAction, { key: string; code: string; ctrl?: boolean }>>> = {
+  interact: { key: 'Enter', code: 'Enter' },
+  cancel: { key: 'Escape', code: 'Escape' },
+  zoom_in: { key: '+', code: 'Equal' },
+  zoom_out: { key: '-', code: 'Minus' },
+  search: { key: '/', code: 'Slash' },
+  rotate: { key: 'r', code: 'KeyR' },
+  trace: { key: 't', code: 'KeyT' },
+  unrack: { key: 'Delete', code: 'Delete' },
+  undo: { key: 'z', code: 'KeyZ', ctrl: true },
+};
+/** The fixed keys of ISO_KEYS (and their other spellings) the view and editor would act on by themselves. */
+export const ISO_FIXED = new Set(['Escape', 'Backspace', 'Enter', 'Equal', 'Minus', 'NumpadAdd', 'NumpadSubtract', 'Slash', 'KeyR', 'KeyT', 'Delete', 'KeyZ']);
 
 export const DEFAULT_SETTINGS: GameSettings = { hint_level: 'normal', audio: { muted: false, volume: 0.6 }, reduce_motion: false, keys: DEFAULT_KEYS };
 
 export const ACTION_LABELS: Readonly<Record<KeyAction, string>> = {
-  up: 'Walk up', down: 'Walk down', left: 'Walk left', right: 'Walk right', interact: 'Talk / choose', cancel: 'Back / close', menu: 'Menu',
+  up: 'Walk up', down: 'Walk down', left: 'Walk left', right: 'Walk right', interact: 'Talk / choose / go in', cancel: 'Back / close', menu: 'Menu',
+  zoom_in: 'Zoom in (inside)', zoom_out: 'Zoom out (inside)', search: 'Search (inside)', rotate: 'Rotate a rack', trace: 'Trace a port',
+  unrack: 'Unrack a device', undo: 'Undo (with Ctrl)',
 };
 
 export function actionOf(keys: KeyBindings, code: string): KeyAction | null {

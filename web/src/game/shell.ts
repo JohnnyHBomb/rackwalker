@@ -13,7 +13,7 @@ import type { RackWalkerView } from '../engine/view';
 import type { GameApi } from './api';
 import { loadScript, mayAutoStart, type Action, type Effects, type Script } from './dialogue';
 import { DialogueBox } from './dialogue-ui';
-import { actionOf, DEFAULT_SETTINGS, keysLabel } from './keys';
+import { actionOf, DEFAULT_SETTINGS, ISO_FIXED, ISO_KEYS, keysLabel } from './keys';
 import { OverworldMap, type Dir, type Door, type Pos } from './overworld';
 import { OverworldView } from './overworld-view';
 import { capturingKey, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
@@ -33,6 +33,9 @@ export const SCRIPTS = {
 
 /** What the overworld needs to know about a site. */
 const worldSite = (s: Site) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, theme: s.iso_theme, country: s.country });
+
+/** Key events the shell sends on itself (a remapped key turned into the view's fixed key). */
+const SYNTHETIC = new WeakSet<Event>();
 
 export type Scene = 'loading' | 'signin' | 'overworld' | 'iso';
 export const VISITED = 'game.visited-building';
@@ -553,9 +556,17 @@ export class GameShell {
     const t = e.target as HTMLElement | null;
     if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
     if (document.getElementById('signin')) return; // signing in again mid-game: keys belong to the form
+    if (SYNTHETIC.has(e)) return; // a key the shell itself sent on to the view (below)
+    const a = actionOf(this.settings.keys, e.code);
+    // Undo inside a building: the player's undo key with Ctrl or Cmd held.
+    if (this.scene === 'iso' && !this.dialogue.open && !this.menu && (e.ctrlKey || e.metaKey) && !e.altKey && (a === 'undo' || e.code === 'KeyZ')) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      if (a === 'undo') this.sendIsoKey('undo');
+      return;
+    }
     // Ctrl, Alt and Meta combinations are the browser's (Ctrl+D, Alt+←): never game moves, never swallowed.
     if (e.ctrlKey || e.altKey || e.metaKey) return;
-    const a = actionOf(this.settings.keys, e.code);
     const eat = () => (e.preventDefault(), e.stopImmediatePropagation());
     if (this.dialogue.open) {
       if (a === 'menu') {
@@ -585,12 +596,26 @@ export class GameShell {
       // The isometric view behind the overworld is hidden: none of its keys (zoom, back, search) act from here.
       return e.stopImmediatePropagation();
     }
-    if (this.scene === 'iso' && a === 'cancel' && e.code !== 'Escape') {
-      // A remapped "back" key does exactly what Esc does, layers included: an open panel or a drag ends first.
-      eat();
-      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', code: 'Escape', bubbles: true, cancelable: true }));
-      return;
+    if (this.scene === 'iso') {
+      // Every key inside a building follows the remap: the player's key for an action is sent on to the view and the
+      // editor as the fixed key they listen for (Esc for back, so an open panel or a drag ends first, as before);
+      // a fixed key the player has moved elsewhere does nothing here.
+      if (a && ISO_KEYS[a]) {
+        eat();
+        if (a === 'undo') return; // undo needs Ctrl or Cmd (above)
+        this.sendIsoKey(a);
+        return;
+      }
+      if (ISO_FIXED.has(e.code)) eat();
     }
+  }
+
+  /** Sends the fixed key of an in-building action to the view and the editor. */
+  private sendIsoKey(a: keyof typeof ISO_KEYS): void {
+    const k = ISO_KEYS[a]!;
+    const ev = new KeyboardEvent('keydown', { key: k.key, code: k.code, ctrlKey: !!k.ctrl, bubbles: true, cancelable: true });
+    SYNTHETIC.add(ev);
+    (document.activeElement && document.activeElement !== document.body ? document.activeElement : window).dispatchEvent(ev);
   }
 
   private keyup(e: KeyboardEvent): void {

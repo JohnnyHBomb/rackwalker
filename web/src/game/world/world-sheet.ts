@@ -88,7 +88,11 @@ window.__world = {
   capture: (o) => frameCanvas(o).toDataURL('image/png'),
   info: (o) => {
     const { map, r } = get(o.theme ?? null, o.country ?? null);
-    return { w: map.w, h: map.h, regions: map.regions.map((x) => ({ ...x, set: x.set.code })), doors: map.doors, guide: map.guide, start: map.start, missing: r.missingKeys() };
+    const lm = map.objects.find((o) => o.kind === 'landmark' && !o.top && o.x < map.regions[0]!.w * TILE);
+    return {
+      w: map.w, h: map.h, regions: map.regions.map((x) => ({ ...x, set: x.set.code })), doors: map.doors, guide: map.guide, start: map.start,
+      missing: r.missingKeys(), landmark: lm ? { x: Math.floor(lm.x / TILE), y: Math.floor(lm.y / TILE) } : null,
+    };
   },
 };
 if (!q.has('still')) {

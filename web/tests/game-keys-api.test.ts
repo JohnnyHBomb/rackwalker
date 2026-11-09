@@ -12,7 +12,8 @@ describe('keys', () => {
   it('web defaults equal the store defaults (fixtures/game-settings.json)', () => expect(DEFAULT_SETTINGS).toEqual(fixture('game-settings.json')));
   it('maps codes to actions', () => {
     expect(actionOf(DEFAULT_KEYS, 'KeyW')).toBe('up');
-    expect(actionOf(DEFAULT_KEYS, 'KeyZ')).toBeNull();
+    expect(actionOf(DEFAULT_KEYS, 'KeyQ')).toBeNull();
+    expect(actionOf(DEFAULT_KEYS, 'KeyR')).toBe('rotate');
   });
   it('rebinding moves the key away from its old action', () => {
     const r = rebind(DEFAULT_KEYS, 'menu', 'KeyE');
@@ -20,13 +21,20 @@ describe('keys', () => {
     expect('keys' in r && r.keys.interact).toEqual(['Enter', 'Space']);
   });
   it('never leaves an action without a key', () => {
-    const r = rebind(DEFAULT_KEYS, 'interact', 'Escape');
+    const r = rebind(DEFAULT_KEYS, 'interact', 'Slash');
     expect('error' in r && r.error).toMatch(/only key/);
   });
   it('keeps at most three keys per action', () => {
     let k = DEFAULT_KEYS;
     for (const c of ['KeyI', 'KeyO', 'KeyP']) k = (rebind(k, 'up', c) as { keys: typeof k }).keys;
     expect(k.up).toEqual(['KeyP', 'KeyO', 'KeyI']);
+  });
+  it('every in-building action has a default key and a fixed key the view knows', async () => {
+    const { ISO_KEYS } = await import('../src/game/keys');
+    for (const a of ['interact', 'cancel', 'zoom_in', 'zoom_out', 'search', 'rotate', 'trace', 'unrack', 'undo'] as const) {
+      expect(DEFAULT_KEYS[a].length).toBeGreaterThan(0);
+      expect(ISO_KEYS[a]).toBeDefined();
+    }
   });
   it('refuses browser keys', () => expect('error' in rebind(DEFAULT_KEYS, 'menu', 'Tab')).toBe(true));
   it('names keys', () => expect([keyName('KeyW'), keyName('ArrowUp'), keyName('Digit3'), keyName('ShiftLeft')]).toEqual(['W', '↑', '3', 'Shift Left']));
