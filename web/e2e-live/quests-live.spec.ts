@@ -3,16 +3,17 @@ import { boot, game, typed } from '../e2e/game-helpers';
 
 // A quest on the live stack, written for real: against a WRITER's own dev NetBox stack (fresh seed), with the proxy on
 // that stack's rw token and WRITE_ENABLED=1, vite in front of it (RACKWALKER_LIVE_URL), and NB_URL + NB_ADMIN_TOKEN
-// for the NetBox-side checks. The player (the admin user) asks North Depot's quest giver, answers what the far end of
-// nd-core1's management port is, previews the cable, applies it, and NetBox confirms: XP, the cable tracer, the
-// changelog naming the player. The cable is removed afterwards, so the stack is as seeded again.
+// for the NetBox-side checks and to make the player. The player is a NetBox user made for this run, who may add
+// cables and nothing else: they ask North Depot's quest giver, answer what the far end of nd-core1's management port
+// is, preview the cable, apply it, and NetBox confirms: XP, the cable tracer, the changelog naming the player. The
+// cable and the user are removed afterwards, so the stack is as seeded again and the test can run again.
 // Screenshots: docs/screenshots/quests/live-*.png and reward.png.
 const SHOTS = '../docs/screenshots/quests';
 const NB = process.env.NB_URL;
 const TOKEN = process.env.NB_ADMIN_TOKEN;
 
 async function nb<T>(path: string, init: RequestInit = {}): Promise<T> {
-  const r = await fetch(`${NB}${path}`, { ...init, headers: { Authorization: `Bearer ${TOKEN}`, Accept: 'application/json' } });
+  const r = await fetch(`${NB}${path}`, { ...init, headers: { Authorization: `Bearer ${TOKEN}`, Accept: 'application/json', 'Content-Type': 'application/json' } });
   expect(r.status < 300, `${path}: ${r.status}`).toBe(true);
   return (r.status === 204 ? null : await r.json()) as T;
 }
@@ -42,22 +43,36 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
   const core = (await nb<{ results: Port[] }>('/api/dcim/interfaces/?device=nd-core1&name=mgmt0')).results[0]!;
   expect(core.cable, 'fresh seed: nd-core1 mgmt0 has no cable (make netbox-reset)').toBeNull();
   let cableId: number | null = null;
+  // The player: a NetBox user of their own, whose only write permission is to add cables.
+  const name = `quest-walker-${Date.now() % 100000}`;
+  const user = await nb<{ id: number }>('/api/users/users/', { method: 'POST', body: JSON.stringify({ username: name, password: `Rw-${crypto.randomUUID()}`, is_active: true }) });
+  const perm = await nb<{ id: number }>('/api/users/permissions/', { method: 'POST', body: JSON.stringify({ name: `${name} cables`, enabled: true, users: [user.id], object_types: ['dcim.cable'], actions: ['add'] }) });
+  const made = await nb<{ key: string; token: string }>('/api/users/tokens/', { method: 'POST', body: JSON.stringify({ user: user.id, version: 2, write_enabled: false, description: 'quest e2e' }) });
+  const playerToken = made.token.startsWith('nbt_') ? made.token : `nbt_${made.key}.${made.token}`;
   try {
     await boot(page);
-    await page.fill('#signin-token', TOKEN!);
+    await page.fill('#signin-token', playerToken);
     await page.click('#signin-submit');
     await page.evaluate(() => window.__game!.ready);
     if ((await game(page)).dialogue) await page.keyboard.press('Escape');
-    await page.evaluate(() => ((window.__game!.shell.transitionMs = 0), window.__game!.shell.quests!.refresh()));
+    // NetBox read now (a run just before this one may have removed its cable in NetBox itself)
+    await page.evaluate(() => ((window.__game!.shell.transitionMs = 0), window.__game!.shell.quests!.refresh(true)));
     const before = await page.evaluate(() => window.__game!.shell.quests!.rewards());
     expect(await page.evaluate(() => window.__game!.shell.quests!.boards.netbox!.can_write)).toBe(true);
 
-    // The giver of North Depot: tap them, hear why it matters, start the line.
-    const at = await page.evaluate(() => {
+    // The giver of North Depot: stand beside them (wherever the last visit left the player), press the interact key,
+    // hear why it matters, start the line.
+    await page.evaluate(() => {
       const s = window.__game!.shell;
-      return s.overworld!.clientOf(s.map!.giverOf(1)!);
+      if (s.scene === 'iso') return s.leave();
     });
-    await page.mouse.click(at.x, at.y);
+    await expect.poll(async () => (await game(page)).scene).toBe('overworld');
+    await page.evaluate(() => {
+      const s = window.__game!.shell;
+      const g = s.map!.giverOf(1)!;
+      s.overworld!.place({ x: g.x - 1, y: g.y }, 'E');
+    });
+    await page.keyboard.press('KeyE');
     await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 30_000 }).toBe('quest-offer');
     await page.screenshot({ path: `${SHOTS}/live-giver.png` });
     await choose(page, "Let's find out");
@@ -85,7 +100,8 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
     expect(v).toMatchObject({ mode: 'real', verified: true, complete: true });
     expect(v.xp_awarded).toBeGreaterThan(0);
     await expect(page.locator('#quest-xp')).toHaveText(`+${v.xp_awarded} XP`);
-    if (!before!.tools.includes('cable_tracer')) await expect(page.locator('#quest-reward .tool')).toContainText('New tool: Cable tracer.');
+    expect(v.xp_awarded).toBe(120); // a connectivity line, confirmed whole, for the first time
+    await expect(page.locator('#quest-reward .tool')).toContainText('New tool: Cable tracer.');
     expect(await page.evaluate(() => window.__game!.shell.lastJingle)).toBe('confirm');
     await page.screenshot({ path: `${SHOTS}/reward.png` });
     await page.click('#quest-reward-ok');
@@ -99,7 +115,8 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
     expect([cable.type, cable.b_terminations[0]!.object.device.name, cable.b_terminations[0]!.object.name]).toEqual(['cat6', 'nd-acc-nd-r2', 'Gi1/0/7']);
     const me = await (await page.request.get('/api/game/session')).json();
     const log = await nb<{ results: { message: string }[] }>(`/api/core/object-changes/?changed_object_type=dcim.cable&changed_object_id=${cableId}`);
-    expect(log.results[0]!.message).toBe(`rackwalker (${me.player.username}): quest: The other end of nd-core1 mgmt0`);
+    expect(me.player.username).toBe(name);
+    expect(log.results[0]!.message).toBe(`rackwalker (${name}): quest: The other end of nd-core1 mgmt0`);
 
     // The log: one line confirmed by NetBox, the tool on show.
     await page.click('#quest-next');
@@ -110,6 +127,8 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
     // put the stack back as seeded
     const now = (await nb<{ results: Port[] }>('/api/dcim/interfaces/?device=nd-core1&name=mgmt0')).results[0]!;
     if (now.cable) await nb(`/api/dcim/cables/${now.cable.id}/`, { method: 'DELETE' });
+    await nb(`/api/users/permissions/${perm.id}/`, { method: 'DELETE' });
+    await nb(`/api/users/users/${user.id}/`, { method: 'DELETE' });
   }
   expect(cableId).not.toBeNull();
 });

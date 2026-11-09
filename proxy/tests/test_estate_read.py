@@ -159,3 +159,58 @@ def test_health_says_whether_the_proxy_can_check_permissions(tmp_path):
             cl.get("/api/health")
             assert len([c for c in fake.calls if c[1] == "users/users"]) == 1    # asked once, then remembered for a minute
     assert CSRF_HEADER
+
+
+def test_the_quest_log_can_ask_for_a_fresh_read_of_netbox(live_like, monkeypatch):
+    cl, fake, app = live_like
+    # a signed-in player (the fake NetBox vouches for any token as user 9)
+    real = fake.__call__
+
+    def with_user(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/api/authentication-check/":
+            return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
+        if req.url.path == "/api/users/users/9/":
+            return httpx.Response(200, json={"id": 9, "username": "walker", "is_active": True, "groups": []})
+        return real(req)
+    monkeypatch.setattr(FakeNetBox, "__call__", lambda self, req: with_user(req))
+    r = cl.post("/api/game/session", json={"token": "nbt_synthetic.not-a-secret-0123456789"}, headers={CSRF_HEADER: "sign-in"})
+    assert r.status_code == 200, r.text
+    b = cl.get("/api/game/quests").json()
+    schema_validator("QuestBoard").validate(b)
+    assert [q["kind"] for q in b["quests"]] == ["device_unconnected"] and b["can_write"] is False
+    reads = len(fake.lists("dcim/devices"))
+    cl.get("/api/game/quests")
+    assert len(fake.lists("dcim/devices")) == reads            # kept
+    cl.get("/api/game/quests", params={"fresh": "true"})
+    assert len(fake.lists("dcim/devices")) == reads + 1        # read again on request
+
+
+def test_a_fix_that_was_later_undone_in_netbox_reopens_nothing_and_is_counted(live_like, monkeypatch):
+    cl, fake, app = live_like
+    real = fake.__call__
+
+    def with_user(req: httpx.Request) -> httpx.Response:
+        if req.url.path == "/api/authentication-check/":
+            return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
+        if req.url.path == "/api/users/users/9/":
+            return httpx.Response(200, json={"id": 9, "username": "walker", "is_active": True, "groups": []})
+        return real(req)
+    monkeypatch.setattr(FakeNetBox, "__call__", lambda self, req: with_user(req))
+    assert cl.post("/api/game/session", json={"token": "nbt_synthetic.not-a-secret-0123456789"}, headers={CSRF_HEADER: "sign-in"}).status_code == 200
+    offered = cl.get("/api/game/quests").json()["quests"][0]
+    assert (offered["id"], offered["status"]) == ("q:device_unconnected:device:3", "offered")
+    # the player completed this line once (NetBox confirmed it then, and paid); since then the cable was removed in NetBox
+    st = app.state.game_store()
+    st.put_quest(9, "netbox", {"quest_id": offered["id"], "site_id": 1, "status": "done", "answers": {}, "checks": ["device_unconnected:device:3"],
+                               "verified": ["device_unconnected:device:3"],
+                               "snapshot": {k: offered[k] for k in ("id", "kind", "rank", "site_id", "title", "purpose", "outcome", "xp", "minutes", "finding")}})
+    st.add_reward(9, offered["id"], "xp", 120, "device_unconnected:1")
+    b = cl.get("/api/game/quests").json()
+    schema_validator("QuestBoard").validate(b)
+    line = next(q for q in b["quests"] if q["id"] == offered["id"])
+    # nothing is reopened and nothing is taken away; the log says so, and the site's completeness tells the truth
+    assert (line["status"], line["lapsed"], line["step"]) == ("done", True, None)
+    assert not [q for q in b["quests"] if q["status"] == "offered"] and not b["all_in_order"]
+    assert b["message"] == "Nothing new to ask at your estate. 1 thing you recorded before is no longer in NetBox; nothing is reopened."
+    assert b["rewards"]["xp"] == 120 and b["rewards"]["lapsed"] == 1 and b["rewards"]["completed"] == 1
+    assert b["sites"][0]["completeness"]["open"] == 1 and not b["sites"][0]["boss_ready"]

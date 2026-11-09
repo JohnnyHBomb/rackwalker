@@ -183,7 +183,8 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   field, id `<object type>:<object id>:<field>`, ordered by rank, object type, object id, field; `limit` 1 to 500
   (default 100). `unlisted` counts expected-cable gaps beyond the per-site cap of 50. `completeness` is checks passed
   out of checks made at the site.
-* **`GET /api/game/quests?scope=netbox|practice&site_id=`**: the quest log. Without `site_id`, the lines open at
+* **`GET /api/game/quests?scope=netbox|practice&site_id=&fresh=`**: the quest log (`fresh=true` reads NetBox now, for a
+  change made in NetBox itself within the last minute). Without `site_id`, the lines open at
   every site. At most three fresh lines are listed per site (the most valuable first: connectivity, identity,
   layout), parked and practised lines beside them, the rest counted in `queued`; then the last finished lines.
   `next_quest_id` is the most valuable fresh line of the scope. `can_write` is false, with `write_blocked` saying why,

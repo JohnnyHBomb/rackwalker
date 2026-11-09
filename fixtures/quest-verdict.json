@@ -49,7 +49,7 @@
   "complete": true,
   "xp_awarded": 0,
   "potions_awarded": 0,
-  "message": "Practice complete: the island now shows it. On your own NetBox this would earn XP once NetBox confirms it.",
+  "message": "The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it.",
   "can_now": "You can now trace Practice Island to the carrier's hand-off.",
   "unlocked": [],
   "trace": null,

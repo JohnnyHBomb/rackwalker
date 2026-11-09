@@ -214,6 +214,7 @@ paths:
       parameters:
         - {name: scope, in: query, schema: {$ref: "scene.schema.json#/$defs/QuestScope"}}
         - {name: site_id, in: query, schema: {type: integer, minimum: 1}}
+        - {name: fresh, in: query, description: "true reads NetBox now instead of using the estate the proxy has kept.", schema: {type: boolean, default: false}}
       responses:
         "200":
           description: The board.

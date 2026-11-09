@@ -66,8 +66,11 @@ which quests are offered: **connectivity** (can it be reached, and how) before *
 | `rack_devices_unpositioned` | layout | devices are in a rack with no rack unit | nobody can be sent to the right unit | one form: the lowest unit of each device | each device's unit |
 | `room_layout` | layout | racks have no room, or no place on the floor plan (`iso_x`, `iso_y`) | someone new cannot find the rack | one form: the room, and the floor tile (or drag the rack in the room view) | each rack's room and floor position |
 
-A site with none of these gets a short, honest "All in order": the game does not invent work. A VLAN check
-(a prefix with no VLAN behind it) is not in this version.
+A site with none of these gets a short, honest "All in order": the game does not invent work. The only thing its
+quest giver then offers is a **spot check** of one device at a time ("is sw-quay-1 still in rack PI-Q1 U10, serial
+...?"). "Yes" closes it with nothing written and no XP; "no" is a field task: correct the record, then say it matches.
+
+Not in this version: a VLAN check (a prefix with no VLAN behind it), and console ports.
 
 ## Gaps: single empty fields
 
@@ -148,6 +151,9 @@ now trace Harbour Office to the carrier's hand-off".
 
 A line you had begun and then fixed in NetBox itself completes too: the quest log shows it as ready with nothing to
 write, and "Check NetBox" (`POST /api/game/quests/verify`) does the same read without a write.
+
+The game keeps its read of NetBox for a minute. "Read NetBox again" in the quest log reads it at once, for something
+you have just changed in NetBox itself.
 
 If something a quest fixed is later removed in NetBox, nothing is reopened and nothing is taken away. The quest log
 counts it ("since undone in NetBox"), and the site's completeness shows the truth.

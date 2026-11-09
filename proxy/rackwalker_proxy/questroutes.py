@@ -162,8 +162,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             open_lines = [line for line in ls if line["site_id"] == sid and rows.get(line["id"], {}).get("status") not in ("done", "dismissed")]
             waiting = [line for line in open_lines if rows.get(line["id"], {}).get("status") in ("parked", "practised")]
             fresh = [line for line in open_lines if line not in waiting]
-            if not open_lines:
-                # nothing open here: one spot check, never invented work
+            comp = a.completeness(sid, dismissed)
+            if not open_lines and comp["open"] == 0:
+                # nothing open here and nothing missing: one spot check, never invented work
                 n_done = sum(1 for qid, r in rows.items() if r["site_id"] == sid and qid.startswith("q:spot_check:") and r["status"] == "done")
                 spot = quests.spot_check(e, sid, n_done)
                 parked_spot = spot is not None and rows.get(spot["id"], {}).get("status") == "parked"
@@ -182,7 +183,6 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     out_quests.append(quest_body(scope, line, row, state, status))
             if fresh and fresh[0] in ls and (best is None or ls.index(fresh[0]) < best[0]):
                 best = (ls.index(fresh[0]), fresh[0]["id"])
-            comp = a.completeness(sid, dismissed)
             sites_out.append({"site_id": sid, "name": e.sites[sid]["name"], "completeness": comp, "open_quests": real_open,
                               "boss_ready": comp["total"] > 0 and comp["open"] == 0, "boss_acknowledged": sid in acks,
                               "giver": {"name": GIVER_NAMES[sid % len(GIVER_NAMES)]}})
@@ -202,10 +202,16 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             line = {**snap, "finding": {**snap["finding"], "data": {}}}
             out_quests.append(quest_body(scope, line, r, None, r["status"], lapsed=r["quest_id"] in lapsed_ids))
         here = [q for q in out_quests if q["status"] not in ("done", "dismissed") and q["kind"] != "spot_check"]
-        all_ok = not here and queued == 0
+        in_view = [s for s in sites_out if site_id in (None, s["site_id"])]
+        undone = sum(1 for qid in lapsed_ids if site_id in (None, rows[qid]["site_id"]))
+        all_ok = not here and queued == 0 and all(s["completeness"]["open"] == 0 for s in in_view)
         where = e.sites[site_id]["name"] if site_id in e.sites else ("the practice island" if scope == "practice" else "your estate")
         if all_ok:
             message = f"All in order at {where}: nothing the game can see is missing. Well kept."
+        elif not here and queued == 0:
+            # nothing left to ask, yet not complete: something done before is no longer in NetBox. Said, not reopened.
+            message = (f"Nothing new to ask at {where}. {undone} thing{'s' if undone != 1 else ''} you recorded before "
+                       f"{'are' if undone != 1 else 'is'} no longer in NetBox; nothing is reopened.")
         else:
             n = len(here) + queued
             message = f"{n} thing{'s' if n != 1 else ''} to find out at {where}; the most useful one comes first."
@@ -259,9 +265,10 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
 
     @app.get("/api/game/quests")
     async def get_board(request: Request, scope: Annotated[str, Query(pattern="^(netbox|practice)$")] = "netbox",
-                        site_id: Annotated[int | None, Query(ge=1)] = None):
+                        site_id: Annotated[int | None, Query(ge=1)] = None, fresh: bool = False):
         uid = await run_in_threadpool(require, request, False)
-        return _no_store(await board_for(uid, scope, site_id))
+        # fresh=true reads NetBox now instead of using the kept estate (the log's "Read NetBox again")
+        return _no_store(await board_for(uid, scope, site_id, fresh))
 
     @app.post("/api/game/quests/answer")
     async def answer(request: Request, body: Json):
@@ -407,7 +414,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 result["applied"] = True
                 await run_in_threadpool(lambda: store().set_practice_ops(uid, store().practice_ops(uid) + proposal["ops"]))
             s = await run_in_threadpool(settle, uid, scope, line, row, after if ok else e, False)
-            msg = ("Practice complete: the island now shows it. On your own NetBox this would earn XP once NetBox confirms it."
+            msg = ("The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it."
                    if s["complete"] else "The island took that change." if ok else "That change does not fit the island; look at the preview.")
             return _no_store(await run_in_threadpool(verdict, uid, scope, line, s, "practice", ok and s["complete"], msg, result, None, after if ok else e))
         blocked = (await write_note(scope, uid))[1]
@@ -444,7 +451,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         if not res.applied:
             msg = "NetBox did not take that change; look at the preview for the reason."
         elif s["complete"]:
-            msg = f"NetBox confirms it. {line['outcome']}"
+            msg = "NetBox confirms it."
         elif s["newly"]:
             msg = f"NetBox confirms {len(s['newly'])} of {len(s['saved']['checks'])}; the rest of this line stays open."
         else:
@@ -469,7 +476,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             snap = row["snapshot"]
             line = {**snap, "finding": {**snap["finding"], "data": {}}, "site_id": row["site_id"]}
         s = await run_in_threadpool(settle, uid, "netbox", line, row, after, True)
-        msg = (f"NetBox confirms it. {line['outcome']}" if s["complete"] else
+        msg = ("NetBox confirms it." if s["complete"] else
                f"NetBox confirms {len(s['newly'])} more; the rest stays open." if s["newly"] else "NetBox does not show it yet.")
         return _no_store(await run_in_threadpool(verdict, uid, "netbox", line, s, "real", bool(s["newly"]) or s["complete"], msg, None, None, after))
 

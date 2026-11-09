@@ -49,7 +49,7 @@ test('live proxy: world shows 3 sites; double-click into a site, a room, a rack,
   for (const p of ['/api/scene/world', '/api/scene/site/1', '/api/scene/rack/1', '/api/device/2']) expect(paths).toContain(p);
   // 'cache' is the proxy's own cache of NetBox reads (another spec in the same run may have warmed it); never 'fixture'
   for (const a of api)
-    expect(a, `${a.path} answered by the proxy from NetBox`).toMatchObject({ status: 200, source: expect.stringMatching(/^(netbox|cache)$/), version: '4.7.4', contract: '2.2.0' });
+    expect(a, `${a.path} answered by the proxy from NetBox`).toMatchObject({ status: 200, source: expect.stringMatching(/^(netbox|cache)$/), version: '4.7.4', contract: '2.3.0' });
   expect(fixtureLoads).toEqual([]);
   console.log(JSON.stringify(api));
 });

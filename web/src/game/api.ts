@@ -15,7 +15,7 @@ export interface GameApi {
   settings(s: GameSettings): Promise<GameSettings>;
   flags(patch: FlagsPatch['flags']): Promise<Flags>;
   /** Quests (contract 2.3.0): the log for a site or the whole estate, on the player's NetBox or the practice island. */
-  questBoard(scope: QuestScope, siteId?: number | null): Promise<QuestBoard>;
+  questBoard(scope: QuestScope, siteId?: number | null, fresh?: boolean): Promise<QuestBoard>;
   questAnswer(a: QuestAnswer): Promise<Quest>;
   questPreview(scope: QuestScope, questId: string): Promise<ChangeResult>;
   questApply(scope: QuestScope, questId: string): Promise<QuestVerdict>;
@@ -81,8 +81,8 @@ export class HttpGameApi implements GameApi {
   flags(patch: FlagsPatch['flags']): Promise<Flags> {
     return this.call('PATCH', '/api/game/flags', { flags: patch } satisfies FlagsPatch);
   }
-  questBoard(scope: QuestScope, siteId: number | null = null): Promise<QuestBoard> {
-    return this.call('GET', `/api/game/quests?scope=${scope}${siteId ? `&site_id=${siteId}` : ''}`);
+  questBoard(scope: QuestScope, siteId: number | null = null, fresh = false): Promise<QuestBoard> {
+    return this.call('GET', `/api/game/quests?scope=${scope}${siteId ? `&site_id=${siteId}` : ''}${fresh ? '&fresh=true' : ''}`);
   }
   questAnswer(a: QuestAnswer): Promise<Quest> {
     return this.call('POST', '/api/game/quests/answer', a);

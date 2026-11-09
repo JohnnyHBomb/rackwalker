@@ -182,10 +182,13 @@ export class Quests {
     return (this.board(siteId)?.quests ?? []).filter((q) => q.site_id === siteId && q.status !== 'done' && q.status !== 'dismissed');
   }
 
-  /** Reads both logs again (the estate's and the practice island's). Failures are said, never swallowed. */
-  async refresh(): Promise<void> {
+  /**
+   * Reads both logs again (the estate's and the practice island's). `fresh` has the proxy read NetBox itself again
+   * (the log's "Read NetBox again": for something changed in NetBox within the last minute). Failures are said.
+   */
+  async refresh(fresh = false): Promise<void> {
     try {
-      const [netbox, practice] = await Promise.all([this.api.questBoard('netbox'), this.api.questBoard('practice')]);
+      const [netbox, practice] = await Promise.all([this.api.questBoard('netbox', null, fresh), this.api.questBoard('practice')]);
       this.boards.netbox = netbox;
       this.boards.practice = practice;
       this.lastError = null;
@@ -551,7 +554,7 @@ export class Quests {
       xp.id = 'quest-xp';
       xp.append(spriteCanvas('icon_xp', 3), `+${v.xp_awarded} XP`);
       box.append(xp);
-    } else if (!real) box.append(el('p', 'Practice pays no XP; the real thing does, once NetBox confirms it.', 'hint'));
+    }
     for (const t of v.unlocked) {
       const row = el('p');
       row.className = 'tool';
@@ -681,7 +684,7 @@ export class Quests {
     }
     p.append(st);
     const foot = el('div', undefined, 'row');
-    foot.append(btn('◀ Close', 'quest-log-close', close), btn('Read NetBox again', 'quest-log-refresh', () => void this.refresh().then(() => this.openLog(siteId))));
+    foot.append(btn('◀ Close', 'quest-log-close', close), btn('Read NetBox again', 'quest-log-refresh', () => void this.refresh(true)));
     if (this.boards.practice?.quests.some((q) => q.status === 'done') || (this.boards.practice?.rewards.practised ?? 0) > 0)
       foot.append(btn('Start the practice island afresh', 'quest-practice-reset', () => void this.api.practiceReset().then(() => this.refresh()).then(() => this.openLog(siteId))));
     p.append(foot);
