@@ -1,6 +1,6 @@
-// The overworld (slice G1): screenshots of every theme's building and every country set from the overworld sheet
-// (world.html, fixture sites), the door transition and a walk in the real game, the walk cycle as a GIF, and frame
-// times at 3x while walking (no layout shift). Writes docs/screenshots/g1/g1a/.
+// The overworld: screenshots of every theme's region and every country set from the overworld sheet (world.html,
+// fixture sites), the door transition and a walk in the real game, the walk cycle as a GIF, and frame times at 3x
+// while walking (no layout shift). Writes docs/screenshots/overworld/.
 import { expect, test, type Page } from '@playwright/test';
 import { execFileSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { game } from './game-helpers';
 
 const here = dirname(fileURLToPath(import.meta.url));
-const SHOTS = resolve(here, '../../docs/screenshots/g1/g1a');
+const SHOTS = resolve(here, '../../docs/screenshots/overworld');
 mkdirSync(SHOTS, { recursive: true });
 const players = JSON.parse(readFileSync(resolve(here, '../../fixtures/players.json'), 'utf8')).players as { token: string }[];
 const THEMES = ['debug', 'industrial-robotic', 'farm', 'business', 'pagodas-nature'];
@@ -35,12 +35,16 @@ test('every theme: the region around its building at 1x and 3x, every autotile p
 
 test('every country set: its landmarks and villagers, at 3x', async ({ page }) => {
   await sheet(page);
+  type P = { x: number; y: number };
   for (const country of ['NL', 'GB', 'ZZ']) {
-    const info = (await page.evaluate((c) => window.__world!.info({ country: c }), country)) as { regions: { set: string; x0: number; w: number }[] };
+    const info = (await page.evaluate((c) => window.__world!.info({ country: c }), country)) as { regions: { set: string }[]; landmark: P; stand: P; villager: P };
     expect(info.regions[0]!.set).toBe(country === 'ZZ' ? '' : country);
-    // centre the view on the region's first landmark
-    const spot = await page.evaluate((c) => (window.__world!.info({ country: c }) as { landmark: { x: number; y: number } | null }).landmark, country);
-    save(`country-${country === 'ZZ' ? 'neutral' : country}-3x.png`, await page.evaluate(([c, p]) => window.__world!.capture({ country: c as string, scale: 3, t: 500, at: p as { x: number; y: number } }), [country, spot]));
+    const name = country === 'ZZ' ? 'neutral' : country;
+    // the view on the region's first landmark, the player standing in front of it (never on it)
+    const player = { x: info.stand.x * 16 + 8, y: info.stand.y * 16 + 14, dir: 'up', frame: 0 };
+    save(`country-${name}-3x.png`, await page.evaluate(([c, at, p]) => window.__world!.capture({ country: c as string, scale: 3, t: 500, at: at as P, player: p as never }), [country, info.landmark, player] as const));
+    // and on a villager
+    save(`country-${name}-villager-3x.png`, await page.evaluate(([c, at]) => window.__world!.capture({ country: c as string, scale: 3, t: 500, at: at as P, player: { x: -99, y: -99, dir: 'down', frame: 0 } }), [country, info.villager] as const));
   }
 });
 
@@ -169,6 +173,10 @@ test.describe('in the game', () => {
     await expect(page.locator('#scene-card')).toContainText('Entering', { timeout: 15_000 });
     await page.screenshot({ path: resolve(SHOTS, 'door-transition.png') });
     await expect.poll(async () => (await game(page)).scene, { timeout: 15_000 }).toBe('iso');
+    // inside: the card has gone and the isometric room is on screen
+    await expect(page.locator('#scene-card')).toHaveCount(0, { timeout: 15_000 });
+    await page.evaluate(() => window.__game!.shell.dialogue.close());
+    await page.evaluate(() => window.__iso!.view.settled());
     await page.screenshot({ path: resolve(SHOTS, 'door-inside.png') });
     await page.keyboard.press('Escape');
     await page.keyboard.press('Escape');
@@ -176,6 +184,9 @@ test.describe('in the game', () => {
     const g = await game(page);
     const d = await page.evaluate(() => window.__game!.shell.map!.doorOf(1)!);
     expect(g.pos).toEqual({ x: d.x, y: d.y + 1 });
+    await expect(page.locator('#scene-card')).toHaveCount(0, { timeout: 15_000 });
     await page.screenshot({ path: resolve(SHOTS, 'door-back-out.png') });
+    const shots = ['door-transition.png', 'door-inside.png', 'door-back-out.png'].map((n) => readFileSync(resolve(SHOTS, n)).toString('base64'));
+    expect(new Set(shots).size).toBe(3);
   });
 });

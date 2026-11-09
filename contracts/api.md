@@ -180,8 +180,12 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   longer has (404) or has deactivated loses every session at once: the request answers 401 `unauthorized` with
   `details.reason` `gone` or `inactive` (`GET /api/game/session` answers signed out and clears the cookie). If NetBox
   cannot answer, reads go on and writes answer 502 `netbox_unreachable` until NetBox answers again; sign-out never needs
-  NetBox. The proxy's NetBox user needs view permission on users (`devnetbox/proxy_tokens.py` grants it). In fixture
-  mode a player whose `fixtures/players.json` entry has `"active": false` cannot sign in.
+  NetBox. The proxy's NetBox user needs view permission on users (`devnetbox/proxy_tokens.py` grants it): when NetBox
+  refuses the lookup to the proxy's token (401 or 403), sessions are kept, reads go on and writes answer 502
+  `netbox_error` with `details.reason` `proxy_cannot_view_users`, which does not mend itself. A session the recheck
+  ended keeps answering 401 with its `details.reason` to that browser until it signs in again or its cookie is
+  cleared. In fixture mode a player whose `fixtures/players.json` entry has `"active": false` cannot sign in, and a
+  user that file does not list counts as deleted.
 * **CSRF.** Every write (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/game/`) needs the `X-RackWalker-CSRF` header: the
   session's `csrf_token` (from `GameSession`), or any value on sign-in. A custom header cannot be sent cross-site
   without a CORS preflight, which the proxy never grants; an `Origin` header, when present, must name an allowed host.

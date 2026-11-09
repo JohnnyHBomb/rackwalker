@@ -4,10 +4,11 @@ The overworld is drawn in the 16-bit style of the art lab (`web/art-lab/sixteen/
 tiles, characters 16 x 24, its 63-colour palette in ramps, light from the top-left, hand dithering, whole-pixel
 movement, shown at the largest whole-number scale that fits the window.
 
-![A farm-theme site at 3x](../../../docs/screenshots/g1/g1a/region-farm-3x.png)
+![A farm-theme site at 3x](../../../docs/screenshots/overworld/region-farm-3x.png)
 
-Screenshots: `docs/screenshots/g1/g1a/` (`region-<theme>-1x.png` / `-3x.png` for every theme, `country-<code>-3x.png`
-for every country set, `door-transition.png`, `portrait-pipeline.png`, `walk.gif`, `perf.json`). They are written by
+Screenshots: `docs/screenshots/overworld/` (`region-<theme>-1x.png` / `-3x.png` for every theme, `country-<code>-3x.png`
+(the first landmark, the player in front of it) and `country-<code>-villager-3x.png` for every country set,
+`door-transition.png`, `door-inside.png`, `door-back-out.png`, `portrait-pipeline.png`, `walk.gif`, `perf.json`). They are written by
 `web/e2e/overworld.spec.ts` (`make e2e`) from the overworld sheet `world.html` (`make dev-fixtures`, then
 `http://127.0.0.1:5173/world.html?theme=farm&country=NL&scale=3`).
 
@@ -21,7 +22,8 @@ for every country set, `door-transition.png`, `portrait-pipeline.png`, `walk.gif
 | `props.py` | country landmarks, villagers, the airfield placeholder, the door marker |
 | `../portraits/` | the portrait pipeline (below) |
 | `web/src/game/world/engine.ts` | the indexed framebuffer: tiles, sprites, palette-remap shadows and glow, the palette applied last |
-| `web/src/game/world/render.ts` | a map through the engine: autotile ids per cell once, visible cells and sprites per frame, sorted by base line |
+| `web/src/game/world/render.ts` | a map through the engine: autotile ids per cell once (in the region's ground palette), objects filed in 128 px buckets, so a frame looks only at what is near the camera, sorted by base line |
+| `web/src/game/world/themes.ts` | per-theme ground: palette remaps, flowers, how wooded |
 | `web/src/game/world/gen.ts` | the map from NetBox data (below) |
 | `web/src/game/world/camera.ts` | the camera: follows the player in whole pixels, never leaves the player's region |
 | `web/src/game/world/countries.ts` | country sets keyed by ISO 3166-1 alpha-2 code |
@@ -37,11 +39,32 @@ Nothing in the world is drawn with shape or fill calls at run time: every pixel 
 ### Ground autotiles
 
 The map is a grid of terrain classes: grass, path, water, bridge (path over water), sand, tulip field, crop field. A
-tile's pixels depend only on its class, its four neighbours (reduced to what that class cares about: grass only
-asks "path, lower ground or grass") and a variant, so `ground.py` renders every combination once, through the art
+tile's pixels depend only on its class, its four neighbours (reduced to what that class cares about: grass asks
+"path, water, sand, field or grass") and a variant, so `ground.py` renders every combination once, through the art
 lab's per-pixel rules on a 3 x 3 probe of tiles, and keeps the centre. The engine looks each cell's tile up by that
 key. Water and fields have four frames (ripples drift, tulips and the crop sway). Tests check that every key a
 generated map uses exists.
+
+Shapes: water and sand are drawn from a field over the tile centres of the probe (the art lab's sand rule), so a
+pond, a canal's end or a sand bank has rounded corners inside and out; sand gets a lumpy wobble and spills a pixel
+or two onto the grass, water edges stay level for the quay. Paths wobble as much as the art lab's (the grass leans
+over in clumps) and fill the inside corner of every turn and junction in a curve. The pond is an irregular blob,
+the sand bank a lump, and the canal runs on under the forest border out of the picture.
+
+### Themes on the ground
+
+Each region is drawn in the ground palette of its sites' most common theme (ties: the alphabetically first; a site
+without a known theme does not vote; none gives the plain ground). A ground palette is a remap inside the same 63
+colours (`author_world.py` `GROUNDS`, applied by `themes.ts`): one table for grass and foliage (trees and flowers
+too), one for path and sand earth; water, field soil, buildings and characters keep their colours.
+
+| Theme | Ground |
+|---|---|
+| `debug` | the art direction's own meadow and earth track |
+| `industrial-robotic` | dusty, darker grass; grey gravel paths; tufts and stones; fewer groves |
+| `farm` | a warm late-summer meadow; a dry dirt track; buttercups |
+| `business` | a smooth mown lawn; pale paving; few flowers; the fewest groves |
+| `pagodas-nature` | deep moss green; blue-grey stone flags; violets; the most woodland |
 
 ### The map from NetBox data
 
@@ -51,17 +74,24 @@ Same sites, same map, in any order (`web/tests/world-gen.test.ts`).
    of sites. Sites without GPS join the lowest-id site's region. Regions are ordered by their lowest site id.
 2. **Walking scale.** Each site's offset from its region's centre is compressed logarithmically (6 tiles per
    doubling of distance beyond 10 km): a site 10 km out and one 200 km out are both a short walk. North stays up.
-   Buildings that would overlap are pushed apart.
+   Longitudes wrap at the 180th meridian. Sites without GPS stand in a square block below the others. Then each
+   site, nearest the centre first, takes the free place nearest its own, so buildings never overlap, however many
+   sites share one point (200 sites at one point make a region about 200 tiles square).
 3. **Filling the space.** A forest border; a canal with a sandy bank, a moored boat and reeds (or a pond); paths
    joining every site of the region (a minimum spanning tree over the doors, routed around buildings, crossing water
    straight as a bridge); fenced fields; the country's landmarks and villagers; groves and single trees; flowers.
    How much goes down scales with the region's area.
 4. **Distant regions** sit side by side on one map, but no path joins them and the camera never leaves the player's
-   region. Each region of a world with more than one has an **airfield pad, a placeholder**: stepping on it takes
-   the player to the next region's pad, until flights replace it.
+   region. Each region of a world with more than one has an **airfield pad, a placeholder**: a label over it names
+   where it goes, and stepping on it takes the player to the next region's pad, with a card saying where, until
+   flights replace it. A canal that no path crossed gets one crossing, so both banks can be reached.
 5. **Collisions.** Buildings (except the door tile), water (except bridges), trees, fields with their fences,
    landmarks, villagers and the guide block the way. Walking onto a door enters that site's first room through the
    game shell's scene switcher; leaving puts the player on the tile in front of the same door.
+6. **A saved place after an edit in NetBox.** Adding, moving or deleting a site, or changing its GPS or country,
+   regenerates the map. A saved tile is kept only if the player can walk on from it to the region's doors (a reach
+   map from every region's arrival tile); otherwise the player is put on the nearest such tile of the same region,
+   or at the start.
 
 ### Country sets
 
@@ -71,7 +101,7 @@ villagers are native animals, sometimes with one silly prop (a hat, a tool, food
 
 | Code | Landmarks | Villager | Water, field |
 |---|---|---|---|
-| `NL` | windmill with turning sails, stepped-gable cottage, cheese cart, bicycles, poplars | a hedgehog wearing its bicycle bell as a hat | canal with bridges, tulips |
+| `NL` | windmill with turning sails (its brick base under a pantile skirt roof seen from the front, the door full height below it), stepped-gable cottage, cheese cart, bicycles, poplars | a hedgehog wearing its bicycle bell as a hat | canal with bridges, tulips |
 | `GB` | red telephone kiosk, pillar box, tea stall with a steaming pot, a small rain cloud | a badger in a bowler hat; a red fox (second villager of a region with more than one site) | pond, yellow crop |
 | any other | a well, haystacks | a rabbit holding a carrot | pond, yellow crop |
 
@@ -111,7 +141,10 @@ raw downscale, both palette mappings and the cleaned result.
 ### Frame times
 
 `web/e2e/overworld.spec.ts` walks the player in the real game at 768 x 672 (3x) with chromium's CPU throttled 4x and
-writes `perf.json`: frame interval p95 17.4 ms (60 fps), composing a frame 2.7 ms median, 3.6 ms p95, no layout shift.
+writes `perf.json`: frame interval p95 17.3 ms (60 fps), composing a frame 2.3 ms median, 3.1 ms p95, no layout shift.
+A frame looks only at the objects near the camera (`web/tests/world-engine.test.ts` checks that a world of 200 sites
+looks at no more than a world of 3): in node, unthrottled, composing a frame of a 200-site world (122,000 objects)
+takes 0.6 ms median, as for 3 sites.
 
 ## Art notes
 
@@ -146,10 +179,21 @@ front-facing roof rule, fix them, render again.
    one silver strand per side, the scene framed closer; Nocti against a slate-blue workshop wall, with a sceptical
    lid and a screwdriver; a hand clean-up file for every portrait at both sizes.
 
+5. **Roofs, ground, portraits** (every theme at 1x and 3x, NL and GB at 4x, the portraits at 8x).
+   Weaknesses: the windmill's skirt roof was painted over the top of its door (a 5 px stub, the knob gone); every
+   theme had the same ground; the pond was a square pool, the sand bank a rectangle, paths ruler-straight with
+   square inside corners, the canal ended square at the forest; the fields' side fences covered a third of the
+   plot; Ilatea's eyes read as half-closed slits, and a straight light/shade line split her forehead.
+   Fixes: the skirt roof on rows of its own (everything above the base moved up 4 px); per-theme ground palettes and
+   flowers; rounded water and sand shapes, path wobble and curved corners, the canal under the forest; stacked side
+   fences; her eyes open (two rows of gold iris, a glint on each pupil), the forehead light on a slant.
+
 ## Where it still falls short
 
 - The rain cloud casts no shadow; landmarks are not joined to the paths; the tulip field's lower fence hides its last
   row.
+- The pond's outline follows whole tiles, so its curves step at tile corners; the quay stones follow those steps.
+- Nothing points at buildings off screen yet (a map and a marker to the next small fix come with the quest log).
 - Phones get 1x (256 px wide) because only whole-number scales are used.
 - The airfield pad is a placeholder: it moves the player between regions at once, with no flight.
 - The portraits have no idle or talk frames yet.

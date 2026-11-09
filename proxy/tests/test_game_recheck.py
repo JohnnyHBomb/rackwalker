@@ -7,7 +7,8 @@ from fastapi.testclient import TestClient
 
 from rackwalker_proxy import game
 from rackwalker_proxy.app import Settings, create_app
-from rackwalker_proxy.game import CSRF_HEADER
+from rackwalker_proxy.game import COOKIE, CSRF_HEADER, fixture_user_status, fixture_whoami
+from rackwalker_proxy.errors import ApiError
 
 from .conftest import LOCAL
 
@@ -20,6 +21,7 @@ class FakeNetBox:
     def __init__(self):
         self.active: bool | None = True   # None: the user is gone (404)
         self.down = False
+        self.status: int | None = None    # an HTTP error NetBox answers to the user lookup instead
         self.lookups = 0
 
     def __call__(self, req: httpx.Request) -> httpx.Response:
@@ -30,6 +32,8 @@ class FakeNetBox:
         if req.url.path == "/api/users/users/7/":
             assert req.headers["authorization"] == "Bearer nbt_proxy.proxysecret"  # the proxy's token, never the player's
             self.lookups += 1
+            if self.status is not None:
+                return httpx.Response(self.status, json={"detail": "error"})
             if self.active is None:
                 return httpx.Response(404, json={"detail": "No User matches the given query."})
             return httpx.Response(200, json={"id": 7, "username": "jdoe", "is_active": self.active})
@@ -143,3 +147,67 @@ def test_netbox_writes_recheck_the_player_too(tmp_path, clock):
     nb.active = False
     r = cl.post("/api/changes/preview", json={"ops": []}, headers={CSRF_HEADER: csrf})
     assert r.status_code == 401 and r.json()["error"]["details"] == {"reason": "inactive"}
+
+
+@pytest.mark.parametrize("status", [500, 503, 429])
+def test_a_netbox_server_error_keeps_the_session_and_refuses_writes(tmp_path, clock, status):
+    nb = FakeNetBox()
+    cl, csrf = client(tmp_path, nb)
+    nb.status = status
+    clock[0] += game.RECHECK_SECONDS + 1
+    assert cl.get("/api/game/state").status_code == 200
+    r = cl.put("/api/game/saves/auto", json=SAVE, headers={CSRF_HEADER: csrf})
+    assert r.status_code == 502 and r.json()["error"]["code"] == "netbox_unreachable"
+    assert cl.get("/api/game/session").json()["signed_in"] is True
+    nb.status = None
+    assert cl.put("/api/game/saves/auto", json=SAVE, headers={CSRF_HEADER: csrf}).status_code == 200
+
+
+@pytest.mark.parametrize("status", [401, 403])
+def test_a_proxy_token_that_may_not_view_users_keeps_sessions_and_says_why_writes_are_refused(tmp_path, clock, status):
+    nb = FakeNetBox()
+    cl, csrf = client(tmp_path, nb)
+    nb.status = status
+    clock[0] += game.RECHECK_SECONDS + 1
+    assert cl.get("/api/game/state").status_code == 200  # never "inactive": nobody is signed out for it
+    r = cl.put("/api/game/saves/auto", json=SAVE, headers={CSRF_HEADER: csrf})
+    assert r.status_code == 502
+    err = r.json()["error"]
+    assert err["code"] == "netbox_error" and err["details"] == {"reason": "proxy_cannot_view_users"}
+    assert "view permission on users" in err["message"] and "tries again" not in err["message"]
+    assert cl.get("/api/game/session").json()["signed_in"] is True
+
+
+def test_a_good_recheck_rearms_the_interval(tmp_path, clock):
+    nb = FakeNetBox()
+    cl, _ = client(tmp_path, nb)
+    clock[0] += game.RECHECK_SECONDS + 1
+    assert cl.get("/api/game/state").status_code == 200 and nb.lookups == 1
+    clock[0] += game.RECHECK_SECONDS - 1
+    assert cl.get("/api/game/state").status_code == 200
+    assert cl.get("/api/game/state").status_code == 200
+    assert nb.lookups == 1  # no new lookup inside the interval that the last good answer started
+
+
+def test_an_ended_session_keeps_telling_its_browser_why_and_its_cookie_is_cleared(tmp_path, clock):
+    nb = FakeNetBox()
+    cl, csrf = client(tmp_path, nb)
+    nb.active = False
+    assert cl.put("/api/game/saves/auto", json=SAVE, headers={CSRF_HEADER: csrf}).json()["error"]["details"] == {"reason": "inactive"}
+    # the next write, from the same browser, hears the same reason (not a plain "sign in first")
+    r = cl.patch("/api/game/flags", json={"flags": {"a": True}}, headers={CSRF_HEADER: csrf})
+    assert r.status_code == 401 and r.json()["error"]["details"] == {"reason": "inactive"}
+    s = cl.get("/api/game/session")
+    assert s.json()["signed_in"] is False
+    assert COOKIE in s.headers.get("set-cookie", "") and "Max-Age=0" in s.headers["set-cookie"]
+
+
+def test_fixture_mode_refuses_an_inactive_player_and_treats_an_unknown_user_as_gone(tmp_path):
+    (tmp_path / "players.json").write_text(
+        '{"players": [{"token": "a", "user": {"id": 1, "username": "a", "display_name": null}},'
+        ' {"token": "b", "active": false, "user": {"id": 2, "username": "b", "display_name": null}}]}')
+    assert fixture_whoami(tmp_path, "a")["id"] == 1
+    with pytest.raises(ApiError) as e:
+        fixture_whoami(tmp_path, "b")
+    assert e.value.code == "unauthorized" and "not active" in e.value.message
+    assert [fixture_user_status(tmp_path, i) for i in (1, 2, 3)] == ["active", "inactive", "gone"]

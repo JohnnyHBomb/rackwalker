@@ -633,25 +633,46 @@ def cottage_nl(base):
 
 
 def windmill_base(base):
-    """The windmill with a front-facing skirt roof over its brick base: the base reads as a little building with
-    its eaves to the viewer rather than a block seen from above."""
-    img = base.copy()
-    # find the brick base's top: the first row from the bottom where brick ends
-    rows = [y for y in range(base.h) if any(NAMES[base.get(x, y)].startswith("r") for x in range(base.w))]
-    btop = min(rows)
-    xl = min(x for x in range(base.w) if NAMES[base.get(x, btop + 2)].startswith("r"))
-    xr = max(x for x in range(base.w) if NAMES[base.get(x, btop + 2)].startswith("r"))
-    # a short skirt roof of pantiles between the stage and the base
-    for y in range(btop - 1, btop + 4):
+    """The windmill with a front-facing skirt roof over its brick base, so the base reads as a little building with
+    its eaves to the viewer rather than a block seen from above. The roof gets rows of its own: everything above the
+    base moves up SKIRT pixels, so the base's door keeps its full height, lintel and knob."""
+    # the base's top: its outline row, one above the first row of brick; its walls: the bottom row's extent
+    btop = min(y for y in range(base.h) if any(NAMES[base.get(x, y)].startswith("r") for x in range(base.w))) - 1
+    bottom = [x for x in range(base.w) if base.get(x, base.h - 1)]
+    xl, xr = min(bottom), max(bottom)
+    img = Img(base.w, base.h + SKIRT)
+    for y in range(base.h):
+        for x in range(base.w):
+            v = base.get(x, y)
+            if v:
+                img.set(x, y if y < btop else y + SKIRT, v)
+    # the gallery's posts beside the base run on through the new rows
+    for y in range(btop, btop + SKIRT):
+        for x in list(range(0, xl - 1)) + list(range(xr + 2, base.w)):
+            v = base.get(x, btop + 2)
+            if v:
+                img.set(x, y, v)
+    # pantiles seen from the front and a little above: a lit ridge course, two courses of tiles in columns, a dark
+    # eaves lip that overhangs the wall by a pixel each side
+    top = btop
+    for y in range(top, top + SKIRT):
         for x in range(xl - 1, xr + 2):
-            u = x % 5
-            col = ("o0", "o2", "o1", "o1", "o0")[u] if y > btop else ("o1", "o2", "o2", "o2", "o1")[u]
-            if y == btop + 3:
-                col = "o0" if u in (1, 2) else "r0"
+            u = (x - xl) % 4
+            if y == top:
+                col = "o3" if u == 1 else "o2"
+            elif y == top + SKIRT - 1:
+                col = "o0"
+            else:
+                col = ("o1", "o2", "o2", "o1")[u] if (y - top) % 2 else ("o2", "o1", "o1", "o0")[u]
+            if x in (xl - 1, xr + 1) and y > top:
+                col = "o0"
             img.set(x, y, col)
-    img.hline(xl - 1, xr + 1, btop + 4, "wd1")
-    remap_dark(img, xl, btop + 5, xr, btop + 6)
+    # the eaves cast a two-pixel shadow on the wall and the door below them (one ramp step darker)
+    remap_dark(img, xl, top + SKIRT, xr, top + SKIRT + 1)
     return img
+
+
+SKIRT = 4
 
 
 THEMES = ("debug", "industrial-robotic", "farm", "business", "pagodas-nature")

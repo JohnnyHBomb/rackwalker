@@ -2,7 +2,7 @@
 // to 64 x 64 and 96 x 96 (exact box averages, 12x and 8x) -> mapped to the overworld palette (no dither, and ordered
 // dither for comparison) -> the hand clean-up pass (pixel edits stored in cleanup/<who>-<size>.txt) -> indexed rows
 // in web/src/game/world/assets/portraits.json, the same format as the overworld sprites.
-// Also writes the side-by-side sheet docs/screenshots/g1/g1a/portrait-pipeline.png (source, raw downscale, ordered
+// Also writes the side-by-side sheet docs/screenshots/overworld/portrait-pipeline.png (source, raw downscale, ordered
 // dither, cleaned).
 //
 //   cd web && node art/portraits/portrait.mjs        (needs the Playwright chromium of `make e2e`)
@@ -127,7 +127,7 @@ writeFileSync(resolve(web, 'src/game/world/assets/portraits.json'), JSON.stringi
 
 // The sheet: per row, the source at 192 px, then raw downscale (true colour), palette no dither, ordered dither,
 // cleaned, each at 192 px (nearest neighbour).
-const shot = resolve(web, '..', 'docs/screenshots/g1/g1a');
+const shot = resolve(web, '..', 'docs/screenshots/overworld');
 mkdirSync(shot, { recursive: true });
 const png = await page.evaluate(([sheet, RGB]) => {
   const cell = 192, pad = 8, cols = 5, label = 14;

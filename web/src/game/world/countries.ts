@@ -51,7 +51,7 @@ export const COUNTRY_SETS: Readonly<Record<string, CountrySet>> = {
     water: 'canal',
     field: 'F',
     landmarks: [
-      { sprite: 'windmill', fw: 3, fh: 2, count: 1, top: { sprite: 'sails', dx: 0, dy: -49, fps: 8 }, shadow: [6, -1, 16, 4] },
+      { sprite: 'windmill', fw: 3, fh: 2, count: 1, top: { sprite: 'sails', dx: 0, dy: -53, fps: 8 }, shadow: [6, -1, 16, 4] },
       { sprite: 'cottage_nl', fw: 4, fh: 3, count: 1, shadow: [6, -1, 26, 4] },
       { sprite: 'cheese_cart', fw: 2, fh: 1, count: 1, shadow: [2, 0, 12, 3] },
       { sprite: 'bicycle', fw: 2, fh: 1, count: 2, shadow: [2, 0, 10, 2] },

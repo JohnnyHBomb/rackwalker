@@ -27,6 +27,13 @@ export function buildMap(theme: string | null, country: string | null): WorldMap
   );
 }
 
+/** The nearest tile at or below (x, y) the player can stand on (screenshots put the player there, not on a landmark). */
+function nearStand(map: WorldMap, x: number, y: number): Pos | null {
+  for (let d = 0; d < 6; d++)
+    for (const [dx, dy] of [[0, d], [-d, d], [d, d], [-d, 0], [d, 0]] as const) if (map.standable(x + dx, y + dy)) return { x: x + dx, y: y + dy };
+  return null;
+}
+
 const maps = new Map<string, { map: WorldMap; r: WorldRenderer }>();
 function get(theme: string | null, country: string | null) {
   const k = `${theme}|${country}`;
@@ -89,9 +96,13 @@ window.__world = {
   info: (o) => {
     const { map, r } = get(o.theme ?? null, o.country ?? null);
     const lm = map.objects.find((o) => o.kind === 'landmark' && !o.top && o.x < map.regions[0]!.w * TILE);
+    const v = map.objects.find((o) => o.kind === 'villager' && o.x < map.regions[0]!.w * TILE);
     return {
       w: map.w, h: map.h, regions: map.regions.map((x) => ({ ...x, set: x.set.code })), doors: map.doors, guide: map.guide, start: map.start,
       missing: r.missingKeys(), landmark: lm ? { x: Math.floor(lm.x / TILE), y: Math.floor(lm.y / TILE) } : null,
+      // a tile the player can stand on just in front of that landmark, and the region's first villager
+      stand: lm ? nearStand(map, Math.floor(lm.x / TILE), Math.floor(lm.y / TILE) + 1) : null,
+      villager: v ? { x: Math.floor(v.x / TILE), y: Math.floor(v.y / TILE) } : null,
     };
   },
 };

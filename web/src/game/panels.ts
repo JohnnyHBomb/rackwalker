@@ -73,8 +73,15 @@ function para(text: string): HTMLParagraphElement {
 }
 
 /** Sign-in with a NetBox API token. Resolves when `submit` accepts the token; the field is cleared either way. */
-export function signInPanel(host: HTMLElement, submit: (token: string) => Promise<string | null>): Promise<void> {
+export function signInPanel(host: HTMLElement, submit: (token: string) => Promise<string | null>, why: string | null = null): Promise<void> {
   const el = panel('signin', 'Sign in');
+  if (why) {
+    const w = para(why);
+    w.id = 'signin-why';
+    w.className = 'error';
+    w.setAttribute('role', 'alert');
+    el.append(w);
+  }
   el.append(
     para('RackWalker plays as your NetBox user. Paste one of your NetBox API tokens: a read-only one is enough (NetBox: your user menu, API Tokens).'),
     para('The game asks NetBox once who owns it, then forgets it. It is never stored.'),

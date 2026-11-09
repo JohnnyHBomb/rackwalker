@@ -160,6 +160,54 @@
         "username": "keeper",
         "display_name": null
       }
+    },
+    {
+      "token": "nbt_fixtureplayer21.synthetic-not-a-secret",
+      "user": {
+        "id": 31,
+        "username": "drafter",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer22.synthetic-not-a-secret",
+      "user": {
+        "id": 32,
+        "username": "lister",
+        "display_name": "Val Lister"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer23.synthetic-not-a-secret",
+      "user": {
+        "id": 33,
+        "username": "router",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer24.synthetic-not-a-secret",
+      "user": {
+        "id": 34,
+        "username": "sweeper",
+        "display_name": "Max Sweeper"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer25.synthetic-not-a-secret",
+      "user": {
+        "id": 35,
+        "username": "finder",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer26.synthetic-not-a-secret",
+      "user": {
+        "id": 36,
+        "username": "weigher",
+        "display_name": "Ade Weigher"
+      }
     }
   ]
 }

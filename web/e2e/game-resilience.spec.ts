@@ -1,12 +1,12 @@
 // The game shell when things go wrong or the player does something unexpected, on the fixture-mode proxy: a building
 // that does not open, a proxy or NetBox that is down at load, a session that changes in another tab, a saved place
 // that no longer exists, input while a panel is open, and the guide's timing. Nothing may fail silently, freeze the
-// player or lose their place. Each test signs in as its own fixture player (players 5-17), so they never share state.
+// player or lose their place. Each test signs in as its own fixture player, so they never share state.
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { game, idle, ready, stored, typed } from './game-helpers';
 
-const players = JSON.parse(readFileSync(new URL('../../fixtures/players.json', import.meta.url), 'utf8')).players as { token: string }[];
+const players = JSON.parse(readFileSync(new URL('../../fixtures/players.json', import.meta.url), 'utf8')).players as { token: string; user: { id: number } }[];
 const down = { status: 502, json: { error: { code: 'netbox_unreachable', message: 'NetBox did not answer.', details: null } } };
 
 function watchErrors(page: Page): string[] {
@@ -149,14 +149,166 @@ test('signed out in another tab: a notice, sign in again here, and the place wal
   await ctx.close();
 });
 
-test('a NetBox user deactivated in NetBox: the notice says so and offers sign-in', async ({ page }) => {
+test('a NetBox user deactivated in NetBox: play stops at the sign-in panel, which says why; no building opens; an active sign-in plays on', async ({ page }) => {
   await signIn(page, 15);
   const gone = { status: 401, json: { error: { code: 'unauthorized', message: 'Your NetBox user was deactivated in NetBox.', details: { reason: 'inactive' } } } };
   await page.route('**/api/game/saves/auto', (r) => r.fulfill(gone));
   await page.keyboard.press('ArrowLeft');
-  await expect(page.locator('#game-notice')).toContainText('deactivated in NetBox');
-  await expect(page.locator('#notice-signin')).toBeVisible();
+  await expect(page.locator('#signin')).toBeVisible();
+  await expect(page.locator('#signin-why')).toContainText('deactivated in NetBox');
   expect((await game(page)).error).toContain('deactivated in NetBox');
+  // keys and taps belong to the form; a door does not open while the session is ended
+  const at = await pos(page);
+  await page.evaluate(() => {
+    const g = window.__game!.shell;
+    void g.enter(g.map!.doorOf(1)!);
+  });
+  await page.waitForTimeout(300);
+  expect((await game(page)).scene).toBe('overworld');
+  await page.unroute('**/api/game/saves/auto');
+  await page.fill('#signin-token', players[15]!.token);
+  await page.click('#signin-submit');
+  await expect(page.locator('#signin')).toHaveCount(0);
+  await expect.poll(async () => (await game(page)).error).toBeNull();
+  await page.keyboard.press('ArrowRight');
+  await expect.poll(async () => (await pos(page)).x).not.toBe(at.x - 5);
+});
+
+test('signed out elsewhere: walking into a building keeps the notice, and later failed autosaves still show it', async ({ page }) => {
+  await signIn(page, 22);
+  await page.evaluate(() => {
+    const g = window.__game!.shell;
+    g.saveSettings({ ...g.settings, hint_level: 'off' });
+  });
+  await idle(page);
+  const out = { status: 401, json: { error: { code: 'unauthorized', message: 'Sign in first (POST /api/game/session).', details: null } } };
+  await page.route('**/api/game/saves/auto', (r) => r.fulfill(out));
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('#notice-signin')).toBeVisible();
+  await walkIntoDoor(page, 1);
+  await expect.poll(async () => (await game(page)).scene).toBe('iso');
+  await expect(page.locator('#notice-signin')).toBeVisible();
+  await page.keyboard.press('Escape');
+  await page.keyboard.press('Escape');
+  await expect.poll(async () => (await game(page)).scene).toBe('overworld');
+  await page.keyboard.press('ArrowLeft');
+  await page.waitForTimeout(400);
+  await expect(page.locator('#notice-signin')).toBeVisible();
+  await page.keyboard.press('KeyM');
+  await expect(page.locator('#menu-save')).toContainText('not being saved');
+});
+
+test('signing in again as another NetBox user: that player\'s own game loads; nothing of the first player is saved for them', async ({ page }) => {
+  // the second player has played once and left a place of their own
+  await signIn(page, 24);
+  const s0 = await pos(page);
+  await page.evaluate((t) => window.__game!.shell.overworld!.walkTo(t), { x: s0.x, y: s0.y + 2 });
+  await expect.poll(async () => (await pos(page)).y).toBe(s0.y + 2);
+  await expect.poll(async () => (await stored(page)).saves.length).toBe(1);
+  const theirs = (await stored(page)).saves.find((x: { slot: string }) => x.slot === 'auto').data.overworld;
+  await page.evaluate(async () => {
+    const s = await (await fetch('/api/game/session')).json();
+    await fetch('/api/game/session', { method: 'DELETE', headers: { 'X-RackWalker-CSRF': s.csrf_token } });
+  });
+  await signIn(page, 23);
+  await page.evaluate(async () => {
+    const s = await (await fetch('/api/game/session')).json();
+    await fetch('/api/game/session', { method: 'DELETE', headers: { 'X-RackWalker-CSRF': s.csrf_token } });
+  });
+  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('#notice-signin')).toBeVisible();
+  const first = await pos(page);
+  await page.click('#notice-signin');
+  await page.fill('#signin-token', players[24]!.token);
+  await Promise.all([page.waitForEvent('load'), page.click('#signin-submit')]);
+  await page.waitForFunction(() => !!window.__game);
+  await page.evaluate(() => window.__game!.ready);
+  expect(await page.evaluate(() => window.__game!.shell.state!.player.id)).toBe(players[24]!.user.id);
+  await page.evaluate(() => window.__game!.shell.dialogue.close());
+  expect(await pos(page)).toEqual({ x: theirs.x, y: theirs.y });
+  await idle(page);
+  const auto = (await stored(page)).saves.find((x: { slot: string }) => x.slot === 'auto').data.overworld;
+  expect(auto).toMatchObject({ x: theirs.x, y: theirs.y });
+  expect(auto).not.toMatchObject({ x: first.x, y: first.y });
+  await page.keyboard.press('KeyM');
+  await expect(page.locator('#game-menu')).toContainText('Playing as finder');
+});
+
+test('keys never step into a building, water, a tree or the forest; the menu stops a tap-walk on its way', async ({ page }) => {
+  await signIn(page, 20);
+  await page.evaluate(() => {
+    const g = window.__game!.shell;
+    g.saveSettings({ ...g.settings, hint_level: 'off' });
+  });
+  // a standing tile next to each kind of obstacle, with the arrow that points at it
+  const cases = await page.evaluate(() => {
+    const g = window.__game!.shell;
+    const m = g.map!;
+    const r = m.regions[0]!;
+    const dirs = [['ArrowUp', 0, -1], ['ArrowDown', 0, 1], ['ArrowLeft', -1, 0], ['ArrowRight', 1, 0]] as const;
+    const trees = new Set(m.objects.filter((o) => o.kind === 'tree').map((o) => `${Math.floor(o.x / 16)},${Math.floor(o.y / 16)}`));
+    const kindOf = (x: number, y: number) => (m.buildingAt(x, y) ? 'building' : m.at(x, y) === 'W' ? 'water'
+      : x < r.x0 + 3 || y < 3 || x >= r.x0 + r.w - 3 || y >= r.h - 3 ? 'forest' : trees.has(`${x},${y}`) ? 'tree' : null);
+    const out: { kind: string; at: { x: number; y: number }; key: string }[] = [];
+    for (const want of ['building', 'water', 'tree', 'forest'])
+      search: for (let y = 0; y < r.h; y++)
+        for (let x = r.x0; x < r.x0 + r.w; x++) {
+          if (!m.standable(x, y) || m.path(m.start, { x, y }).length === 0 && !(x === m.start.x && y === m.start.y)) continue;
+          for (const [key, dx, dy] of dirs)
+            if (!m.walkable(x + dx, y + dy) && kindOf(x + dx, y + dy) === want && !m.doorAt(x + dx, y + dy)) {
+              out.push({ kind: want, at: { x, y }, key });
+              break search;
+            }
+        }
+    return out;
+  });
+  expect(cases.map((c) => c.kind)).toEqual(['building', 'water', 'tree', 'forest']);
+  for (const c of cases) {
+    await page.evaluate((t) => window.__game!.shell.overworld!.walkTo(t), c.at);
+    await expect.poll(async () => (await pos(page)), { timeout: 20_000 }).toEqual(c.at);
+    await expect.poll(() => page.evaluate(() => window.__game!.shell.overworld!.walking)).toBe(false);
+    await page.keyboard.down(c.key);
+    await page.waitForTimeout(500);
+    await page.keyboard.up(c.key);
+    expect(await pos(page), `${c.key} into the ${c.kind}`).toEqual(c.at);
+  }
+  // a long tap-walk, then the menu: the player stops where they are and goes into no building
+  await page.evaluate(() => {
+    const g = window.__game!.shell;
+    const d = g.map!.doorOf(3)!;
+    g.overworld!.walkTo({ x: d.x, y: d.y });
+  });
+  await page.waitForTimeout(300);
+  await page.keyboard.press('KeyM');
+  const stopped = await pos(page);
+  await page.waitForTimeout(1500);
+  const g = await game(page);
+  expect(g.scene).toBe('overworld');
+  expect(g.pos).toEqual(stopped);
+  expect(g.menu).toBe('game-menu');
+});
+
+test('inside a building, a key that types the old zoom character on another layout does not zoom once zoom is moved', async ({ page }) => {
+  await signIn(page, 25);
+  await page.evaluate(() => {
+    const g = window.__game!.shell;
+    g.saveSettings({ ...g.settings, hint_level: 'off', keys: { ...g.settings.keys, zoom_in: ['KeyI'] } });
+  });
+  await walkIntoDoor(page, 1);
+  await expect.poll(async () => (await game(page)).scene).toBe('iso');
+  await page.evaluate(() => window.__iso!.view.settled());
+  const scale = async () => (await game(page)).camera!.scale;
+  const before = await scale();
+  // '+' on a German layout is BracketRight; '=' on a French layout is Digit0
+  for (const [key, code] of [['+', 'BracketRight'], ['=', 'Digit0']])
+    await page.evaluate(([k, c]) => document.body.dispatchEvent(new KeyboardEvent('keydown', { key: k, code: c, bubbles: true, cancelable: true })), [key, code]);
+  await page.waitForTimeout(300);
+  expect(await scale()).toBe(before);
+  // the moved key still zooms, and the HUD names it
+  await page.keyboard.press('KeyI');
+  await expect.poll(scale).toBeGreaterThan(before);
+  expect(await page.getAttribute('#hud-zoom-in', 'title')).toContain('I');
 });
 
 test('a write the proxy cannot take shows a notice, is kept and lands on "Try again now"', async ({ page }) => {

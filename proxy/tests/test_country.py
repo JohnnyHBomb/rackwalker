@@ -32,3 +32,9 @@ def test_the_scene_site_carries_the_country_from_the_region_when_no_custom_field
                                 "region": {"id": 3, "name": "Nederland", "slug": "nl-region"}, "custom_fields": {},
                                 "physical_address": None})
     assert site(s).model_dump(mode="json")["country"] == "NL"
+
+
+def test_the_scene_site_takes_the_country_from_its_address_when_nothing_else_names_one():
+    s = nb.Site.model_validate({"id": 1, "slug": "a", "name": "A", "status": {"value": "active", "label": "Active"},
+                                "region": None, "custom_fields": {}, "physical_address": "1 Canal Street\nAmsterdam\nNetherlands"})
+    assert site(s).model_dump(mode="json")["country"] == "NL"

@@ -40,6 +40,8 @@ export const ISO_KEYS: Readonly<Partial<Record<KeyAction, { key: string; code: s
 };
 /** The fixed keys of ISO_KEYS (and their other spellings) the view and editor would act on by themselves. */
 export const ISO_FIXED = new Set(['Escape', 'Backspace', 'Enter', 'Equal', 'Minus', 'NumpadAdd', 'NumpadSubtract', 'Slash', 'KeyR', 'KeyT', 'Delete', 'KeyZ']);
+/** The characters (KeyboardEvent.key) the view and editor act on, whatever key types them on the player's layout. */
+export const ISO_FIXED_KEYS = new Set(['Escape', 'Backspace', 'Enter', '+', '=', '-', '/', 'r', 'R', 't', 'T', 'Delete', 'z', 'Z']);
 
 export const DEFAULT_SETTINGS: GameSettings = { hint_level: 'normal', audio: { muted: false, volume: 0.6 }, reduce_motion: false, keys: DEFAULT_KEYS };
 

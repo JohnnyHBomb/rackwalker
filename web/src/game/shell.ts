@@ -13,9 +13,10 @@ import type { RackWalkerView } from '../engine/view';
 import type { GameApi } from './api';
 import { loadScript, mayAutoStart, type Action, type Effects, type Script } from './dialogue';
 import { DialogueBox } from './dialogue-ui';
-import { actionOf, DEFAULT_SETTINGS, ISO_FIXED, ISO_KEYS, keysLabel } from './keys';
+import { actionOf, DEFAULT_SETTINGS, ISO_FIXED, ISO_FIXED_KEYS, ISO_KEYS, keysLabel } from './keys';
 import { OverworldMap, type Dir, type Door, type Pos } from './overworld';
 import { OverworldView } from './overworld-view';
+import { buildingCard } from './world/card';
 import { capturingKey, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
 import emptyJson from './scripts/ilatea-empty.json';
 import introJson from './scripts/ilatea-intro.json';
@@ -80,6 +81,10 @@ export class GameShell {
   private readonly failing = new Map<Write, string>();
   private retryTimer = 0;
   private signedOut = false;
+  /** Why the session ended, as NetBox told the proxy: the user was deleted or deactivated (play stops until a sign-in). */
+  private endedBy: 'gone' | 'inactive' | null = null;
+  /** A write failure that does not mend by trying again (the proxy's own NetBox permissions). */
+  private stuckWrites = false;
   /** Flags set during play that the proxy has not confirmed yet. */
   private unsentFlags: Record<string, FlagValue> = {};
   /** Settings the player changed that the proxy has not confirmed yet (top-level keys only). */
@@ -137,7 +142,8 @@ export class GameShell {
       door: (d) => void this.enter(d),
       moved: (p, f) => this.moved(p, f),
       talk: () => this.talkToGuide(),
-      blocked: () => this.dialogue.open || !!this.menu,
+      blocked: () => this.dialogue.open || !!this.menu || !!document.getElementById('signin'),
+      travelled: (to) => this.travelled(to),
     }, this.owPos, this.owFacing);
     this.view.navGuard = (t) => this.guard(t);
     const prevUpdate = this.view.onUpdate;
@@ -150,6 +156,7 @@ export class GameShell {
       this.scheduleSave();
     };
     this.menuButton();
+    this.applyKeyLabels();
     window.addEventListener('keydown', (e) => this.keydown(e), true);
     window.addEventListener('keyup', (e) => this.keyup(e), true);
     // A key held while the page loses focus never sends its keyup: stop walking.
@@ -171,7 +178,7 @@ export class GameShell {
   }
 
   /** The sign-in panel until NetBox accepts a token (also when a session ends mid-game). */
-  private async signIn(): Promise<void> {
+  private async signIn(why: string | null = null): Promise<void> {
     await signInPanel(this.host, async (token) => {
       try {
         await this.api.signIn(token);
@@ -181,7 +188,7 @@ export class GameShell {
           ? 'NetBox did not accept that token. Check it in NetBox (your user menu, API Tokens) and try again.'
           : `Sign-in failed: ${errText(e)}`;
       }
-    });
+    }, why);
   }
 
   private applyMotion(): void {
@@ -229,16 +236,17 @@ export class GameShell {
     if (camera) this.view.setCamera({ cx: camera.cx, cy: camera.cy, scale: camera.scale as RenderScale });
   }
 
-  private async card(text: string): Promise<void> {
+  /** The scene-change card: the building (pixel art from the overworld's sprites) and a line of text. */
+  private async card(text: string, theme: string | null = null): Promise<void> {
     const ms = this.settings.reduce_motion ? 0 : this.transitionMs;
     if (!ms) return;
     const c = document.createElement('div');
     c.id = 'scene-card';
     c.className = 'game-ui';
-    const arch = document.createElement('div');
-    arch.style.cssText = 'width:40px;height:56px;margin-right:16px;background:#22170f;border:6px solid #e9dcc0;border-bottom:none;border-radius:20px 20px 0 0';
-    arch.setAttribute('aria-hidden', 'true');
-    c.append(arch, text);
+    const art = buildingCard(theme);
+    art.style.marginRight = '16px';
+    art.setAttribute('aria-hidden', 'true');
+    c.append(art, text);
     this.host.append(c);
     await new Promise((r) => setTimeout(r, ms));
     c.remove();
@@ -253,7 +261,13 @@ export class GameShell {
     this.dialogue.close();
     this.owPos = this.map!.outside(d);
     this.owFacing = 'S';
-    const card = this.card(`Entering ${d.name}`);
+    if (this.endedBy) {
+      // the player's NetBox user is gone or deactivated: no building opens until someone signs in
+      this.showOverworld();
+      this.showSignedOut();
+      return;
+    }
+    const card = this.card(`Entering ${d.name}`, d.theme);
     try {
       const ss = await this.view.data.site(d.siteId);
       const room = [...ss.locations].sort((a, b) => a.id - b.id)[0];
@@ -266,7 +280,7 @@ export class GameShell {
       this.scheduleSave();
       return;
     }
-    clearNotice();
+    this.restoreNotice();
     await card;
     const first = !this.flags[VISITED];
     if (first) this.persistFlags({ [VISITED]: true });
@@ -281,7 +295,7 @@ export class GameShell {
     const door = this.siteId !== null ? this.map!.doorOf(this.siteId) : null;
     if (door) this.owPos = this.map!.outside(door);
     this.owFacing = 'S';
-    const card = this.card(door ? `Leaving ${door.name}` : 'Outside');
+    const card = this.card(door ? `Leaving ${door.name}` : 'Outside', door?.theme ?? null);
     this.showOverworld();
     await card;
     this.saveNow();
@@ -291,6 +305,13 @@ export class GameShell {
     if (this.scene !== 'iso' || t.level !== 'world') return false;
     void this.leave();
     return true;
+  }
+
+  /** The airfield pad took the player to another region: say where, the way a door says which building. */
+  private travelled(to: Pos): void {
+    const r = this.map!.regionAt(to);
+    const first = this.map!.doors.find((d) => d.region === r.index);
+    void this.card(first ? `Off to ${first.name}` : 'Off to the next region', first?.theme ?? null);
   }
 
   private moved(p: Pos, f: Dir): void {
@@ -353,7 +374,7 @@ export class GameShell {
           if (s?.signed_in) continue;
         }
         if (code === 'unauthorized' || code === 'forbidden') this.lostSession(what, e as SceneSourceError);
-        else this.failed(what, `${WRITE_NAMES[what]} failed: ${errText(e)}`);
+        else this.failed(what, `${WRITE_NAMES[what]} failed: ${errText(e)}`, e instanceof SceneSourceError && e.details?.reason === 'proxy_cannot_view_users');
         return false;
       }
     }
@@ -364,13 +385,16 @@ export class GameShell {
     if (this.failing.size) return this.showFailing();
     this.error = null;
     this.signedOut = false;
+    this.stuckWrites = false;
     clearTimeout(this.retryTimer);
     clearNotice();
   }
 
-  private failed(what: Write, why: string): void {
+  /** `stuck`: trying again will not help until someone changes the proxy's NetBox permissions. */
+  private failed(what: Write, why: string, stuck = false): void {
     this.failing.set(what, why);
     this.error = why;
+    this.stuckWrites = stuck;
     if (this.signedOut) return;
     this.showFailing();
     clearTimeout(this.retryTimer);
@@ -379,33 +403,72 @@ export class GameShell {
 
   private showFailing(): void {
     const why = [...this.failing.values()][0]!;
-    this.notice(`${why} Your progress is kept in this page and is sent again on its own.`, [
+    this.notice(this.stuckWrites ? `${why} Until then nothing you do is saved; it is kept in this page and sent once it can be.`
+      : `${why} Your progress is kept in this page and is sent again on its own.`, [
       { label: 'Try again now', id: 'notice-retry', run: () => this.retryWrites() },
     ]);
   }
 
-  /** The session ended (signed out in another tab, expired): sign in again here, then everything waiting is sent. */
+  /** Puts back the notice that matters after another one (a door that would not open) is done with. */
+  private restoreNotice(): void {
+    clearNotice();
+    if (this.signedOut) this.showSignedOut();
+    else if (this.failing.size) this.showFailing();
+  }
+
+  /**
+   * The session ended. Signed out elsewhere (another tab, expired): the notice asks to sign in again here, and
+   * everything waiting is sent after. NetBox deleted or deactivated the user: play stops, and the sign-in panel
+   * stays up until an active NetBox user signs in.
+   */
   private lostSession(what: Write, e: SceneSourceError): void {
-    // The proxy names the reason when NetBox deleted or deactivated the user; otherwise the session ended elsewhere.
+    // The proxy names the reason when NetBox deleted or deactivated the user (on every request after, too).
     const reason = e.details?.reason;
-    const why = reason === 'gone' ? 'your NetBox user was deleted in NetBox'
-      : reason === 'inactive' ? 'your NetBox user was deactivated in NetBox'
-      : 'signed out, perhaps in another tab';
+    if (reason === 'gone' || reason === 'inactive') this.endedBy = reason;
     this.failing.set(what, 'you are signed out');
-    this.error = `${WRITE_NAMES[what]} failed: the game session has ended (${why}).`;
-    if (this.signedOut) return;
+    this.error = `${WRITE_NAMES[what]} failed: the game session has ended (${this.endedWhy()}).`;
+    const was = this.signedOut;
     this.signedOut = true;
     clearTimeout(this.retryTimer);
-    this.notice(`You are signed out (${why}), so your progress is not being saved. Sign in again to keep it.`, [
+    if (this.endedBy) {
+      if (!document.getElementById('signin')) void this.signInAgain();
+    } else if (!was || !document.getElementById('game-notice')) this.showSignedOut();
+  }
+
+  private endedWhy(): string {
+    return this.endedBy === 'gone' ? 'your NetBox user was deleted in NetBox'
+      : this.endedBy === 'inactive' ? 'your NetBox user was deactivated in NetBox'
+      : 'signed out, perhaps in another tab';
+  }
+
+  private showSignedOut(): void {
+    this.notice(`You are signed out (${this.endedWhy()}), so your progress is not being saved. Sign in again to keep it.`, [
       { label: 'Sign in again', id: 'notice-signin', run: () => void this.signInAgain() },
     ]);
   }
 
+  /**
+   * Signs in again mid-game. The same player: everything waiting is sent. Another NetBox user: what waits belongs to
+   * the previous player and is dropped, and the page reloads into the new player's own game.
+   */
   private async signInAgain(): Promise<void> {
     clearNotice();
-    this.overworld?.hold(null);
-    await this.signIn();
+    this.overworld?.stop();
+    this.dialogue.close();
+    this.closeMenu();
+    await this.signIn(this.endedBy ? `Your game session has ended: ${this.endedWhy()}. Play goes on when an active NetBox user signs in.` : null);
+    const s = await this.api.session().catch(() => null);
+    const before = this.state?.player.id;
+    if (s?.signed_in && s.player && before !== undefined && s.player.id !== before) {
+      this.failing.clear();
+      clearTimeout(this.retryTimer);
+      this.signedOut = false;
+      this.endedBy = null;
+      location.reload();
+      return;
+    }
     this.signedOut = false;
+    this.endedBy = null;
     this.retryWrites();
   }
 
@@ -456,7 +519,7 @@ export class GameShell {
 
   async talk(s: Script): Promise<void> {
     if (this.dialogue.open) this.dialogue.close();
-    this.overworld?.hold(null);
+    this.overworld?.stop();
     this.dialogue.reduceMotion = this.settings.reduce_motion;
     const playing = this.dialogue.play(s, this.flags, (a) => keysLabel(this.settings.keys, a));
     if (s.once) this.persistFlags({ [s.once]: true }); // seen as soon as it shows: never repeats, even after a reload
@@ -497,8 +560,7 @@ export class GameShell {
       if (JSON.stringify(s[k]) !== JSON.stringify(prev[k])) (this.unsentSettings as Record<string, unknown>)[k] = s[k];
     this.settings = s;
     this.applyMotion();
-    const b = document.getElementById('game-button');
-    if (b) b.title = `Menu (${keysLabel(s.keys, 'menu')})`;
+    this.applyKeyLabels();
     this.sendSettings();
   }
 
@@ -520,6 +582,22 @@ export class GameShell {
     });
   }
 
+  /** Names the player's own keys wherever the page names a key (menu button, the building HUD, the search box). */
+  private applyKeyLabels(): void {
+    const k = (a: string) => keysLabel(this.settings.keys, a);
+    const title = (id: string, t: string) => {
+      const el = document.getElementById(id);
+      if (el) el.title = t;
+    };
+    title('game-button', `Menu (${k('menu')})`);
+    title('hud-back', `Zoom out one level (${k('cancel')})`);
+    title('hud-enter', `Zoom into the selected object (${k('interact')} or double-click)`);
+    title('hud-zoom-in', `Zoom in (wheel, pinch, ${k('zoom_in')})`);
+    title('hud-zoom-out', `Zoom out (wheel, pinch, ${k('zoom_out')})`);
+    const search = document.getElementById('search') as HTMLInputElement | null;
+    if (search) search.placeholder = `find site, room, rack, device (${k('search')})`;
+  }
+
   toggleMenu(): void {
     if (this.menu) this.closeMenu();
     else this.openMenu();
@@ -527,7 +605,7 @@ export class GameShell {
 
   openMenu(page: 'menu' | 'settings' | 'byte' | 'nocti' = 'menu'): void {
     if (this.scene === 'signin' || this.scene === 'loading') return;
-    this.overworld?.hold(null);
+    this.overworld?.stop(); // a tap-walk under the menu would walk on, and could go into a building
     this.menu?.remove();
     const back = () => this.openMenu();
     if (page === 'settings') this.menu = settingsPanel(this.host, this.settings, (s) => this.saveSettings(s), back);
@@ -611,7 +689,8 @@ export class GameShell {
         this.sendIsoKey(a);
         return;
       }
-      if (ISO_FIXED.has(e.code)) eat();
+      // Fixed keys by position (code) and by character (key: '+' sits elsewhere on many layouts).
+      if (ISO_FIXED.has(e.code) || ISO_FIXED_KEYS.has(e.key)) eat();
     }
   }
 

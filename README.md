@@ -150,9 +150,16 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   run a write-enabled proxy only for people who may edit.
 * No other site may frame the game, the editor or the proxy (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`).
 * Reads are cached per route for `RACKWALKER_CACHE_TTL` seconds (default 10, `0` = off); an apply clears the cache.
-* In the dev stacks the proxy talks to NetBox as its own user `rackwalker-proxy` (created by
-  `devnetbox/proxy_tokens.py`): view on the object types it reads, change on the six it may edit, add on racks;
-  tokens expire after 30 days and are re-minted on demand.
+* The proxy talks to NetBox as its own user (in the dev stacks `rackwalker-proxy`, created by
+  `devnetbox/proxy_tokens.py`), which needs: **view** on the object types it reads (sites, locations, racks, devices,
+  device types and roles, cables, interfaces, front, rear, console, console server, power ports and outlets, power
+  feeds, circuits and circuit terminations) **and on users** (the game checks that a signed-in player's NetBox user
+  still exists and is active before every write); **change** on the six it may edit and **add** on racks for a
+  write-enabled proxy. Without view on users, nothing the game saves is written, and the game says so. Dev tokens
+  expire after 30 days and are re-minted on demand.
+* Reads (scenes, devices, cable traces) need no sign-in: the plain viewer (`?view=`) works without one, so anyone who
+  can reach the proxy can read what its token may view. Sign-in guards the game's own state and every write; when a
+  player's NetBox user is deleted or deactivated, the game ends their session and stops play until someone signs in.
 * It answers only `Host: 127.0.0.1` or `localhost` (`RACKWALKER_ALLOWED_HOSTS` to change), so a DNS-rebinding page
   cannot reach it.
 * The OpenAPI document is at `/api/openapi.json`; the Swagger UI (`/api/docs`) and ReDoc (`/api/redoc`) pages load

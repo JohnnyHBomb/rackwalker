@@ -89,6 +89,8 @@ export class WorldRenderer {
   private readonly flats: Buckets;
   private readonly tops: Buckets;
   private readonly labelOf = new Map<number, string>();
+  /** How many objects the last frame looked at (tests: bounded by what is near the view, not by the world). */
+  considered = 0;
 
   constructor(readonly map: WorldMap, w: number, h: number) {
     this.frame = new Frame(w, h);
@@ -125,7 +127,7 @@ export class WorldRenderer {
     }
     for (const d of map.doors) this.labelOf.set(d.siteId, nameplate(d.name));
     const objs = map.objects.map((o) =>
-      o.kind === 'label' ? { ...o, sprite: this.labelOf.get(o.site!)! }
+      o.kind === 'label' ? { ...o, sprite: o.text ? nameplate(o.text) : this.labelOf.get(o.site!)! }
         : (o.kind === 'tree' || o.kind === 'decor') ? { ...o, sprite: themedSprite(o.sprite, themeAt(Math.floor(o.x / TILE))) }
         : o);
     this.flats = new Buckets(objs.filter((o) => o.flat), map.w * TILE);
@@ -172,8 +174,10 @@ export class WorldRenderer {
       return x0 < fr.w && y0 < fr.h && x0 + s.w > 0 && y0 + s.h > 0;
     };
     const frameOf = (o: WorldObject) => (o.anim && !reduceMotion ? Math.floor((t * o.anim.fps) / 1000) + (o.anim.phase ?? 0) : 0);
-    for (const o of this.flats.under(cx, cy, fr.w, fr.h)) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
-    const vis = this.statics.under(cx, cy, fr.w, fr.h).filter(visible);
+    const flats = this.flats.under(cx, cy, fr.w, fr.h), statics = this.statics.under(cx, cy, fr.w, fr.h), tops = this.tops.under(cx, cy, fr.w, fr.h);
+    this.considered = flats.length + statics.length + tops.length;
+    for (const o of flats) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
+    const vis = statics.filter(visible);
     const act = actors.filter(visible);
     for (const o of vis) if (o.shadow) fr.ellipse(o.x - cx + o.shadow[0], o.y - cy + o.shadow[1], o.shadow[2], o.shadow[3], PALETTE.darker);
     for (const a of act) if (a.shadow) fr.ellipse(a.x - cx + a.shadow[0]!, a.y - cy + a.shadow[1]!, a.shadow[2]!, a.shadow[3]!, PALETTE.darker);
@@ -187,7 +191,7 @@ export class WorldRenderer {
       fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy - bob);
     }
     while (i < sortedActs.length) this.drawActor(sortedActs[i++]!, cx, cy);
-    for (const o of this.tops.under(cx, cy, fr.w, fr.h)) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
+    for (const o of tops) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
     return fr;
   }
 

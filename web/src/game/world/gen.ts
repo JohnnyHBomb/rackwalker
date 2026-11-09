@@ -83,6 +83,8 @@ export interface WorldObject {
   readonly bob?: boolean;
   /** Site id for buildings and their labels. */
   readonly site?: number;
+  /** A label's own text (the airfield's destination), when it is not a site's name. */
+  readonly text?: string;
 }
 
 export const BW = 5;
@@ -274,6 +276,13 @@ export class WorldMap {
       rx += p.w;
     });
     this.doors.sort((a, b) => a.siteId - b.siteId);
+    // Each airfield pad is labelled with where it goes: the first site of the next region that has a pad.
+    for (const r of this.regions) {
+      if (!r.airfield) continue;
+      const to = this.nextAirfield(r.airfield);
+      const dest = to && this.doors.find((d) => d.region === this.regionAt(to).index);
+      if (dest) this.objects.push({ sprite: 'label:airfield', text: `To ${dest.name}`, x: r.airfield.x * TILE + 8, y: r.airfield.y * TILE - 32, top: true, kind: 'label' });
+    }
     // Region 0 holds the lowest-id site: Ilatea stands beside its door, the player starts just below it.
     const r0 = this.regions[0]!;
     this.start = r0.arrive;
@@ -495,8 +504,9 @@ export class WorldMap {
         this.objects.push({ sprite: 'fence_h', x: (s.x + i) * TILE + 2, y: s.y * TILE + 1, kind: 'fence' });
         this.objects.push({ sprite: 'fence_h', x: (s.x + i) * TILE + 2, y: (s.y + 3) * TILE + 1, kind: 'fence' });
       }
-      this.objects.push({ sprite: 'fence_v', x: s.x * TILE, y: (s.y + 3) * TILE - 2, kind: 'fence' });
-      this.objects.push({ sprite: 'fence_v', x: (s.x + 6) * TILE, y: (s.y + 3) * TILE - 2, kind: 'fence' });
+      // side fences the full height of the plot: three stacked sections each side, as the art direction stacks them
+      for (const dy of [2, 20, 38])
+        for (const fx of [s.x * TILE, (s.x + 6) * TILE]) this.objects.push({ sprite: 'fence_v', x: fx, y: (s.y + 3) * TILE - dy, kind: 'fence' });
       for (let i = 0; i < 6; i++) this.flag(s.x + i, s.y + 3, SOLID);
     }
     // Landmarks of the country set.

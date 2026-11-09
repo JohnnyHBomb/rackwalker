@@ -283,10 +283,17 @@ class GameStore:
             return None
         return Session(r["user_id"], r["csrf"], r["expires_at"])
 
-    def end_user_sessions(self, user_id: int) -> None:
-        """Ends every session of one player (their NetBox user was deleted or deactivated)."""
+    def end_user_sessions(self, user_id: int) -> list[str]:
+        """Ends every session of one player (their NetBox user was deleted or deactivated). Returns the ended sessions'
+        cookie hashes, so the proxy can still tell each of those browsers why."""
         with self._tx() as db:
+            ended = [r["id_hash"] for r in db.execute("SELECT id_hash FROM session WHERE user_id=?", (user_id,))]
             db.execute("DELETE FROM session WHERE user_id=?", (user_id,))
+        return ended
+
+    @staticmethod
+    def cookie_hash(token: str) -> str:
+        return _hash(token)
 
     def end_session(self, token: str | None) -> None:
         if token:

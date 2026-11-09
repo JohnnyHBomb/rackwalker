@@ -176,6 +176,23 @@ describe('composing a frame', () => {
     for (let y = 0; y < 128; y++) for (let x = 120; x < 128; x++) if (fr[y * 128 + x] !== bare[y * 128 + x]) drawn++;
     expect(drawn).toBeGreaterThan(20);
   });
+  it('a frame looks at the objects near the view only, however big the world', () => {
+    const sites = Array.from({ length: 200 }, (_, i) => ({ id: i + 1, name: `S${i}`, latitude: -75 + (i % 15) * 10.5, longitude: -175 + Math.floor(i / 15) * 26, theme: null, country: 'NL' }));
+    const big = new WorldMap(sites);
+    const small = new WorldMap(sites.slice(0, 3));
+    expect(big.objects.length).toBeGreaterThan(50 * small.objects.length);
+    const look = (m: WorldMap) => {
+      const r = new WorldRenderer(m, NATIVE_W, NATIVE_H);
+      const s = m.regions[0]!;
+      let most = 0;
+      for (let k = 0; k < 20; k++) {
+        r.render(s.x0 * 16 + k * 13, k * 7, 0, []);
+        most = Math.max(most, r.considered);
+      }
+      return most;
+    };
+    expect(look(big)).toBeLessThan(3 * look(small) + 50);
+  });
   it('each theme draws its ground in its own palette; the plain theme keeps the art direction\'s colours', () => {
     expect(groundLut('debug', true)).toBeNull();
     const frames = ['debug', 'farm', 'industrial-robotic', 'business', 'pagodas-nature'].map((t) => [...new WorldRenderer(fakeMap([{ sprite: 'tree_a', x: 30, y: 40, kind: 'tree' }], t), 64, 64).render(0, 0, 0, []).px].join());

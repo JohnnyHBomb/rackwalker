@@ -106,8 +106,10 @@ async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTranspor
 
 
 async def netbox_user_status(url: str, proxy_token: str, uid: int, transport: httpx.AsyncBaseTransport | None = None) -> str | None:
-    """'active', 'gone' (404) or 'inactive' for NetBox user `uid`, or None when NetBox cannot say (unreachable, an error,
-    or the proxy's token may not view users). Asked with the proxy's own token: the player's token was never kept."""
+    """'active', 'gone' (404) or 'inactive' for NetBox user `uid`; 'no_permission' when NetBox refuses the proxy's own
+    token (401: not accepted, 403: may not view users), which does not mend itself; None when NetBox cannot say right
+    now (unreachable, a server error, an unexpected answer). Asked with the proxy's own token: the player's token was
+    never kept. Only 'gone' and 'inactive' end a session."""
     if not url or not proxy_token:
         return None
     extra = {"transport": transport} if transport is not None else {}
@@ -118,9 +120,12 @@ async def netbox_user_status(url: str, proxy_token: str, uid: int, transport: ht
         return None
     if r.status_code == 404:
         return "gone"
+    if r.status_code in (401, 403):
+        log.error("NetBox answered %s to the proxy's user lookup: the proxy's NetBox token %s, so no game write can be "
+                  "made (grant the proxy's NetBox user view permission on users)", r.status_code,
+                  "is not accepted" if r.status_code == 401 else "may not view users")
+        return "no_permission"
     if r.status_code != 200:
-        if r.status_code == 403:
-            log.warning("the proxy's NetBox token may not view users: game sessions cannot be rechecked")
         return None
     try:
         return "active" if r.json().get("is_active", True) is not False else "inactive"
@@ -179,7 +184,19 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
     app.state.game_store = get_store
 
     checked: dict[int, float] = {}  # user id -> time of the last check NetBox answered "active"
+    ended: dict[str, str] = {}  # cookie hash of a session ended by the recheck -> why ("gone" / "inactive")
     checked_lock = threading.Lock()
+
+    def ended_reason(cookie: str | None) -> str | None:
+        if not cookie or len(cookie) > 200:
+            return None
+        with checked_lock:
+            return ended.get(GameStore.cookie_hash(cookie))
+
+    def signed_out_why(reason: str) -> ApiError:
+        what = "deleted" if reason == "gone" else "deactivated"
+        return ApiError("unauthorized", f"Your NetBox user was {what} in NetBox, so the game session has ended. "
+                        "Sign in again with an active NetBox user.", {"reason": reason})
 
     def user_status(uid: int) -> str | None:
         if fixtures_dir:
@@ -195,6 +212,10 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         # No cookie, no session: answered without the store, so a signed-out page never waits for the file.
         s = get_store().session(cookie) if cookie else None
         if s is None:
+            # A session the recheck ended keeps its reason, so every later request from that browser hears why.
+            reason = ended_reason(cookie)
+            if reason:
+                raise signed_out_why(reason)
             return None
         now = _now()
         with checked_lock:
@@ -206,18 +227,27 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
             with checked_lock:
                 checked[s.user_id] = now
             return s
+        if status == "no_permission":
+            if write:
+                raise ApiError("netbox_error", "Nothing was written: RackWalker cannot check your NetBox user, because NetBox "
+                               "refuses the proxy's own token for that (it needs view permission on users). This does not "
+                               "fix itself: whoever runs RackWalker adds that permission to the proxy's NetBox user.",
+                               {"reason": "proxy_cannot_view_users"})
+            return s
         if status is None:
             if write:
                 raise ApiError("netbox_unreachable", "NetBox cannot confirm your user right now, so nothing was written; "
                                "your game keeps it and tries again.", None)
             return s
         log.info("game sessions ended: NetBox user %s is %s", s.user_id, status)
-        get_store().end_user_sessions(s.user_id)
+        hashes = get_store().end_user_sessions(s.user_id)
         with checked_lock:
             checked.pop(s.user_id, None)
-        what = "deleted" if status == "gone" else "deactivated"
-        raise ApiError("unauthorized", f"Your NetBox user was {what} in NetBox, so the game session has ended. "
-                       "Sign in again with an active NetBox user.", {"reason": status})
+            for h in hashes:
+                ended[h] = status
+            while len(ended) > 10_000:  # bounded: the oldest reasons go first
+                ended.pop(next(iter(ended)))
+        raise signed_out_why(status)
 
     def origin_ok(request: Request) -> bool:
         origin = request.headers.get("origin")

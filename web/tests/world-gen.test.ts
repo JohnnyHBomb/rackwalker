@@ -51,6 +51,15 @@ describe('the map', () => {
     expect(m.nextAirfield(r0.arrive)).toEqual(r1.airfield);
     expect(m.nextAirfield(r1.arrive)).toEqual(r0.airfield);
   });
+  it('each airfield pad is labelled with where it goes', () => {
+    const labels = m.objects.filter((o) => o.kind === 'label' && o.text);
+    expect(labels.map((o) => o.text).sort()).toEqual(['To Site 1', 'To Site 2']);
+    for (const r of m.regions) {
+      const l = labels.find((o) => o.x === r.airfield!.x * 16 + 8)!;
+      const other = m.regions.find((q) => q !== r)!;
+      expect(l.text).toBe(`To Site ${other.siteIds[0]}`);
+    }
+  });
   it('a one-region world has no airfield', () => {
     const one = new WorldMap([S(1, 52, 4), S(2, 52.1, 4.2)]);
     expect(one.regions).toHaveLength(1);
@@ -142,6 +151,8 @@ describe.each([['GB (a pond)', seed], ['NL (a canal)', seedNL]])('collisions, %s
       const t = tileOf(o);
       expect(m.walkable(t.x, t.y), `${o.sprite} at ${t.x},${t.y}`).toBe(false);
     }
+    // the windsock stands on the tile west of the sign's
+    for (const o of m.objects.filter((o) => o.sprite === 'airfield_sign')) expect(m.walkable(tileOf(o).x - 1, tileOf(o).y)).toBe(false);
     // the bottom fence of every field closes the field's south side
     for (const o of m.objects.filter((o) => o.sprite === 'fence_h')) expect(m.walkable(tileOf(o).x, tileOf(o).y)).toBe(false);
   });

@@ -154,6 +154,12 @@ export class OverworldView {
       if (!this.stepFrom) this.tryStep(d);
     } else if (!d) this.held = null;
   }
+  /** Stops every walk: a held key, a tap-walk on its way, a walk up to Ilatea. */
+  stop(): void {
+    this.held = null;
+    this.queue = [];
+    this.talkOnArrival = false;
+  }
   walkTo(t: Pos): void {
     if (this.atDoor) return;
     this.queue = this.map.path(this.pos, t);
