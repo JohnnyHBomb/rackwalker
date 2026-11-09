@@ -30,6 +30,19 @@ test('live: sign in as a NetBox user, every door in and out, reload keeps the pl
   const doors = await page.evaluate(() => window.__game!.shell.map!.doors.map((d) => ({ siteId: d.siteId, x: d.x, y: d.y })));
   expect(doors.map((d) => d.siteId)).toEqual([1, 2, 3]);
   for (const d of doors) {
+    // A door in another region: walk onto this region's airfield pad first (it takes the player to the next region).
+    for (let hop = 0; hop < 4; hop++) {
+      const there = await page.evaluate((t) => {
+        const g = window.__game!.shell;
+        return g.map!.regionAt(g.overworld!.pos).index === g.map!.regionAt(t).index;
+      }, d);
+      if (there) break;
+      await page.evaluate(() => {
+        const g = window.__game!.shell;
+        g.overworld!.walkTo(g.map!.regionAt(g.overworld!.pos).airfield!);
+      });
+      await expect.poll(() => page.evaluate(() => window.__game!.shell.overworld!.walking), { timeout: 30_000 }).toBe(false);
+    }
     await page.evaluate((t) => window.__game!.shell.overworld!.walkTo(t), d);
     await expect.poll(async () => (await game(page)).scene, { timeout: 30_000 }).toBe('iso');
     const g = await game(page);
