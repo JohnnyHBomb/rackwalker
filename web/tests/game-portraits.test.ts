@@ -33,17 +33,30 @@ describe('portraits', () => {
     for (const f of readdirSync(dir)) {
       const [who, n] = f.replace('.txt', '').split('-') as [string, string];
       const rows = (portraits as P)[who]![n]!.frames[0]!;
+      // last: the colour a pixel was last set to; gone: a colour a recolour edit took out of a pixel (the shipped pixel
+      // must not have it, unless a later edit set it again)
       const last = new Map<string, string>();
+      const gone = new Map<string, string>();
       for (const line of readFileSync(resolve(dir, f), 'utf8').split('\n')) {
-        const m = /^(\d+),(\d+)(?: (\d+),(\d+))? ([a-z]+\d?)$/.exec(line.trim());
+        const m = /^(\d+),(\d+)(?: (\d+),(\d+))? (?:([a-z]+\d?)>)?([a-z]+\d?)$/.exec(line.trim());
         if (!m) {
           expect(line.trim() === '' || line.startsWith('#'), `${f}: ${line}`).toBe(true);
           continue;
         }
         const [x0, y0] = [+m[1]!, +m[2]!], [x1, y1] = m[3] ? [+m[3], +m[4]!] : [x0, y0];
-        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) last.set(`${x},${y}`, m[5]!);
+        for (let y = y0; y <= y1; y++)
+          for (let x = x0; x <= x1; x++) {
+            const k = `${x},${y}`;
+            if (m[5] === undefined) last.set(k, m[6]!), gone.delete(k);
+            else if (last.get(k) === m[5]) last.set(k, m[6]!);
+            else if (!last.has(k)) gone.set(k, m[5]);
+          }
       }
-      expect(last.size, f).toBeGreaterThan(50);
+      for (const [k, c] of gone) {
+        const [x, y] = k.split(',').map(Number) as [number, number];
+        expect(palette.names[palette.alphabet.indexOf(rows[y]![x]!)], `${f} ${k}`).not.toBe(c);
+      }
+      expect(last.size + gone.size, f).toBeGreaterThan(50);
       for (const [k, c] of last) {
         const [x, y] = k.split(',').map(Number) as [number, number];
         expect(palette.names[palette.alphabet.indexOf(rows[y]![x]!)], `${f} ${k}`).toBe(c);

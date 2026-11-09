@@ -360,6 +360,90 @@ def marker():
     return [a2, b]
 
 
+def bench():
+    """A park bench seen from the front and a little above: a slatted seat, a back rail, two dark legs."""
+    w, h = 22, 14
+    img = Img(w, h)
+    # back rail: two lit slats
+    for x in range(2, 20):
+        img.set(x, 1, "wd4" if x < 8 else "wd3"), img.set(x, 2, "wd2")
+        img.set(x, 4, "wd3" if x < 8 else "wd2"), img.set(x, 5, "wd1")
+    for y in range(1, 9):
+        img.set(3, y, "wd1"), img.set(18, y, "wd1")
+    # seat seen from above: three slats, foreshortened
+    for x in range(1, 21):
+        img.set(x, 7, "wd4" if x < 9 else "wd3")
+        img.set(x, 8, "wd3" if x < 9 else "wd2")
+        img.set(x, 9, "wd2")
+    img.hline(1, 20, 10, "wd1")
+    # iron legs
+    for x in (3, 18):
+        img.vline(x, 11, 13, "k1"), img.set(x + 1, 13, "s0")
+    return img.outline({}, "wd0")
+
+
+def rock():
+    """A boulder lit from the top left, with a moss cap and a dark foot."""
+    rows = [
+        "....aabb....",
+        "..aaccbbbd..",
+        ".accccbbbdd.",
+        "acccbbbbbddd",
+        "accbbbbbbddd",
+        "abbbbbbbddde",
+        ".bbbbbbdddde",
+        "..eeeeeeeee.",
+    ]
+    img = from_rows(rows, {"a": "s3", "b": "s2", "c": "s4", "d": "s1", "e": "s0"})
+    for (x, y) in ((4, 0), (5, 0), (6, 1), (3, 1)):
+        img.set(x, y, "g3")
+    img.set(5, 1, "g2")
+    return img.outline({}, "k1")
+
+
+def gate():
+    """A field gate: two posts and a five-bar gate with a diagonal brace, in the fences' wood."""
+    img = Img(16, 13)
+    for y in range(13):
+        img.set(1, y, "wd3"), img.set(2, y, "wd2"), img.set(14, y, "wd2"), img.set(13, y, "wd3")
+    img.set(1, 0, "wd4"), img.set(2, 0, "wd4"), img.set(13, 0, "wd4")
+    for yy in (3, 6, 9):
+        for x in range(3, 13):
+            img.set(x, yy, "wd4" if x < 8 else "wd3"), img.set(x, yy + 1, "wd1")
+    for i in range(8):
+        img.set(4 + i, 10 - i, "wd3")
+    return img.outline({}, "wd0")
+
+
+def flowerbed(petals):
+    """A raised flower bed two tiles wide, seen from the front and a little above: a timber edge, dark soil, three
+    staggered rows of flowers in two or three colours with leaves, the front row largest."""
+    w, h = 30, 16
+    img = Img(w, h)
+    for y in range(3, 12):
+        for x in range(1, 29):
+            img.set(x, y, "d1" if (x * 3 + y) % 5 else "d0")
+    # the timber edge: lit top plank, shaded face
+    for x in range(1, 29):
+        img.set(x, 12, "wd4" if x < 10 else "wd3")
+        img.set(x, 13, "wd2"), img.set(x, 14, "wd1")
+    for x in (1, 14, 28):
+        img.vline(x, 12, 14, "wd0")
+    rows = ((3, 2, 1), (6, 3, 0), (9, 2, 1))
+    for r, (y, x0, stagger) in enumerate(rows):
+        for i, x in enumerate(range(x0 + stagger, 28, 4)):
+            c = petals[(i + r) % len(petals)]
+            img.set(x, y + 2, "g2"), img.set(x - 1, y + 2, "g3"), img.set(x + 1, y + 2, "g1")
+            img.set(x, y, c), img.set(x - 1, y + 1, c), img.set(x + 1, y + 1, c), img.set(x, y + 1, "ye2" if c != "ye1" else "o2")
+            img.set(x - 1, y, LIGHTER_OF.get(c, c))
+            if r == 2:
+                img.set(x + 1, y, c)
+    return img.outline({}, "k1")
+
+
+LIGHTER_OF = {"tu1": "tu2", "ye1": "ye2", "pk1": "pk2", "pu1": "pk2", "w": "w", "o2": "o3"}
+
+
 def make_props(add_sprite):
     add_sprite("phone_box", phone_box())
     add_sprite("pillar_box", pillar_box())
@@ -374,6 +458,11 @@ def make_props(add_sprite):
     add_sprite("airfield_pad", airfield_pad(), 22, 29)
     add_sprite("airfield_sign", airfield_sign(), 15, 29)
     add_sprite("marker", marker(), 4, 6)
+    add_sprite("bench", bench(), 11, 13)
+    add_sprite("rock", rock(), 6, 8)
+    add_sprite("gate", gate(), 2, 12)
+    add_sprite("flowerbed", flowerbed(["tu1", "ye1", "pk1"]), 15, 15)
+    add_sprite("flowerbed_cool", flowerbed(["pu1", "w", "b4"]), 15, 15)
 
 
 __all__ = ["make_props", "dith"]

@@ -18,7 +18,7 @@
 35,22 39,22 l0
 40,22 sk1
 ## eyes: a lash line, a dark wing at the outer corner, white corners, a gold iris round a black pupil with a glint
-## on its upper left, the lower iris lit (her eyes glow)
+#   on its upper left, the lower iris lit (her eyes glow)
 24,24 28,24 k0
 35,24 39,24 k0
 23,25 k0

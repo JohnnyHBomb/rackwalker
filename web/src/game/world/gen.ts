@@ -79,7 +79,7 @@ export interface WorldObject {
   /** Drawn above everything (sails, weather). */
   readonly top?: boolean;
   readonly glow?: readonly [number, number, number, number];
-  readonly kind?: 'building' | 'landmark' | 'tree' | 'villager' | 'guide' | 'decor' | 'fence' | 'airfield' | 'label' | 'marker';
+  readonly kind?: 'building' | 'landmark' | 'tree' | 'villager' | 'guide' | 'decor' | 'prop' | 'fence' | 'airfield' | 'label' | 'marker';
   /** Idle bob (villagers, the guide): one pixel up on alternate beats. */
   readonly bob?: boolean;
   /** Site id for buildings and their labels. */
@@ -386,7 +386,9 @@ export class WorldMap {
     if (set.water === 'canal') {
       const rows: number[] = [];
       for (let y = BORDER + 4; y < h - BORDER - 5; y++) rows.push(y);
-      rows.sort((a, b) => Math.abs(a - h / 2) - Math.abs(b - h / 2) || a - b);
+      // near the first building, so the village has its water (a few rows below the door), else across the middle
+      const want = doors[0] ? doors[0].y + 5 : h / 2;
+      rows.sort((a, b) => Math.abs(a - want) - Math.abs(b - want) || a - b);
       for (const y of rows) {
         let ok = true;
         for (let x = rx + BORDER; x < rx + w - BORDER && ok; x++) for (let j = y - 1; j <= y + 2; j++) if (this.has(x, j, RESERVED)) ok = false;
@@ -402,10 +404,13 @@ export class WorldMap {
       // A pond: an irregular 7 x 4 blob (its rounded outline comes from the ground tiles), as near the centre as fits.
       const spots: Pos[] = [];
       for (let y = BORDER + 2; y < h - BORDER - 6; y++) for (let x = BORDER + 2; x < w - BORDER - 9; x++) spots.push({ x: rx + x, y });
-      spots.sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy) || a.y - b.y || a.x - b.x);
+      // near the first building (beside and a little below its door), so the village has its water, else the centre
+      const px = doors[0] ? doors[0].x + 3 : cx, py = doors[0] ? doors[0].y + 3 : cy;
+      spots.sort((a, b) => Math.hypot(a.x - px, a.y - py) - Math.hypot(b.x - px, b.y - py) || a.y - b.y || a.x - b.x);
       const s = spots.find((q) => this.freeRect(q.x, q.y, 7, 4, 2) && !doors.some((d) => Math.abs(q.y - d.y) < 4 && q.x <= d.x + 1 && q.x + 7 >= d.x - 1));
       if (s) {
         POND.forEach((row, j) => [...row].forEach((c, i) => c === 'W' && (this.setT(s.x + i, s.y + j, 'W'), this.flag(s.x + i, s.y + j, SOLID))));
+        this.stream(s, rx, w, R, arrive);
         this.objects.push({ sprite: 'reeds', x: (s.x + 1) * TILE + 6, y: (s.y + 3) * TILE + 4, anim: { fps: 2 }, kind: 'decor' });
         this.objects.push({ sprite: 'reeds', x: (s.x + 6) * TILE + 6, y: (s.y + 1) * TILE + 6, anim: { fps: 2, phase: 1 }, kind: 'decor' });
         this.objects.push({ sprite: 'lilypad', x: (s.x + 2) * TILE + 4, y: (s.y + 1) * TILE + 8, flat: true, kind: 'decor' });
@@ -489,34 +494,44 @@ export class WorldMap {
         else if (R(x, 3) < 0.08 && this.at(x, canalY) === 'W' && this.at(x, canalY - 1) !== 'B')
           this.objects.push({ sprite: R(x, 4) < 0.4 ? 'lilypad_flower' : 'lilypad', x: x * TILE + 8, y: canalY * TILE + 22, flat: true, kind: 'decor' });
     }
-    // Fields, fenced: two 6 x 3 plots.
+    // Fields, fenced, four to six tiles wide and two or three deep, near the buildings first (the village), each with
+    // a gate in its bottom fence.
+    // How far a tile is from the nearest door (a straight-line guess, enough to put things near the village first).
+    const doorDist = (x: number, y: number) => doors.reduce((a, d) => Math.min(a, Math.max(Math.abs(d.x - x), Math.abs(d.y - y))), 99);
+    const byVillage = (k: number, pts: Pos[]) =>
+      pts.map((q) => ({ q, key: R(q.x, q.y, k) + doorDist(q.x, q.y) / 14 })).sort((a, b) => a.key - b.key).map((e) => e.q);
     const fieldSpots: Pos[] = [];
     for (let y = BORDER + 1; y < h - BORDER - 4; y++) for (let x = BORDER + 1; x < w - BORDER - 7; x++) fieldSpots.push({ x: rx + x, y });
-    fieldSpots.sort((a, b) => R(a.x, a.y, 5) - R(b.x, b.y, 5));
     // How much to put down scales with the region's area, so a big region is as full as a small one.
     const fill = Math.max(1, Math.round(((w - 2 * BORDER) * (h - 2 * BORDER)) / 1400));
     let fields = 0;
-    for (const s of fieldSpots) {
-      if (fields >= 1 + fill) break;
-      if (!this.freeRect(s.x, s.y, 6, 3, 1)) continue;
+    /** Tiles a side path leads to: each field's gate and each landmark's front. */
+    const fronts: Pos[] = [];
+    for (const s of byVillage(5, fieldSpots)) {
+      if (fields >= 2 + 2 * fill) break;
+      const fw = 4 + Math.floor(R(s.x, s.y, 42) * 3), fh = 2 + Math.floor(R(s.x, s.y, 43) * 2);
+      if (!this.freeRect(s.x, s.y, fw, fh + 1, 1) || doorDist(s.x + (fw >> 1), s.y) < 4) continue;
       fields++;
-      for (let j = 0; j < 3; j++) for (let i = 0; i < 6; i++) (this.setT(s.x + i, s.y + j, set.field), this.flag(s.x + i, s.y + j, SOLID));
-      for (let i = 0; i < 6; i++) {
+      for (let j = 0; j < fh; j++) for (let i = 0; i < fw; i++) (this.setT(s.x + i, s.y + j, set.field), this.flag(s.x + i, s.y + j, SOLID));
+      // a gate in the bottom fence, where a side path comes in
+      const gx = 1 + Math.floor(R(s.x, s.y, 17) * (fw - 2));
+      for (let i = 0; i < fw; i++) {
         this.objects.push({ sprite: 'fence_h', x: (s.x + i) * TILE + 2, y: s.y * TILE + 1, kind: 'fence' });
-        this.objects.push({ sprite: 'fence_h', x: (s.x + i) * TILE + 2, y: (s.y + 3) * TILE + 1, kind: 'fence' });
+        this.objects.push({ sprite: i === gx ? 'gate' : 'fence_h', x: (s.x + i) * TILE + 2, y: (s.y + fh) * TILE + 1, kind: 'fence' });
       }
-      // side fences the full height of the plot: three stacked sections each side, as the art direction stacks them
-      for (const dy of [2, 20, 38])
-        for (const fx of [s.x * TILE, (s.x + 6) * TILE]) this.objects.push({ sprite: 'fence_v', x: fx, y: (s.y + 3) * TILE - dy, kind: 'fence' });
-      for (let i = 0; i < 6; i++) this.flag(s.x + i, s.y + 3, SOLID);
+      fronts.push({ x: s.x + gx, y: s.y + fh + 1 });
+      // side fences the full height of the plot, stacked sections each side, as the art direction stacks them
+      for (let k = 0; k < fh; k++)
+        for (const fx of [s.x * TILE, (s.x + fw) * TILE]) this.objects.push({ sprite: 'fence_v', x: fx, y: (s.y + fh) * TILE - 2 - 18 * k, kind: 'fence' });
+      for (let i = 0; i < fw; i++) this.flag(s.x + i, s.y + fh, SOLID);
     }
     // Landmarks of the country set.
     const spots: Pos[] = [];
     for (let y = BORDER + 1; y < h - BORDER - 1; y++) for (let x = BORDER + 1; x < w - BORDER - 1; x++) spots.push({ x: rx + x, y });
-    spots.sort((a, b) => R(a.x, a.y, 6) - R(b.x, b.y, 6));
+    const lmSpots = byVillage(6, spots);
     for (const l of set.landmarks)
       for (let n = 0; n < l.count * fill; n++) {
-        const s = spots.find((q) => (l.sky ? this.freeRect(q.x, q.y, l.fw, l.fh, 0) : this.freeRect(q.x, q.y, l.fw, l.fh, 1)));
+        const s = lmSpots.find((q) => (l.sky ? this.freeRect(q.x, q.y, l.fw, l.fh, 0) : this.freeRect(q.x, q.y, l.fw, l.fh, 1)) && doorDist(q.x, q.y) >= 3);
         if (!s) break;
         const ax = s.x * TILE + l.fw * 8, ay = (s.y + l.fh) * TILE - 1;
         if (l.sky) {
@@ -526,10 +541,12 @@ export class WorldMap {
         }
         for (let j = -1; j <= l.fh; j++) for (let i = -1; i <= l.fw; i++) this.flag(s.x + i, s.y + j, RESERVED);
         for (let j = 0; j < l.fh; j++) for (let i = 0; i < l.fw; i++) this.flag(s.x + i, s.y + j, SOLID);
+        fronts.push({ x: s.x + (l.fw >> 1), y: s.y + l.fh });
         const o: WorldObject = { sprite: l.sprite, x: ax, y: ay, kind: 'landmark', ...(l.shadow ? { shadow: l.shadow } : {}), ...(l.fps ? { anim: { fps: l.fps } } : {}) };
         this.objects.push(o);
         if (l.top) this.objects.push({ sprite: l.top.sprite, x: ax + l.top.dx, y: ay + l.top.dy, top: true, anim: { fps: l.top.fps }, kind: 'landmark' });
       }
+    this.dress({ rx, w, h, R, doors, theme, fronts, fill, seed });
     // Villagers: beside a path, never next to a door, one or two per region.
     const vSpots: Pos[] = [];
     for (let y = BORDER + 1; y < h - BORDER - 1; y++)
@@ -541,7 +558,7 @@ export class WorldMap {
         if (nearPath && !nearDoor) vSpots.push({ x: X, y });
       }
     vSpots.sort((a, b) => R(a.x, a.y, 7) - R(b.x, b.y, 7));
-    const nV = Math.min(vSpots.length, 1 + (p.ids.length > 1 ? 1 : 0));
+    const nV = Math.min(vSpots.length, 1 + (p.ids.length > 1 ? 1 : 0) + Math.floor(fill / 2));
     for (let i = 0; i < nV; i++) {
       const s = vSpots[i * Math.max(1, Math.floor(vSpots.length / nV))]!;
       const v = set.villagers[i % set.villagers.length]!;
@@ -571,12 +588,19 @@ export class WorldMap {
         const v = R(X, y, 10);
         // Groves: a coarse noise picks wooded patches, where most free tiles get a tree; elsewhere a few singles.
         const grove = valueNoise(X / 5, y / 5, seed) > gt.grove;
-        if (!nearBusy && (grove ? v < 0.5 : v < 0.025)) {
+        // Groves stand close; elsewhere single trees and pairs, with the gaps between them uneven.
+        const lone = valueNoise(X / 3, y / 3, seed + 1) > 0.62 ? 0.09 : 0.03;
+        if (!nearBusy && (grove ? v < 0.5 : v < lone)) {
           const s = trees[Math.floor(R(X, y, 11) * trees.length)]!;
           this.flag(X, y, SOLID);
-          // a few pixels off the tile centre, so a grove does not stand in rows
-          const jx = grove ? Math.floor(R(X, y, 15) * 7) - 3 : 0, jy = grove ? Math.floor(R(X, y, 16) * 5) - 3 : 0;
+          // a few pixels off the tile centre, so trees do not stand in rows
+          const jx = Math.floor(R(X, y, 15) * 7) - 3, jy = Math.floor(R(X, y, 16) * 5) - 3;
           this.objects.push({ sprite: s, x: X * TILE + 8 + jx, y: y * TILE + 14 + jy, kind: 'tree', shadow: s === 'poplar' ? [4, -1, 6, 3] : s === 'bush' ? [3, 0, 8, 3] : TREE_SHADOW });
+          // a bush at the foot of a lone tree, now and then
+          if (!grove && s !== 'bush' && R(X, y, 18) < 0.45 && this.free(X + 1, y) && this.at(X + 1, y + 1) === 'G' && !this.has(X + 1, y, DOOR)) {
+            this.flag(X + 1, y, SOLID | RESERVED);
+            this.objects.push({ sprite: 'bush', x: (X + 1) * TILE + 6, y: y * TILE + 14, kind: 'tree', shadow: [3, 0, 8, 3] });
+          }
         } else if (v > 1 - gt.floraRate && !grove) {
           const kinds = gt.flora;
           const s = kinds[Math.floor(R(X, y, 12) * kinds.length)]!;
@@ -584,6 +608,236 @@ export class WorldMap {
         }
       }
     return { index, x0: rx, y0: 0, w, h, siteIds: p.ids, country, set, theme, airfield, arrive };
+  }
+
+  /**
+   * A stream from the pond out under the forest border, on whichever side is shorter and clear: two tiles deep, running
+   * east-west (so a path crosses it north-south on a bridge), stepping a tile up or down now and then. None when a
+   * building, the airfield or the arrival tile is in the way on both sides.
+   */
+  private stream(s: Pos, rx: number, w: number, R: (...v: number[]) => number, arrive: Pos): void {
+    const west = { from: s.x - 1, to: rx - 1, step: -1, y: s.y + 2 };
+    const east = { from: s.x + 7, to: rx + w, step: 1, y: s.y + 1 };
+    const sides = s.x - rx <= rx + w - (s.x + 7) ? [west, east] : [east, west];
+    for (const side of sides) {
+      const cells: Pos[] = [];
+      let y = side.y, ok = true;
+      for (let x = side.from; x !== side.to && ok; x += side.step) {
+        const ys = [y, y + 1];
+        // step a row up or down, now and then, never more than one row from where it left the pond
+        const r = R(x, 19);
+        if (Math.abs(x - side.from) > 2 && r < 0.18) {
+          const ny = y + (r < 0.09 ? -1 : 1);
+          if (Math.abs(ny - side.y) <= 1) (y = ny), ys.push(y, y + 1);
+        }
+        for (const yy of ys) {
+          if (!this.inside(x, yy) || this.at(x, yy) !== 'G' || this.has(x, yy, RESERVED | DOOR | WARP) || (x === arrive.x && yy === arrive.y)) ok = false;
+          cells.push({ x, y: yy });
+        }
+      }
+      if (!ok) continue;
+      // the pond's lower west corner joins a stream leaving west, so the two read as one water
+      if (side === west && this.at(s.x, s.y + 3) === 'G' && !this.has(s.x, s.y + 3, RESERVED)) cells.push({ x: s.x, y: s.y + 3 });
+      for (const c of cells) this.setT(c.x, c.y, 'W'), this.flag(c.x, c.y, SOLID);
+      // reeds and lily pads along it
+      for (const c of cells) {
+        const r = R(c.x, c.y, 54);
+        if (r < 0.12 && this.at(c.x, c.y + 1) === 'G' && !this.has(c.x, c.y + 1, SOLID | RESERVED))
+          this.objects.push({ sprite: 'reeds', x: c.x * TILE + 8, y: (c.y + 1) * TILE + 4, anim: { fps: 2, phase: c.x % 2 }, kind: 'decor' });
+        else if (r > 0.9 && this.at(c.x, c.y - 1) === 'W' && this.at(c.x, c.y + 1) === 'W')
+          this.objects.push({ sprite: r > 0.95 ? 'lilypad_flower' : 'lilypad', x: c.x * TILE + 8, y: c.y * TILE + 8, flat: true, kind: 'decor' });
+      }
+      return;
+    }
+  }
+
+  /**
+   * Dresses a region as densely as the art direction's scene: side paths from the network to every landmark and field
+   * gate (so paths branch and meet), signposts at junctions, benches and short fences along paths, a yard in front of
+   * each building in its theme, flower beds, rock and shrub clusters. A solid prop never stands on a path, a door or
+   * the tiles kept free in front of a door, so every door stays reachable along the paths.
+   */
+  private dress(c: { rx: number; w: number; h: number; R: (...v: number[]) => number; doors: readonly Door[]; theme: string; fronts: readonly Pos[]; fill: number; seed: number }): void {
+    const { rx, w, h, R, doors, theme, fronts, fill, seed } = c;
+    const x0 = rx + BORDER + 1, x1 = rx + w - BORDER - 1, y0 = BORDER + 1, y1 = h - BORDER - 1;
+    const isPath = (x: number, y: number) => this.at(x, y) === 'P' || this.at(x, y) === 'B';
+    // a tile right above a field holds the field's top fence
+    const room = (x: number, y: number) => this.free(x, y) && this.at(x, y + 1) !== 'F' && this.at(x, y + 1) !== 'C';
+    const awayFromDoors = (x: number, y: number) => !doors.some((d) => Math.abs(x - d.x) <= 2 && y >= d.y - 1 && y <= d.y + 3);
+    const placed: Pos[] = [];
+    const spaced = (x: number, y: number, d: number) => !placed.some((p) => Math.abs(p.x - x) <= d && Math.abs(p.y - y) <= d);
+    const prop = (sprite: string, x: number, y: number, shadow?: readonly [number, number, number, number], dx = 8, dy = 14) => {
+      this.flag(x, y, SOLID | RESERVED);
+      placed.push({ x, y });
+      this.objects.push({ sprite, x: x * TILE + dx, y: y * TILE + dy, kind: sprite === 'bush' ? 'tree' : 'prop', ...(shadow ? { shadow } : {}) });
+    };
+    const decor = (sprite: string, x: number, y: number, k: number) => {
+      const o: WorldObject = { sprite, x: x * TILE + 3 + Math.floor(R(x, y, k) * 10), y: y * TILE + 4 + Math.floor(R(x, y, k + 1) * 10), kind: 'decor' };
+      this.objects.push(sprite === 'stone' || sprite === 'stone_big' ? o : { ...o, anim: { fps: 2, phase: (x + y) % 2 } });
+    };
+    // Steps from the nearest door (a breadth-first sweep over the region, through anything): props go near the
+    // buildings first, so the village round each door is the busiest part of the region, and thin out towards the woods.
+    const near = new Uint16Array(w * h).fill(0xffff);
+    const q: number[] = [];
+    for (const d of doors) if (d.x - rx >= 0 && d.x - rx < w) (near[d.y * w + d.x - rx] = 0), q.push(d.y * w + d.x - rx);
+    for (let i = 0; i < q.length; i++) {
+      const k = q[i]!, x = k % w, y = (k - x) / w;
+      for (const st of STEPS) {
+        const nx = x + st.x, ny = y + st.y, nk = ny * w + nx;
+        if (nx >= 0 && ny >= 0 && nx < w && ny < h && near[nk] === 0xffff) (near[nk] = near[k]! + 1), q.push(nk);
+      }
+    }
+    const nearDoor = (x: number, y: number) => (doors.length ? near[y * w + x - rx]! : 0);
+    /** The region's inside tiles that pass pred, nearest a door first, shuffled by a hash within a few steps. */
+    const shuffled = (k: number, pred: (x: number, y: number) => boolean) => {
+      const out: { x: number; y: number; key: number }[] = [];
+      for (let y = y0; y < y1; y++) for (let x = x0; x < x1; x++) if (pred(x, y)) out.push({ x, y, key: nearDoor(x, y) / 6 + R(x, y, k) });
+      return out.sort((a, b) => a.key - b.key);
+    };
+    // Side paths: from each landmark's front and each field's gate to the nearest path tile, when one is near.
+    for (const f of fronts) {
+      if (!this.walkable(f.x, f.y) || isPath(f.x, f.y) || this.has(f.x, f.y, DOOR) || f.y >= y1 || f.y < y0) continue;
+      let best: Pos | null = null, bd = 16;
+      for (let y = y0; y < y1; y++)
+        for (let x = x0; x < x1; x++)
+          if (this.at(x, y) === 'P') {
+            const d = Math.abs(x - f.x) + Math.abs(y - f.y);
+            if (d < bd) (bd = d), (best = { x, y });
+          }
+      if (best) this.route(f, best, rx, w, h);
+    }
+    // Two lanes leave the path network for the woods, one west or east and one south, so the paths branch and run on
+    // out of the picture.
+    const pathTiles = shuffled(34, (x, y) => this.at(x, y) === 'P');
+    if (pathTiles.length) {
+      const lanes: Pos[] = [];
+      const ys = Array.from({ length: y1 - y0 - 4 }, (_, i) => y0 + 2 + i).sort((a, b) => R(a, 35) - R(b, 35));
+      const side = R(rx, 36) < 0.5 ? x0 - 1 : x1;
+      const yl = ys.find((y) => this.free(side, y) && this.free(side, y - 1) && this.free(side, y + 1));
+      if (yl !== undefined) lanes.push({ x: side, y: yl });
+      const xs = Array.from({ length: x1 - x0 - 4 }, (_, i) => x0 + 2 + i).sort((a, b) => R(a, 37) - R(b, 37));
+      const xl = xs.find((x) => this.free(x, y1) && this.free(x - 1, y1) && this.free(x + 1, y1));
+      if (xl !== undefined) lanes.push({ x: xl, y: y1 });
+      for (const l of lanes) {
+        let best = pathTiles[0]!, bd = Infinity;
+        for (const p of pathTiles) {
+          const d = Math.abs(p.x - l.x) + Math.abs(p.y - l.y);
+          if (d < bd) (bd = d), (best = p);
+        }
+        if (bd < 40) this.route(best, l, rx, w, h);
+      }
+    }
+    // A yard in front of each building, in its theme: a prop on each front corner and one against its east wall.
+    const YARD: Record<string, readonly [string, string, string]> = {
+      debug: ['crate', 'barrel', 'condenser'],
+      'industrial-robotic': ['barrel', 'cable_drum', 'crate'],
+      farm: ['barrel', 'crate', 'bench'],
+      business: ['bench', 'crate', 'condenser'],
+      'pagodas-nature': ['rock', 'bench', 'rock'],
+    };
+    for (const d of doors) {
+      const [l, r, flank] = YARD[d.theme] ?? YARD.debug!;
+      const spots: [string, number, number][] = [[l, d.bx, d.by + d.bh], [r, d.bx + d.bw - 1, d.by + d.bh], [flank, d.bx + d.bw, d.by + d.bh - 1]];
+      for (const [sp, x, y] of spots)
+        if (this.at(x, y) === 'G' && !this.has(x, y, SOLID | DOOR) && !(Math.abs(x - d.x) <= 1 && y === d.y + 1) && !(x === d.x && y === d.y + 2))
+          prop(sp, x, y, [2, 0, 6, 2]);
+    }
+    // Signposts at junctions: a path tile with three or four path neighbours gets one on a free corner beside it.
+    const junctions = shuffled(20, (x, y) => this.at(x, y) === 'P' && STEPS.filter((s) => isPath(x + s.x, y + s.y)).length >= 3 && awayFromDoors(x, y));
+    let signs = 0;
+    for (const j of junctions) {
+      if (signs >= 2 + 2 * fill) break;
+      const at = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy]) => ({ x: j.x + dx!, y: j.y + dy! })).find((q) => room(q.x, q.y) && spaced(q.x, q.y, 3));
+      if (at) prop('signpost', at.x, at.y, [2, 0, 5, 2]), signs++;
+    }
+    // Benches on the grass beside a straight east-west path, facing it.
+    let benches = 0;
+    for (const b of shuffled(21, (x, y) => room(x, y) && isPath(x - 1, y + 1) && isPath(x, y + 1) && isPath(x + 1, y + 1) && awayFromDoors(x, y))) {
+      if (benches >= 2 + 2 * fill) break;
+      if (!spaced(b.x, b.y, 4)) continue;
+      prop('bench', b.x, b.y, [2, 0, 9, 2], 8, 13);
+      benches++;
+    }
+    // Short fences along paths: three to five sections on the grass beside a path, east-west.
+    let fences = 0;
+    for (const f of shuffled(22, (x, y) => this.free(x, y) && (isPath(x, y + 1) || isPath(x, y - 1)) && awayFromDoors(x, y))) {
+      if (fences >= 3 + 3 * fill) break;
+      const n = 3 + Math.floor(R(f.x, f.y, 23) * 3);
+      const side = isPath(f.x, f.y + 1) ? 1 : -1;
+      let ok = spaced(f.x, f.y, 1) && spaced(f.x + n - 1, f.y, 1);
+      for (let i = 0; i < n && ok; i++) ok = this.free(f.x + i, f.y) && isPath(f.x + i, f.y + side) && awayFromDoors(f.x + i, f.y);
+      if (!ok) continue;
+      for (let i = 0; i < n; i++) {
+        this.flag(f.x + i, f.y, SOLID | RESERVED);
+        placed.push({ x: f.x + i, y: f.y });
+        this.objects.push({ sprite: 'fence_h', x: (f.x + i) * TILE + 2, y: f.y * TILE + 12, kind: 'fence' });
+      }
+      fences++;
+    }
+    // Flower beds, two tiles wide, beside paths (cool colours in the business and pagoda themes).
+    const bed = theme === 'business' || theme === 'pagodas-nature' ? 'flowerbed_cool' : 'flowerbed';
+    let beds = 0;
+    for (const f of shuffled(24, (x, y) => room(x, y) && room(x + 1, y) && (isPath(x, y + 1) || isPath(x + 1, y + 1) || isPath(x - 1, y) || isPath(x + 2, y)) && awayFromDoors(x, y) && awayFromDoors(x + 1, y))) {
+      if (beds >= 3 + 4 * fill) break;
+      if (!spaced(f.x, f.y, 3) || !this.free(f.x + 1, f.y)) continue;
+      prop(bed, f.x, f.y, undefined, 16, 14);
+      this.flag(f.x + 1, f.y, SOLID | RESERVED);
+      placed.push({ x: f.x + 1, y: f.y });
+      beds++;
+    }
+    // Rock clusters and shrub clusters on open grass, each with small stones, tufts or flowers round it.
+    const open = (x: number, y: number) => room(x, y) && !STEPS.some((s) => isPath(x + s.x, y + s.y)) && awayFromDoors(x, y);
+    let rocks = 0, shrubs = 0;
+    const maxRocks = 2 + 3 * fill, maxShrubs = 2 + 4 * fill;
+    for (const r of shuffled(25, open)) {
+      if (rocks >= maxRocks && shrubs >= maxShrubs) break;
+      if (!spaced(r.x, r.y, 3) || !this.free(r.x, r.y)) continue;
+      const shrub = R(r.x, r.y, 26) < 0.55 ? shrubs < maxShrubs : rocks >= maxRocks;
+      if (shrub) {
+        // two or three bushes, side by side, with flowers at their feet
+        prop('bush', r.x, r.y, [3, 0, 8, 3]);
+        if (this.free(r.x + 1, r.y)) prop('bush', r.x + 1, r.y, [3, 0, 8, 3], 5, 13);
+        if (R(r.x, r.y, 27) < 0.6 && this.free(r.x, r.y + 1) && open(r.x, r.y + 1)) prop('bush', r.x, r.y + 1, [3, 0, 8, 3], 11, 12);
+        for (const [dx, dy] of [[-1, 0], [2, 0], [0, 1], [1, 1]]) if (this.free(r.x + dx!, r.y + dy!) && R(r.x + dx!, r.y + dy!, 28) < 0.7) decor(R(r.x, r.y, 29) < 0.5 ? 'daisy' : 'buttercup', r.x + dx!, r.y + dy!, 30);
+        shrubs++;
+      } else {
+        prop('rock', r.x, r.y, [2, 0, 7, 2], 8, 13);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [1, 1]]) if (this.free(r.x + dx!, r.y + dy!) && R(r.x + dx!, r.y + dy!, 31) < 0.6) decor(R(r.x + dx!, r.y, 32) < 0.5 ? 'stone_big' : 'tuft', r.x + dx!, r.y + dy!, 33);
+        rocks++;
+      }
+    }
+    // Further out, away from the village, the same clusters at a steady rate on open grass, so no stretch of the region
+    // is bare: a rock with stones, a clump of bushes, or a patch of flowers, with a few tiles between any two.
+    for (let y = y0; y < y1; y++)
+      for (let x = x0; x < x1; x++) {
+        const v = R(x, y, 44);
+        if (v >= 0.05 || !open(x, y) || !spaced(x, y, 2) || valueNoise(x / 5, y / 5, seed) > groundTheme(theme).grove) continue; // groves fill themselves later
+        if (v < 0.01) {
+          prop('rock', x, y, [2, 0, 7, 2], 8, 13);
+          for (const [dx, dy] of [[1, 0], [0, 1]]) if (this.free(x + dx!, y + dy!)) decor(R(x, y, 46) < 0.5 ? 'stone_big' : 'tuft', x + dx!, y + dy!, 47);
+        } else if (v < 0.025) {
+          prop('bush', x, y, [3, 0, 8, 3]);
+          if (this.free(x + 1, y) && R(x, y, 48) < 0.6) prop('bush', x + 1, y, [3, 0, 8, 3], 5, 13);
+        } else {
+          const kinds = groundTheme(theme).flora;
+          const kind = kinds[Math.floor(R(x, y, 49) * kinds.length)]!;
+          for (let n = 0; n < 3; n++) decor(kind, x, y, 50 + 2 * n);
+          placed.push({ x, y });
+        }
+      }
+    // Wildflower patches: a few tiles of one flower, thick, as the art direction scatters them by the paths.
+    const flora = groundTheme(theme).flora.filter((f) => f !== 'stone' && f !== 'tuft');
+    let patches = 0;
+    for (const f of shuffled(38, (x, y) => this.free(x, y) && this.free(x + 1, y) && awayFromDoors(x, y))) {
+      if (patches >= 4 + 6 * fill || !flora.length) break;
+      if (!spaced(f.x, f.y, 2)) continue;
+      const kind = flora[Math.floor(R(f.x, f.y, 39) * flora.length)]!;
+      for (const [dx, dy] of [[0, 0], [1, 0], [0, 1], [1, 1], [-1, 0]])
+        if (this.free(f.x + dx!, f.y + dy!) && (dx === 0 && dy === 0 || R(f.x + dx!, f.y + dy!, 40) < 0.6))
+          for (let n = 0; n < 2; n++) decor(kind, f.x + dx!, f.y + dy!, 41 + 2 * n);
+      placed.push(f);
+      patches++;
+    }
   }
 
   /** Routes a path between two tiles: cheapest walk over grass (existing paths are cheaper; water is crossed straight N-S as a bridge). */

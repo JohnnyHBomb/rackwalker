@@ -19,7 +19,7 @@
 36,45 39,45 ye1
 36,41 37,41 w
 ## the sceptical right eye: a dark top edge and one lit run on the flat lid, the iris in the lid's shadow, a round
-## pupil with a glint
+#   pupil with a glint
 55,35 61,35 k0
 55,36 60,36 wd2
 52,40 55,40 ye0
@@ -34,3 +34,6 @@
 57,45 58,45 k0
 59,45 ye1
 56,41 w
+## the beak ends in one sharp point: lit on its left, dark on its right
+47,56 ye0
+48,56 wd0

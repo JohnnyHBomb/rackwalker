@@ -73,7 +73,7 @@ function quantise(rgb, n, dither) {
  *   ## why            starts a step and says what it fixes
  *   x,y colour        sets one pixel to a palette colour name
  *   x0,y0 x1,y1 colour  sets every pixel of the rectangle (corners included)
- *   x0,y0 x1,y1 a>b   recolours a to b inside the rectangle, leaving every other colour alone
+ *   x0,y0 x1,y1 a>b   recolours a to b inside the rectangle (or at one pixel: x,y a>b), leaving other colours alone
  *   # ...             a comment
  */
 function cleanup(idx, n, who) {
@@ -88,7 +88,7 @@ function cleanup(idx, n, who) {
     const m = /^(\d+),(\d+)(?: (\d+),(\d+))? (?:([a-z]+\d?)>)?([a-z]+\d?)$/.exec(l);
     const c = m && IDX.get(m[6]);
     const from = m && m[5] !== undefined ? IDX.get(m[5]) : null;
-    if (c === undefined || c === null || from === undefined || (from !== null && !m[3])) throw new Error(`${f}:${i + 1}: cannot read "${l}"`);
+    if (c === undefined || c === null || from === undefined) throw new Error(`${f}:${i + 1}: cannot read "${l}"`);
     const [x0, y0] = [+m[1], +m[2]], [x1, y1] = m[3] ? [+m[3], +m[4]] : [x0, y0];
     if (x1 < x0 || y1 < y0 || x1 >= n || y1 >= n) throw new Error(`${f}:${i + 1}: outside the ${n} x ${n} portrait`);
     for (let y = y0; y <= y1; y++)

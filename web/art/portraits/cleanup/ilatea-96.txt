@@ -9,7 +9,7 @@
 36,30 k1
 37,30 39,30 sk3
 ## brows: one level run each, dark slate like her hair, nine pixels over each eye; the blended rows above and below
-## become skin
+#   become skin
 36,32 44,32 sk3
 53,32 58,32 sk2
 35,33 43,33 l0
@@ -21,7 +21,7 @@
 51,34 59,34 sk2
 60,34 61,34 sk1
 ## eyes, wide open: a lash line with a dark wing at the outer corner, white corners, a gold iris round a black
-## pupil with a glint on its upper left, the lower iris lit (her eyes glow), the lower lid one shade step
+#   pupil with a glint on its upper left, the lower iris lit (her eyes glow), the lower lid one shade step
 35,36 44,36 k0
 51,36 60,36 k0
 45,37 sk2

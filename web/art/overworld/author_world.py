@@ -55,7 +55,7 @@ FROM_LAB = [
     "byte_perch", "byte_fly", "nocti_perch", "nocti_fly", "tree_a", "tree_b", "poplar", "bush", "sails",
     "bridge_deck", "bridge_rail", "fence_h", "fence_v", "barrel", "crate", "doormat", "bicycle", "signpost",
     "daisy", "violet", "buttercup", "stone", "stone_big", "tuft", "reeds", "lilypad", "lilypad_flower", "boat",
-    "mooring_post",
+    "mooring_post", "cable_drum", "condenser",
 ]
 
 

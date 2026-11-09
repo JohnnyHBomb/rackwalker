@@ -26,3 +26,21 @@
 57,44 60,44 k0
 57,40 58,40 w
 57,41 w
+## the beak: a clean dark outline down both sides to a sharp tip, lit on its left, no grey beside it
+44,48 s0>b0
+51,48 s0>b0
+44,49 s0>b0
+51,49 s0>b0
+43,52 s2>w
+44,52 s2>w
+51,52 s2>w
+53,52 s2>b5
+46,54 l0>b0
+49,54 l0>b0
+45,54 s1>w
+50,54 s1>w
+47,55 wd3
+48,55 wd1
+46,56 s1>w
+49,56 s1>w
+47,56 48,56 s0>b0

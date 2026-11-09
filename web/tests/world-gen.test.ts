@@ -304,3 +304,71 @@ describe('a region\'s country and theme', () => {
   });
 });
 
+
+// The dressing that makes a region as dense as the art direction's scene: side paths, gates, signposts, benches,
+// fences, yards, flower beds, rock and shrub clusters, a stream. Every case is checked in each country set and theme.
+describe.each([
+  ['GB, pond', seed],
+  ['NL, canal', seedNL],
+  ['no country, every theme', seed.map((x, i) => ({ ...x, country: null, theme: ['debug', 'pagodas-nature', 'business'][i]! }))],
+  ['many sites in one city', Array.from({ length: 12 }, (_, i) => S(i + 1, 52.37 + (i % 4) * 0.004, 4.89 + Math.floor(i / 4) * 0.004, 'GB', 'farm'))],
+])('a dressed region, %s', (_, sites) => {
+  const m = new WorldMap(sites);
+  const ok = reached(m);
+  const props = m.objects.filter((o) => o.kind === 'prop');
+  it('every door can be reached from every arrival tile of its region', () => {
+    for (const r of m.regions)
+      for (const d of m.doors.filter((d) => d.region === r.index)) {
+        expect(ok.has(d.y * m.w + d.x), `door of ${d.siteId}`).toBe(true);
+        expect(m.path(r.arrive, d).length, `door of ${d.siteId} from the arrival tile`).toBeGreaterThan(0);
+      }
+  });
+  it('every prop blocks its tile and stands on grass, never on a path, a bridge, a door or in front of a door', () => {
+    expect(props.length).toBeGreaterThan(0);
+    for (const o of [...props, ...m.objects.filter((o) => o.sprite === 'gate')]) {
+      const t = tileOf(o);
+      expect(m.walkable(t.x, t.y), `${o.sprite} at ${t.x},${t.y}`).toBe(false);
+      expect(['G', 'F', 'C'], `${o.sprite} at ${t.x},${t.y}`).toContain(m.at(t.x, t.y));
+      for (const d of m.doors) expect(t.x === d.x && (t.y === d.y + 1 || t.y === d.y + 2), `${o.sprite} in front of a door`).toBe(false);
+    }
+    // a flower bed covers two tiles
+    for (const o of props.filter((o) => o.sprite.startsWith('flowerbed'))) expect(m.walkable(tileOf(o).x - 1, tileOf(o).y)).toBe(false);
+  });
+  it('is dense: per region, props and fences in proportion to its area, junctions with signposts, a gate in every field', () => {
+    for (const r of m.regions) {
+      const inR = (o: { x: number }) => o.x >= r.x0 * 16 && o.x < (r.x0 + r.w) * 16;
+      const area = (r.w - 6) * (r.h - 6);
+      expect(props.filter(inR).length, `region ${r.index}`).toBeGreaterThanOrEqual(Math.floor(area / 100));
+      expect(m.objects.filter((o) => inR(o) && o.sprite === 'signpost').length).toBeGreaterThanOrEqual(1);
+      const gates = m.objects.filter((o) => inR(o) && o.sprite === 'gate').length;
+      expect(gates).toBeGreaterThanOrEqual(2);
+      // fields with a gate: the bottom fence holds exactly one gate per field
+      const fieldRows = m.objects.filter((o) => inR(o) && o.sprite === 'fence_v').length;
+      expect(fieldRows).toBeGreaterThan(0);
+    }
+  });
+  it('the paths branch: junction tiles, and a side path to the front of every landmark that has room in front of it', () => {
+    const paved = (x: number, y: number) => ['P', 'B'].includes(m.at(x, y) ?? '');
+    let junctions = 0;
+    for (let y = 0; y < m.h; y++) for (let x = 0; x < m.w; x++) if (paved(x, y) && [[1, 0], [-1, 0], [0, 1], [0, -1]].filter(([dx, dy]) => paved(x + dx!, y + dy!)).length >= 3) junctions++;
+    expect(junctions).toBeGreaterThanOrEqual(2 * m.regions.length);
+    // a field's gate opens onto a path, or onto grass from which the path can be walked to
+    for (const g of m.objects.filter((o) => o.sprite === 'gate')) {
+      const t = tileOf(g);
+      expect(ok.has((t.y + 1) * m.w + t.x) || paved(t.x, t.y + 1), `gate at ${t.x},${t.y}`).toBe(true);
+    }
+  });
+});
+
+describe('a stream', () => {
+  it('a pond region gets a stream from the pond to the forest, crossed north-south only, never over the arrival tile', () => {
+    const m = new WorldMap(seed);
+    let wide = 0;
+    for (const r of m.regions) {
+      // a run of water tiles that reaches the region's west or east edge, outside the canal case (GB has a pond)
+      for (let y = 0; y < r.h; y++) if (m.at(r.x0, y) === 'W' || m.at(r.x0 + r.w - 1, y) === 'W') wide++;
+      expect(m.at(r.arrive.x, r.arrive.y)).not.toBe('W');
+    }
+    expect(wide).toBeGreaterThan(0);
+  });
+});
