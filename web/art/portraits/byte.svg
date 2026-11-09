@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768">
+  <!-- Byte, the owl of commands and hardening: blue and white with a holographic sheen, yellow eyes. Light from the
+       top-left. Source of the 64 x 64 and 96 x 96 portraits. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c3a78"/><stop offset="1" stop-color="#142046"/></linearGradient>
+    <radialGradient id="body" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#73c0e8"/><stop offset="0.55" stop-color="#3b8cd0"/><stop offset="1" stop-color="#1c3a78"/></radialGradient>
+    <radialGradient id="belly" cx="0.4" cy="0.3" r="0.8"><stop offset="0" stop-color="#fbf7e8"/><stop offset="0.7" stop-color="#c8f0ff"/><stop offset="1" stop-color="#73c0e8"/></radialGradient>
+    <radialGradient id="iris" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fff27a"/><stop offset="0.6" stop-color="#f0c030"/><stop offset="1" stop-color="#b07818"/></radialGradient>
+  </defs>
+  <rect width="768" height="768" fill="url(#bg)"/>
+  <g stroke="#2560a8" stroke-width="10" fill="none"><path d="M0 120 H 140 V 60 H 260"/><path d="M768 650 H 620 V 720 H 500"/><path d="M640 80 V 200 H 720"/></g>
+  <path d="M0 640 H 768 V 768 H 0 Z" fill="#553222"/><path d="M0 640 H 768 V 660 H 0 Z" fill="#ab7a44"/>
+  <!-- body -->
+  <ellipse cx="384" cy="440" rx="230" ry="260" fill="url(#body)"/>
+  <!-- ear tufts -->
+  <path d="M190 230 L 220 90 L 300 200 Z" fill="#3b8cd0"/><path d="M578 230 L 548 90 L 468 200 Z" fill="#1c3a78"/>
+  <!-- belly with chevron feathers -->
+  <ellipse cx="384" cy="520" rx="140" ry="160" fill="url(#belly)"/>
+  <g stroke="#73c0e8" stroke-width="10" fill="none"><path d="M320 480 l 20 16 l 20 -16"/><path d="M400 480 l 20 16 l 20 -16"/><path d="M360 550 l 20 16 l 20 -16"/><path d="M320 610 l 20 16 l 20 -16"/><path d="M400 610 l 20 16 l 20 -16"/></g>
+  <!-- face disc -->
+  <ellipse cx="300" cy="330" rx="96" ry="90" fill="#fbf7e8"/><ellipse cx="468" cy="330" rx="96" ry="90" fill="#c8f0ff"/>
+  <circle cx="300" cy="330" r="54" fill="url(#iris)"/><circle cx="468" cy="330" r="54" fill="url(#iris)"/>
+  <circle cx="300" cy="334" r="24" fill="#140c1c"/><circle cx="468" cy="334" r="24" fill="#140c1c"/>
+  <circle cx="284" cy="314" r="12" fill="#fbf7e8"/><circle cx="452" cy="314" r="12" fill="#fbf7e8"/>
+  <!-- beak -->
+  <path d="M362 380 L 406 380 L 384 440 Z" fill="#f0c030"/><path d="M384 380 L 406 380 L 384 440 Z" fill="#b07818"/>
+  <!-- holographic sheen -->
+  <path d="M220 300 C 240 220, 300 190, 360 180" stroke="#d8ffff" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- feet on the perch -->
+  <g fill="#f0c030"><rect x="300" y="620" width="20" height="30"/><rect x="330" y="620" width="20" height="30"/><rect x="420" y="620" width="20" height="30"/><rect x="450" y="620" width="20" height="30"/></g>
+</svg>

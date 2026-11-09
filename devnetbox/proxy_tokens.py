@@ -29,7 +29,8 @@ USER = "rackwalker-proxy"
 TOKEN_DAYS = 30
 VIEW = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.devicetype", "dcim.devicerole", "dcim.cable",
         "dcim.interface", "dcim.frontport", "dcim.rearport", "dcim.consoleport", "dcim.consoleserverport",
-        "dcim.powerport", "dcim.poweroutlet", "dcim.powerfeed", "circuits.circuit", "circuits.circuittermination"]
+        "dcim.powerport", "dcim.poweroutlet", "dcim.powerfeed", "circuits.circuit", "circuits.circuittermination",
+        "users.user"]  # users: the game rechecks that a signed-in player's NetBox user still exists and is active
 CHANGE = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.cable", "dcim.interface"]  # changes.ENDPOINT
 PERMS = [("rackwalker-proxy view", VIEW, ["view"]), ("rackwalker-proxy write", CHANGE, ["change"]),
          ("rackwalker-proxy add rack", ["dcim.rack"], ["add"])]

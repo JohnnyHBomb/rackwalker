@@ -25,6 +25,7 @@ import json
 import logging
 import sqlite3
 import threading
+import time
 from pathlib import Path
 from collections.abc import Callable
 from typing import Annotated, Any
@@ -47,6 +48,14 @@ COOKIE = "rackwalker_session"
 COOKIE_PATH = "/api"
 CSRF_HEADER = "X-RackWalker-CSRF"
 LOCAL_PLAYER = {"id": 0, "username": "local", "display_name": "Local player"}
+# A session is checked against NetBox (does its user still exist, and is it active?) when the last good check is
+# older than RECHECK_SECONDS on any request, and older than WRITE_FRESH_SECONDS before any write, so a NetBox user who
+# is deactivated or deleted loses the game session within a minute, and at once before writing anything. When NetBox
+# cannot answer, reads go on and writes go on for GRACE_SECONDS after the last good check, then are refused.
+RECHECK_SECONDS = 60.0
+WRITE_FRESH_SECONDS = 5.0
+GRACE_SECONDS = 300.0
+_now = time.monotonic
 Slot = Annotated[str, PathParam(pattern=r"^(auto|1|2|3)$")]
 Json = Annotated[Any, Body()]
 
@@ -96,18 +105,52 @@ async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTranspor
         raise ApiError("netbox_error", "NetBox's sign-in check answered in an unexpected shape.", None) from None
 
 
+def netbox_user_active(url: str, proxy_token: str, uid: int, transport: Any = None) -> bool | None:
+    """Is NetBox user `uid` still there and active? True / False, or None when NetBox cannot say (unreachable, an error,
+    or the proxy's token may not view users). Asked with the proxy's own token: the player's token was never kept."""
+    if not url or not proxy_token:
+        return None
+    extra = {"transport": transport} if isinstance(transport, httpx.BaseTransport) else {}
+    try:
+        with httpx.Client(timeout=5, **extra) as hc:
+            r = hc.get(f"{url}/api/users/users/{uid}/", headers={"Authorization": auth_header(proxy_token), "Accept": "application/json"})
+    except httpx.HTTPError:
+        return None
+    if r.status_code == 404:
+        return False
+    if r.status_code != 200:
+        if r.status_code == 403:
+            log.warning("the proxy's NetBox token may not view users: game sessions cannot be rechecked")
+        return None
+    try:
+        return r.json().get("is_active", True) is not False
+    except ValueError:
+        return None
+
+
+def fixture_user_active(fixtures_dir: Path, uid: int) -> bool:
+    """Fixture mode: a player is active while fixtures/players.json lists them without "active": false."""
+    path = fixtures_dir / "players.json"
+    for p in (json.loads(path.read_text())["players"] if path.exists() else []):
+        if p["user"]["id"] == uid:
+            return p.get("active", True) is not False
+    return False
+
+
 def fixture_whoami(fixtures_dir: Path, token: str) -> dict[str, Any]:
     """Fixture mode has no NetBox: fixtures/players.json lists synthetic tokens and the users they stand for."""
     path = fixtures_dir / "players.json"
     players = json.loads(path.read_text())["players"] if path.exists() else []
     for p in players:
         if p["token"] == token:
+            if p.get("active", True) is False:
+                raise ApiError("unauthorized", "That NetBox user is not active.", None)
             return p["user"]
     raise ApiError("unauthorized", "That token is not one of the fixture players (fixtures/players.json).", None)
 
 
 def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: str, fixtures_dir: Path | None, local_player: bool,
-            allowed_hosts: set[str], cookie_secure: bool, transport: httpx.AsyncBaseTransport | None = None) -> None:
+            allowed_hosts: set[str], cookie_secure: bool, transport: Any = None, netbox_token: str = "") -> None:
 
     # Every route that touches the store is a plain `def`, which FastAPI runs in its thread pool: SQLite work (opening
     # the file, a migration, the fsync of each commit) can take seconds on a busy disk, and on the event loop it would
@@ -134,10 +177,43 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
 
     app.state.game_store = get_store
 
-    def session_of(request: Request) -> Session | None:
+    checked: dict[int, float] = {}  # user id -> time of the last check NetBox answered "active"
+    checked_lock = threading.Lock()
+
+    def user_active(uid: int) -> bool | None:
+        if fixtures_dir:
+            return fixture_user_active(fixtures_dir, uid)
+        return netbox_user_active(netbox_url, netbox_token, uid, transport)
+
+    def session_of(request: Request, write: bool = False) -> Session | None:
+        """The request's session, rechecked against NetBox when due. A user NetBox no longer has, or has deactivated,
+        loses the session here (and every other session of theirs at its next request)."""
         cookie = request.cookies.get(COOKIE)
         # No cookie, no session: answered without the store, so a signed-out page never waits for the file.
-        return get_store().session(cookie) if cookie else None
+        s = get_store().session(cookie) if cookie else None
+        if s is None:
+            return None
+        now = _now()
+        with checked_lock:
+            last = checked.get(s.user_id)
+        age = now - last if last is not None else float("inf")
+        if age < (WRITE_FRESH_SECONDS if write else RECHECK_SECONDS):
+            return s
+        active = user_active(s.user_id)
+        if active is True:
+            with checked_lock:
+                checked[s.user_id] = now
+            return s
+        if active is False:
+            log.info("game session ended: NetBox user %s is gone or not active", s.user_id)
+            get_store().end_session(cookie)
+            with checked_lock:
+                checked.pop(s.user_id, None)
+            return None
+        if write and age > GRACE_SECONDS:
+            raise ApiError("netbox_unreachable", "NetBox cannot confirm your user right now, so nothing was written; "
+                           "your game keeps it and tries again.", None)
+        return s
 
     def origin_ok(request: Request) -> bool:
         origin = request.headers.get("origin")
@@ -150,7 +226,7 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         """The player id of this request; for writes also checks Origin and the CSRF header."""
         if write and not origin_ok(request):
             raise ApiError("forbidden", "Cross-origin game writes are refused.", None)
-        s = session_of(request)
+        s = session_of(request, write)
         if s is None:
             if local_player:
                 if write and request.headers.get(CSRF_HEADER) is None:
@@ -166,7 +242,7 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         CSRF header and a same-host Origin, or the local mode with the header. Their name goes into the changelog."""
         if not origin_ok(request):
             raise ApiError("forbidden", "Cross-origin NetBox writes are refused.", None)
-        s = session_of(request)
+        s = session_of(request, write=True)
         if s is None:
             if local_player:
                 if request.headers.get(CSRF_HEADER) is None:
@@ -195,7 +271,11 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
 
     @app.get("/api/game/session")
     def get_session(request: Request):
-        return no_store(JSONResponse(session_body(session_of(request))))
+        s = session_of(request)
+        resp = no_store(JSONResponse(session_body(s)))
+        if s is None and request.cookies.get(COOKIE):
+            resp.delete_cookie(COOKIE, path=COOKIE_PATH, httponly=True, samesite="strict", secure=cookie_secure)
+        return resp
 
     @app.post("/api/game/session")
     async def sign_in(request: Request, body: Json):
@@ -214,11 +294,14 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         get_store().end_session(old_cookie)
         get_store().upsert_player(user["id"], user["username"], user["display_name"])
         value, s = get_store().new_session(user["id"])
+        with checked_lock:
+            checked[user["id"]] = _now()  # NetBox has just vouched for this user
         return value, s, session_body(s)
 
     @app.delete("/api/game/session")
     def sign_out(request: Request):
-        if session_of(request) is not None:
+        cookie = request.cookies.get(COOKIE)
+        if (get_store().session(cookie) if cookie else None) is not None:
             require(request, write=True)
         get_store().end_session(request.cookies.get(COOKIE))
         resp = no_store(JSONResponse(session_body(None)))

@@ -312,5 +312,5 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
 
     game.install(app, open_store=lambda: GameStore(s.state_dir / "game.sqlite3"), netbox_url=s.netbox_url,
                  fixtures_dir=s.fixtures_dir, local_player=s.local_player, allowed_hosts=allowed_hosts,
-                 cookie_secure=s.cookie_secure, transport=transport)
+                 cookie_secure=s.cookie_secure, transport=transport, netbox_token=s.netbox_token)
     return app

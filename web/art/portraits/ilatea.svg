@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768">
+  <!-- Ilatea, the guide (docs/art/guide-ilatea.md): calm and a little fierce, owl-gold eyes, dark hair with silver
+       strands like fibre, a glowing circlet, a dark chiton with blue circuit lines, the aegis as a hexagon clasp, the
+       stylus tip tracing a glyph; behind her a cracked marble column, a stream of light and a rack with lights.
+       Light from the top-left. The source of the 64 x 64 and 96 x 96 dialogue portraits. -->
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e2440"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
+    <linearGradient id="stream" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1aa8d8" stop-opacity="0"/><stop offset="0.5" stop-color="#5ef0ff" stop-opacity="0.55"/><stop offset="1" stop-color="#1aa8d8" stop-opacity="0"/></linearGradient>
+    <linearGradient id="col" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e2dfd2"/><stop offset="0.6" stop-color="#b3aeb0"/><stop offset="1" stop-color="#5c5670"/></linearGradient>
+    <radialGradient id="skin" cx="0.38" cy="0.35" r="0.75"><stop offset="0" stop-color="#ffd8b0"/><stop offset="0.55" stop-color="#e8a678"/><stop offset="1" stop-color="#b8684a"/></radialGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a2a6a"/><stop offset="0.45" stop-color="#2a1d33"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
+    <linearGradient id="robe" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2f3a5e"/><stop offset="0.5" stop-color="#1e2440"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
+    <radialGradient id="iris" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fff27a"/><stop offset="0.6" stop-color="#f0c030"/><stop offset="1" stop-color="#b07818"/></radialGradient>
+  </defs>
+  <rect width="768" height="768" fill="url(#bg)"/>
+  <!-- stream of light -->
+  <path d="M0 520 C 180 470, 300 560, 470 480 S 700 420, 768 450 L 768 520 C 640 500, 560 560, 420 560 S 160 540, 0 590 Z" fill="url(#stream)"/>
+  <!-- cracked marble column, left -->
+  <rect x="24" y="0" width="120" height="768" fill="url(#col)"/>
+  <rect x="10" y="40" width="148" height="26" fill="#e2dfd2"/><rect x="10" y="66" width="148" height="10" fill="#85808f"/>
+  <g fill="#85808f"><rect x="46" y="90" width="10" height="678"/><rect x="82" y="90" width="10" height="678"/><rect x="118" y="90" width="8" height="678"/></g>
+  <path d="M60 200 l 18 40 l -12 30 l 22 50" stroke="#3b3552" stroke-width="7" fill="none"/>
+  <!-- rack with lights, right -->
+  <rect x="610" y="90" width="150" height="678" fill="#2a1d33"/><rect x="622" y="102" width="126" height="666" fill="#140c1c"/>
+  <g fill="#1e2440"><rect x="630" y="130" width="110" height="40"/><rect x="630" y="186" width="110" height="40"/><rect x="630" y="242" width="110" height="40"/><rect x="630" y="298" width="110" height="40"/><rect x="630" y="354" width="110" height="40"/></g>
+  <g><circle cx="650" cy="150" r="7" fill="#8cc24a"/><circle cx="672" cy="150" r="7" fill="#5ef0ff"/><circle cx="650" cy="206" r="7" fill="#f0c030"/><circle cx="694" cy="262" r="7" fill="#8cc24a"/><circle cx="650" cy="318" r="7" fill="#5ef0ff"/><circle cx="672" cy="374" r="7" fill="#8cc24a"/></g>
+  <!-- hair behind the shoulders -->
+  <path d="M218 250 C 190 380, 170 520, 200 700 L 560 700 C 600 520, 580 380, 548 250 Z" fill="url(#hair)"/>
+  <!-- shoulders and chiton -->
+  <path d="M120 768 C 140 620, 240 580, 300 570 L 470 570 C 540 580, 640 620, 660 768 Z" fill="url(#robe)"/>
+  <path d="M300 570 C 330 640, 440 640, 470 570" fill="#b8684a"/>
+  <path d="M300 572 C 334 650, 436 650, 470 572 L 456 572 C 430 628, 340 628, 314 572 Z" fill="#1aa8d8"/>
+  <!-- circuit lines on the chiton -->
+  <g stroke="#5ef0ff" stroke-width="8" fill="none" stroke-linecap="square">
+    <path d="M220 700 L 260 660 L 330 660"/><path d="M560 690 L 520 650 L 450 650"/><path d="M380 690 L 380 768"/>
+  </g>
+  <g fill="#d8ffff"><circle cx="330" cy="660" r="10"/><circle cx="450" cy="650" r="10"/><circle cx="380" cy="690" r="10"/></g>
+  <!-- the aegis: a hexagon clasp on the left shoulder -->
+  <polygon points="236,600 266,582 296,600 296,636 266,654 236,636" fill="#5ef0ff" stroke="#d8ffff" stroke-width="8"/>
+  <polygon points="252,610 266,602 280,610 280,626 266,634 252,626" fill="#1aa8d8"/>
+  <!-- neck -->
+  <path d="M332 470 L 330 580 C 360 600, 410 600, 438 580 L 436 470 Z" fill="#b8684a"/>
+  <path d="M332 470 L 330 560 C 350 540, 370 520, 380 500 Z" fill="#e8a678"/>
+  <!-- face -->
+  <path d="M262 300 C 262 210, 330 168, 384 168 C 446 168, 506 214, 506 300 C 506 380, 470 452, 420 492 C 400 506, 368 506, 348 492 C 298 452, 262 380, 262 300 Z" fill="url(#skin)"/>
+  <!-- jaw shadow on the right -->
+  <path d="M506 300 C 506 380, 470 452, 420 492 C 440 440, 470 380, 476 300 Z" fill="#b8684a" opacity="0.8"/>
+  <!-- hair mass over the crown, clumps lit on their left -->
+  <path d="M236 330 C 220 200, 300 120, 384 118 C 476 116, 548 186, 536 330 C 524 260, 494 214, 450 196 C 420 240, 330 250, 300 220 C 280 250, 264 290, 236 330 Z" fill="url(#hair)"/>
+  <path d="M300 220 C 320 170, 360 150, 400 150 C 360 170, 330 200, 318 230 Z" fill="#8a58b8"/>
+  <path d="M240 330 C 236 420, 244 520, 232 620 C 214 520, 210 420, 226 300 Z" fill="#4a2a6a"/>
+  <path d="M532 330 C 540 430, 534 520, 548 620 C 566 520, 566 420, 544 300 Z" fill="#140c1c"/>
+  <!-- silver strands like fibre -->
+  <g stroke="#e2dfd2" stroke-width="7" fill="none" stroke-linecap="round">
+    <path d="M286 200 C 260 280, 252 400, 246 560"/><path d="M500 230 C 520 330, 528 430, 536 560"/>
+  </g>
+  <g fill="#d8ffff"><circle cx="246" cy="560" r="8"/><circle cx="536" cy="560" r="8"/></g>
+  <!-- circlet with a gem -->
+  <path d="M276 236 C 330 210, 440 210, 494 236" stroke="#f0c030" stroke-width="12" fill="none"/>
+  <polygon points="385,204 402,222 385,240 368,222" fill="#5ef0ff" stroke="#d8ffff" stroke-width="5"/>
+  <!-- brows: a little fierce -->
+  <path d="M300 288 C 320 274, 348 272, 364 282" stroke="#2a1d33" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <path d="M404 282 C 422 272, 450 274, 470 288" stroke="#2a1d33" stroke-width="11" fill="none" stroke-linecap="round"/>
+  <!-- eyes: owl-gold, bright -->
+  <path d="M300 322 C 314 304, 352 302, 366 320 C 352 334, 316 336, 300 322 Z" fill="#fbf7e8"/>
+  <path d="M404 320 C 418 302, 456 304, 470 322 C 454 336, 418 334, 404 320 Z" fill="#fbf7e8"/>
+  <circle cx="334" cy="320" r="15" fill="url(#iris)"/><circle cx="436" cy="320" r="15" fill="url(#iris)"/>
+  <circle cx="334" cy="321" r="6" fill="#140c1c"/><circle cx="436" cy="321" r="6" fill="#140c1c"/>
+  <circle cx="328" cy="314" r="4" fill="#fbf7e8"/><circle cx="430" cy="314" r="4" fill="#fbf7e8"/>
+  <path d="M296 322 C 314 300, 354 298, 370 318" stroke="#140c1c" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <path d="M400 318 C 416 298, 456 300, 474 322" stroke="#140c1c" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <!-- nose: a shadow on the right side -->
+  <path d="M388 330 L 398 392 C 392 400, 380 400, 372 396" stroke="#b8684a" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <!-- a calm, knowing smile -->
+  <path d="M346 432 C 368 448, 404 448, 424 430" stroke="#6b3830" stroke-width="9" fill="none" stroke-linecap="round"/>
+  <path d="M356 444 C 376 454, 398 454, 414 444" stroke="#e48c64" stroke-width="6" fill="none" stroke-linecap="round"/>
+  <!-- cheek warmth -->
+  <ellipse cx="312" cy="392" rx="22" ry="12" fill="#e48c64" opacity="0.45"/>
+  <!-- the stylus tip tracing a glyph, lower right -->
+  <path d="M560 768 L 610 520" stroke="#b3aeb0" stroke-width="12"/>
+  <circle cx="612" cy="510" r="18" fill="#d8ffff"/><circle cx="612" cy="510" r="34" fill="#5ef0ff" opacity="0.35"/>
+  <path d="M612 510 l 40 -30 l 30 20 l 30 -40" stroke="#5ef0ff" stroke-width="6" fill="none"/>
+</svg>
