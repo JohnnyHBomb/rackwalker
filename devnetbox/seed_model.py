@@ -73,6 +73,7 @@ class SiteSpec:
     lon: float
     theme: str
     net: str  # the site's documentation /24 (RFC 5737), first three octets
+    country: str = "GB"  # ISO 3166-1 alpha-2 (custom field iso_country); the made-up GPS points are in Great Britain
 
 
 @dataclass

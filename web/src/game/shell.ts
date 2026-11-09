@@ -5,11 +5,11 @@
 // top and is kept and sent again; a stale CSRF token (another tab signed in) is refreshed; a signed-out session asks
 // the player to sign in again without a reload, so the unsaved place is not lost.
 import type { RenderScale } from '../contracts/iso';
+import type { Site } from '../contracts/scene.gen';
 import type { FlagValue, Flags, GameSettings, GameState, IsoCamera, IsoFacing, SaveData } from '../contracts/scene.gen';
 import { formatView, parseView, type Target } from '../engine/nav';
 import { SceneSourceError } from '../engine/source';
 import type { RackWalkerView } from '../engine/view';
-import { THEMES, isThemeId } from '../themes/index';
 import type { GameApi } from './api';
 import { loadScript, mayAutoStart, type Action, type Effects, type Script } from './dialogue';
 import { DialogueBox } from './dialogue-ui';
@@ -30,6 +30,9 @@ export const SCRIPTS = {
   stuck: loadScript(stuckJson),
   menu: loadScript(menuJson),
 } as const;
+
+/** What the overworld needs to know about a site. */
+const worldSite = (s: Site) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, theme: s.iso_theme, country: s.country });
 
 export type Scene = 'loading' | 'signin' | 'overworld' | 'iso';
 export const VISITED = 'game.visited-building';
@@ -123,15 +126,11 @@ export class GameShell {
     this.flags = { ...this.state.flags };
     this.applyMotion();
     const sites = world.sites.map((w) => w.site);
-    this.map = new OverworldMap(sites.map((s) => ({ id: s.id, name: s.name })));
-    const palette = (id: number) => {
-      const t = sites.find((s) => s.id === id)?.iso_theme;
-      return (isThemeId(t) ? THEMES[t] : THEMES.debug).palette;
-    };
+    this.map = new OverworldMap(sites.map(worldSite));
     const save = this.state.saves.find((s) => s.slot === 'auto')?.data ?? null;
     this.owPos = this.map.clampPos(save ? { x: save.overworld.x, y: save.overworld.y } : this.map.start);
     this.owFacing = save?.overworld.facing ?? 'N';
-    this.overworld = new OverworldView(this.host, this.map, palette, {
+    this.overworld = new OverworldView(this.host, this.map, {
       door: (d) => void this.enter(d),
       moved: (p, f) => this.moved(p, f),
       talk: () => this.talkToGuide(),
@@ -185,6 +184,7 @@ export class GameShell {
   private applyMotion(): void {
     this.dialogue.reduceMotion = this.settings.reduce_motion;
     this.view.reduceMotion = this.settings.reduce_motion;
+    if (this.overworld) this.overworld.reduceMotion = this.settings.reduce_motion;
   }
 
   private notice(text: string, actions: Parameters<typeof showNotice>[2] = []): void {

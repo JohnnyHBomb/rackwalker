@@ -109,11 +109,20 @@ def cable_refs(cables: list[nb.Cable]) -> list[nb.PortRef]:
     return [t.object for cb in cables for t in cb.a_terminations + cb.b_terminations]
 
 
+def site_country(s: nb.Site) -> str | None:
+    """ISO 3166-1 alpha-2 country of a site: the custom field iso_country, else the site's own region slug when it is
+    two letters (a region named after its country code); anything else is unknown (None)."""
+    for v in (s.cf("iso_country"), s.region.slug if s.region else None):
+        if isinstance(v, str) and len(v.strip()) == 2 and v.strip().isascii() and v.strip().isalpha():
+            return v.strip().upper()
+    return None
+
+
 def site(s: nb.Site) -> c.Site:
     theme = s.cf("iso_theme")
     return c.Site(id=s.id, slug=s.slug, name=s.name, status=s.status, latitude=s.latitude, longitude=s.longitude,
-                  iso_theme=theme if theme in THEMES else None, description=s.description, last_updated=s.last_updated,
-                  netbox_url=s.display_url)
+                  iso_theme=theme if theme in THEMES else None, country=site_country(s), description=s.description,
+                  last_updated=s.last_updated, netbox_url=s.display_url)
 
 
 def location(loc: nb.Location) -> c.Location:

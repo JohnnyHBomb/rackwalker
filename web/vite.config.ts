@@ -13,7 +13,7 @@ export default defineConfig({
   // The app itself is same-origin and needs no CORS.
   server: { host: '127.0.0.1', port: 5173, strictPort: true, cors: false, headers: noFraming, proxy: { '/api': proxyTarget }, fs: { allow: ['.', '../fixtures'] } },
   preview: { headers: noFraming },
-  // Two pages: the app and the theme slot sheet (sheet.html?theme=<id>).
-  build: { target: 'es2022', assetsInlineLimit: 0, rollupOptions: { input: { main: 'index.html', sheet: 'sheet.html' } } },
+  // Three pages: the app, the theme slot sheet (sheet.html?theme=<id>) and the overworld sheet (world.html).
+  build: { target: 'es2022', assetsInlineLimit: 0, rollupOptions: { input: { main: 'index.html', sheet: 'sheet.html', world: 'world.html' } } },
   test: { include: ['tests/**/*.test.ts'], environment: 'node' },
 });

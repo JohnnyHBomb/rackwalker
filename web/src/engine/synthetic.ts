@@ -3,7 +3,7 @@ import type { Device, Rack, SiteScene, WorldResponse } from '../contracts/scene.
 import type { SceneSource } from './source';
 import { SceneSourceError } from './source';
 
-const META = { contract_version: '2.1.0', generated_at: '2026-11-07T00:00:00Z', netbox_version: null, source: 'fixture' } as const;
+const META = { contract_version: '2.2.0', generated_at: '2026-11-07T00:00:00Z', netbox_version: null, source: 'fixture' } as const;
 const ROLES = [
   { id: 1, slug: 'switch', name: 'Switch', color: '2196f3' },
   { id: 2, slug: 'server', name: 'Server', color: '4caf50' },
@@ -17,7 +17,7 @@ export function syntheticSite(devices: number): SiteScene {
   const nRacks = Math.ceil(devices / perRack);
   const cols = Math.ceil(Math.sqrt(nRacks * 2));
   const rows = Math.ceil(nRacks / cols);
-  const site = { id: 1, slug: 'perf', name: 'Perf Site', status: 'active', latitude: 52, longitude: 0, iso_theme: null, description: '', last_updated: null, netbox_url: null };
+  const site = { id: 1, slug: 'perf', name: 'Perf Site', status: 'active', latitude: 52, longitude: 0, iso_theme: null, country: null, description: '', last_updated: null, netbox_url: null };
   const racks: Rack[] = [];
   const devs: Device[] = [];
   for (let r = 0; r < nRacks; r++)

@@ -108,6 +108,7 @@ class Site(NbObject):
     latitude: float | None = None
     longitude: float | None = None
     description: str = ""
+    region: Ref | None = None
 
 
 class Location(NbObject):

@@ -154,7 +154,7 @@ export type SaveSlotId = "auto" | "1" | "2" | "3";
 export type FlagValue = boolean | number | string;
 
 /**
- * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.1.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state). Change only by contract change; see contracts/README.md.
+ * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.2.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 adds the site country for the overworld). Change only by contract change; see contracts/README.md.
  */
 export interface RackWalkerSceneContract {}
 /**
@@ -164,7 +164,7 @@ export interface RackWalkerSceneContract {}
  * via the `definition` "Meta".
  */
 export interface Meta {
-  contract_version: "2.1.0";
+  contract_version: "2.2.0";
   generated_at: Timestamp;
   /**
    * Version reported by NetBox /api/status/, e.g. 4.7.4; null for fixtures.
@@ -193,6 +193,10 @@ export interface Site {
    * Custom field iso_theme; null = app default theme.
    */
   iso_theme: ThemeId | null;
+  /**
+   * ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set.
+   */
+  country: string | null;
   description: string;
   last_updated: NullableTimestamp;
   netbox_url: NetboxUrl;
@@ -528,7 +532,7 @@ export interface HealthResponse {
    */
   status: "ok" | "degraded" | "down";
   app_version: string;
-  contract_version: "2.1.0";
+  contract_version: "2.2.0";
   /**
    * true only when the proxy runs with WRITE_ENABLED=1.
    */
@@ -543,7 +547,7 @@ export interface HealthNetbox {
   reachable: boolean;
   version: string | null;
   /**
-   * Version is in the supported range (4.7.x for contract 2.1.0).
+   * Version is in the supported range (4.7.x for contract 2.2.0).
    */
   supported: boolean;
 }
@@ -1032,7 +1036,7 @@ export interface FlagsPatch {
  * via the `definition` "GameState".
  */
 export interface GameState {
-  contract_version: "2.1.0";
+  contract_version: "2.2.0";
   player: Player;
   settings: GameSettings;
   flags: Flags;

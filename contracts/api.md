@@ -1,4 +1,4 @@
-# HTTP API (contract 2.1.0)
+# HTTP API (contract 2.2.0)
 
 The browser talks only to the proxy. The proxy talks to NetBox with its token; the token never reaches the
 browser, a response body, or a log line. Routes are in `openapi.yaml`; bodies are `$defs` in

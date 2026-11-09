@@ -199,7 +199,7 @@ def test_create_rack_errors():
 # ---- update_fields
 def test_update_whitelist_message_matches_fixture():
     o = run(update("device", 5, primary_ip="192.0.2.99/24"), extra=[device(5)])[0]
-    assert o["error"] == {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.1.0.",
+    assert o["error"] == {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.2.0.",
                           "details": {"field": "primary_ip", "allowed": WHITELIST["device"]}}
 
 

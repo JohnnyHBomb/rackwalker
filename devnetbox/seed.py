@@ -47,6 +47,7 @@ CUSTOM_FIELDS = [
     ("iso_h", "integer", ["dcim.location"], {"label": "Iso depth (tiles)", "validation_minimum": 1}),
     ("iso_facing", "select", ["dcim.location", "dcim.rack"], {"label": "Iso facing", "choice_set": "iso-facing"}),
     ("iso_theme", "select", ["dcim.site"], {"label": "Iso theme", "choice_set": "iso-theme"}),
+    ("iso_country", "text", ["dcim.site"], {"label": "Country (ISO 3166-1 alpha-2)", "validation_regex": "^[A-Z]{2}$"}),
     ("iso_latitude", "decimal", ["dcim.location", "dcim.rack"], {"label": "Latitude"}),
     ("iso_longitude", "decimal", ["dcim.location", "dcim.rack"], {"label": "Longitude"}),
 ]
@@ -162,7 +163,7 @@ def seed_data(nb: NB, m: sm.Model) -> None:
     for s in m.sites:
         site_id[s.slug] = nb.ensure("dcim/sites", {"slug": s.slug}, {
             "name": s.name, "slug": s.slug, "status": "active", "latitude": round(s.lat, 6), "longitude": round(s.lon, 6),
-            "description": f"Synthetic site near {s.town}", "custom_fields": {"iso_theme": s.theme}})["id"]
+            "description": f"Synthetic site near {s.town}", "custom_fields": {"iso_theme": s.theme, "iso_country": s.country}})["id"]
     for loc in m.locations:
         x, y, w, h = loc.iso
         cf = {"iso_x": x, "iso_y": y, "iso_w": w, "iso_h": h, "iso_facing": loc.facing,

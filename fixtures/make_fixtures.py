@@ -22,7 +22,7 @@ import seed_model as sm  # noqa: E402
 
 NB = "http://netbox.example.invalid"
 TS = "2026-11-07T09:00:00Z"
-META = {"contract_version": "2.1.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
+META = {"contract_version": "2.2.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
 
 PASS_THROUGH = {"front_port", "rear_port"}
 # PortKind enum order (contracts/scene.schema.json): DeviceDetail.interfaces is ordered by kind in this order.
@@ -83,7 +83,7 @@ class World:
     def site(self, s: sm.SiteSpec) -> dict:
         i = self.site_id[s.slug]
         return {"id": i, "slug": s.slug, "name": s.name, "status": "active", "latitude": s.lat, "longitude": s.lon,
-                "iso_theme": s.theme, "description": f"Synthetic site near {s.town}", "last_updated": TS,
+                "iso_theme": s.theme, "country": s.country, "description": f"Synthetic site near {s.town}", "last_updated": TS,
                 "netbox_url": f"{NB}/dcim/sites/{i}/"}
 
     def location(self, loc: sm.LocationSpec) -> dict:
@@ -179,7 +179,7 @@ def render() -> dict[str, object]:
     m = sm.build()
     w = World(m)
     out: dict[str, object] = {}
-    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.1.0", "write_enabled": False,
+    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.2.0", "write_enabled": False,
                           "netbox": {"url": "http://netbox.example.invalid", "reachable": True, "version": "4.7.4", "supported": True}}
     sites = []
     for s in m.sites:
@@ -284,7 +284,7 @@ def render() -> dict[str, object]:
                   {"field": "face", "before": srv.face, "after": None}], "error": None},
         {"index": 4, "op": "update_fields", "client_ref": None, "target": {"kind": "device", "id": detail_ids[0]}, "status": "error",
          "before": None, "after": None, "diff": [],
-         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.1.0.",
+         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.2.0.",
                    "details": {"field": "primary_ip",
                                "allowed": ["name", "status", "serial", "asset_tag", "description", "comments"]}}},
         {"index": 5, "op": "move_rack", "client_ref": None, "target": {"kind": "rack", "id": "@newrack"}, "status": "ok",

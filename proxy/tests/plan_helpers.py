@@ -11,7 +11,7 @@ TS = "2026-11-07T10:00:00.000000Z"
 
 def site(i: int, **v: Any) -> Rec:
     return Rec("site", i, TS, {"name": f"S{i}", "description": "", "status": "active", "latitude": None,
-                               "longitude": None, "iso_theme": None, **v})
+                               "longitude": None, "iso_theme": None, "country": None, **v})
 
 
 def location(i: int, site_id: int = 1, **v: Any) -> Rec:

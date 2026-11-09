@@ -1,6 +1,6 @@
 {
   "meta": {
-    "contract_version": "2.1.0",
+    "contract_version": "2.2.0",
     "generated_at": "2026-11-07T10:00:00Z",
     "netbox_version": null,
     "source": "fixture"
@@ -15,6 +15,7 @@
         "latitude": 54.118,
         "longitude": -1.342,
         "iso_theme": "industrial-robotic",
+        "country": "GB",
         "description": "Synthetic site near Brackenford",
         "last_updated": "2026-11-07T09:00:00Z",
         "netbox_url": "http://netbox.example.invalid/dcim/sites/1/"
@@ -36,6 +37,7 @@
         "latitude": 51.621,
         "longitude": -2.893,
         "iso_theme": "farm",
+        "country": "GB",
         "description": "Synthetic site near Wrenmouth",
         "last_updated": "2026-11-07T09:00:00Z",
         "netbox_url": "http://netbox.example.invalid/dcim/sites/2/"
@@ -57,6 +59,7 @@
         "latitude": 52.784,
         "longitude": 1.412,
         "iso_theme": "business",
+        "country": "GB",
         "description": "Synthetic site near Saltings Cross",
         "last_updated": "2026-11-07T09:00:00Z",
         "netbox_url": "http://netbox.example.invalid/dcim/sites/3/"

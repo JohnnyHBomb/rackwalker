@@ -1,6 +1,6 @@
 {
   "meta": {
-    "contract_version": "2.1.0",
+    "contract_version": "2.2.0",
     "generated_at": "2026-11-07T10:00:00Z",
     "netbox_version": null,
     "source": "fixture"
@@ -13,6 +13,7 @@
     "latitude": 52.784,
     "longitude": 1.412,
     "iso_theme": "business",
+    "country": "GB",
     "description": "Synthetic site near Saltings Cross",
     "last_updated": "2026-11-07T09:00:00Z",
     "netbox_url": "http://netbox.example.invalid/dcim/sites/3/"

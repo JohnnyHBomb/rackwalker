@@ -92,7 +92,7 @@ export function patched<T extends { id: number }>(stage: Stage, kind: string, o:
   return out as T;
 }
 
-const META = (): Meta => ({ contract_version: '2.1.0', generated_at: new Date().toISOString(), netbox_version: null, source: 'cache' });
+const META = (): Meta => ({ contract_version: '2.2.0', generated_at: new Date().toISOString(), netbox_version: null, source: 'cache' });
 
 /** The proxy's scenes with the basket applied on top. */
 export class StagedSource implements SceneSource {

@@ -20,7 +20,7 @@ class RackWalkerSceneContract(RootModel[Any]):
     root: Annotated[
         Any,
         Field(
-            description='Source of truth for every body exchanged between web/ and proxy/. Contract version 2.1.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state). Change only by contract change; see contracts/README.md.',
+            description='Source of truth for every body exchanged between web/ and proxy/. Contract version 2.2.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 adds the site country for the overworld). Change only by contract change; see contracts/README.md.',
             title='RackWalker scene contract',
         ),
     ]
@@ -34,7 +34,7 @@ class Meta(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    contract_version: Literal['2.1.0']
+    contract_version: Literal['2.2.0']
     generated_at: Annotated[
         AwareDatetime,
         Field(
@@ -50,6 +50,16 @@ class Meta(BaseModel):
     source: Annotated[
         Literal['netbox', 'cache', 'fixture'],
         Field(description='cache = served from the proxy read cache.'),
+    ]
+
+
+class Country(RootModel[str]):
+    root: Annotated[
+        str,
+        Field(
+            description="ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set.",
+            pattern='^[A-Z]{2}$',
+        ),
     ]
 
 
@@ -71,6 +81,12 @@ class Site(BaseModel):
     iso_theme: Annotated[
         Literal['debug', 'industrial-robotic', 'farm', 'business', 'pagodas-nature'] | None,
         Field(description='Custom field iso_theme; null = app default theme.'),
+    ]
+    country: Annotated[
+        Country | None,
+        Field(
+            description="ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set."
+        ),
     ]
     description: str
     last_updated: AwareDatetime | None
@@ -487,7 +503,7 @@ class HealthNetbox(BaseModel):
     supported: Annotated[
         bool,
         Field(
-            description='Version is in the supported range (4.7.x for contract 2.1.0).'
+            description='Version is in the supported range (4.7.x for contract 2.2.0).'
         ),
     ]
 
@@ -503,7 +519,7 @@ class HealthResponse(BaseModel):
         ),
     ]
     app_version: str
-    contract_version: Literal['2.1.0']
+    contract_version: Literal['2.2.0']
     write_enabled: Annotated[
         bool, Field(description='true only when the proxy runs with WRITE_ENABLED=1.')
     ]
@@ -1216,7 +1232,7 @@ class GameState(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    contract_version: Literal['2.1.0']
+    contract_version: Literal['2.2.0']
     player: Player
     settings: GameSettings
     flags: Flags
