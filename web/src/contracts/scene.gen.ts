@@ -1456,6 +1456,10 @@ export interface Quest {
   step: QuestStep | null;
   proposal: ChangeSet | null;
   /**
+   * The proposal in plain words, one line per op, with the names an admin knows. Empty when nothing is proposed.
+   */
+  changes: string[];
+  /**
    * What to look for on site while the line is parked.
    */
   checklist: string[];

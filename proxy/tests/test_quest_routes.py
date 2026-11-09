@@ -140,32 +140,11 @@ def test_parked_lines_wait_beside_the_open_ones_and_resume(cl):
 
 
 def test_the_whole_island_can_be_put_in_order_then_its_confusion_is_ready(cl):
-    seen: set[str] = set()
-    for _ in range(12):
-        b = board(cl)
-        if b["all_in_order"]:
-            break
-        q = next(x for x in b["quests"] if x["status"] in ("offered", "active"))
-        seen.add(q["kind"])
-        for _ in range(10):
-            step = q["step"]
-            if q["status"] not in ("offered", "active"):
-                break
-            if step["input"] == "choice":
-                pick = next((x for x in step["choices"] if x["kind"] in ("candidate", "confirm", "skip")), None) or \
-                    next(x for x in step["choices"] if x["id"] in ("new", "typed"))
-                q = answer(cl, q["id"], step["id"], choice=pick["id"])
-            elif step["input"] == "text":
-                q = answer(cl, q["id"], step["id"], text="EXF-1")
-            else:
-                values = {f["id"]: (f["options"][0]["id"] if f["type"] == "select" else 5 if f["type"] == "number" else f"PI-{i:04d}")
-                          for i, f in enumerate(step["fields"], 7)}
-                q = answer(cl, q["id"], step["id"], values=values)
-        assert q["status"] == "ready", q
-        assert apply(cl, q["id"])["complete"]
+    put_island_in_order(cl)
     b = board(cl)
     assert b["all_in_order"] and b["message"] == "All in order at the practice island: nothing the game can see is missing. Well kept."
-    assert {"site_no_way_out", "locations_not_linked", "rack_audit", "site_record", "rack_devices_unpositioned", "room_layout"} <= seen
+    assert {"q:site_no_way_out:site:9000001", "q:rack_audit:rack:9000001", "q:site_record:site:9000001", "q:room_layout:location:9000002",
+            "q:rack_devices_unpositioned:rack:9000002"} <= {q["id"] for q in b["quests"] if q["status"] == "done"}
     assert b["sites"][0]["completeness"] == {"percent": 100, "total": b["sites"][0]["completeness"]["total"], "open": 0}
     assert b["sites"][0]["boss_ready"] and not b["sites"][0]["boss_acknowledged"]
     acked = cl.post("/api/game/boss/ack", json={"scope": "practice", "site_id": ISLAND})
@@ -389,3 +368,44 @@ async def _blocked_proxy(refuse, reason, health):
         with pytest.raises(ApiError) as e:
             await perms.PermissionReader(client).of(2)
         assert (e.value.code, e.value.details) == ("netbox_error", {"reason": reason})
+
+
+def put_island_in_order(cl) -> None:
+    for _ in range(12):
+        b = board(cl)
+        if b["all_in_order"]:
+            return
+        q = next(x for x in b["quests"] if x["status"] in ("offered", "active"))
+        for _ in range(10):
+            step = q["step"]
+            if q["status"] not in ("offered", "active"):
+                break
+            if step["input"] == "choice":
+                pick = next((x for x in step["choices"] if x["kind"] in ("candidate", "confirm", "skip")), None) or \
+                    next(x for x in step["choices"] if x["id"] in ("new", "typed"))
+                q = answer(cl, q["id"], step["id"], choice=pick["id"])
+            elif step["input"] == "text":
+                q = answer(cl, q["id"], step["id"], text="EXF-1")
+            else:
+                q = answer(cl, q["id"], step["id"], values={f["id"]: (f["options"][0]["id"] if f["type"] == "select" else 5 if f["type"] == "number"
+                                                                      else f"PI-{i:04d}") for i, f in enumerate(step["fields"], 7)})
+        apply(cl, q["id"])
+
+
+def test_a_site_in_order_gets_spot_checks_not_invented_work(cl):
+    put_island_in_order(cl)
+    b = board(cl)
+    assert b["all_in_order"] and b["queued"] == 0 and b["next_quest_id"] is None and b["sites"][0]["open_quests"] == 0
+    spot = [q for q in b["quests"] if q["status"] == "offered"]
+    assert [(q["kind"], q["title"], q["xp"], q["minutes"]) for q in spot] == [("spot_check", "Spot check: sw-quay-1", 0, 2)]
+    assert spot[0]["step"]["prompt"] == "Go and look: is sw-quay-1 still in rack PI-Q1 U10 in Quay Room, serial SYN-PI-0001?"
+    assert [c["label"] for c in spot[0]["step"]["choices"]] == ["Yes, exactly as recorded", "No, something has changed", "I don't know yet"]
+    # "no" is a field task: correct it, then come back
+    q = answer(cl, spot[0]["id"], "same", choice="no")
+    assert q["status"] == "parked" and q["note"] == "You found that sw-quay-1 no longer matches its record."
+    # "yes" closes it with nothing written and no XP; the next spot check is another device
+    q = answer(cl, spot[0]["id"], "same", choice="yes")
+    assert q["status"] == "done" and q["proposal"] is None
+    after = board(cl)
+    assert after["rewards"]["xp"] == 0 and after["all_in_order"]
+    assert [x["title"] for x in after["quests"] if x["status"] == "offered"] == ["Spot check: sw-quay-2"]

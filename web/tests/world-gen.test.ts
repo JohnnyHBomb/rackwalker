@@ -387,3 +387,54 @@ describe('weather', () => {
     }
   });
 });
+
+describe('quest givers', () => {
+  const sites: WorldSite[] = [
+    { id: 1, name: 'North', latitude: 52.0, longitude: 4.0, theme: 'farm', country: 'NL' },
+    { id: 2, name: 'South', latitude: 51.9, longitude: 4.1, theme: 'business', country: 'NL' },
+    { id: 7, name: 'Far', latitude: 54.0, longitude: -1.3, theme: null, country: 'GB' },
+    { id: 9_000_001, name: 'Practice Island', latitude: 36, longitude: -38, theme: null, country: null },
+  ];
+  const m = new WorldMap(sites);
+
+  it('every site has one giver, two tiles right of the tile in front of its door, on a tile nobody walks through', () => {
+    expect(m.givers.map((g) => g.siteId).sort((a, b) => a - b)).toEqual([1, 2, 7, 9_000_001]);
+    for (const g of m.givers) {
+      const d = m.doorOf(g.siteId)!;
+      expect([g.x, g.y]).toEqual([d.x + 2, d.y + 1]);
+      expect(m.walkable(g.x, g.y)).toBe(false);
+      expect(m.giverAt(g.x, g.y)).toBe(g);
+      // the door, the tile in front of it and the tiles either side stay free
+      for (const t of [{ x: d.x, y: d.y + 1 }, { x: d.x - 1, y: d.y + 1 }, { x: d.x + 1, y: d.y + 1 }])
+        if (!(t.x === m.guide.x && t.y === m.guide.y)) expect(m.walkable(t.x, t.y), `site ${g.siteId}`).toBe(true);
+      expect(m.reachable(d.x, d.y)).toBe(true);
+    }
+  });
+
+  it('a giver is an animal of the site\'s country, the same one every time', () => {
+    expect(m.giverSprite(1)).toBe('hog'); // the Netherlands: the hedgehog
+    expect(['badger', 'fox']).toContain(m.giverSprite(7)); // Great Britain
+    expect(m.giverSprite(9_000_001)).toBe('rabbit'); // nowhere in particular
+    expect(new WorldMap(sites).giverSprite(7)).toBe(m.giverSprite(7));
+    expect(m.giverWhat(1)).toContain('hedgehog');
+  });
+
+  it('the player can walk up to a giver: the nearest free tile beside them, and being beside them is noticed', () => {
+    for (const g of m.givers) {
+      const r = m.regions.find((q) => q.siteIds.includes(g.siteId))!;
+      const to = m.besideGiver(r.arrive, g)!;
+      expect(Math.abs(to.x - g.x) + Math.abs(to.y - g.y)).toBe(1);
+      expect(m.walkable(to.x, to.y)).toBe(true);
+      expect(m.nearGiver(to)).toBe(g);
+      expect(m.besideGiver(to, g)).toEqual(to);
+    }
+    expect(m.nearGiver({ x: 0, y: 0 })).toBeNull();
+  });
+
+  it('the practice island is a region of its own, reached by the airfield pad', () => {
+    const island = m.regions.find((r) => r.siteIds.includes(9_000_001))!;
+    expect(island.siteIds).toEqual([9_000_001]);
+    expect(island.airfield).not.toBeNull();
+    expect(m.regions.length).toBe(3);
+  });
+});

@@ -3049,6 +3049,7 @@
         "status",
         "step",
         "proposal",
+        "changes",
         "checklist",
         "note",
         "said",
@@ -3119,6 +3120,13 @@
               "type": "null"
             }
           ]
+        },
+        "changes": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The proposal in plain words, one line per op, with the names an admin knows. Empty when nothing is proposed."
         },
         "checklist": {
           "type": "array",

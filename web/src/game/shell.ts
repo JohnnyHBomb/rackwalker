@@ -402,7 +402,7 @@ export class GameShell {
       const board = q.board(d.siteId);
       const site = board?.sites.find((s) => s.site_id === d.siteId);
       if (!board || !site) continue;
-      const lines = board.quests.filter((x) => x.site_id === d.siteId);
+      const lines = board.quests.filter((x) => x.site_id === d.siteId && x.kind !== 'spot_check');
       const fresh = lines.some((x) => x.status === 'offered' || x.status === 'active' || x.status === 'ready');
       const waiting = lines.some((x) => x.status === 'parked' || x.status === 'practised');
       ow.marks.set(d.siteId, fresh || (!waiting && site.open_quests > 0) ? 'offer' : waiting ? 'wait' : 'clear');

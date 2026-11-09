@@ -243,7 +243,13 @@ front-facing roof rule, fix them, render again.
   height for yet.
 - A big world takes longer to build at load since the dressing (see Frame times).
 - The pond's outline follows whole tiles, so its curves step at tile corners; the quay stones follow those steps.
-- Nothing points at buildings off screen yet (a map and a marker to the next small fix come with the quest log).
+- The quest marks are placeholders in the palette, drawn as row data in `props.py` (`make_quest_marks`): the bubble
+  over a quest giver (`quest_mark` "!", `quest_wait` "...", `quest_clear` a tick: shapes, so they read without
+  colour), the arrow at the edge of the view towards the next small step (`quest_arrow_n/e/s/w`, the door marker's
+  wedge), a site's Confusion (`boss_mark`, two frames) and four reward icons (`icon_xp`, `icon_potion`,
+  `icon_label_maker`, `icon_cable_tracer`). Quest givers are the country's villager sprites; in the dialogue bubble a
+  giver's portrait is that sprite at a whole-number scale on a plain panel, until the animal cast has painted
+  portraits from `web/art/portraits/`. There is no map yet: the arrow gives the direction, not the distance.
 - Phones get 1x (256 px wide) because only whole-number scales are used.
 - The airfield pad is a placeholder: it moves the player between regions at once, with no flight.
 - The portraits have no idle or talk frames yet.

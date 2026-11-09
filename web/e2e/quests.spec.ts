@@ -115,6 +115,7 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await expect(page.locator('#quest-preview')).toBeVisible();
   await expect(page.locator('#quest-preview .said li').first()).toContainText('What is on the other end? → nd-acc-nd-r2 (switch)');
   await expect(page.locator('#quest-preview .said li')).toHaveCount(3);
+  await expect(page.locator('#quest-changes li')).toHaveText(['New cable: nd-core1 mgmt0 to nd-acc-nd-r2 Gi1/0/7 (copper patch lead (Cat 6)).']);
   await expect(page.locator('#quest-diff')).toContainText('connect cable');
   await expect(page.locator('#quest-diff')).toContainText('type: (empty) → cat6');
   await expect(page.locator('#quest-mode')).toContainText('nothing is written');
@@ -223,6 +224,8 @@ test('the practice island: a whole quest from giver to verified outcome, one lin
   await choose(page, 'Single-mode fibre');
   await expect(page.locator('#quest-preview')).toBeVisible();
   await expect(page.locator('#quest-diff tr')).toHaveCount(3);
+  await expect(page.locator('#quest-changes li')).toHaveText(['New circuit EXF-20417 from Example Fibre (Internet).', 'Circuit EXF-20417 gets its A end at Practice Island.',
+    'New cable: sw-quay-1 Te1/1/2 to circuit EXF-20417 (side A) (single-mode fibre).']);
   await expect(page.locator('#quest-diff')).toContainText('cid: (empty) → EXF-20417');
   await expect(page.locator('#quest-mode')).toHaveAttribute('data-mode', 'practice');
   await page.screenshot({ path: `${SHOTS}/preview-practice.png` });
@@ -316,7 +319,16 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
   await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 15_000 }).toBe('quest-offer');
   await typed(page);
   expect((await game(page)).dialogue!.text).toBe('All in order at Practice Island: nothing I can see is missing. Its Confusion has shown itself outside.');
+  // no invented work: the only thing on offer is a spot check of one device
+  expect((await game(page)).dialogue!.choices).toEqual(['Spot-check one device', 'Show me the quest log', 'Not now']);
+  await choose(page, 'Spot-check one device');
+  await typed(page);
+  expect((await game(page)).dialogue!.text).toBe('Go and look: is sw-quay-1 still in rack PI-Q1 U10 in Quay Room, serial SYN-PI-0001?');
+  await choose(page, 'Yes, exactly as recorded');
+  await typed(page);
+  expect((await game(page)).dialogue!.text).toBe('Checked: the record and the rack agree. Thank you.');
   await page.keyboard.press('Enter');
+  await expect.poll(async () => (await game(page)).dialogue).toBeNull();
   await page.click('#quest-next');
   await expect(page.locator('#quest-sites [data-site="9000001"]')).toContainText('Practice Island: 100%');
   await page.screenshot({ path: `${SHOTS}/boss-ready-log.png` });

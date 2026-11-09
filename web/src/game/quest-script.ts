@@ -81,13 +81,20 @@ export function stepScript(step: QuestStep): Script {
 
 /** What a quest giver says first: how things stand at the site, and the lines on offer (at most two, then the log). */
 export function offerScript(board: QuestBoard, siteName: string): Script {
-  const open = board.quests.filter((q) => q.status !== 'done' && q.status !== 'dismissed');
+  const all = board.quests.filter((q) => q.status !== 'done' && q.status !== 'dismissed');
+  const open = all.filter((q) => q.kind !== 'spot_check');
   if (!open.length) {
+    // Nothing is missing: a short honest line, and at most a spot check on offer. No invented work.
     const site = board.sites.find((s) => s.site_id === board.site_id);
     const text = board.all_in_order
       ? `All in order at ${siteName}: nothing I can see is missing.${site?.boss_ready && !site.boss_acknowledged ? ' Its Confusion has shown itself outside.' : ''}`
       : board.message;
-    return loadScript({ id: 'quest-offer', start: 'a0', nodes: say('a', text, (t) => ({ speaker: 'giver', text: t, next: null })).nodes });
+    const spot = all.find((q) => q.kind === 'spot_check');
+    const last = (t: string): DialogueNode =>
+      spot
+        ? { speaker: 'giver', text: t, choices: [{ label: spot.status === 'parked' ? 'It matches the record now' : 'Spot-check one device', set: { [PICK]: spot.id }, next: null }, { label: 'Show me the quest log', set: { [PICK]: 'log' }, next: null }, { label: 'Not now', next: null }] }
+        : { speaker: 'giver', text: t, next: null };
+    return loadScript({ id: 'quest-offer', start: 'a0', nodes: say('a', text, last).nodes });
   }
   const fresh = open.filter((q) => q.status === 'offered' || q.status === 'active' || q.status === 'ready');
   const lead = fresh[0] ?? open[0]!;

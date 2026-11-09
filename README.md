@@ -13,7 +13,10 @@ Fill a gap in NetBox, verified against the real data, to earn XP, potions and to
 
 Status: early development. What works today: the game shell (sign in as your NetBox user, a 16-bit overworld
 derived from your sites' GPS, with one building per site in its theme, walk through a door into that site's isometric room and back out, Ilatea's first
-lines, autosave) on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
+lines, autosave) and **quests**: the game reads your whole NetBox, works out what it cannot answer yet ("how does this
+site reach the internet?"), and a quest giver at each site asks you what you know, with your own device names as the
+choices. A quest ends in one change you preview first, and is complete only when NetBox confirms it
+([`docs/quests.md`](docs/quests.md) says exactly what the game looks for and why). All of it sits on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
 rooms, racks, devices, cables and cable traces) in four original art themes plus a plain debug theme, with
 drag-and-drop edits written back to NetBox after a diff preview.
 
@@ -43,9 +46,10 @@ token never reaches the browser, a response body or a log line.
 
 | Path | What |
 |---|---|
+| `docs/quests.md` | For NetBox admins: what the quest scanner reads, every finding and gap it reports, the questions it asks, what it writes and who may write |
 | `contracts/` | Contract 2.3.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
 | `web/` | The game in the browser: TypeScript + Vite + PixiJS 8, Vitest and Playwright; npm with a pinned `package-lock.json` |
-| `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in and the game store (SQLite); pytest; pinned `requirements.lock` |
+| `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in, the game store (SQLite), and quests (`estate.py` reads the estate, `findings.py` the rules, `quests.py` the questions, `questroutes.py` the log, checks and rewards, `perms.py` the player's own NetBox permissions, `practice.py` the practice island); pytest; pinned `requirements.lock` |
 | `fixtures/` | Canned responses for every route, rendered from the synthetic seed model; the web side can run on them alone |
 | `devnetbox/` | Throwaway NetBox v4.7.4 stacks (netbox-docker 5.1.1) in Docker, with an idempotent synthetic seed |
 | `docs/` | Art briefs and screenshots |
@@ -86,8 +90,8 @@ several stacks can run side by side.
 | `make dev` / `make dev-fixtures` | proxy + vite against the NetBox in `.env`, or against `fixtures/` |
 | `make netbox-up` / `seed` / `reset` / `down` / `destroy` / `status` / `check-fixtures` | manage a dev NetBox stack (`NB_PROJECT`, `NB_PORT`) |
 | `make netbox-env` | write `.env` with the stack's URL and the proxy user's **read-only** token and `WRITE_ENABLED=0`; `WRITE=1 FORCE=1` writes the proxy user's write token and `WRITE_ENABLED=1` instead. The admin token never goes to the proxy |
-| `make test-live` | proxy contract tests against the dev NetBox (fresh seed): fixture parity, errors, an apply round trip checked in NetBox's changelog, then put back. `RACKWALKER_RECORD=1` also re-records `proxy/tests/recorded/` (the offline replay data `make test` uses) |
-| `make e2e-live` (with `make dev` running) | headless chromium on the live stack: all 3 sites on the world view, double-click down to a device, every `/api` answer from NetBox; with `NB_URL` and `NB_ADMIN_TOKEN` of a write-enabled stack also the live write round trip, and with `NB_ADMIN_TOKEN` (or `NB_PLAYER_TOKEN`) the game: sign in as that NetBox user, every door in and out, reload. Screenshots to `docs/screenshots/` |
+| `make test-live` | proxy contract tests against the dev NetBox (fresh seed): fixture parity, errors, an apply round trip checked in NetBox's changelog, then put back; and the quests on a made-up unconnected site (three switches, a provider, two rooms): played to cables NetBox itself traces, refused for a player without the NetBox permission, nothing written by the practice island. `RACKWALKER_RECORD=1` also re-records `proxy/tests/recorded/` (the offline replay data `make test` uses) |
+| `make e2e-live` (with `make dev` running) | headless chromium on the live stack: all 3 sites on the world view, double-click down to a device, every `/api` answer from NetBox; with `NB_URL` and `NB_ADMIN_TOKEN` of a write-enabled stack also the live write round trip, and with `NB_ADMIN_TOKEN` (or `NB_PLAYER_TOKEN`) the game: sign in as that NetBox user, every door in and out, reload; on a write-enabled stack also one quest written for real (a cable NetBox confirms, XP, the changelog naming the player; removed again). Screenshots to `docs/screenshots/` |
 
 The live write round trip of `make e2e-live` needs a write-enabled proxy and the stack's admin token (used only by
 the test, to read the device and its changelog):
@@ -123,7 +127,26 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   own keys, so they stay right after you remap them. Every bubble closes
   with `Esc` or its close button; the typewriter finishes at the first key or tap; choices work by arrow keys and
   `Enter`, number keys, mouse or touch.
-* **Menu** (`M` or the button in the corner): talk to Ilatea, the field-guide pages of her owls Byte (commands and
+* **Quests.** An animal of the site's country stands beside every door, with a bubble over its head (`!` something to
+  find out, `...` a quest waiting for you, a tick when all is in order). Walk up and press the interact key, or tap
+  them; inside the building they have a button of their own. They say why the thing matters, then ask: the choices are
+  objects from your NetBox, plus "something not listed" and "I don't know yet". "I don't know yet" parks the quest as
+  a field task with a short list of what to look for on site; it costs nothing and picks up at the same question
+  later. The last answer leads to a **preview** of the change in plain words and field by field; **Apply** writes it
+  (only on a write-enabled proxy, and only what your own NetBox permissions allow; otherwise it is a practice run,
+  said so, with no XP), NetBox is read again, and the reward says what you can now do that you could not before.
+  ![A quest giver asks what a switch port connects to](docs/screenshots/quests/giver-question.png)
+* **Quest log and marker.** The box at the bottom ("Quests", or the menu) opens the log: open lines, lines waiting for
+  you, done lines, XP, tools, and each site's completeness. The line below "Quests" is always the next small step;
+  on the green an arrow at the edge of the view points towards its building, and inside, a marker stands over the
+  object. At 100 % a site's "Confusion" shows by its building: visible, optional, and for now only acknowledged.
+* **Rewards.** XP only for what NetBox confirms, more for connectivity than for labels, less for the same kind of fix
+  again. Two tools: the **cable tracer** (first confirmed connectivity quest) opens cable tracing inside buildings;
+  the **label maker** (first confirmed audit) suggests the next free asset tag of the site's own pattern. No
+  penalties, no streaks, no timers.
+* **Practice island** (menu, or the airfield pad): a made-up site with a first quest of every kind. Nothing there is
+  read from or written to NetBox; it pays no XP and can be started afresh from the quest log.
+* **Menu** (`M` or the button in the corner): the quest log, the practice island, talk to Ilatea, the field-guide pages of her owls Byte (commands and
   hardening) and Nocti (hardware and best practice) as placeholders, settings, sign out.
 * **Settings**: Ilatea's hint level (off, low, normal, high), sound (mute, volume; for the music to come), reduce
   motion (text at once, scene changes and zooms cut), and every overworld and menu key remappable (up to three keys
@@ -147,16 +170,23 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
 * Writes to NetBox are refused unless the proxy runs with `WRITE_ENABLED=1`; the default is dry-run. A
   write-enabled proxy previews and applies only for a signed-in player (sign in through the game first; the editor
   sends the session's CSRF header), and each write carries the player and the change set's reason as NetBox's
-  `changelog_message` (`rackwalker (<username>): <reason>`). The player's own NetBox permissions are not checked, so
-  run a write-enabled proxy only for people who may edit.
+  `changelog_message` (`rackwalker (<username>): <reason>`). **The player's own NetBox permissions decide**: before a
+  write the proxy reads the player's NetBox object permissions (their own and their groups') and refuses the change
+  with a clear message unless they cover it; a permission with constraints does not count, because the proxy cannot
+  evaluate one. The proxy's token never widens what a player may change. `/api/health` reports in
+  `netbox.permission_check` when the proxy's token cannot read users or object permissions (then no write is made).
 * No other site may frame the game, the editor or the proxy (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`).
 * Reads are cached per route for `RACKWALKER_CACHE_TTL` seconds (default 10, `0` = off); an apply clears the cache.
+  The quest scanner's read of the whole estate is kept for `RACKWALKER_ESTATE_TTL` seconds (default 60) and is
+  dropped by any write as well.
 * The proxy talks to NetBox as its own user (in the dev stacks `rackwalker-proxy`, created by
   `devnetbox/proxy_tokens.py`), which needs: **view** on the object types it reads (sites, locations, racks, devices,
-  device types and roles, cables, interfaces, front, rear, console, console server, power ports and outlets, power
-  feeds, circuits and circuit terminations) **and on users** (the game checks that a signed-in player's NetBox user
-  still exists and is active before every write); **change** on the six it may edit and **add** on racks for a
-  write-enabled proxy. Without view on users, nothing the game saves is written, and the game says so. Dev tokens
+  device types and roles, platforms, cables, interfaces, front, rear, console, console server, power ports and outlets,
+  power feeds, circuits, circuit terminations, providers and circuit types, IP addresses and prefixes) **and on users,
+  groups and object permissions** (the game checks that a signed-in player's NetBox user
+  still exists and is active before every write); **change** on the six it may edit and **add** on racks and on what a quest may create (cables, circuits,
+  circuit terminations, IP addresses, prefixes) for a write-enabled proxy. A list the token may not view is not an
+  error for the quests: the rules that need it stay silent, and the quest log says which lists were not read. Without view on users, nothing the game saves is written, and the game says so. Dev tokens
   expire after 30 days and are re-minted on demand.
 * Reads (scenes, devices, cable traces) need no sign-in: the plain viewer (`?view=`) works without one, so anyone who
   can reach the proxy can read what its token may view. Sign-in guards the game's own state and every write; when a

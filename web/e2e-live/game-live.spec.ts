@@ -27,7 +27,8 @@ test('live: sign in as a NetBox user, every door in and out, reload keeps the pl
     await page.keyboard.press('Escape');
   }
   await page.evaluate(() => (window.__game!.shell.transitionMs = 0));
-  const doors = await page.evaluate(() => window.__game!.shell.map!.doors.map((d) => ({ siteId: d.siteId, x: d.x, y: d.y })));
+  // NetBox's own sites (the map also holds the practice island, which is made up and has an id far above them)
+  const doors = (await page.evaluate(() => window.__game!.shell.map!.doors.map((d) => ({ siteId: d.siteId, x: d.x, y: d.y })))).filter((d) => d.siteId < 9_000_000);
   expect(doors.map((d) => d.siteId)).toEqual([1, 2, 3]);
   for (const d of doors) {
     // A door in another region: walk onto this region's airfield pad first (it takes the player to the next region).

@@ -111,5 +111,11 @@ describe('quest questions as dialogue scripts', () => {
     expect(validateScript(s)).toEqual([]);
     expect(Object.values(s.nodes).map((n) => n.text).join(' ')).toBe('All in order at Practice Island: nothing I can see is missing. Its Confusion has shown itself outside.');
     expect(validateScript(lineScript('Good to know: that is how it is. I will not ask about it again.'))).toEqual([]);
+    // with a spot check on offer the same line carries it as a choice: one device, never invented work
+    const spot = { ...b.quests[0]!, id: 'q:spot_check:device:1:0', kind: 'spot_check', status: 'offered' as const };
+    const withSpot = offerScript({ ...clear, quests: [spot] }, 'Practice Island');
+    expect(validateScript(withSpot)).toEqual([]);
+    const lastNode = Object.values(withSpot.nodes).find((n) => n.choices)!;
+    expect(lastNode.choices!.map((c) => c.label)).toEqual(['Spot-check one device', 'Show me the quest log', 'Not now']);
   });
 });

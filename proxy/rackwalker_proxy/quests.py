@@ -10,6 +10,7 @@ line against the answers given so far and returns where it stands:
     parked     the player said "I don't know yet": `checklist` says what to look for on site; the line stays open
                without penalty and asks the same question again when the player comes back
     dismissed  the player said the finding is how things really are (no link on purpose): nothing to write
+    confirmed  a spot check the player answered "yes, as recorded": nothing to write, the line is done
 
 A flow is plain Python: it calls `ctx.choice(...)`, `ctx.text(...)` or `ctx.form(...)`, which returns the stored
 answer or stops the flow at that question. A stored answer that no longer fits the estate (the port now has a cable)
@@ -728,6 +729,92 @@ def lines(e: Estate, a: Analysis) -> list[dict[str, Any]]:
     return out
 
 
+CABLE_WORDS = {**dict(CABLE_TYPES), "power": "Power lead"}
+
+
+def describe(e: Estate, ops: list[dict[str, Any]]) -> list[str]:
+    """A proposal in plain words, one line per op, with the names an admin knows (the preview shows the fields too)."""
+    refs: dict[str, str] = {}
+
+    def end(kind: str, oid: Any) -> str:
+        if isinstance(oid, str):
+            return refs.get(oid, "the new circuit end")
+        if kind == "circuit_termination":
+            term = e.cterms.get(oid)
+            return f"circuit {e.circuits[term['circuit_id']]['cid']} (side {term['side']})" if term else f"circuit end {oid}"
+        p = e.ports.get((kind, oid))
+        return f"{e.device_name(p['device_id'])} {p['name']}" if p else f"{kind.replace('_', ' ')} {oid}"
+
+    out: list[str] = []
+    for op in ops:
+        f, name, target = op["fields"], op["op"], op["target"]
+        if name == "connect_cable":
+            kind = CABLE_WORDS.get(f.get("type") or "", "cable type left empty")
+            out.append(f"New cable: {end(f['a_kind'], f['a_id'])} to {end(f['b_kind'], f['b_id'])} ({kind[0].lower() + kind[1:]}).")
+        elif name == "create_circuit":
+            prov = e.providers.get(f["provider_id"], {}).get("name", "the provider")
+            ctype = e.circuit_types.get(f["type_id"], {}).get("name", "circuit")
+            refs["@" + op.get("client_ref", "")] = f"circuit {f['cid']}"
+            out.append(f"New circuit {f['cid']} from {prov} ({ctype}).")
+        elif name == "create_circuit_termination":
+            circ = refs.get(f["circuit_id"]) if isinstance(f["circuit_id"], str) else f"circuit {e.circuits[f['circuit_id']]['cid']}"
+            refs["@" + op.get("client_ref", "")] = f"{circ} (side {f['term_side']})"
+            out.append(f"{circ[0].upper() + circ[1:]} gets its {f['term_side']} end at {e.sites[f['site_id']]['name']}.")
+        elif name == "assign_ip":
+            port = e.ports.get(("interface", f["interface_id"]))
+            out.append(f"{e.device_name(target['id'])}: {f['address']} on {port['name'] if port else 'its interface'}"
+                       + (", as its management address (primary IP)." if f.get("primary", True) else "."))
+        elif name == "create_prefix":
+            out.append(f"New prefix {f['prefix']}.")
+        elif name == "place_device":
+            out.append(f"{e.device_name(target['id'])}: unit {f['position']:g} of rack {e.racks[f['rack_id']]['name']} ({f['face']}).")
+        elif name == "move_rack":
+            rack = e.racks[target["id"]]["name"]
+            bits = ([f"in {e.locations[f['location_id']]['name']}"] if f.get("location_id") in e.locations else []) + \
+                   ([f"floor tile column {f['iso_x']}, row {f['iso_y']}"] if "iso_x" in f else [])
+            out.append(f"Rack {rack}: {' and '.join(bits)}.")
+        elif name == "update_fields":
+            who = e.device_name(target["id"]) if target["kind"] == "device" else e.sites.get(target["id"], {}).get("name", target["kind"])
+            words = {"serial": "serial", "asset_tag": "asset tag", "facility": "facility", "country": "country", "latitude": "latitude",
+                     "longitude": "longitude"}
+            bits = [f"{words.get(k, k)} {v}" for k, v in f.items() if k != "platform_id"]
+            if f.get("platform_id") in e.platforms:
+                bits.append(f"platform {e.platforms[f['platform_id']]['name']}")
+            out.append(f"{who}: {', '.join(bits)}.")
+    return out
+
+
+def spot_check(e: Estate, site_id: int, done: int) -> dict[str, Any] | None:
+    """A site with nothing open is not given invented work: one device at a time, it is asked whether the record
+    still matches the rack. `done` (how many spot checks the player has finished here) rotates through the devices."""
+    devs = [d for d in e.site_devices(site_id) if d["rack_id"] is not None and d["position"] is not None and d["status"] == "active"]
+    if not devs:
+        return None
+    d = devs[done % len(devs)]
+    site = e.sites[site_id]["name"]
+    finding = {"id": f"spot_check:device:{d['id']}:{done}", "kind": "spot_check", "rank": "identity", "site_id": site_id,
+               "title": f"Is {d['name']} still as recorded?", "evidence": [{"kind": "device", "id": d["id"], "name": d["name"] or "device"}],
+               "data": {"device_id": d["id"]}}
+    return {"id": f"q:{finding['id']}", "kind": "spot_check", "rank": "identity", "site_id": site_id, "title": f"Spot check: {d['name']}",
+            "purpose": f"Everything I can see at {site} is in order. Shall we spot-check one device, to keep it that way?",
+            "outcome": f"You can now trust the record of {d['name']}: it was checked against the rack.", "finding": finding, "xp": 0, "minutes": 2}
+
+
+def flow_spot(ctx: Ctx) -> list[dict[str, Any]]:
+    e = ctx.e
+    d = e.devices[ctx.line["finding"]["data"]["device_id"]]
+    ctx.at(device_id=d["id"])
+    serial = f", serial {d['serial']}" if d["serial"] else ""
+    picked = ctx.choice("same", f"Go and look: is {d['name']} still in {e.where(d)}{serial}?",
+                        [choice("yes", "Yes, exactly as recorded", "confirm"), choice("no", "No, something has changed", "other")],
+                        [f"Find {d['name']}: {e.where(d)}.", "Compare its label with the record: name, unit, serial."])
+    if picked == "no":
+        raise Stop("parked", None, [f"Open {d['name']} in the rack view and correct what differs (every change is previewed first).",
+                                    "Or correct it in NetBox itself. Then tell me it matches."],
+                   note=f"You found that {d['name']} no longer matches its record.")
+    raise Stop("confirmed")
+
+
 def open_checks(a: Analysis, line: dict[str, Any]) -> list[str]:
     """The checks of a line that a (fresh) analysis still finds open."""
     checks = a.checks.get(line["site_id"], {})
@@ -748,16 +835,17 @@ def check_ids(line: dict[str, Any]) -> list[str]:
 
 def evaluate(e: Estate, line: dict[str, Any], answers: dict[str, Any], tools: frozenset[str] = frozenset()) -> dict[str, Any]:
     ctx = Ctx(e, line, answers, tools)
-    base = {"step": None, "proposal": None, "checklist": [], "note": None}
+    base = {"step": None, "proposal": None, "checklist": [], "note": None, "changes": []}
     try:
-        ops = FLOWS[line["kind"]](ctx)
-        state = {**base, "status": "ready", "checklist": ctx.skipped,
+        ops = (flow_spot if line["kind"] == "spot_check" else FLOWS[line["kind"]])(ctx)
+        state = {**base, "status": "ready", "checklist": ctx.skipped, "changes": describe(e, ops),
                  "proposal": {"ops": ops, "reason": clip(f"quest: {line['title']}", 200)}}
     except Stop as s:
         state = {**base, "status": s.status, "step": s.step, "checklist": s.checklist, "note": s.note}
     except KeyError:
         # the estate changed under the line (an object it named is gone): start the line again from its first question
-        return evaluate(e, line, {}, tools) if answers else {**base, "status": "parked", "checklist": ["This changed in NetBox while you were away; look again later."], "said": [], "target": None}
+        return evaluate(e, line, {}, tools) if answers else {**base, "status": "parked", "said": [], "target": None,
+                                                           "checklist": ["This changed in NetBox while you were away; look again later."]}
     if ctx.target is None and line["site_id"] in e.sites:
         ctx.at(site_id=line["site_id"])
     return {**state, "said": ctx.said, "target": ctx.target}

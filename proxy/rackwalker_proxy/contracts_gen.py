@@ -1836,6 +1836,12 @@ class Quest(BaseModel):
     ]
     step: QuestStep | None
     proposal: ChangeSet | None
+    changes: Annotated[
+        list[str],
+        Field(
+            description='The proposal in plain words, one line per op, with the names an admin knows. Empty when nothing is proposed.'
+        ),
+    ]
     checklist: Annotated[
         list[str],
         Field(description='What to look for on site while the line is parked.'),

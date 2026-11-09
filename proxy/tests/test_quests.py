@@ -340,6 +340,8 @@ def test_each_finding_kind_yields_a_quest_line_that_ends_in_a_verified_change(ca
     assert first["proposal"] is None and any(c["kind"] == "unknown" for c in first["step"]["choices"])
     state, answers = play(e, line)
     assert settle(e, line, state) == []
+    # the proposal is also said in plain words, one line per op, with names instead of ids
+    assert len(state["changes"]) == len(state["proposal"]["ops"]) and all(c.endswith(".") for c in state["changes"])
     # every value in the proposal is one the player picked or typed
     said = " ".join(str(v) for a in answers.values() for v in ((a.get("values") or {}).values() if "values" in a else a.values()))
     for op in state["proposal"]["ops"]:

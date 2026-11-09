@@ -75,7 +75,7 @@ def quest_body(scope: str, line: dict[str, Any], row: dict[str, Any] | None, sta
     total = len(row["checks"]) if row else len(quests.check_ids(line))
     return {"id": line["id"], "scope": scope, "kind": line["kind"], "rank": line["rank"], "site_id": line["site_id"], "title": line["title"],
             "purpose": line["purpose"], "outcome": line["outcome"], "status": status, "step": step,
-            "proposal": state["proposal"] if state else None, "checklist": state["checklist"] if state else [],
+            "proposal": state["proposal"] if state else None, "changes": state.get("changes", []) if state else [], "checklist": state["checklist"] if state else [],
             "note": state["note"] if state else None, "said": state["said"] if state else [], "target": state["target"] if state else None,
             "finding": finding_body(line["finding"]), "xp": line["xp"], "minutes": line["minutes"],
             "progress": {"total": total, "verified": len(row["verified"]) if row else 0}, "lapsed": lapsed,
@@ -162,9 +162,17 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             open_lines = [line for line in ls if line["site_id"] == sid and rows.get(line["id"], {}).get("status") not in ("done", "dismissed")]
             waiting = [line for line in open_lines if rows.get(line["id"], {}).get("status") in ("parked", "practised")]
             fresh = [line for line in open_lines if line not in waiting]
+            if not open_lines:
+                # nothing open here: one spot check, never invented work
+                n_done = sum(1 for qid, r in rows.items() if r["site_id"] == sid and qid.startswith("q:spot_check:") and r["status"] == "done")
+                spot = quests.spot_check(e, sid, n_done)
+                parked_spot = spot is not None and rows.get(spot["id"], {}).get("status") == "parked"
+                if spot is not None:
+                    (waiting if parked_spot else fresh).append(spot)
+            real_open = len(open_lines)
             shown = fresh[:MAX_OPEN] + waiting[:MAX_PARKED]
             if site_id in (None, sid):
-                queued += len(open_lines) - len(shown)
+                queued += max(0, len(open_lines) - len(shown))
                 for line in shown:
                     row = rows.get(line["id"])
                     state = quests.evaluate(e, line, row["answers"] if row else {}, tools)
@@ -172,10 +180,10 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     if row is not None and row["status"] == "practised" and state["status"] == "ready":
                         status = "practised"
                     out_quests.append(quest_body(scope, line, row, state, status))
-            if fresh and (best is None or ls.index(fresh[0]) < best[0]):
+            if fresh and fresh[0] in ls and (best is None or ls.index(fresh[0]) < best[0]):
                 best = (ls.index(fresh[0]), fresh[0]["id"])
             comp = a.completeness(sid, dismissed)
-            sites_out.append({"site_id": sid, "name": e.sites[sid]["name"], "completeness": comp, "open_quests": len(open_lines),
+            sites_out.append({"site_id": sid, "name": e.sites[sid]["name"], "completeness": comp, "open_quests": real_open,
                               "boss_ready": comp["total"] > 0 and comp["open"] == 0, "boss_acknowledged": sid in acks,
                               "giver": {"name": GIVER_NAMES[sid % len(GIVER_NAMES)]}})
         # A line the player had begun whose finding is gone: someone recorded it by other means. It waits in the log as
@@ -193,7 +201,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             snap = r["snapshot"]
             line = {**snap, "finding": {**snap["finding"], "data": {}}}
             out_quests.append(quest_body(scope, line, r, None, r["status"], lapsed=r["quest_id"] in lapsed_ids))
-        here = [q for q in out_quests if q["status"] not in ("done", "dismissed")]
+        here = [q for q in out_quests if q["status"] not in ("done", "dismissed") and q["kind"] != "spot_check"]
         all_ok = not here and queued == 0
         where = e.sites[site_id]["name"] if site_id in e.sites else ("the practice island" if scope == "practice" else "your estate")
         if all_ok:
@@ -231,6 +239,12 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         line = next((x for x in quests.lines(e, a) if x["id"] == quest_id), None)
         st = store()
         row = st.quests(uid, scope).get(quest_id)
+        if line is None and quest_id.startswith("q:spot_check:device:"):
+            # a spot check is made up of the site's state, not of a finding: build the same one the board offered
+            parts = quest_id.split(":")
+            dev = e.devices.get(int(parts[3])) if len(parts) == 5 and parts[3].isdigit() and parts[4].isdigit() else None
+            cand = quests.spot_check(e, dev["site_id"], int(parts[4])) if dev else None
+            line = cand if cand is not None and cand["id"] == quest_id else None
         if line is None:
             raise ApiError("not_found", "That quest is no longer open: NetBox has changed since it was offered.", {"quest_id": quest_id})
         tools = frozenset(["label_maker", "cable_tracer"] if scope == "practice" else st.rewards(uid)["tools"])
@@ -270,7 +284,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     return quest_body(scope, line, row, current, status if row else "offered")
                 answers[b["step"]] = {k: b[k] for k in ("choice", "text", "values") if k in b}
             state = quests.evaluate(e, line, answers, tools)
-            status = {"asking": "active"}.get(state["status"], state["status"])
+            status = {"asking": "active", "confirmed": "done"}.get(state["status"], state["status"])
             saved = save_row(uid, scope, line, row, status, answers)
             return quest_body(scope, line, saved, state, status)
         return _no_store(await run_in_threadpool(work))

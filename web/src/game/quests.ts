@@ -316,6 +316,11 @@ export class Quests {
           await this.hooks.talk(lineScript('Good to know: that is how it is. I will not ask about it again.'), cast);
           break;
         }
+        if (q.status === 'done') {
+          // a spot check answered "as recorded": nothing to write, nothing to pay, one device surely right
+          await this.hooks.talk(lineScript('Checked: the record and the rack agree. Thank you.'), cast);
+          break;
+        }
       }
     } catch (e) {
       this.hooks.notice(`That quest could not go on: ${errText(e)}`);
@@ -472,6 +477,12 @@ export class Quests {
       p.append(ul);
     }
     p.append(el('h3', 'What would change in NetBox'));
+    if (q.changes.length) {
+      const ul = el('ul');
+      ul.id = 'quest-changes';
+      for (const c of q.changes) ul.append(el('li', c));
+      p.append(ul);
+    }
     const table = el('table', undefined, 'diff');
     table.id = 'quest-diff';
     const bad = res.ops.some((o) => o.status === 'error');
