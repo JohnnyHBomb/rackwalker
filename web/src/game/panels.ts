@@ -169,6 +169,10 @@ export interface MenuActions {
   settings(): void;
   signOut(): void;
   close(): void;
+  /** The quest log. */
+  quests(): void;
+  /** Go to the practice island (made-up data; nothing reaches NetBox). */
+  practice(): void;
 }
 
 /** `saveProblem` is null while saving works; otherwise why progress is not being saved right now. */
@@ -183,6 +187,8 @@ export function menuPanel(host: HTMLElement, player: string, a: MenuActions, sav
   list.className = 'menu-list';
   list.append(
     button('▶ Back to the game', a.close, 'menu-resume'),
+    button('Quest log', a.quests, 'menu-quests'),
+    button('Practice island (made up: never touches NetBox)', a.practice, 'menu-practice'),
     button('Talk to Ilatea', a.talk, 'menu-ilatea'),
     button('Byte: commands and hardening', () => a.guide('byte'), 'menu-byte'),
     button('Nocti: hardware and best practice', () => a.guide('nocti'), 'menu-nocti'),

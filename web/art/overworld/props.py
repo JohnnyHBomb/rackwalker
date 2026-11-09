@@ -444,7 +444,113 @@ def flowerbed(petals):
 LIGHTER_OF = {"tu1": "tu2", "ye1": "ye2", "pk1": "pk2", "pu1": "pk2", "w": "w", "o2": "o3"}
 
 
+def quest_bubble(glyph):
+    """A small speech bubble over a quest giver's head: light paper, dark outline, shaded on the right and bottom
+    (light from the top left). The glyph inside is a shape, so it reads without colour: "!" a quest to offer,
+    "..." a quest that waits for the player (parked), a tick for all in order."""
+    rows = [
+        ".kkkkkkk.",
+        "kwwwwwwsk",
+        "kwwwwwwsk",
+        "kwwwwwwsk",
+        "kwwwwwwsk",
+        "kwwwwwwsk",
+        "kwwwwwwsk",
+        "ksssssssk",
+        ".kkkskkk.",
+        "...ksk...",
+        "....k....",
+    ]
+    img = from_rows(rows, {"k": "k1", "w": "w", "s": "s4"})
+    for y, line in enumerate(glyph):
+        for x, ch in enumerate(line):
+            if ch != ".":
+                img.set(1 + x, 1 + y, {"k": "k0", "r": "tu1", "g": "g2"}[ch])
+    return img
+
+
+BANG = ["...r...", "...r...", "...r...", "...r...", ".......", "...r..."]
+DOTS = [".......", ".......", ".......", ".k.k.k.", ".......", "......."]
+TICK = [".......", ".....g.", "....g..", "g..g...", ".gg....", "......."]
+
+
+def quest_arrow(direction):
+    """The pointer towards the next small step when it is off screen: the door marker's yellow wedge, one per
+    compass direction."""
+    south = [
+        "kkkkkkkkk",
+        "kyyyyyyyk",
+        ".kyyyyyk.",
+        "..kyyyk..",
+        "...kyk...",
+        "....k....",
+    ]
+    legend = {"k": "k1", "y": "ye2"}
+    if direction == "S":
+        return from_rows(south, legend)
+    if direction == "N":
+        return from_rows(south[::-1], legend)
+    east = ["".join(row[i] for row in south) for i in range(9)]   # the wedge turned a quarter: it points east
+    return from_rows(east if direction == "E" else [r[::-1] for r in east], legend)
+
+
+def boss_mark():
+    """A site's "Confusion", ready to be faced: a small knot of dark violet cloud with two pale eyes and a question
+    curl. Two frames: the eyes look left, then right."""
+    rows = [
+        "....kkkk.......",
+        "...kppppkk.....",
+        "..kpqqqqppk.kk.",
+        ".kpqqqqqqqpkppk",
+        "kpqqqqqqqqqpqpk",
+        "kpqwwqqqwwqqqpk",
+        "kpqwkqqqwkqqppk",
+        "kppqqqqqqqqqpk.",
+        ".kppqqkkqqqppk.",
+        "..kppppppppkk..",
+        "...kkpppkkk....",
+        ".....kkk.......",
+    ]
+    legend = {"k": "k0", "p": "pu0", "q": "pu1", "w": "w"}
+    a = from_rows(rows, legend)
+    b = from_rows([r.replace("wk", "kw") for r in rows], legend)
+    return [a, b]
+
+
+def icon(rows, legend):
+    return from_rows(rows, legend)
+
+
+ICONS = {
+    # a five-point star: experience
+    "icon_xp": (["....k....", "...kyk...", "kkkkykkkk", "kyyyyyyyk", ".kyyyyyk.", "..kyyyk..", ".kyykyyk.", "kyyk.kyyk", "kkk...kkk"],
+                {"k": "k1", "y": "ye1"}),
+    # a round flask with a cork: a potion
+    "icon_potion": (["...kkk...", "...kdk...", "...kwk...", "..kwwwk..", ".kwrrrrk.", "krrrrrrrk", "krrtrrrrk", ".krrrrrk.", "..kkkkk.."],
+                    {"k": "k1", "d": "wd3", "w": "b5", "r": "tu1", "t": "tu2"}),
+    # a paper tag with a hole and two printed lines: the label maker
+    "icon_label_maker": (["..kkkkkkk", ".kwwwwwwk", "kwkwwwwwk", "kwwwkkkwk", "kwwwwwwwk", "kwwwkkwwk", ".kwwwwwwk", "..kkkkkkk", "........."],
+                         {"k": "k1", "w": "w"}),
+    # a probe with a lead running off it: the cable tracer
+    "icon_cable_tracer": (["......kk.", ".....kck.", "....kck..", "...kbk...", "..kbk....", ".kbk.....", "kok......", "ko.kkkk..", ".kkk..kk."],
+                          {"k": "k1", "c": "c1", "b": "b3", "o": "o2"}),
+}
+
+
+def make_quest_marks(add_sprite):
+    add_sprite("quest_mark", quest_bubble(BANG), 4, 10)
+    add_sprite("quest_wait", quest_bubble(DOTS), 4, 10)
+    add_sprite("quest_clear", quest_bubble(TICK), 4, 10)
+    for d in "NESW":
+        a = quest_arrow(d)
+        add_sprite(f"quest_arrow_{d.lower()}", a, a.w // 2, a.h // 2)
+    add_sprite("boss_mark", boss_mark(), 7, 11)
+    for name, (rows, legend) in ICONS.items():
+        add_sprite(name, icon(rows, legend), 4, 8)
+
+
 def make_props(add_sprite):
+    make_quest_marks(add_sprite)
     add_sprite("phone_box", phone_box())
     add_sprite("pillar_box", pillar_box())
     add_sprite("teapot_stall", teapot_stall())

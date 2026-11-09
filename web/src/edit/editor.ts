@@ -62,6 +62,8 @@ export class Editor {
   private selected: Entity | null = null;
   private info: DeviceInfo | null = null;
   private trace: TraceResponse | null = null;
+  /** Asked before every trace; false refuses it (the game gates tracing behind a tool). Null: tracing is always allowed. */
+  traceGate: (() => boolean) | null = null;
   private tool: 'add-rack' | null = null;
   private dragging: Session | null = null;
   private ghostText: { text: string; verdict: Verdict; problem: string | null } | null = null;
@@ -709,6 +711,7 @@ export class Editor {
   // ------------------------------------------------------------------------------------------- trace
 
   async runTrace(kind: Parameters<SceneSource['trace']>[0], id: number): Promise<void> {
+    if (this.traceGate && !this.traceGate()) return;
     try {
       this.trace = await this.reader.trace(kind, id);
       this.tone = 'warn';

@@ -70,7 +70,10 @@ async function main() {
   };
   document.getElementById('status')?.remove();
   const ready = game ? game.start() : view.goto(parseView(q.get('view')) ?? WORLD);
-  if (game) window.__game = { shell: game, ready };
+  if (game) {
+    window.__game = { shell: game, ready };
+    editor.traceGate = () => game.mayTrace();
+  }
   window.__iso = {
     view,
     editor,

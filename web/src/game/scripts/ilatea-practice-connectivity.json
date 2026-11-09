@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../contracts/dialogue.schema.json",
+  "id": "ilatea-practice-connectivity",
+  "once": "ilatea.practice.connectivity",
+  "min_hint": "low",
+  "start": "done",
+  "nodes": {
+    "done": {
+      "speaker": "ilatea",
+      "text": "That is a whole quest: a question, a preview, a check. On your own NetBox, the check is NetBox itself, and it pays XP.",
+      "next": null
+    }
+  }
+}

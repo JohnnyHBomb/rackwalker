@@ -13,7 +13,7 @@
 // 4. Regions sit side by side on one map, separated by their forest borders; the camera never leaves the player's
 //    region, and no path joins two regions. Each region of a multi-region world has an airfield pad (a placeholder:
 //    stepping on it takes the player to the next region's pad until flights exist).
-import { countrySet, type CountrySet, TREE_SHADOW } from './countries';
+import { countrySet, NEUTRAL_SET, type CountrySet, TREE_SHADOW } from './countries';
 import { groundTheme } from './themes';
 
 export const TILE = 16;
@@ -48,6 +48,13 @@ export interface Door {
   readonly bh: number;
   readonly region: number;
   readonly theme: string;
+}
+
+/** A site's quest giver: an animal of the region's country, standing beside the door of the site's building. */
+export interface Giver {
+  readonly siteId: number;
+  readonly x: number;
+  readonly y: number;
 }
 
 export interface Region {
@@ -244,6 +251,8 @@ export class WorldMap {
   readonly regions: Region[] = [];
   readonly doors: Door[] = [];
   readonly objects: WorldObject[] = [];
+  /** One quest giver per site, on the tile to the right of the door's front tile (the view draws them: they animate). */
+  readonly givers: Giver[] = [];
   readonly start: Pos;
   readonly guide: Pos;
   private readonly flags: Uint8Array;
@@ -378,6 +387,11 @@ export class WorldMap {
     if (index === 0 && doors[0]) {
       this.guideAt = { x: doors[0].x - 1, y: doors[0].y + 1 };
       this.flag(this.guideAt.x, this.guideAt.y, SOLID);
+    }
+    // Each site's quest giver stands right of its door's front tile (kept free above), never in the doorway.
+    for (const d of doors) {
+      this.givers.push({ siteId: d.siteId, x: d.x + 1, y: d.y + 1 });
+      this.flag(d.x + 1, d.y + 1, SOLID);
     }
     const cx = rx + Math.floor(w / 2), cy = Math.floor(h / 2);
     const arrive = doors[0] ? { x: doors[0].x, y: doors[0].y + 2 } : { x: cx, y: cy };
@@ -957,6 +971,39 @@ export class WorldMap {
     const r = this.regionAt(p);
     const others = [...this.regions.slice(r.index + 1), ...this.regions.slice(0, r.index)].filter((q) => q.airfield);
     return others[0]?.airfield ?? null;
+  }
+  giverOf(siteId: number): Giver | null {
+    return this.givers.find((g) => g.siteId === siteId) ?? null;
+  }
+  giverAt(x: number, y: number): Giver | null {
+    return this.givers.find((g) => g.x === x && g.y === y) ?? null;
+  }
+  /** The quest giver the player stands next to, if any. */
+  nearGiver(p: Pos): Giver | null {
+    return this.givers.find((g) => Math.abs(p.x - g.x) + Math.abs(p.y - g.y) === 1) ?? null;
+  }
+  /** The villager sprite of a site's quest giver: one of the animals of its region's country, fixed per site. */
+  giverSprite(siteId: number): string {
+    const r = this.regions.find((q) => q.siteIds.includes(siteId));
+    const cast = (r?.set ?? NEUTRAL_SET).villagers;
+    return cast[siteId % cast.length]!.sprite;
+  }
+  giverWhat(siteId: number): string {
+    const r = this.regions.find((q) => q.siteIds.includes(siteId));
+    const cast = (r?.set ?? NEUTRAL_SET).villagers;
+    return cast[siteId % cast.length]!.what;
+  }
+  /** The free tile next to a quest giver that is the shortest walk from `from` (`from` itself when already next to them). */
+  besideGiver(from: Pos, g: Giver): Pos | null {
+    if (Math.abs(from.x - g.x) + Math.abs(from.y - g.y) === 1) return from;
+    let best: Pos[] | null = null;
+    for (const s of Object.values(STEP)) {
+      const n = { x: g.x + s.x, y: g.y + s.y };
+      if (!this.walkable(n.x, n.y) || this.doorAt(n.x, n.y)) continue;
+      const p = this.path(from, n);
+      if (p.length && (!best || p.length < best.length)) best = p;
+    }
+    return best ? best[best.length - 1]! : null;
   }
   nearGuide(p: Pos): boolean {
     return Math.abs(p.x - this.guide.x) + Math.abs(p.y - this.guide.y) === 1;

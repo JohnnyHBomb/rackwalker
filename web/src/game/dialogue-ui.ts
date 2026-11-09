@@ -39,6 +39,8 @@ export class DialogueBox {
    * bottom; when that hides one of them it moves to the top, unless the top hides one too.
    */
   avoid: (() => readonly { x: number; y: number }[]) | null = null;
+  /** Who the speaker `giver` is right now: the quest giver's name and overworld sprite. */
+  cast: { name: string; sprite: string } | null = null;
 
   constructor(private readonly host: HTMLElement) {
     if (!document.getElementById('dialogue-css')) {
@@ -143,14 +145,15 @@ export class DialogueBox {
     const el = document.createElement('div');
     el.id = 'dialogue';
     el.setAttribute('role', 'dialog');
-    el.setAttribute('aria-label', `${SPEAKER_NAMES[node.speaker]} says`);
+    const who = node.speaker === 'giver' && this.cast ? this.cast.name : SPEAKER_NAMES[node.speaker];
+    el.setAttribute('aria-label', `${who} says`);
     el.dataset.speaker = node.speaker;
-    el.append(drawPortrait(node.speaker, window.innerWidth >= 640 ? 3 : 2));
+    el.append(drawPortrait(node.speaker, window.innerWidth >= 640 ? 3 : 2, this.cast));
     const body = document.createElement('div');
     body.className = 'body';
     const name = document.createElement('div');
     name.className = 'name';
-    name.textContent = SPEAKER_NAMES[node.speaker];
+    name.textContent = who;
     const text = document.createElement('div');
     text.id = 'dialogue-text';
     text.setAttribute('aria-live', 'polite');

@@ -14,7 +14,8 @@
 import type { FlagValue, Flags, HintLevel } from '../contracts/scene.gen';
 import { KEY_ACTIONS } from './keys';
 
-export const SPEAKERS = ['ilatea', 'byte', 'nocti'] as const;
+/** `giver` is the quest giver of the site in play: the bubble takes their name and animal from the game (dialogue-ui.ts `cast`). */
+export const SPEAKERS = ['ilatea', 'byte', 'nocti', 'giver'] as const;
 export type Speaker = (typeof SPEAKERS)[number];
 export const ACTIONS = ['hints_low', 'hints_off', 'open_settings', 'open_menu'] as const;
 export type Action = (typeof ACTIONS)[number];

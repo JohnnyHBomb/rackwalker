@@ -4,9 +4,9 @@
 // enters its site, a tap on Ilatea walks up to her and talks, and the airfield pad (a placeholder until flights)
 // takes the player to the next region's pad.
 import { follow, integerScale } from './world/camera';
-import { NATIVE_H, NATIVE_W } from './world/engine';
+import { NATIVE_H, NATIVE_W, sprite } from './world/engine';
 import { WorldRenderer } from './world/render';
-import { dirTo, OverworldMap, STEP, TILE, type Dir, type Door, type Pos } from './overworld';
+import { dirTo, OverworldMap, STEP, TILE, type Dir, type Door, type Giver, type Pos } from './overworld';
 
 export const STEP_MS = 110;
 const SPRITE_OF: Readonly<Record<Dir, string>> = { N: 'player_up', S: 'player_down', W: 'player_left', E: 'player_right' };
@@ -20,7 +20,13 @@ export interface OverworldEvents {
   blocked?(): boolean;
   /** The player stepped on an airfield pad and was taken to another region. */
   travelled?(to: Pos): void;
+  /** The player reached a site's quest giver after tapping them. */
+  giver?(siteId: number): void;
 }
+
+/** What a quest giver's bubble shows: a quest on offer, one waiting for the player, or all in order (shapes, not colours). */
+export type GiverMark = 'offer' | 'wait' | 'clear';
+const MARK_SPRITE: Readonly<Record<GiverMark, string>> = { offer: 'quest_mark', wait: 'quest_wait', clear: 'quest_clear' };
 
 export class OverworldView {
   /** The full-window backdrop that holds the native canvas (letterboxed, centred). */
@@ -32,6 +38,16 @@ export class OverworldView {
   readonly renderer: WorldRenderer;
   /** A tap on Ilatea: talk once the walk to her ends. */
   private talkOnArrival = false;
+  /** A tap on a quest giver: talk to them once the walk ends. */
+  private giverOnArrival: Giver | null = null;
+  /** The bubble over each site's quest giver (none while the quest log has not loaded). */
+  readonly marks = new Map<number, GiverMark>();
+  /** Sites whose "Confusion" is ready and not yet acknowledged: its marker hangs by the building. */
+  readonly bosses = new Set<number>();
+  /** The tile of the next small step; an arrow at the edge of the view points to it while it is off screen. */
+  pointer: Pos | null = null;
+  /** Where the pointer arrow was drawn in the last frame (view pixels and direction), or null (tests). */
+  pointerShown: { x: number; y: number; dir: 'n' | 'e' | 's' | 'w' } | null = null;
   pos: Pos;
   facing: Dir = 'N';
   private stepFrom: Pos | null = null;
@@ -77,7 +93,9 @@ export class OverworldView {
     this.host.addEventListener('pointerdown', (e) => {
       if (!this.active || this.atDoor || this.events.blocked?.()) return;
       const t = this.tileAtClient(e.clientX, e.clientY);
+      const g = this.map.giverAt(t.x, t.y);
       if (t.x === this.map.guide.x && t.y === this.map.guide.y) this.walkToGuide();
+      else if (g) this.walkToGiver(g);
       else this.walkTo(t);
     });
     window.addEventListener('resize', () => this.active && this.layout());
@@ -119,6 +137,7 @@ export class OverworldView {
     this.held = null;
     this.queue = [];
     this.talkOnArrival = false;
+    this.giverOnArrival = null;
     this.atDoor = false;
     cancelAnimationFrame(this.raf);
     if (on) {
@@ -143,11 +162,12 @@ export class OverworldView {
     this.stepFrom = null;
     this.queue = [];
     this.talkOnArrival = false;
+    this.giverOnArrival = null;
     this.draw();
   }
   hold(d: Dir | null): void {
     if (d && this.atDoor) return;
-    if (d) this.talkOnArrival = false;
+    if (d) (this.talkOnArrival = false), (this.giverOnArrival = null);
     if (d && d !== this.held) {
       this.queue = [];
       this.held = d;
@@ -159,12 +179,28 @@ export class OverworldView {
     this.held = null;
     this.queue = [];
     this.talkOnArrival = false;
+    this.giverOnArrival = null;
   }
   walkTo(t: Pos): void {
     if (this.atDoor) return;
     this.queue = this.map.path(this.pos, t);
     this.held = null;
     this.talkOnArrival = false;
+    this.giverOnArrival = null;
+  }
+  walkToGiver(g: Giver): void {
+    const to = this.map.besideGiver(this.pos, g);
+    if (!to) return;
+    this.walkTo(to);
+    this.giverOnArrival = g;
+  }
+  /** Turns the player to the quest giver next to them; null when none is. */
+  faceGiver(): Giver | null {
+    const g = this.map.nearGiver(this.pos);
+    if (!g) return null;
+    this.facing = dirTo(this.pos, g);
+    this.draw();
+    return g;
   }
   walkToGuide(): void {
     const to = this.map.besideGuide(this.pos);
@@ -248,6 +284,10 @@ export class OverworldView {
       else if (this.talkOnArrival) {
         this.talkOnArrival = false;
         if (this.faceGuide()) this.events.talk();
+      } else if (this.giverOnArrival) {
+        const g = this.giverOnArrival;
+        this.giverOnArrival = null;
+        if (this.faceGiver()?.siteId === g.siteId) this.events.giver?.(g.siteId);
       } else if (this.held) this.tryStep(this.held);
     }
     this.draw();
@@ -267,7 +307,32 @@ export class OverworldView {
       { sprite: this.talking ? 'guide_talk' : 'guide', x: g.x * TILE + 8, y: g.y * TILE + 14, frame: Math.floor(t / 250), shadow: [1, 0, 6, 2], glow: [0, 0, 13, 5] },
       { sprite: SPRITE_OF[this.facing], x: p.x + 8, y: p.y + 14, frame: walkFrame, shadow: [0, 0, 6, 2] },
     ];
+    for (const q of this.map.givers)
+      actors.push({ sprite: this.map.giverSprite(q.siteId), x: q.x * TILE + 8, y: q.y * TILE + 14, frame: Math.floor(t / 500) + q.siteId, shadow: [1, 0, 7, 2] });
     const fr = this.renderer.render(v.x, v.y, t0, actors, this.reduceMotion);
+    // Quest marks are drawn over everything, like the door markers: a bubble over each quest giver, a site's
+    // Confusion by its building, and the arrow towards the next small step when that is off screen.
+    const bob = this.reduceMotion ? 0 : Math.floor(t0 / 400) % 2;
+    for (const q of this.map.givers) {
+      const mark = this.marks.get(q.siteId);
+      if (mark) fr.sprite(sprite(MARK_SPRITE[mark]), 0, q.x * TILE + 8 - v.x, q.y * TILE - 4 - bob - v.y);
+    }
+    for (const d of this.map.doors)
+      if (this.bosses.has(d.siteId)) fr.sprite(sprite('boss_mark'), this.reduceMotion ? 0 : Math.floor(t0 / 600), (d.bx + d.bw) * TILE - 9 - v.x, d.by * TILE + 12 - bob - v.y);
+    this.pointerShown = null;
+    if (this.pointer) {
+      const tx = this.pointer.x * TILE + 8 - v.x, ty = this.pointer.y * TILE + 8 - v.y;
+      if (tx < 0 || ty < 0 || tx >= NATIVE_W || ty >= NATIVE_H) {
+        const cx = NATIVE_W / 2, cy = NATIVE_H / 2;
+        const dx = tx - cx, dy = ty - cy;
+        // the point where the line from the centre to the target leaves the view, kept a margin inside it
+        const k = Math.min((cx - 10) / Math.max(1, Math.abs(dx)), (cy - 10) / Math.max(1, Math.abs(dy)));
+        const x = Math.round(cx + dx * k), y = Math.round(cy + dy * k);
+        const dir = Math.abs(dx) * (cy - 10) > Math.abs(dy) * (cx - 10) ? (dx > 0 ? 'e' : 'w') : dy > 0 ? 's' : 'n';
+        fr.sprite(sprite(`quest_arrow_${dir}`), 0, x + (dir === 'e' ? -bob : dir === 'w' ? bob : 0), y + (dir === 's' ? -bob : dir === 'n' ? bob : 0));
+        this.pointerShown = { x, y, dir };
+      }
+    }
     fr.present(this.out);
     this.g.putImageData(this.image, 0, 0);
     this.drawTimes.push(performance.now() - t0);

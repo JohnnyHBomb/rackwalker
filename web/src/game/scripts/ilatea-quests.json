@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../../contracts/dialogue.schema.json",
+  "id": "ilatea-quests",
+  "once": "ilatea.quests.seen",
+  "min_hint": "low",
+  "start": "giver",
+  "nodes": {
+    "giver": {
+      "speaker": "ilatea",
+      "text": "See the animal by each door, with a bubble? Walk up and press {key:interact}: they know what this site's records lack.",
+      "choices": [
+        {
+          "label": "I will ask them",
+          "next": null
+        },
+        {
+          "label": "Can I practise first?",
+          "next": "practice"
+        }
+      ]
+    },
+    "practice": {
+      "speaker": "ilatea",
+      "text": "Yes. The menu ({key:menu}) takes you to the practice island: a made-up site, where nothing you do reaches NetBox.",
+      "next": null
+    }
+  }
+}

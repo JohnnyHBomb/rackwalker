@@ -1,7 +1,7 @@
 // The proxy's game routes (contracts/openapi.yaml, /api/game/*): who is playing, and the game's own state (save
 // slots, settings, dialogue flags). The session is an HttpOnly cookie the page never sees; every write carries the
 // session's CSRF token in the X-RackWalker-CSRF header. Game state lives in the proxy's SQLite file, never in NetBox.
-import type { Flags, FlagsPatch, GameSession, GameSettings, GameState, SaveData, SaveSlot, SaveSlotId } from '../contracts/scene.gen';
+import type { ChangeResult, Flags, FlagsPatch, GameSession, GameSettings, GameState, GapList, Quest, QuestAnswer, QuestBoard, QuestScope, QuestVerdict, SaveData, SaveSlot, SaveSlotId } from '../contracts/scene.gen';
 import { SceneSourceError, errorFrom } from '../engine/source';
 
 export const CSRF_HEADER = 'X-RackWalker-CSRF';
@@ -14,6 +14,15 @@ export interface GameApi {
   save(slot: SaveSlotId, data: SaveData): Promise<SaveSlot>;
   settings(s: GameSettings): Promise<GameSettings>;
   flags(patch: FlagsPatch['flags']): Promise<Flags>;
+  /** Quests (contract 2.3.0): the log for a site or the whole estate, on the player's NetBox or the practice island. */
+  questBoard(scope: QuestScope, siteId?: number | null): Promise<QuestBoard>;
+  questAnswer(a: QuestAnswer): Promise<Quest>;
+  questPreview(scope: QuestScope, questId: string): Promise<ChangeResult>;
+  questApply(scope: QuestScope, questId: string): Promise<QuestVerdict>;
+  questVerify(questId: string): Promise<QuestVerdict>;
+  practiceReset(): Promise<QuestBoard>;
+  bossAck(scope: QuestScope, siteId: number): Promise<QuestBoard>;
+  gaps(siteId: number, offset?: number, limit?: number): Promise<GapList>;
 }
 
 export class HttpGameApi implements GameApi {
@@ -71,5 +80,29 @@ export class HttpGameApi implements GameApi {
   }
   flags(patch: FlagsPatch['flags']): Promise<Flags> {
     return this.call('PATCH', '/api/game/flags', { flags: patch } satisfies FlagsPatch);
+  }
+  questBoard(scope: QuestScope, siteId: number | null = null): Promise<QuestBoard> {
+    return this.call('GET', `/api/game/quests?scope=${scope}${siteId ? `&site_id=${siteId}` : ''}`);
+  }
+  questAnswer(a: QuestAnswer): Promise<Quest> {
+    return this.call('POST', '/api/game/quests/answer', a);
+  }
+  questPreview(scope: QuestScope, questId: string): Promise<ChangeResult> {
+    return this.call('POST', '/api/game/quests/preview', { scope, quest_id: questId });
+  }
+  questApply(scope: QuestScope, questId: string): Promise<QuestVerdict> {
+    return this.call('POST', '/api/game/quests/apply', { scope, quest_id: questId });
+  }
+  questVerify(questId: string): Promise<QuestVerdict> {
+    return this.call('POST', '/api/game/quests/verify', { scope: 'netbox', quest_id: questId });
+  }
+  practiceReset(): Promise<QuestBoard> {
+    return this.call('POST', '/api/game/practice/reset', {});
+  }
+  bossAck(scope: QuestScope, siteId: number): Promise<QuestBoard> {
+    return this.call('POST', '/api/game/boss/ack', { scope, site_id: siteId });
+  }
+  gaps(siteId: number, offset = 0, limit = 100): Promise<GapList> {
+    return this.call('GET', `/api/quests/gaps/${siteId}?offset=${offset}&limit=${limit}`);
   }
 }

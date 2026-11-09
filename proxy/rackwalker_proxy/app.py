@@ -31,7 +31,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import changes, game, perms, questroutes, scene, schema
+from . import changes, game, perms, practice, practice_scenes, questroutes, scene, schema
 from . import contracts_gen as c
 from .errors import STATUS_FOR, ApiError  # noqa: F401  (STATUS_FOR re-exported)
 from .gamestore import GameStore
@@ -281,23 +281,52 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
     async def world():
         return await read("/api/scene/world", scene.world)
 
+    async def island(request: Request) -> Any:
+        """The practice island as this browser's player has left it (the plain island without a session). Made-up
+        data: never read from NetBox, never cached with NetBox bodies."""
+        def ops() -> list[dict[str, Any]]:
+            try:
+                return app.state.game_store().practice_ops(app.state.game_require(request, False))
+            except ApiError:
+                return []
+        return practice.island(await run_in_threadpool(ops))
+
+    def made_up(body: dict[str, Any]) -> JSONResponse:
+        return JSONResponse(body, headers={"Cache-Control": "no-store"})
+
     @app.get("/api/scene/site/{site_id}", response_model=c.SiteScene)
-    async def site(site_id: Id):
+    async def site(request: Request, site_id: Id):
+        if site_id == practice.PRACTICE_SITE_ID:
+            return made_up(practice_scenes.site_scene(await island(request)))
         return await read(f"/api/scene/site/{site_id}", lambda nb: scene.site_scene(nb, site_id))
 
     @app.get("/api/scene/rack/{rack_id}", response_model=c.RackScene)
-    async def rack(rack_id: Id):
+    async def rack(request: Request, rack_id: Id):
+        if practice_scenes.is_practice(rack_id):
+            return made_up(practice_scenes.rack_scene(await island(request), rack_id))
         return await read(f"/api/scene/rack/{rack_id}", lambda nb: scene.rack_scene(nb, rack_id))
 
     @app.get("/api/device/{device_id}", response_model=c.DeviceDetail)
-    async def device(device_id: Id):
+    async def device(request: Request, device_id: Id):
+        if practice_scenes.is_practice(device_id):
+            return made_up(practice_scenes.device_detail(await island(request), device_id))
         return await read(f"/api/device/{device_id}", lambda nb: scene.device_detail(nb, device_id))
 
     @app.get("/api/trace/{kind}/{port_id}", response_model=c.TraceResponse)
-    async def trace(kind: str, port_id: Id):
+    async def trace(request: Request, kind: str, port_id: Id):
         if kind not in PORT_KINDS:
             raise ApiError("bad_request", f"Unknown port kind {kind!r}.", {"allowed": PORT_KINDS})
+        if practice_scenes.is_practice(port_id):
+            return made_up(practice_scenes.trace(await island(request), kind, port_id))
         return await read(f"/api/trace/{kind}/{port_id}", lambda nb: scene.trace(nb, kind, port_id))
+
+    def refuse_island(body: Any) -> None:
+        """The practice island is not in NetBox: the editor's change routes refuse its ids rather than ask NetBox about them."""
+        for op in body["ops"]:
+            ids = [op["target"].get("id"), *op.get("fields", {}).values()]
+            if any(isinstance(v, int) and not isinstance(v, bool) and practice_scenes.is_practice(v) for v in ids):
+                raise ApiError("bad_request", "That is the practice island: it is made up and is changed only through its quests, never "
+                               "through NetBox.", {"reason": "practice_island"})
 
     async def writer(request: Request) -> str:
         """The signed-in player behind a change request (the store may touch the disk, so off the event loop)."""
@@ -308,6 +337,7 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
         if s.write_enabled:
             await writer(request)  # a write-enabled proxy shows NetBox's state for writes only to a signed-in player
         cs = changeset(body)
+        refuse_island(body)
         if s.fixtures_dir:
             return fixture("POST", "/api/changes/preview")
         planned = await changes.preview(need_client(), cs)
@@ -321,6 +351,7 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
         if s.fixtures_dir:
             raise ApiError("bad_request", "Fixture mode never writes.")
         cs = changeset(body)
+        refuse_island(body)
         # The proxy's token never widens what a player may change: the player's own NetBox permissions must cover it.
         allowed = await app.state.may_write(uid)
         if allowed is not None:

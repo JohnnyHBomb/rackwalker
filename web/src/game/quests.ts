@@ -1,0 +1,675 @@
+// Quests in the browser: the conversation with a site's quest giver, the quest log, the marker to the next small step,
+// the preview-and-apply panel, and the reward moment. Everything a quest says, asks and proposes comes from the proxy
+// (contract 2.3.0: QuestBoard, Quest, QuestStep, QuestVerdict), which builds it from the player's own NetBox; this
+// module only shows it and sends the player's answers back. A line is never completed here: the proxy reads NetBox
+// again after the write and says what it found.
+//
+// Choice questions run in the shared dialogue bubble (scripts made by quest-script.ts); a typed value or a form (a
+// rack audit) opens a panel. "I don't know yet" is always there: the line is parked as a field task with a short
+// checklist, costs nothing, and asks the same question again later.
+import type { ChangeResult, Quest, QuestBoard, QuestScope, QuestStep, QuestTarget, QuestVerdict, Rewards, ToolId } from '../contracts/scene.gen';
+import { SceneSourceError } from '../engine/source';
+import type { GameApi } from './api';
+import type { Effects, Script } from './dialogue';
+import { drawPortrait } from './portraits';
+import { PICK, lineScript, offerScript, stepScript } from './quest-script';
+import { spriteCanvas } from './world/card';
+
+/** The practice island on the overworld: a made-up site far from anywhere, in a region of its own. Never NetBox data. */
+export const PRACTICE_SITE = { id: 9_000_001, name: 'Practice Island', latitude: 36, longitude: -38, theme: null, country: null } as const;
+export const scopeOf = (siteId: number): QuestScope => (siteId === PRACTICE_SITE.id ? 'practice' : 'netbox');
+
+export const TOOLS: Readonly<Record<ToolId, { name: string; icon: string; unlocks: string }>> = {
+  label_maker: { name: 'Label maker', icon: 'icon_label_maker', unlocks: 'In an audit it now suggests the next free asset tag of the site\'s own pattern. You still decide.' },
+  cable_tracer: { name: 'Cable tracer', icon: 'icon_cable_tracer', unlocks: 'Inside a building you can now trace a cable from any port to its far end.' },
+};
+
+const CSS = `
+#quest-next{position:fixed;left:8px;bottom:8px;z-index:15;max-width:min(520px,calc(100vw - 140px));font:14px/1.35 ui-monospace,monospace;color:#1d1a14;background:#f6efd9;
+  border:3px solid #1d1a14;padding:5px 9px;min-height:40px;cursor:pointer;text-align:left;display:flex;gap:8px;align-items:center}
+#quest-next b{white-space:nowrap}
+#quest-next span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+#quest-giver{position:fixed;left:8px;bottom:60px;z-index:15;font:13px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:4px 8px 4px 4px;
+  cursor:pointer;display:flex;gap:8px;align-items:center;min-height:44px}
+#quest-giver canvas{width:40px;height:40px;border:2px solid #1d1a14;image-rendering:pixelated}
+#quest-pin{position:fixed;z-index:14;pointer-events:none;font:bold 20px ui-monospace,monospace;color:#1d1a14;text-shadow:0 0 0 #000;transform:translate(-50%,-100%)}
+#quest-pin i{display:block;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:16px solid #1d1a14;position:relative}
+#quest-pin i::after{content:"";position:absolute;left:-7px;top:-14px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #fff27a}
+#quest-pin.bob{animation:quest-bob .8s steps(2) infinite}
+@keyframes quest-bob{50%{margin-top:-4px}}
+.quest-panel{width:min(640px,calc(100vw - 24px))}
+.quest-panel h3{font-size:15px;margin:12px 0 4px;text-transform:uppercase;letter-spacing:1px;border-bottom:2px solid #1d1a14}
+.quest-panel ul{margin:4px 0;padding-left:20px}
+.quest-panel .q{border:2px solid #1d1a14;background:#fffaf0;padding:6px 8px;margin:6px 0}
+.quest-panel .q .t{font-weight:bold}
+.quest-panel .q .s{font-size:13px}
+.quest-panel .tag{display:inline-block;border:2px solid #1d1a14;padding:0 5px;margin-right:6px;font-size:12px;text-transform:uppercase;background:#f6efd9}
+.quest-panel .tag.rank-connectivity::before{content:"◆ "}
+.quest-panel .tag.rank-identity::before{content:"● "}
+.quest-panel .tag.rank-layout::before{content:"■ "}
+.quest-panel .bar{height:10px;border:2px solid #1d1a14;background:#fffaf0;flex:1;min-width:80px}
+.quest-panel .bar i{display:block;height:100%;background:#1d1a14}
+.quest-panel .rewards{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.quest-panel .rewards canvas,.quest-reward canvas{vertical-align:middle;margin-right:4px}
+.quest-panel label.f{display:block;margin:8px 0 2px;font-weight:bold}
+.quest-panel .hint{font-size:13px;color:#4a4436}
+.quest-panel input[type=text],.quest-panel input[type=number],.quest-panel select{width:100%;box-sizing:border-box}
+.quest-panel table.diff td{font-size:13px;vertical-align:top}
+.quest-panel .said{font-size:13px}
+.quest-panel .mode{border:2px dashed #1d1a14;padding:6px 8px;margin:8px 0;background:#fffaf0}
+.quest-reward{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:40;width:min(560px,calc(100vw - 24px));box-sizing:border-box;background:#f6efd9;color:#1d1a14;
+  border:4px solid #1d1a14;box-shadow:0 0 0 2px #f6efd9,0 0 0 4px #1d1a14;padding:14px 16px;font:15px/1.45 ui-monospace,monospace;text-align:center}
+.quest-reward h2{margin:0 0 6px;font-size:18px;text-transform:uppercase;letter-spacing:1px}
+.quest-reward .xp{font-size:22px;font-weight:bold;margin:8px 0}
+.quest-reward .now{font-weight:bold}
+.quest-reward button{font:inherit;color:#1d1a14;background:#fffaf0;border:2px solid #1d1a14;padding:5px 12px;min-height:36px;cursor:pointer;margin-top:8px}
+.quest-reward .sparkle{position:absolute;inset:-18px;pointer-events:none;overflow:visible}
+.quest-reward .sparkle i{position:absolute;width:6px;height:6px;background:#fff27a;box-shadow:0 0 0 2px #1d1a14;transform:rotate(45deg);opacity:0;animation:quest-spark 1.6s ease-out forwards}
+@keyframes quest-spark{0%{opacity:0;transform:rotate(45deg) scale(.2)}25%{opacity:1}100%{opacity:0;transform:translateY(-22px) rotate(45deg) scale(1.2)}}
+body.quest-shake>#overworld,body.quest-shake>canvas{animation:quest-shake .28s steps(4)}
+@keyframes quest-shake{25%{transform:translate(2px,0)}50%{transform:translate(-2px,1px)}75%{transform:translate(1px,-1px)}}
+`;
+
+const STATUS_WORDS: Readonly<Record<Quest['status'], string>> = {
+  offered: 'on offer', active: 'in progress', ready: 'change ready to preview', parked: 'waiting for you (field task)', dismissed: 'not needed',
+  practised: 'practised (not written)', done: 'done',
+};
+
+export interface QuestHooks {
+  /** Plays a script in the shared bubble with the given quest giver as the speaker `giver`. */
+  talk(script: Script, cast: { name: string; sprite: string }): Promise<Effects>;
+  notice(text: string): void;
+  reduceMotion(): boolean;
+  /** Opens the level a target is on (inside its building). */
+  goTo(target: QuestTarget): void;
+  /** Boards, the tracked line or a panel changed: markers and key handling follow. */
+  changed(): void;
+  /** A line was completed (so Ilatea may say her one line about it). */
+  completed(v: QuestVerdict): void;
+  /** The audio hook for the confirm jingle (a stub until the game has music). */
+  jingle(name: 'confirm' | 'practice'): void;
+  giverSprite(siteId: number): string;
+  openGuide(who: 'nocti'): void;
+  player(): string;
+}
+
+const errText = (e: unknown) => (e instanceof Error ? e.message : String(e));
+function el<K extends keyof HTMLElementTagNameMap>(tag: K, text?: string, cls?: string): HTMLElementTagNameMap[K] {
+  const e = document.createElement(tag);
+  if (text !== undefined) e.textContent = text;
+  if (cls) e.className = cls;
+  return e;
+}
+function btn(label: string, id: string, run: () => void): HTMLButtonElement {
+  const b = el('button', label);
+  b.type = 'button';
+  b.id = id;
+  b.onclick = run;
+  return b;
+}
+
+export class Quests {
+  readonly boards: Record<QuestScope, QuestBoard | null> = { netbox: null, practice: null };
+  /** The line the marker follows: the one the player last worked on, else the most valuable open one. */
+  tracked: Quest | null = null;
+  private panel: HTMLElement | null = null;
+  private closePanel: (() => void) | null = null;
+  private readonly next = el('button');
+  private readonly giverBtn = el('button');
+  private readonly pin = el('div');
+  /** The site whose building the player is in, or null on the overworld. */
+  private inside: number | null = null;
+  lastVerdict: QuestVerdict | null = null;
+  lastError: string | null = null;
+
+  constructor(
+    private readonly host: HTMLElement,
+    private readonly api: GameApi,
+    private readonly hooks: QuestHooks,
+    private readonly screenOf: (entity: string) => { x: number; y: number } | null,
+  ) {
+    if (!document.getElementById('quest-css')) {
+      const s = el('style', CSS);
+      s.id = 'quest-css';
+      document.head.append(s);
+    }
+    this.next.id = 'quest-next';
+    this.next.type = 'button';
+    this.next.className = 'game-ui';
+    this.next.onclick = () => this.openLog();
+    this.giverBtn.id = 'quest-giver';
+    this.giverBtn.type = 'button';
+    this.giverBtn.className = 'game-ui';
+    this.giverBtn.style.display = 'none';
+    this.giverBtn.onclick = () => this.inside !== null && void this.talkToGiver(this.inside);
+    this.pin.id = 'quest-pin';
+    this.pin.className = 'game-ui';
+    this.pin.append(el('i'));
+    this.pin.style.display = 'none';
+    host.append(this.next, this.giverBtn, this.pin);
+    this.paintNext();
+    const tick = () => {
+      this.placePin();
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  get panelOpen(): boolean {
+    return this.panel !== null;
+  }
+  get panelId(): string | null {
+    return this.panel?.id ?? null;
+  }
+  board(siteId: number): QuestBoard | null {
+    return this.boards[scopeOf(siteId)];
+  }
+  rewards(): Rewards | null {
+    return this.boards.netbox?.rewards ?? null;
+  }
+  hasTool(t: ToolId): boolean {
+    return !!this.rewards()?.tools.includes(t);
+  }
+  giver(siteId: number): { name: string; sprite: string } {
+    const name = this.board(siteId)?.sites.find((s) => s.site_id === siteId)?.giver.name ?? 'Quest giver';
+    return { name, sprite: this.hooks.giverSprite(siteId) };
+  }
+  /** Open lines of a site in the order the proxy offers them. */
+  openAt(siteId: number): Quest[] {
+    return (this.board(siteId)?.quests ?? []).filter((q) => q.site_id === siteId && q.status !== 'done' && q.status !== 'dismissed');
+  }
+
+  /** Reads both logs again (the estate's and the practice island's). Failures are said, never swallowed. */
+  async refresh(): Promise<void> {
+    try {
+      const [netbox, practice] = await Promise.all([this.api.questBoard('netbox'), this.api.questBoard('practice')]);
+      this.boards.netbox = netbox;
+      this.boards.practice = practice;
+      this.lastError = null;
+    } catch (e) {
+      this.lastError = `The quest log could not be read: ${errText(e)}`;
+      if (!(e instanceof SceneSourceError && e.code === 'unauthorized')) this.hooks.notice(this.lastError);
+    }
+    const all = [...(this.boards.netbox?.quests ?? []), ...(this.boards.practice?.quests ?? [])];
+    const still = this.tracked && all.find((q) => q.id === this.tracked!.id && q.scope === this.tracked!.scope && q.status !== 'done' && q.status !== 'dismissed');
+    const nextId = this.boards.netbox?.next_quest_id;
+    this.tracked = still || all.find((q) => q.scope === 'netbox' && q.id === nextId) || null;
+    this.paintNext();
+    this.hooks.changed();
+  }
+
+  /** The player went into a site's building, or back out (null). */
+  setInside(siteId: number | null): void {
+    this.inside = siteId;
+    this.giverBtn.style.display = siteId === null ? 'none' : 'flex';
+    if (siteId !== null) {
+      const g = this.giver(siteId);
+      const c = drawPortrait('giver', 2, g);
+      const n = this.openAt(siteId).length;
+      this.giverBtn.replaceChildren(c, el('span', n ? `${g.name}: ${n} thing${n === 1 ? '' : 's'} to find out` : `${g.name}: all in order`));
+      this.giverBtn.title = `Talk to ${g.name}, this site's quest giver`;
+    }
+    this.paintNext();
+  }
+
+  private paintNext(): void {
+    const q = this.tracked;
+    const r = this.rewards();
+    const head = el('b', r ? `Quests · L${r.level} · ${r.xp} XP` : 'Quests');
+    const where = q?.target ? ` → ${q.target.label}` : '';
+    this.next.replaceChildren(head, el('span', q ? `Next: ${q.title}${where}` : this.lastError ? 'The quest log is not available right now.' : 'Nothing open: all in order.'));
+    this.next.title = 'Open the quest log';
+    this.next.dataset.quest = q?.id ?? '';
+  }
+
+  /** The marker over the object of the tracked line, when that object is on screen inside its building. */
+  private placePin(): void {
+    const t = this.tracked?.target;
+    const p = t && this.inside === t.site_id && !this.panel ? this.screenOf(t.entity) : null;
+    if (!p) {
+      this.pin.style.display = 'none';
+      return;
+    }
+    this.pin.style.display = 'block';
+    this.pin.style.left = `${p.x}px`;
+    this.pin.style.top = `${p.y - 6}px`;
+    this.pin.classList.toggle('bob', !this.hooks.reduceMotion());
+    this.pin.dataset.entity = t!.entity;
+  }
+  get pinShown(): string | null {
+    return this.pin.style.display === 'none' ? null : (this.pin.dataset.entity ?? null);
+  }
+
+  // ------------------------------------------------------------------------------------------- the conversation
+
+  /** Talking to a site's quest giver: how the site stands, and the lines on offer. */
+  async talkToGiver(siteId: number): Promise<void> {
+    if (this.panel) return;
+    const scope = scopeOf(siteId);
+    let board: QuestBoard;
+    try {
+      board = await this.api.questBoard(scope, siteId);
+    } catch (e) {
+      this.hooks.notice(`The quest giver cannot reach the quest log: ${errText(e)}`);
+      return;
+    }
+    const cast = this.giver(siteId);
+    const name = board.sites.find((s) => s.site_id === siteId)?.name ?? 'this site';
+    const eff = await this.hooks.talk(offerScript(board, name), cast);
+    const picked = eff.set[PICK];
+    if (picked === 'log') return this.openLog(siteId);
+    const quest = board.quests.find((q) => q.id === picked);
+    if (quest) await this.run(quest);
+    else if (board.all_in_order) await this.refresh();
+  }
+
+  /** Plays a line from where it stands until it is done, parked, closed by the player, or waits for a preview. */
+  async run(start: Quest): Promise<void> {
+    let q = start;
+    this.tracked = q;
+    this.paintNext();
+    const cast = this.giver(q.site_id);
+    try {
+      for (;;) {
+        if (q.status === 'done' || q.status === 'dismissed') break;
+        if (q.status === 'ready' || q.status === 'practised') {
+          const v = await this.preview(q);
+          if (!v) break;
+          if (v === 'restart') {
+            q = await this.api.questAnswer({ scope: q.scope, quest_id: q.id, step: 'restart' });
+            continue;
+          }
+          await this.reward(v);
+          q = v.quest;
+          if (v.complete || v.mode !== 'real' || q.status !== 'active') break;
+          continue;
+        }
+        const step = q.step;
+        if (!step) {
+          await this.fieldTask(q);
+          break;
+        }
+        const ans = step.input === 'choice' ? await this.ask(step, cast) : await this.form(q, step);
+        if (!ans) break;
+        q = await this.api.questAnswer({ scope: q.scope, quest_id: q.id, step: step.id, ...ans });
+        this.tracked = q;
+        this.paintNext();
+        if (q.status === 'parked') {
+          await this.fieldTask(q);
+          break;
+        }
+        if (q.status === 'dismissed') {
+          await this.hooks.talk(lineScript('Good to know: that is how it is. I will not ask about it again.'), cast);
+          break;
+        }
+      }
+    } catch (e) {
+      this.hooks.notice(`That quest could not go on: ${errText(e)}`);
+    }
+    await this.refresh();
+  }
+
+  private async ask(step: QuestStep, cast: { name: string; sprite: string }): Promise<{ choice: string } | null> {
+    const eff = await this.hooks.talk(stepScript(step), cast);
+    const picked = eff.set[PICK];
+    return typeof picked === 'string' ? { choice: picked } : null;
+  }
+
+  // ------------------------------------------------------------------------------------------- panels
+
+  private open(id: string, title: string): { el: HTMLElement; done: Promise<void>; close: () => void } {
+    this.close();
+    const p = el('div');
+    p.id = id;
+    p.className = 'game-panel quest-panel game-ui';
+    p.setAttribute('role', 'dialog');
+    p.setAttribute('aria-label', title);
+    p.append(el('h2', title));
+    let finish!: () => void;
+    const done = new Promise<void>((r) => (finish = r));
+    const close = () => {
+      if (this.panel !== p) return;
+      p.remove();
+      this.panel = null;
+      this.closePanel = null;
+      finish();
+      this.hooks.changed();
+    };
+    this.panel = p;
+    this.closePanel = close;
+    this.host.append(p);
+    this.hooks.changed();
+    return { el: p, done, close };
+  }
+  /** Closes whatever quest panel is open (the cancel key, the menu taking over). */
+  close(): void {
+    this.closePanel?.();
+  }
+
+  /** A typed value or a short form (a rack audit, a site record). Null when the player closes it. */
+  private async form(q: Quest, step: QuestStep): Promise<{ text?: string; choice?: string; values?: Record<string, string | number | null> } | null> {
+    const { el: p, done, close } = this.open('quest-step', q.title);
+    let out: { text?: string; choice?: string; values?: Record<string, string | number | null> } | null = null;
+    p.append(el('p', step.prompt));
+    if (step.error) {
+      const e = el('p', step.error, 'error');
+      e.id = 'quest-step-error';
+      e.setAttribute('role', 'alert');
+      p.append(e);
+    }
+    const inputs = new Map<string, HTMLInputElement | HTMLSelectElement>();
+    if (step.input === 'text') {
+      const i = el('input');
+      i.type = 'text';
+      i.id = 'quest-text';
+      i.maxLength = 200;
+      i.setAttribute('aria-label', step.prompt);
+      if (step.hint) p.append(el('p', step.hint, 'hint'));
+      p.append(i);
+      inputs.set('', i);
+    } else {
+      if (step.hint) p.append(el('p', step.hint, 'hint'));
+      step.fields.forEach((f, n) => {
+        const label = el('label', f.label, 'f');
+        const id = `quest-field-${n}`;
+        label.htmlFor = id;
+        let input: HTMLInputElement | HTMLSelectElement;
+        if (f.type === 'select') {
+          input = el('select');
+          input.append(new Option('(not known yet)', ''), ...f.options.map((o) => new Option(o.label, o.id)));
+        } else {
+          input = el('input');
+          input.type = f.type === 'number' ? 'number' : 'text';
+          if (f.type === 'number') input.step = 'any';
+        }
+        input.id = id;
+        input.dataset.field = f.id;
+        p.append(label, input);
+        if (f.hint) p.append(el('div', f.hint, 'hint'));
+        if (f.suggestion) {
+          // The label maker proposes; the player decides. Nothing is filled in until they press the button.
+          const use = btn(`Use ${f.suggestion}`, `${id}-suggest`, () => ((input as HTMLInputElement).value = f.suggestion!));
+          use.title = 'Label maker: the next free tag of this site\'s pattern';
+          p.append(use);
+        }
+        inputs.set(f.id, input);
+      });
+    }
+    const row = el('div', undefined, 'row');
+    const send = () => {
+      if (step.input === 'text') {
+        const v = (inputs.get('') as HTMLInputElement).value.trim();
+        out = v ? { text: v } : { choice: 'unknown' };
+      } else {
+        const values: Record<string, string | number | null> = {};
+        for (const [id, i] of inputs) if (i.value.trim()) values[id] = i.value.trim();
+        out = { values };
+      }
+      close();
+    };
+    row.append(
+      btn(step.input === 'text' ? 'Answer' : 'Preview what I filled in', 'quest-step-send', send),
+      btn("I don't know yet", 'quest-step-unknown', () => ((out = step.input === 'text' ? { choice: 'unknown' } : { values: {} }), close())),
+      btn('Close', 'quest-step-close', close),
+    );
+    p.append(row);
+    p.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') (e.preventDefault(), send());
+    });
+    (p.querySelector('input,select') as HTMLElement | null)?.focus();
+    await done;
+    return out;
+  }
+
+  /** A parked line: what to look for on site. It stays open, costs nothing, and resumes at the same question. */
+  private async fieldTask(q: Quest): Promise<void> {
+    const { el: p, done, close } = this.open('quest-field-task', `Field task: ${q.title}`);
+    p.append(el('p', q.note ?? 'No rush. This stays in your quest log, nothing is lost, and it picks up at the same question when you know more.'));
+    if (q.checklist.length) {
+      p.append(el('h3', 'What to look for on site'));
+      const ul = el('ul');
+      ul.id = 'quest-checklist';
+      for (const c of q.checklist) ul.append(el('li', c));
+      p.append(ul);
+    }
+    const row = el('div', undefined, 'row');
+    row.append(btn('OK, I will look', 'quest-field-ok', close), btn("Nocti's hardware notes", 'quest-field-nocti', () => (close(), this.hooks.openGuide('nocti'))));
+    p.append(row);
+    (p.querySelector('#quest-field-ok') as HTMLElement).focus();
+    await done;
+  }
+
+  /** The change a ready line proposes, as the proxy previews it; Apply writes it (or runs it as practice). */
+  private async preview(q: Quest): Promise<QuestVerdict | 'restart' | null> {
+    const board = this.boards[q.scope];
+    let res: ChangeResult;
+    try {
+      res = await this.api.questPreview(q.scope, q.id);
+    } catch (e) {
+      this.hooks.notice(`The preview could not be made: ${errText(e)}`);
+      return null;
+    }
+    const { el: p, done, close } = this.open('quest-preview', `Preview: ${q.title}`);
+    let out: QuestVerdict | 'restart' | null = null;
+    if (q.said.length) {
+      p.append(el('h3', 'You said'));
+      const ul = el('ul', undefined, 'said');
+      for (const s of q.said) ul.append(el('li', `${s.question} → ${s.answer}`));
+      p.append(ul);
+    }
+    p.append(el('h3', 'What would change in NetBox'));
+    const table = el('table', undefined, 'diff');
+    table.id = 'quest-diff';
+    const bad = res.ops.some((o) => o.status === 'error');
+    for (const o of res.ops) {
+      const tr = el('tr');
+      const what = el('td', `${o.op.replace(/_/g, ' ')}${o.target.id !== null && typeof o.target.id === 'number' ? ` (${o.target.kind} ${o.target.id})` : ''}`);
+      const body = el('td');
+      if (o.error) body.append(el('div', o.error.message, 'error'));
+      else if (o.status === 'skipped') body.textContent = 'not run';
+      else if (o.status === 'no_change') body.textContent = 'already so in NetBox';
+      else for (const d of o.diff) body.append(el('div', `${d.field}: ${show(d.before)} → ${show(d.after)}`));
+      tr.append(what, body);
+      table.append(tr);
+    }
+    p.append(table);
+    const real = !!board?.can_write && q.scope === 'netbox';
+    const mode = el('p', real
+      ? `Apply writes this to NetBox; its changelog will name you (${this.hooks.player()}). NetBox is then read again to check the outcome.`
+      : `${board?.write_blocked ?? 'Nothing is written.'} This is a practice run: no XP.`, 'mode');
+    mode.id = 'quest-mode';
+    mode.dataset.mode = real ? 'real' : q.scope === 'practice' ? 'practice' : 'dry_run';
+    p.append(mode);
+    const row = el('div', undefined, 'row');
+    const apply = btn(real ? 'Apply to NetBox' : 'Practice run', 'quest-apply', () => {
+      apply.disabled = true;
+      apply.textContent = 'Working…';
+      void this.api.questApply(q.scope, q.id).then(
+        (v) => ((out = v), close()),
+        (e) => {
+          apply.disabled = false;
+          apply.textContent = real ? 'Apply to NetBox' : 'Practice run';
+          const err = el('p', `Nothing was confirmed: ${errText(e)}`, 'error');
+          err.id = 'quest-apply-error';
+          err.setAttribute('role', 'alert');
+          p.querySelector('#quest-apply-error')?.remove();
+          p.append(err);
+        },
+      );
+    });
+    if (bad) apply.disabled = true;
+    row.append(apply, btn('Answer again from the start', 'quest-restart', () => ((out = 'restart'), close())), btn('Close', 'quest-preview-close', close));
+    p.append(row);
+    (bad ? (p.querySelector('#quest-restart') as HTMLElement) : apply).focus();
+    await done;
+    return out;
+  }
+
+  /** The reward moment: what NetBox confirmed, what the admin can now do, XP, tools. Feedback you can feel. */
+  private async reward(v: QuestVerdict): Promise<void> {
+    this.lastVerdict = v;
+    const calm = this.hooks.reduceMotion();
+    const box = el('div', undefined, 'quest-reward game-ui');
+    box.id = 'quest-reward';
+    box.setAttribute('role', 'alertdialog');
+    box.dataset.mode = v.mode;
+    box.dataset.verified = String(v.verified);
+    const real = v.mode === 'real';
+    box.append(el('h2', real ? (v.complete ? 'NetBox confirms it' : v.verified ? 'Partly confirmed' : 'Not confirmed yet') : v.complete ? 'Practice complete' : 'Practice run'));
+    box.append(el('p', v.message));
+    if (v.can_now) box.append(el('p', v.can_now, 'now'));
+    if (v.trace) box.append(el('p', v.trace, 'hint'));
+    if (v.xp_awarded > 0) {
+      const xp = el('div', undefined, 'xp');
+      xp.id = 'quest-xp';
+      xp.append(spriteCanvas('icon_xp', 3), `+${v.xp_awarded} XP`);
+      box.append(xp);
+    } else if (!real) box.append(el('p', 'Practice pays no XP; the real thing does, once NetBox confirms it.', 'hint'));
+    for (const t of v.unlocked) {
+      const row = el('p');
+      row.className = 'tool';
+      row.append(spriteCanvas(TOOLS[t].icon, 3), el('b', `New tool: ${TOOLS[t].name}. `), TOOLS[t].unlocks);
+      box.append(row);
+    }
+    if (v.potions_awarded > 0) {
+      const row = el('p');
+      row.append(spriteCanvas('icon_potion', 3), `Level ${v.rewards.level}! A potion for the road.`);
+      box.append(row);
+    }
+    let finish!: () => void;
+    const done = new Promise<void>((r) => (finish = r));
+    const ok = btn('Onwards', 'quest-reward-ok', () => (box.remove(), finish()));
+    box.append(el('div'), ok);
+    const felt = v.complete && (real ? v.verified : true);
+    if (felt && !calm) {
+      const sp = el('div', undefined, 'sparkle');
+      for (let i = 0; i < 10; i++) {
+        const s = el('i');
+        s.style.left = `${5 + ((i * 37) % 90)}%`;
+        s.style.top = `${10 + ((i * 53) % 80)}%`;
+        s.style.animationDelay = `${(i % 5) * 0.12}s`;
+        sp.append(s);
+      }
+      box.append(sp);
+      document.body.classList.add('quest-shake');
+      window.setTimeout(() => document.body.classList.remove('quest-shake'), 320);
+    }
+    if (felt) this.hooks.jingle(real ? 'confirm' : 'practice');
+    this.panel = box;
+    this.closePanel = () => ok.click();
+    this.host.append(box);
+    this.hooks.changed();
+    ok.focus();
+    await done;
+    this.panel = null;
+    this.closePanel = null;
+    this.hooks.changed();
+    if (v.complete) this.hooks.completed(v);
+  }
+
+  /** The quest log: rewards, each site's progress, and every line the player has open, waiting or done. */
+  openLog(siteId: number | null = null): void {
+    const { el: p, close } = this.open('quest-log', 'Quest log');
+    const r = this.rewards();
+    if (r) {
+      const row = el('div', undefined, 'rewards');
+      row.id = 'quest-rewards';
+      const xp = el('span');
+      xp.append(spriteCanvas('icon_xp', 2), `Level ${r.level} · ${r.xp} / ${r.next_level_xp} XP`);
+      const pot = el('span');
+      pot.append(spriteCanvas('icon_potion', 2), `${r.potions} potion${r.potions === 1 ? '' : 's'}`);
+      row.append(xp, pot);
+      for (const t of r.tools) {
+        const s = el('span');
+        s.title = TOOLS[t].unlocks;
+        s.append(spriteCanvas(TOOLS[t].icon, 2), TOOLS[t].name);
+        row.append(s);
+      }
+      p.append(row);
+      const counts = el('p', `${r.completed} confirmed by NetBox · ${r.practised} practised` + (r.lapsed ? ` · ${r.lapsed} since undone in NetBox (nothing is reopened; it is only counted)` : ''), 'hint');
+      counts.id = 'quest-counts';
+      p.append(counts);
+    }
+    if (this.lastError) p.append(el('p', this.lastError, 'error'));
+    const sites = [...(this.boards.netbox?.sites ?? []), ...(this.boards.practice?.sites ?? [])];
+    const quests = [...(this.boards.netbox?.quests ?? []), ...(this.boards.practice?.quests ?? [])];
+    const section = (title: string, list: Quest[], id: string) => {
+      if (!list.length) return;
+      p.append(el('h3', title));
+      const box = el('div');
+      box.id = id;
+      for (const q of list) {
+        const card = el('div', undefined, 'q');
+        card.dataset.quest = q.id;
+        card.dataset.status = q.status;
+        const site = sites.find((s) => s.site_id === q.site_id)?.name ?? '';
+        const t = el('div', undefined, 't');
+        t.append(el('span', q.rank, `tag rank-${q.rank}`), q.title);
+        card.append(t, el('div', `${site}${q.scope === 'practice' ? ' (practice, never NetBox)' : ''} · ${STATUS_WORDS[q.status]}${q.lapsed ? ' · since undone in NetBox' : ''} · about ${q.minutes} min`, 's'));
+        if (q.status !== 'done' && q.status !== 'dismissed') {
+          card.append(el('div', q.purpose, 's'));
+          if (q.status === 'parked' && q.checklist.length) card.append(el('div', `Look for: ${q.checklist[0]}`, 's'));
+          else if (q.step) card.append(el('div', `Next step: ${q.step.prompt}`, 's'));
+          const row = el('div', undefined, 'row');
+          row.append(btn(q.status === 'offered' ? 'Start' : q.status === 'parked' ? 'I know more now' : q.status === 'ready' || q.status === 'practised' ? 'Show the change' : 'Carry on', `quest-go-${box.children.length}`,
+            () => (close(), void this.run(q))));
+          if (q.target) row.append(btn('Point me there', `quest-track-${box.children.length}`, () => {
+            this.tracked = q;
+            this.paintNext();
+            close();
+            this.hooks.goTo(q.target!);
+          }));
+          card.append(row);
+        }
+        box.append(card);
+      }
+      p.append(box);
+    };
+    const mine = quests.filter((q) => siteId === null || q.site_id === siteId);
+    section('Open', mine.filter((q) => ['offered', 'active', 'ready'].includes(q.status)), 'quest-open');
+    section('Waiting for you', mine.filter((q) => q.status === 'parked' || q.status === 'practised'), 'quest-waiting');
+    section('Done', mine.filter((q) => q.status === 'done' || q.status === 'dismissed'), 'quest-done');
+    if (!mine.length) p.append(el('p', siteId === null ? (this.boards.netbox?.message ?? 'No quests yet.') : 'Nothing open here: all in order.'));
+    p.append(el('h3', 'Sites'));
+    const st = el('div');
+    st.id = 'quest-sites';
+    for (const s of sites) {
+      const row = el('div', undefined, 'row');
+      row.dataset.site = String(s.site_id);
+      const bar = el('div', undefined, 'bar');
+      const fill = el('i');
+      fill.style.width = `${s.completeness.percent}%`;
+      bar.append(fill);
+      bar.setAttribute('role', 'img');
+      bar.setAttribute('aria-label', `${s.completeness.percent} percent complete`);
+      row.append(el('span', `${s.name}: ${s.completeness.percent}%`), bar);
+      if (s.boss_ready) {
+        row.append(spriteCanvas('boss_mark', 2));
+        if (s.boss_acknowledged) row.append(el('span', 'Its Confusion waits for you.'));
+        else row.append(btn('Its Confusion is ready: acknowledge', `quest-boss-${s.site_id}`, () => void this.ackBoss(s.site_id).then(() => this.openLog(siteId))));
+      } else row.append(el('span', `${s.completeness.open} open`, 'hint'));
+      st.append(row);
+    }
+    p.append(st);
+    const foot = el('div', undefined, 'row');
+    foot.append(btn('◀ Close', 'quest-log-close', close), btn('Read NetBox again', 'quest-log-refresh', () => void this.refresh().then(() => this.openLog(siteId))));
+    if (this.boards.practice?.quests.some((q) => q.status === 'done') || (this.boards.practice?.rewards.practised ?? 0) > 0)
+      foot.append(btn('Start the practice island afresh', 'quest-practice-reset', () => void this.api.practiceReset().then(() => this.refresh()).then(() => this.openLog(siteId))));
+    p.append(foot);
+    (p.querySelector('#quest-go-0') as HTMLElement | null ?? (p.querySelector('#quest-log-close') as HTMLElement)).focus();
+  }
+
+  /** The site's Confusion has been seen. The fight itself comes with the combat slice: this only acknowledges it. */
+  async ackBoss(siteId: number): Promise<void> {
+    try {
+      this.boards[scopeOf(siteId)] = await this.api.bossAck(scopeOf(siteId), siteId);
+    } catch (e) {
+      this.hooks.notice(`That could not be saved: ${errText(e)}`);
+    }
+    this.hooks.changed();
+  }
+}
+
+function show(v: unknown): string {
+  return v === null || v === undefined || v === '' ? '(empty)' : String(v);
+}

@@ -17,12 +17,21 @@ import { actionOf, DEFAULT_SETTINGS, ISO_FIXED, ISO_FIXED_KEYS, ISO_KEYS, keysLa
 import { OverworldMap, type Dir, type Door, type Pos } from './overworld';
 import { OverworldView } from './overworld-view';
 import { buildingCard } from './world/card';
+import { PRACTICE_SITE, Quests, scopeOf } from './quests';
+import type { QuestTarget, QuestVerdict } from '../contracts/scene.gen';
 import { capturingKey, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
 import emptyJson from './scripts/ilatea-empty.json';
 import introJson from './scripts/ilatea-intro.json';
 import firstBuildingJson from './scripts/ilatea-first-building.json';
 import menuJson from './scripts/ilatea-menu.json';
 import stuckJson from './scripts/ilatea-stuck.json';
+import airfieldJson from './scripts/ilatea-airfield.json';
+import questsJson from './scripts/ilatea-quests.json';
+import practiceJson from './scripts/ilatea-practice.json';
+import practiceConnectivityJson from './scripts/ilatea-practice-connectivity.json';
+import practiceIdentityJson from './scripts/ilatea-practice-identity.json';
+import practiceLayoutJson from './scripts/ilatea-practice-layout.json';
+import tracerJson from './scripts/ilatea-tracer.json';
 
 export const SCRIPTS = {
   intro: loadScript(introJson),
@@ -30,6 +39,13 @@ export const SCRIPTS = {
   firstBuilding: loadScript(firstBuildingJson),
   stuck: loadScript(stuckJson),
   menu: loadScript(menuJson),
+  airfield: loadScript(airfieldJson),
+  quests: loadScript(questsJson),
+  practice: loadScript(practiceJson),
+  practiceConnectivity: loadScript(practiceConnectivityJson),
+  practiceIdentity: loadScript(practiceIdentityJson),
+  practiceLayout: loadScript(practiceLayoutJson),
+  tracer: loadScript(tracerJson),
 } as const;
 
 /** What the overworld needs to know about a site. */
@@ -61,6 +77,12 @@ export class GameShell {
   map: OverworldMap | null = null;
   overworld: OverworldView | null = null;
   readonly dialogue: DialogueBox;
+  /** Quests: the givers' conversations, the log, the marker, preview and apply, rewards (quests.ts). */
+  quests: Quests | null = null;
+  /** Sites NetBox really has (the map also holds the practice island). */
+  private realSites = 0;
+  /** The last jingle the game asked for (the hook the music will take over). */
+  lastJingle: string | null = null;
   /** The site whose building the player is in (scene iso). */
   siteId: number | null = null;
   private owPos: Pos = { x: 0, y: 0 };
@@ -134,7 +156,9 @@ export class GameShell {
     this.flags = { ...this.state.flags };
     this.applyMotion();
     const sites = world.sites.map((w) => w.site);
-    this.map = new OverworldMap(sites.map(worldSite));
+    this.realSites = sites.length;
+    // The practice island is a made-up site in a region of its own: reached by the airfield pad or from the menu.
+    this.map = new OverworldMap([...sites.map(worldSite), PRACTICE_SITE]);
     const save = this.state.saves.find((s) => s.slot === 'auto')?.data ?? null;
     this.owPos = this.map.clampPos(save ? { x: save.overworld.x, y: save.overworld.y } : this.map.start);
     this.owFacing = save?.overworld.facing ?? 'N';
@@ -142,9 +166,23 @@ export class GameShell {
       door: (d) => void this.enter(d),
       moved: (p, f) => this.moved(p, f),
       talk: () => this.talkToGuide(),
-      blocked: () => this.dialogue.open || !!this.menu || !!document.getElementById('signin'),
+      blocked: () => this.dialogue.open || !!this.menu || !!this.quests?.panelOpen || !!document.getElementById('signin'),
       travelled: (to) => this.travelled(to),
+      giver: (siteId) => this.talkToGiver(siteId),
     }, this.owPos, this.owFacing);
+    this.quests = new Quests(this.host, this.api, {
+      talk: (script, cast) => this.talkAs(script, cast),
+      notice: (text) => this.notice(text),
+      reduceMotion: () => this.settings.reduce_motion,
+      goTo: (t) => this.goToTarget(t),
+      changed: () => this.questsChanged(),
+      completed: (v) => this.questCompleted(v),
+      jingle: (name) => this.jingle(name),
+      giverSprite: (siteId) => this.map!.giverSprite(siteId),
+      openGuide: (who) => this.openMenu(who),
+      player: () => this.state?.player.display_name ?? this.state?.player.username ?? 'you',
+    }, (entity) => this.view.screenOf(entity));
+    void this.quests.refresh();
     this.view.navGuard = (t) => this.guard(t);
     const prevUpdate = this.view.onUpdate;
     this.view.onUpdate = () => {
@@ -173,7 +211,7 @@ export class GameShell {
     }
     if (!restored) this.showOverworld();
     this.lastSaved = JSON.stringify(this.saveData());
-    if (this.scene === 'overworld') void this.autoTalk(this.map.doors.length ? SCRIPTS.intro : SCRIPTS.empty);
+    if (this.scene === 'overworld') void this.autoTalk(this.realSites ? SCRIPTS.intro : SCRIPTS.empty);
     window.setInterval(() => this.stuckCheck(), 1000);
   }
 
@@ -221,6 +259,7 @@ export class GameShell {
 
   private showOverworld(): void {
     this.siteId = null;
+    this.quests?.setInside(null);
     this.setScene('overworld');
     this.overworld!.show(true);
     this.overworld!.place(this.owPos, this.owFacing);
@@ -232,6 +271,7 @@ export class GameShell {
     await this.view.goto(t, 'none');
     this.overworld?.show(false);
     this.siteId = siteId;
+    this.quests?.setInside(siteId);
     this.setScene('iso');
     if (camera) this.view.setCamera({ cx: camera.cx, cy: camera.cy, scale: camera.scale as RenderScale });
   }
@@ -319,6 +359,102 @@ export class GameShell {
     this.owFacing = f;
     this.owSince = performance.now();
     this.scheduleSave();
+    this.questsChanged();
+    // Ilatea's one line when the player first comes near something new (each said once, never again).
+    const map = this.map!;
+    const near = (t: Pos | null | undefined, d: number) => !!t && Math.abs(t.x - p.x) + Math.abs(t.y - p.y) <= d;
+    const region = map.regionAt(p);
+    if (region.siteIds.includes(PRACTICE_SITE.id)) void this.autoTalk(SCRIPTS.practice);
+    else if (near(region.airfield, 3)) void this.autoTalk(SCRIPTS.airfield);
+    else if (map.givers.some((g) => near(g, 2)) && this.flags['ilatea.intro.seen']) void this.autoTalk(SCRIPTS.quests);
+  }
+
+  // ------------------------------------------------------------------------------------------- quests
+
+  /** A script spoken by a site's quest giver. The flags it sets are the player's answer: read by quests.ts, never stored. */
+  private async talkAs(script: Script, cast: { name: string; sprite: string }): Promise<Effects> {
+    if (this.dialogue.open) this.dialogue.close();
+    this.overworld?.stop();
+    this.dialogue.reduceMotion = this.settings.reduce_motion;
+    this.dialogue.cast = cast;
+    const eff = await this.dialogue.play(script, this.flags, (a) => keysLabel(this.settings.keys, a));
+    this.owSince = performance.now();
+    return eff;
+  }
+
+  talkToGiver(siteId: number): void {
+    if (this.dialogue.open || this.menu || this.quests?.panelOpen) return;
+    this.owSince = performance.now();
+    void this.quests?.talkToGiver(siteId);
+  }
+
+  /** Markers follow the quest log: the bubble over each giver, a ready Confusion, the pointer to the next small step. */
+  private questsChanged(): void {
+    const q = this.quests, ow = this.overworld, map = this.map;
+    if (!q || !ow || !map) return;
+    ow.marks.clear();
+    ow.bosses.clear();
+    for (const d of map.doors) {
+      const board = q.board(d.siteId);
+      const site = board?.sites.find((s) => s.site_id === d.siteId);
+      if (!board || !site) continue;
+      const lines = board.quests.filter((x) => x.site_id === d.siteId);
+      const fresh = lines.some((x) => x.status === 'offered' || x.status === 'active' || x.status === 'ready');
+      const waiting = lines.some((x) => x.status === 'parked' || x.status === 'practised');
+      ow.marks.set(d.siteId, fresh || (!waiting && site.open_quests > 0) ? 'offer' : waiting ? 'wait' : 'clear');
+      if (site.boss_ready && !site.boss_acknowledged) ow.bosses.add(d.siteId);
+    }
+    const target = q.tracked?.target;
+    const giver = target ? map.giverOf(target.site_id) : null;
+    ow.pointer = giver ? { x: giver.x, y: giver.y } : null;
+    document.body.dataset.tracer = q.rewards() && !q.hasTool('cable_tracer') ? 'locked' : 'open';
+  }
+
+  /** "Point me there": inside the right building, open the level the object is on; else the overworld pointer leads to it. */
+  private goToTarget(t: QuestTarget): void {
+    const view = parseView(t.view);
+    if (this.scene === 'iso' && this.siteId === t.site_id && view) void this.view.goto(view, 'none').catch((e) => this.notice(`That place cannot be opened: ${errText(e)}`));
+    this.questsChanged();
+  }
+
+  /** After a completed practice line, Ilatea says her one line about that kind of quest (once each, hint level allowing). */
+  private questCompleted(v: QuestVerdict): void {
+    if (v.quest.scope !== 'practice') return;
+    const s = { connectivity: SCRIPTS.practiceConnectivity, identity: SCRIPTS.practiceIdentity, layout: SCRIPTS.practiceLayout }[v.quest.rank];
+    void this.autoTalk(s);
+  }
+
+  /**
+   * A gate that opens with a tool: inside a building, tracing a cable needs the cable tracer (earned with the first
+   * connectivity quest NetBox confirms). The plain viewer (?view=) has no game and traces as before.
+   */
+  mayTrace(): boolean {
+    if (this.scene !== 'iso' || document.body.dataset.tracer !== 'locked') return true;
+    void this.talk(SCRIPTS.tracer);
+    return false;
+  }
+
+  /** The audio hook for a confirmed fix: a stub until the game has music; it only records and announces the cue. */
+  private jingle(name: string): void {
+    this.lastJingle = name;
+    window.dispatchEvent(new CustomEvent('rackwalker:jingle', { detail: { name, muted: this.settings.audio.muted } }));
+  }
+
+  /** The practice island, from the menu: the player stands in front of its hut. */
+  goToPractice(): void {
+    const door = this.map?.doorOf(PRACTICE_SITE.id);
+    if (!door) return;
+    this.closeMenu();
+    const go = () => {
+      this.owPos = { x: door.x, y: door.y + 2 };
+      this.owFacing = 'N';
+      this.showOverworld();
+      this.saveNow();
+      this.questsChanged();
+      void this.autoTalk(SCRIPTS.practice);
+    };
+    if (this.scene === 'iso') void this.leave().then(go);
+    else go();
   }
 
   // ------------------------------------------------------------------------------------------- save
@@ -513,7 +649,7 @@ export class GameShell {
 
   /** Starts a script if the hint level and its `once` flag allow it. */
   async autoTalk(s: Script): Promise<void> {
-    if (this.dialogue.open || this.menu || !mayAutoStart(s, this.flags, this.settings.hint_level)) return;
+    if (this.dialogue.open || this.menu || this.quests?.panelOpen || !mayAutoStart(s, this.flags, this.settings.hint_level)) return;
     await this.talk(s);
   }
 
@@ -521,6 +657,7 @@ export class GameShell {
     if (this.dialogue.open) this.dialogue.close();
     this.overworld?.stop();
     this.dialogue.reduceMotion = this.settings.reduce_motion;
+    this.dialogue.cast = null;
     const playing = this.dialogue.play(s, this.flags, (a) => keysLabel(this.settings.keys, a));
     if (s.once) this.persistFlags({ [s.once]: true }); // seen as soon as it shows: never repeats, even after a reload
     const eff: Effects = await playing;
@@ -544,7 +681,7 @@ export class GameShell {
 
   private stuckCheck(): void {
     if (this.scene !== 'overworld' || this.flags[VISITED] || this.dialogue.open || this.menu || this.overworld?.walking) return;
-    if (!this.map?.doors.length) return; // no building to point at: the empty-world line already said what to do
+    if (!this.realSites) return; // no building to point at: the empty-world line already said what to do
     if (performance.now() - this.owSince >= this.stuckMs) void this.autoTalk(SCRIPTS.stuck);
   }
 
@@ -606,6 +743,7 @@ export class GameShell {
   openMenu(page: 'menu' | 'settings' | 'byte' | 'nocti' = 'menu'): void {
     if (this.scene === 'signin' || this.scene === 'loading') return;
     this.overworld?.stop(); // a tap-walk under the menu would walk on, and could go into a building
+    this.quests?.close();
     this.menu?.remove();
     const back = () => this.openMenu();
     if (page === 'settings') this.menu = settingsPanel(this.host, this.settings, (s) => this.saveSettings(s), back);
@@ -617,6 +755,8 @@ export class GameShell {
         talk: () => (this.closeMenu(), void this.talk(SCRIPTS.menu)),
         guide: (who) => this.openMenu(who),
         settings: () => this.openMenu('settings'),
+        quests: () => (this.closeMenu(), void this.quests?.refresh().then(() => this.quests?.openLog())),
+        practice: () => this.goToPractice(),
         signOut: () => void this.api.signOut().then(() => location.reload()),
       }, this.failing.size ? (this.error ?? 'a write failed') : null);
     }
@@ -661,6 +801,12 @@ export class GameShell {
       else if (a === 'up' || a === 'down' || a === 'interact' || a === 'cancel') this.dialogue.key(a);
       return eat();
     }
+    if (this.quests?.panelOpen) {
+      // a quest panel (the log, a form, a preview, a reward) has the keys: cancel closes it, the menu key takes over
+      if (a === 'menu' && !this.menu) return this.quests.close(), this.openMenu(), eat();
+      if (a === 'cancel' || e.code === 'Escape') return this.quests.close(), eat();
+      return e.stopImmediatePropagation();
+    }
     if (this.menu) {
       if (a === 'cancel' || a === 'menu') return this.closeMenu(), eat();
       // Tab, Enter and Space work the focused button as usual; nothing reaches the level behind the menu.
@@ -675,6 +821,10 @@ export class GameShell {
         return eat();
       }
       if (a === 'interact' && this.overworld!.faceGuide()) return this.talkToGuide(), eat();
+      if (a === 'interact') {
+        const g = this.overworld!.faceGiver();
+        if (g) return this.talkToGiver(g.siteId), eat();
+      }
       if (a === 'interact' || a === 'cancel') return eat();
       // The isometric view behind the overworld is hidden: none of its keys (zoom, back, search) act from here.
       return e.stopImmediatePropagation();

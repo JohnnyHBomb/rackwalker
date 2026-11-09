@@ -7,19 +7,20 @@
       "speaker": "ilatea",
       "text": "Small things matter. What do you need?",
       "choices": [
-        {"label": "What should I do next?", "next": [{"to": "next-inside", "if": "game.visited-building"}, {"to": "next-outside"}]},
+        {"label": "What should I do next?", "next": "next-quest"},
+        {"label": "What is the airfield pad?", "next": "airfield"},
         {"label": "Change how often you speak", "do": "open_settings", "next": null},
         {"label": "Nothing for now", "next": null}
       ]
     },
-    "next-outside": {
+    "next-quest": {
       "speaker": "ilatea",
-      "text": "Step into a building. Every site has a door on the green.",
+      "text": "The quest log, bottom left, names the next small step. Or ask the animal beside any door: they know what its site lacks.",
       "next": null
     },
-    "next-inside": {
+    "airfield": {
       "speaker": "ilatea",
-      "text": "Look closely at one rack. One label, one serial: small things.",
+      "text": "A pad with a sign: step on it to travel to the next region. Its sign says where it goes. One of them leads to the practice island.",
       "next": null
     }
   }

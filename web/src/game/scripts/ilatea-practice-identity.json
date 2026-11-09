@@ -1,0 +1,14 @@
+{
+  "$schema": "../../../../contracts/dialogue.schema.json",
+  "id": "ilatea-practice-identity",
+  "once": "ilatea.practice.identity",
+  "min_hint": "low",
+  "start": "done",
+  "nodes": {
+    "done": {
+      "speaker": "ilatea",
+      "text": "Labels come as one errand per rack, never one field at a time. Blank is fine: it stays open for your next visit.",
+      "next": null
+    }
+  }
+}

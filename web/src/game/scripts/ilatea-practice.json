@@ -1,0 +1,28 @@
+{
+  "$schema": "../../../../contracts/dialogue.schema.json",
+  "id": "ilatea-practice",
+  "once": "ilatea.practice.seen",
+  "min_hint": "low",
+  "start": "island",
+  "nodes": {
+    "island": {
+      "speaker": "ilatea",
+      "text": "This island is made up: nothing here reaches NetBox. Talk to the quest giver by the hut and answer what you can.",
+      "choices": [
+        {
+          "label": "On my way",
+          "next": null
+        },
+        {
+          "label": "What if I do not know an answer?",
+          "next": "unknown"
+        }
+      ]
+    },
+    "unknown": {
+      "speaker": "ilatea",
+      "text": "Say so. \"I don't know yet\" parks the quest with a list of what to look for. Nothing is lost.",
+      "next": null
+    }
+  }
+}
