@@ -1,0 +1,3135 @@
+{
+"width": 256,
+"height": 224,
+"objects": [
+{
+"sprite": "tree_b",
+"x": 8,
+"y": 22,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "tree_a",
+"x": 30,
+"y": 18,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "tree_b",
+"x": 54,
+"y": 16,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "tree_a",
+"x": 78,
+"y": 20,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "tree_b",
+"x": 104,
+"y": 16,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "poplar",
+"x": 122,
+"y": 22,
+"shadow": [
+5,
+-1,
+6,
+4
+]
+},
+{
+"sprite": "tree_a",
+"x": -6,
+"y": 40,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "tree_b",
+"x": 20,
+"y": 36,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "poplar",
+"x": 44,
+"y": 34,
+"shadow": [
+5,
+-1,
+6,
+4
+]
+},
+{
+"sprite": "tree_a",
+"x": 132,
+"y": 36,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "poplar",
+"x": 110,
+"y": 38,
+"shadow": [
+5,
+-1,
+6,
+4
+]
+},
+{
+"sprite": "tree_b",
+"x": -4,
+"y": 70,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "poplar",
+"x": 6,
+"y": 98,
+"shadow": [
+5,
+-1,
+6,
+4
+]
+},
+{
+"sprite": "tree_a",
+"x": -6,
+"y": 128,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "poplar",
+"x": -2,
+"y": 156,
+"shadow": [
+5,
+-1,
+6,
+4
+]
+},
+{
+"sprite": "bush",
+"x": 138,
+"y": 60,
+"shadow": [
+3,
+0,
+8,
+3
+]
+},
+{
+"sprite": "bush",
+"x": 188,
+"y": 56,
+"shadow": [
+3,
+0,
+8,
+3
+]
+},
+{
+"sprite": "bush",
+"x": 246,
+"y": 150,
+"shadow": [
+3,
+0,
+8,
+3
+]
+},
+{
+"sprite": "datacentre",
+"x": 56,
+"y": 112,
+"kind": "building",
+"shade": [
+[
+99,
+74
+],
+[
+105,
+80
+],
+[
+105,
+115
+],
+[
+99,
+115
+]
+]
+},
+{
+"sprite": "cottage",
+"x": 134,
+"y": 112,
+"kind": "building",
+"shade": [
+[
+157,
+68
+],
+[
+162,
+73
+],
+[
+162,
+115
+],
+[
+157,
+115
+]
+]
+},
+{
+"sprite": "doormat",
+"x": 56,
+"y": 116,
+"flat": true
+},
+{
+"sprite": "condenser",
+"x": 102,
+"y": 111,
+"shadow": [
+3,
+0,
+10,
+3
+]
+},
+{
+"sprite": "cable_drum",
+"x": 12,
+"y": 117,
+"shadow": [
+3,
+0,
+8,
+3
+]
+},
+{
+"sprite": "crate",
+"x": 92,
+"y": 120,
+"shadow": [
+3,
+0,
+7,
+2
+]
+},
+{
+"sprite": "barrel",
+"x": 162,
+"y": 113,
+"shadow": [
+2,
+0,
+6,
+2
+]
+},
+{
+"sprite": "barrel",
+"x": 170,
+"y": 116,
+"shadow": [
+2,
+0,
+6,
+2
+]
+},
+{
+"sprite": "bicycle",
+"x": 112,
+"y": 118,
+"shadow": [
+2,
+0,
+10,
+2
+]
+},
+{
+"sprite": "signpost",
+"x": 198,
+"y": 128,
+"shadow": [
+2,
+0,
+5,
+2
+]
+},
+{
+"sprite": "windmill",
+"x": 216,
+"y": 77,
+"shade": [
+[
+234,
+58
+],
+[
+242,
+64
+],
+[
+242,
+79
+],
+[
+230,
+79
+]
+]
+},
+{
+"sprite": "sails",
+"x": 216,
+"y": 28,
+"anim": {
+"fps": 8
+},
+"layer": "top"
+},
+{
+"sprite": "fence_h",
+"x": 208,
+"y": 101
+},
+{
+"sprite": "fence_h",
+"x": 208,
+"y": 144
+},
+{
+"sprite": "fence_h",
+"x": 224,
+"y": 101
+},
+{
+"sprite": "fence_h",
+"x": 224,
+"y": 144
+},
+{
+"sprite": "fence_h",
+"x": 240,
+"y": 101
+},
+{
+"sprite": "fence_h",
+"x": 240,
+"y": 144
+},
+{
+"sprite": "fence_h",
+"x": 256,
+"y": 101
+},
+{
+"sprite": "fence_h",
+"x": 256,
+"y": 144
+},
+{
+"sprite": "fence_v",
+"x": 205,
+"y": 123
+},
+{
+"sprite": "fence_v",
+"x": 205,
+"y": 142
+},
+{
+"sprite": "tulip_red",
+"x": 212,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 216,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 220,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 224,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 228,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 232,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 236,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 240,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 244,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 248,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 252,
+"y": 107,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 214,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 218,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 222,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 226,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 230,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 234,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 238,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 242,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 246,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 250,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 254,
+"y": 112,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 212,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 216,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 220,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 224,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 228,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 232,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 236,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 240,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 244,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 248,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 252,
+"y": 117,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 214,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 218,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 222,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 226,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 230,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 234,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 238,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 242,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 246,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 250,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 254,
+"y": 122,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 212,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 216,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 220,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 224,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 228,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 232,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 236,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 240,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 244,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 248,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 252,
+"y": 127,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 214,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 218,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 222,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 226,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 230,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 234,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 238,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 242,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 246,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 250,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 254,
+"y": 132,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 212,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 216,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 220,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 224,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 228,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 232,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 236,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 240,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 244,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 248,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 252,
+"y": 137,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 214,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 218,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 222,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 226,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 230,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 234,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 238,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 242,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 246,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 250,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 254,
+"y": 142,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 2,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 6,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 10,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 14,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 18,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 22,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 26,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 30,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 34,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 38,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 42,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 46,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 50,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 54,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 58,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 62,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 4,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 8,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 12,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 16,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 20,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 24,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 28,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 32,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 36,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 40,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 44,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 48,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 52,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 56,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 60,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 64,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 2,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 6,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 10,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 14,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 18,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 22,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 26,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 30,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 34,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 38,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 42,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 46,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 50,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 54,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 58,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 62,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 4,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 8,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 12,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 16,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 20,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 24,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 28,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 32,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 36,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 40,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 44,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 48,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 52,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 56,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 60,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 64,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 2,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 6,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 10,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 14,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 18,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 22,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 26,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 30,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 34,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 38,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 42,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 46,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 50,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 54,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 58,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 62,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 196,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 200,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 204,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 208,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 212,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 216,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 220,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 224,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 228,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 232,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 236,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 240,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 244,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 248,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 252,
+"y": 199,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 198,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 202,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 206,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 210,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 214,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 218,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 222,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 226,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 230,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 234,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 238,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 242,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 246,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 250,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 254,
+"y": 204,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 196,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 200,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 204,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 208,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 212,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 216,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 220,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 224,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 228,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 232,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 236,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 240,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 244,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 248,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_pink",
+"x": 252,
+"y": 209,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 198,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 202,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 206,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 210,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 214,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 218,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 222,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 226,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 230,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 234,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 238,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 242,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 246,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 250,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_yellow",
+"x": 254,
+"y": 214,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 196,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 200,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 204,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 208,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 212,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 216,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 220,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 224,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 228,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 232,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 236,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "tulip_red",
+"x": 240,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 0
+}
+},
+{
+"sprite": "tulip_red",
+"x": 244,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 1
+}
+},
+{
+"sprite": "tulip_red",
+"x": 248,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 2
+}
+},
+{
+"sprite": "tulip_red",
+"x": 252,
+"y": 219,
+"anim": {
+"fps": 5,
+"phase": 3
+}
+},
+{
+"sprite": "bridge_deck",
+"x": 91,
+"y": 150,
+"flat": true,
+"ax": 0,
+"ay": 0
+},
+{
+"sprite": "bridge_rail",
+"x": 92,
+"y": 148,
+"ay": 0,
+"flat": true
+},
+{
+"sprite": "bridge_rail",
+"x": 114,
+"y": 148,
+"ay": 0,
+"flat": true
+},
+{
+"sprite": "poplar",
+"x": 250,
+"y": 66,
+"shadow": [
+4,
+-1,
+6,
+3
+]
+},
+{
+"sprite": "tree_b",
+"x": 168,
+"y": 46,
+"shadow": [
+5,
+-1,
+12,
+4
+]
+},
+{
+"sprite": "daisy",
+"x": 196,
+"y": 66,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 204,
+"y": 70,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "violet",
+"x": 240,
+"y": 76,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "stone_big",
+"x": 184,
+"y": 76,
+"anim": null
+},
+{
+"sprite": "tuft",
+"x": 150,
+"y": 70,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "daisy",
+"x": 246,
+"y": 30,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 176,
+"y": 14,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 140,
+"y": 58,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 8,
+"y": 199,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 30,
+"y": 197,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 70,
+"y": 198,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 126,
+"y": 197,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 188,
+"y": 199,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 240,
+"y": 198,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 150,
+"y": 160,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "reeds",
+"x": 224,
+"y": 160,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "lilypad",
+"x": 40,
+"y": 178,
+"flat": true
+},
+{
+"sprite": "lilypad_flower",
+"x": 52,
+"y": 184,
+"flat": true
+},
+{
+"sprite": "lilypad",
+"x": 200,
+"y": 186,
+"flat": true
+},
+{
+"sprite": "lilypad_flower",
+"x": 244,
+"y": 176,
+"flat": true
+},
+{
+"sprite": "lilypad",
+"x": 64,
+"y": 176,
+"flat": true
+},
+{
+"sprite": "boat",
+"x": 168,
+"y": 182,
+"anim": {
+"fps": 2
+}
+},
+{
+"sprite": "mooring_post",
+"x": 148,
+"y": 166,
+"shadow": [
+2,
+0,
+3,
+1
+]
+},
+{
+"sprite": "daisy",
+"x": 30,
+"y": 140,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "daisy",
+"x": 36,
+"y": 146,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "violet",
+"x": 22,
+"y": 132,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 124,
+"y": 140,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "daisy",
+"x": 152,
+"y": 148,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 88,
+"y": 146,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 178,
+"y": 150,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "stone",
+"x": 74,
+"y": 152,
+"anim": null
+},
+{
+"sprite": "stone_big",
+"x": 182,
+"y": 100,
+"anim": null
+},
+{
+"sprite": "buttercup",
+"x": 130,
+"y": 150,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "violet",
+"x": 160,
+"y": 136,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 14,
+"y": 152,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "daisy",
+"x": 238,
+"y": 146,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "stone",
+"x": 144,
+"y": 140,
+"anim": null
+},
+{
+"sprite": "tuft",
+"x": 120,
+"y": 126,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "daisy",
+"x": 176,
+"y": 76,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "violet",
+"x": 150,
+"y": 72,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 196,
+"y": 74,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 100,
+"y": 136,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 66,
+"y": 132,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "stone",
+"x": 236,
+"y": 36,
+"anim": null
+},
+{
+"sprite": "daisy",
+"x": 160,
+"y": 48,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 150,
+"y": 30,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "violet",
+"x": 248,
+"y": 56,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "buttercup",
+"x": 168,
+"y": 24,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "tuft",
+"x": 240,
+"y": 20,
+"anim": {
+"fps": 2,
+"phase": 0
+}
+},
+{
+"sprite": "guide",
+"x": 36,
+"y": 124,
+"anim": {
+"fps": 4
+},
+"glow": [
+0,
+0,
+13,
+5
+],
+"shadow": [
+1,
+0,
+6,
+2
+]
+},
+{
+"sprite": "hog",
+"x": 186,
+"y": 148,
+"anim": {
+"fps": 2
+},
+"shadow": [
+1,
+0,
+7,
+2
+]
+},
+{
+"sprite": "player",
+"x": 78,
+"y": 140,
+"walker": true,
+"shadow": [
+0,
+0,
+6,
+2
+]
+}
+],
+"walk": {
+"path": [
+[
+40,
+140
+],
+[
+90,
+140
+],
+[
+96,
+146
+],
+[
+96,
+150
+],
+[
+96,
+146
+],
+[
+90,
+140
+]
+],
+"speed": 40
+}
+}
