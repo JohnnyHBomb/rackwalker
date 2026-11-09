@@ -73,11 +73,17 @@ def _sort_key(f: dict[str, Any]) -> tuple[Any, ...]:
 
 
 def analyse(e: Estate) -> Analysis:
+    """The analysis of an estate, made once per estate (it is kept with the estate until the estate changes)."""
+    a = e._memo.get("analysis")
+    if a is None:
+        a = e._memo["analysis"] = _analyse(e)
+    return a
+
+
+def _analyse(e: Estate) -> Analysis:
     a = Analysis()
     comp = e.components()
-    by_site: dict[int, list[dict[str, Any]]] = defaultdict(list)
-    for _, d in sorted(e.devices.items()):
-        by_site[d["site_id"]].append(d)
+    by_site = e._devices_by_site()
     has_ifaces = {p["device_id"] for p in e.ports.values() if p["kind"] == "interface" and is_physical(p)}
     iface_ips: dict[int, int] = defaultdict(int)
     for ip in e.ips.values():

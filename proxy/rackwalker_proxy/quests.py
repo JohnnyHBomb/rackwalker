@@ -708,7 +708,18 @@ def subject_of(e: Estate, f: dict[str, Any]) -> str:
 
 
 def lines(e: Estate, a: Analysis) -> list[dict[str, Any]]:
-    """One quest line per finding, plus one per device with an expected-cable gap; most valuable first."""
+    """One quest line per finding, plus one per device with an expected-cable gap; most valuable first. Made once per
+    estate, like its analysis."""
+    key = "lines" if e._memo.get("analysis") is a else None
+    if key and key in e._memo:
+        return e._memo[key]
+    out = _lines(e, a)
+    if key:
+        e._memo[key] = out
+    return out
+
+
+def _lines(e: Estate, a: Analysis) -> list[dict[str, Any]]:
     out: list[dict[str, Any]] = []
     findings = list(a.findings)
     seen: set[int] = set()

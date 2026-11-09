@@ -395,6 +395,7 @@ def test_interface_gaps_only_where_netbox_says_the_port_is_in_use_and_never_a_fl
     assert [g["id"] for g in a.gaps if g["field"] == "cable"] == [f"interface:{b.p(r, 'eth2')[1]}:cable"]
     for k in range(2, 120):
         b.e.ports[b.p(big, f"eth{k}")]["description"] = "desk"
+    b.e.touch()   # the estate was changed in memory: its analysis is made again
     a = findings.analyse(b.e)
     assert len([g for g in a.gaps if g["field"] == "cable"]) == findings.MAX_INTERFACE_GAPS and a.unlisted[s] == 119 - findings.MAX_INTERFACE_GAPS
     assert a.completeness(s)["open"] == 119
@@ -492,6 +493,7 @@ def test_an_answer_that_no_longer_fits_the_estate_is_asked_again():
     answers = {"peer": {"choice": "device:9000002"}, "local_port": {"choice": "interface:9000001"}}
     assert quests.evaluate(e, line, answers)["step"]["id"] == "peer_port"
     e.ports[("interface", 9000001)]["enabled"] = False   # the port is no longer one of the choices
+    e.touch()
     assert quests.evaluate(e, line, answers)["step"]["id"] == "local_port"
 
 
@@ -524,3 +526,28 @@ def test_xp_follows_rank_and_verified_share_and_repeats_pay_less():
     assert [xp_for(120, 1, 1, n) for n in range(5)] == [120, 96, 72, 48, 48]
     # an errand with six labels pays by what NetBox confirms, not by fields touched: two confirmed of six
     assert xp_for(50, 2, 6, 0) == 17 and xp_for(50, 6, 6, 0) == 50 and xp_for(50, 0, 6, 0) == 0
+
+
+def test_a_large_estate_is_analysed_in_one_pass_not_once_per_device():
+    """2,000 switches with 48 ports each (96,000 ports), half of them cabled in pairs: the scan and the first page of
+    quest lines stay well under a few seconds, and asking again costs nothing (the analysis is kept with the estate)."""
+    import time
+
+    b = Build()
+    s = b.site()
+    room = b.room(s)
+    racks = [b.rack(s, room, f"R{i}") for i in range(50)]
+    devs = [b.dev(s, f"sw{i:04d}", "switch", room, racks[i % 50], ports=48) for i in range(2000)]
+    for i in range(0, 1000, 2):
+        b.cable(b.p(devs[i], "eth1"), b.p(devs[i + 1], "eth1"))
+    t0 = time.perf_counter()
+    a = findings.analyse(b.e)
+    lines = quests.lines(b.e, a)
+    states = [quests.evaluate(b.e, line, {}) for line in lines[:3]]
+    took = time.perf_counter() - t0
+    assert len(b.e.ports) == 96_000 and len([f for f in a.findings if f["kind"] == "device_unconnected"]) == 1000
+    assert all(st["status"] == "asking" and len(st["step"]["choices"]) <= quests.MAX_CANDIDATES + 3 for st in states)
+    assert took < 20, f"{took:.1f} s"
+    t1 = time.perf_counter()
+    assert findings.analyse(b.e) is a and quests.lines(b.e, a) is lines
+    assert time.perf_counter() - t1 < 0.01

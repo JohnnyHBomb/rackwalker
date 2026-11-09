@@ -93,6 +93,41 @@ class Estate:
     truncated: list[str] = field(default_factory=list)
     unreadable: list[str] = field(default_factory=list)
     synthetic: bool = False
+    # Derived look-ups, made on first use and dropped by `touch()` whenever the estate is changed in memory: a large
+    # NetBox has hundreds of thousands of ports, and no rule may walk all of them once per device.
+    _memo: dict[str, Any] = field(default_factory=dict, repr=False, compare=False)
+
+    def touch(self) -> None:
+        """The estate was changed in memory (the practice island): every derived look-up is made again."""
+        self._memo.clear()
+
+    def _ports_by_device(self) -> dict[int, list[dict[str, Any]]]:
+        idx = self._memo.get("ports")
+        if idx is None:
+            idx = {}
+            for p in self.ports.values():
+                idx.setdefault(p["device_id"], []).append(p)
+            self._memo["ports"] = idx
+        return idx
+
+    def _devices_by_site(self) -> dict[int, list[dict[str, Any]]]:
+        idx = self._memo.get("devices")
+        if idx is None:
+            idx = {}
+            for _, d in sorted(self.devices.items()):
+                idx.setdefault(d["site_id"], []).append(d)
+            self._memo["devices"] = idx
+        return idx
+
+    def _ips_by_interface(self) -> dict[int, list[dict[str, Any]]]:
+        idx = self._memo.get("ips")
+        if idx is None:
+            idx = {}
+            for _, ip in sorted(self.ips.items()):
+                if ip["interface_id"] is not None:
+                    idx.setdefault(ip["interface_id"], []).append(ip)
+            self._memo["ips"] = idx
+        return idx
 
     # ---------------------------------------------------------------- (de)serialisation
     TABLES = ("sites", "locations", "racks", "devices", "cables", "circuits", "providers", "circuit_types", "cterms", "feeds",
@@ -114,7 +149,11 @@ class Estate:
         return e
 
     def copy(self) -> "Estate":
-        return copy.deepcopy(self)
+        e = Estate(truncated=list(self.truncated), unreadable=list(self.unreadable), synthetic=self.synthetic)
+        for t in self.TABLES:
+            setattr(e, t, copy.deepcopy(getattr(self, t)))
+        e.ports = copy.deepcopy(self.ports)
+        return e
 
     # ---------------------------------------------------------------- lookups
     def can_see(self, *lists: str) -> bool:
@@ -122,10 +161,10 @@ class Estate:
         return not any(name in self.truncated or name in self.unreadable for name in lists)
 
     def site_devices(self, site_id: int) -> list[dict[str, Any]]:
-        return [d for _, d in sorted(self.devices.items()) if d["site_id"] == site_id]
+        return list(self._devices_by_site().get(site_id, []))
 
     def device_ports(self, device_id: int, kinds: tuple[str, ...] = DATA_PORTS) -> list[dict[str, Any]]:
-        return sorted((p for p in self.ports.values() if p["device_id"] == device_id and p["kind"] in kinds),
+        return sorted((p for p in self._ports_by_device().get(device_id, []) if p["kind"] in kinds),
                       key=lambda p: (kinds.index(p["kind"]), natural(p["name"]), p["id"]))
 
     def free_ports(self, device_id: int) -> list[dict[str, Any]]:
@@ -155,16 +194,20 @@ class Estate:
 
     # ---------------------------------------------------------------- graphs
     def components(self) -> "Components":
-        return Components(self)
+        comp = self._memo.get("components")
+        if comp is None:
+            comp = self._memo["components"] = Components(self)
+        return comp
 
     def powered(self, device_id: int) -> bool | None:
         """True when a power port of the device has a cable; None when it has no power ports recorded."""
-        pp = [p for p in self.ports.values() if p["device_id"] == device_id and p["kind"] == "power_port"]
+        pp = [p for p in self._ports_by_device().get(device_id, []) if p["kind"] == "power_port"]
         return any(p["cable_id"] is not None for p in pp) if pp else None
 
     def device_ips(self, device_id: int) -> list[dict[str, Any]]:
-        ifaces = {p["id"] for p in self.ports.values() if p["device_id"] == device_id and p["kind"] == "interface"}
-        return [ip for _, ip in sorted(self.ips.items()) if ip["interface_id"] in ifaces]
+        by_iface = self._ips_by_interface()
+        out = [ip for p in self._ports_by_device().get(device_id, []) if p["kind"] == "interface" for ip in by_iface.get(p["id"], [])]
+        return sorted(out, key=lambda ip: ip["id"])
 
     # ---------------------------------------------------------------- simulated writes (practice island)
     def next_id(self, table: str) -> int:
@@ -194,6 +237,7 @@ class Components:
     def __init__(self, e: Estate):
         self.e = e
         self.parent: dict[Any, Any] = {}
+        self._lists: tuple[dict[Any, list[int]], dict[Any, list[int]]] | None = None
         for did in e.devices:
             self._find(("d", did))
         for key, p in e.ports.items():
@@ -242,14 +286,25 @@ class Components:
     def same(self, a: int, b: int) -> bool:
         return self.of_device(a) == self.of_device(b)
 
+    def _members(self) -> tuple[dict[Any, list[int]], dict[Any, list[int]]]:
+        if self._lists is None:
+            devs: dict[Any, list[int]] = {}
+            circs: dict[Any, list[int]] = {}
+            for d in sorted(self.e.devices):
+                devs.setdefault(self._find(("d", d)), []).append(d)
+            for c in sorted(self.e.circuits):
+                circs.setdefault(self._find(("c", c)), []).append(c)
+            self._lists = (devs, circs)
+        return self._lists
+
     def devices_in(self, root: Any) -> list[int]:
-        return sorted(d for d in self.e.devices if self._find(("d", d)) == root)
+        return list(self._members()[0].get(root, []))
 
     def circuits_in(self, root: Any) -> list[int]:
-        return sorted(c for c in self.e.circuits if self._find(("c", c)) == root)
+        return list(self._members()[1].get(root, []))
 
     def degree(self, device_id: int) -> int:
-        return sum(1 for p in self.e.ports.values() if p["device_id"] == device_id and p["kind"] in DATA_PORTS and p["cable_id"] is not None)
+        return sum(1 for p in self.e._ports_by_device().get(device_id, []) if p["kind"] in DATA_PORTS and p["cable_id"] is not None)
 
 
 # ---------------------------------------------------------------- reading NetBox
@@ -403,6 +458,7 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
     island: the same op shapes as the real change path, written to nothing but this object."""
     refs: dict[str, tuple[str, int]] = {}
     out: list[dict[str, Any]] = []
+    e.touch()
 
     def resolve(v: Any, kind: str) -> int:
         if isinstance(v, str) and v.startswith("@"):
@@ -507,4 +563,5 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
             res.update(status="error", before=None, after=None, diff=[],
                        error={"code": "validation_failed", "message": str(err) if isinstance(err, SimError) else f"That change does not fit the practice island ({err}).", "details": None})
         out.append(res)
+    e.touch()
     return out
