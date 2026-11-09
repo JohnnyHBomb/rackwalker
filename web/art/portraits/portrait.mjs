@@ -1,6 +1,6 @@
 // Portrait pipeline: hand-painted SVG source (768 x 768) -> rasterised by headless chromium -> area-filter downscale
 // to 64 x 64 and 96 x 96 (exact box averages, 12x and 8x) -> mapped to the overworld palette (no dither, and ordered
-// dither for comparison) -> the hand clean-up pass (pixel edits stored in cleanup/<who>-<size>.json) -> indexed rows
+// dither for comparison) -> the hand clean-up pass (pixel edits stored in cleanup/<who>-<size>.txt) -> indexed rows
 // in web/src/game/world/assets/portraits.json, the same format as the overworld sprites.
 // Also writes the side-by-side sheet docs/screenshots/g1/g1a/portrait-pipeline.png (source, raw downscale, ordered
 // dither, cleaned).
@@ -25,7 +25,7 @@ const WHO = ['ilatea', 'byte', 'nocti'];
 const RAMPS_OF = {
   ilatea: ['k', 's', 'sk', 'pu', 'l', 'c', 'ye', 'b'],
   byte: ['k', 's', 'b', 'ye', 'l', 'wd', 'c'],
-  nocti: ['k', 's', 'wd', 'd', 'ye', 'b', 'l'],
+  nocti: ['k', 's', 'wd', 'ye', 'b', 'l', 'tu'],
 };
 const BAYER = [[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]];
 
@@ -68,14 +68,30 @@ function quantise(rgb, n, dither) {
     return t * 2 > (BAYER[Math.floor(i / n) & 3][i % n & 3] + 0.5) / 16 * 1.0 + 0.5 ? b : a;
   });
 }
+/**
+ * The hand clean-up pass: cleanup/<who>-<n>.txt, applied in order. Format (one edit per line):
+ *   ## why            starts a step and says what it fixes
+ *   x,y colour        sets one pixel to a palette colour name
+ *   x0,y0 x1,y1 colour  sets every pixel of the rectangle (corners included)
+ *   # ...             a comment
+ */
 function cleanup(idx, n, who) {
-  const f = resolve(here, 'cleanup', `${who}-${n}.json`);
-  if (!existsSync(f)) return { idx, edits: 0 };
-  const spec = JSON.parse(readFileSync(f, 'utf8'));
+  const f = resolve(here, 'cleanup', `${who}-${n}.txt`);
+  if (!existsSync(f)) return { idx, edits: 0, steps: 0 };
   const out = [...idx];
-  let edits = 0;
-  for (const step of spec.steps) for (const [x, y, c] of step.px) (out[y * n + x] = IDX.get(c)), edits++;
-  return { idx: out, edits };
+  let edits = 0, steps = 0;
+  readFileSync(f, 'utf8').split('\n').forEach((line, i) => {
+    const l = line.trim();
+    if (l.startsWith('## ')) return void steps++;
+    if (!l || l.startsWith('#')) return;
+    const m = /^(\d+),(\d+)(?: (\d+),(\d+))? ([a-z]+\d?)$/.exec(l);
+    const c = m && IDX.get(m[5]);
+    if (c === undefined || c === null) throw new Error(`${f}:${i + 1}: cannot read "${l}"`);
+    const [x0, y0] = [+m[1], +m[2]], [x1, y1] = m[3] ? [+m[3], +m[4]] : [x0, y0];
+    if (x1 < x0 || y1 < y0 || x1 >= n || y1 >= n) throw new Error(`${f}:${i + 1}: outside the ${n} x ${n} portrait`);
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) (out[y * n + x] = c), edits++;
+  });
+  return { idx: out, edits, steps };
 }
 const rows = (idx, n) => Array.from({ length: n }, (_, y) => idx.slice(y * n, y * n + n).map((v) => pal.alphabet[v]).join(''));
 

@@ -1,7 +1,7 @@
 // The game shell when things go wrong or the player does something unexpected, on the fixture-mode proxy: a building
 // that does not open, a proxy or NetBox that is down at load, a session that changes in another tab, a saved place
 // that no longer exists, input while a panel is open, and the guide's timing. Nothing may fail silently, freeze the
-// player or lose their place. Each test signs in as its own fixture player (players 6-15), so they never share state.
+// player or lose their place. Each test signs in as its own fixture player (players 5-17), so they never share state.
 import { readFileSync } from 'node:fs';
 import { expect, test, type Page } from '@playwright/test';
 import { game, idle, ready, stored, typed } from './game-helpers';
@@ -147,6 +147,16 @@ test('signed out in another tab: a notice, sign in again here, and the place wal
   await idle(a);
   expect((await stored(a)).saves[0].data.overworld).toMatchObject({ x: start.x - 1, y: start.y });
   await ctx.close();
+});
+
+test('a NetBox user deactivated in NetBox: the notice says so and offers sign-in', async ({ page }) => {
+  await signIn(page, 15);
+  const gone = { status: 401, json: { error: { code: 'unauthorized', message: 'Your NetBox user was deactivated in NetBox.', details: { reason: 'inactive' } } } };
+  await page.route('**/api/game/saves/auto', (r) => r.fulfill(gone));
+  await page.keyboard.press('ArrowLeft');
+  await expect(page.locator('#game-notice')).toContainText('deactivated in NetBox');
+  await expect(page.locator('#notice-signin')).toBeVisible();
+  expect((await game(page)).error).toContain('deactivated in NetBox');
 });
 
 test('a write the proxy cannot take shows a notice, is kept and lands on "Try again now"', async ({ page }) => {

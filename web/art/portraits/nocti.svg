@@ -1,33 +1,53 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768">
-  <!-- Nocti, the owl of hands-on hardware: brown and black, a little rumpled, amber eyes. Light from the
-       top-left. Source of the 64 x 64 and 96 x 96 portraits. -->
+  <!-- Nocti, the owl of hands-on hardware: brown and black, a little rumpled, amber eyes with one sceptical lid,
+       work goggles pushed up and a screwdriver under one wing. Painted in flat tones with a dark outline, as a 16-bit
+       portrait is; light from the top-left. Source of the 64 x 64 and 96 x 96 portraits. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2e1a1a"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
-    <radialGradient id="body" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#ab7a44"/><stop offset="0.55" stop-color="#80502e"/><stop offset="1" stop-color="#2e1a1a"/></radialGradient>
-    <radialGradient id="belly" cx="0.4" cy="0.3" r="0.8"><stop offset="0" stop-color="#d4a868"/><stop offset="0.7" stop-color="#ab7a44"/><stop offset="1" stop-color="#553222"/></radialGradient>
-    <radialGradient id="iris" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fff27a"/><stop offset="0.6" stop-color="#f0c030"/><stop offset="1" stop-color="#b07818"/></radialGradient>
+    <clipPath id="body"><ellipse cx="384" cy="420" rx="226" ry="226"/></clipPath>
+    <clipPath id="belly"><ellipse cx="384" cy="500" rx="140" ry="140"/></clipPath>
   </defs>
-  <rect width="768" height="768" fill="url(#bg)"/>
-  <g stroke="#553222" stroke-width="10" fill="none"><path d="M0 120 H 140 V 60 H 260"/><path d="M768 650 H 620 V 720 H 500"/><path d="M640 80 V 200 H 720"/></g>
-  <path d="M0 640 H 768 V 768 H 0 Z" fill="#553222"/><path d="M0 640 H 768 V 660 H 0 Z" fill="#ab7a44"/>
-  <!-- body -->
-  <ellipse cx="384" cy="440" rx="230" ry="260" fill="url(#body)"/>
-  <!-- ear tufts -->
-  <path d="M190 230 L 220 90 L 300 200 Z" fill="#80502e"/><path d="M578 230 L 548 90 L 468 200 Z" fill="#2e1a1a"/>
-  <!-- belly with chevron feathers -->
-  <ellipse cx="384" cy="520" rx="140" ry="160" fill="url(#belly)"/>
-  <g stroke="#553222" stroke-width="10" fill="none"><path d="M320 480 l 20 16 l 20 -16"/><path d="M400 480 l 20 16 l 20 -16"/><path d="M360 550 l 20 16 l 20 -16"/><path d="M320 610 l 20 16 l 20 -16"/><path d="M400 610 l 20 16 l 20 -16"/></g>
-  <!-- face disc -->
-  <ellipse cx="300" cy="330" rx="96" ry="90" fill="#d4a868"/><ellipse cx="468" cy="330" rx="96" ry="90" fill="#ab7a44"/>
-  <circle cx="300" cy="330" r="54" fill="url(#iris)"/><circle cx="468" cy="330" r="54" fill="url(#iris)"/>
-  <circle cx="300" cy="334" r="24" fill="#140c1c"/><circle cx="468" cy="334" r="24" fill="#140c1c"/>
-  <circle cx="284" cy="314" r="12" fill="#fbf7e8"/><circle cx="452" cy="314" r="12" fill="#fbf7e8"/>
+  <rect width="768" height="768" fill="#2f3a5e"/>
+  <rect y="560" width="768" height="80" fill="#1e2440"/>
+  <g stroke="#46597e" stroke-width="14" fill="none"><path d="M0 120 H 140 V 60 H 260"/><path d="M640 80 V 200 H 720"/></g>
+  <!-- the workbench, against a slate-blue workshop wall -->
+  <rect y="640" width="768" height="128" fill="#553222"/><rect y="640" width="768" height="24" fill="#ab7a44"/>
+  <!-- ear tufts, one bent -->
+  <path d="M176 250 L 214 80 L 316 210 Z" fill="#80502e" stroke="#140c1c" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M592 250 L 590 150 L 520 120 L 452 210 Z" fill="#553222" stroke="#140c1c" stroke-width="14" stroke-linejoin="round"/>
+  <!-- body: brown base, black on the shaded right, light on the upper left, rumpled feathers -->
+  <g clip-path="url(#body)">
+    <rect x="150" y="190" width="470" height="520" fill="#80502e"/>
+    <ellipse cx="650" cy="470" rx="190" ry="300" fill="#2e1a1a"/>
+    <ellipse cx="250" cy="300" rx="80" ry="110" fill="#ab7a44"/>
+  </g>
+  <ellipse cx="384" cy="420" rx="226" ry="226" fill="none" stroke="#140c1c" stroke-width="16"/>
+  <g stroke="#140c1c" stroke-width="14" stroke-linecap="round"><path d="M352 186 l -14 -44"/><path d="M402 186 l 18 -40"/><path d="M604 470 l 44 12"/><path d="M168 520 l -36 10"/></g>
+  <!-- belly with dark chevron feathers -->
+  <g clip-path="url(#belly)">
+    <rect x="240" y="370" width="290" height="320" fill="#d4a868"/>
+    <ellipse cx="520" cy="560" rx="80" ry="190" fill="#ab7a44"/>
+  </g>
+  <g stroke="#553222" stroke-width="14" fill="none" stroke-linecap="square"><path d="M318 466 l 22 18 l 22 -18"/><path d="M406 466 l 22 18 l 22 -18"/><path d="M362 528 l 22 18 l 22 -18"/><path d="M318 590 l 22 18 l 22 -18"/><path d="M406 590 l 22 18 l 22 -18"/></g>
+  <!-- face discs with a black rim -->
+  <ellipse cx="298" cy="336" rx="100" ry="92" fill="#d4a868" stroke="#140c1c" stroke-width="14"/>
+  <ellipse cx="470" cy="336" rx="100" ry="92" fill="#ab7a44" stroke="#140c1c" stroke-width="14"/>
+  <!-- eyes: amber iris with a darker ring, a big pupil and one white glint; the right one half under a sceptical lid -->
+  <circle cx="298" cy="336" r="56" fill="#b07818"/><circle cx="298" cy="336" r="44" fill="#f0c030"/>
+  <circle cx="470" cy="336" r="56" fill="#b07818"/><circle cx="470" cy="336" r="44" fill="#f0c030"/>
+  <circle cx="302" cy="342" r="26" fill="#140c1c"/><circle cx="466" cy="342" r="26" fill="#140c1c"/>
+  <rect x="270" y="304" width="22" height="22" fill="#fbf7e8"/>
+  <path d="M410 300 C 440 270, 500 270, 530 300 L 530 318 L 410 318 Z" fill="#553222" stroke="#140c1c" stroke-width="12"/>
   <!-- beak -->
-  <path d="M362 380 L 406 380 L 384 440 Z" fill="#f0c030"/><path d="M384 380 L 406 380 L 384 440 Z" fill="#b07818"/>
-  <!-- holographic sheen -->
-  <path d="M220 300 C 240 220, 300 190, 360 180" stroke="#d4a868" stroke-width="12" fill="none" stroke-linecap="round"/>
-  <!-- feet on the perch -->
-  <g fill="#f0c030"><rect x="300" y="620" width="20" height="30"/><rect x="330" y="620" width="20" height="30"/><rect x="420" y="620" width="20" height="30"/><rect x="450" y="620" width="20" height="30"/></g>
-  <g stroke="#2e1a1a" stroke-width="10" stroke-linecap="round"><path d="M360 170 l -10 -40"/><path d="M400 172 l 14 -36"/><path d="M600 460 l 40 10"/></g>
-  <rect x="250" y="200" width="268" height="34" rx="14" fill="#2a1d33"/><circle cx="320" cy="217" r="26" fill="#3b8cd0" stroke="#85808f" stroke-width="8"/><circle cx="448" cy="217" r="26" fill="#3b8cd0" stroke="#85808f" stroke-width="8"/>
+  <path d="M346 388 L 422 388 L 384 476 Z" fill="#f0c030" stroke="#140c1c" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M384 396 L 412 396 L 384 462 Z" fill="#b07818"/>
+  <!-- work goggles pushed up on the head -->
+  <rect x="236" y="196" width="296" height="38" rx="16" fill="#140c1c"/>
+  <circle cx="318" cy="214" r="32" fill="#3b8cd0" stroke="#85808f" stroke-width="12"/><circle cx="450" cy="214" r="32" fill="#2560a8" stroke="#85808f" stroke-width="12"/>
+  <rect x="300" y="196" width="14" height="14" fill="#c8f0ff"/>
+  <!-- a screwdriver tucked under the wing -->
+  <path d="M540 560 L 690 480" stroke="#b3aeb0" stroke-width="16" stroke-linecap="square"/>
+  <path d="M470 600 L 548 556" stroke="#d8283c" stroke-width="30" stroke-linecap="round"/>
+  <path d="M482 586 L 530 560" stroke="#ff6a6a" stroke-width="8" stroke-linecap="round"/>
+  <!-- feet on the bench -->
+  <g fill="#b07818" stroke="#140c1c" stroke-width="8"><rect x="296" y="616" width="26" height="36"/><rect x="334" y="616" width="26" height="36"/><rect x="408" y="616" width="26" height="36"/><rect x="446" y="616" width="26" height="36"/></g>
 </svg>

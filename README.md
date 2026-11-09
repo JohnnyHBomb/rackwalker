@@ -113,8 +113,8 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   water, fields and the landmarks and animal villagers of the region's country (`Site.country`); one front-facing
   building per site in its theme, labelled with the site's name. Distant regions are reached through an airfield pad
   (a placeholder until flights). How it is built: [`web/art/overworld/README.md`](web/art/overworld/README.md). Walk
-  with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has a marker above
-  it. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
+  with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has a bobbing marker in
+  its doorway, below the building's sign. Walking into a door enters that site's first room; zooming out past the site level (`Esc`,
   the back button or the "World" crumb) leaves the building, and you stand in front of its door.
 * **Ilatea** speaks one line on your first visit ("Small things matter"; in a NetBox with no sites yet, she asks you to add one) and then lets you act. She speaks again only
   on your first building, or once if you seem stuck on the green, and never repeats herself. She stands on the green

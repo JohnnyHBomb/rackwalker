@@ -1,31 +1,46 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="768" height="768" viewBox="0 0 768 768">
-  <!-- Byte, the owl of commands and hardening: blue and white with a holographic sheen, yellow eyes. Light from the
-       top-left. Source of the 64 x 64 and 96 x 96 portraits. -->
+  <!-- Byte, the owl of commands and hardening: blue and white with a holographic sheen, gold eyes. Painted in flat
+       tones with a dark outline, as a 16-bit portrait is; light from the top-left. Source of the 64 x 64 and
+       96 x 96 portraits. -->
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c3a78"/><stop offset="1" stop-color="#142046"/></linearGradient>
-    <radialGradient id="body" cx="0.35" cy="0.3" r="0.8"><stop offset="0" stop-color="#73c0e8"/><stop offset="0.55" stop-color="#3b8cd0"/><stop offset="1" stop-color="#1c3a78"/></radialGradient>
-    <radialGradient id="belly" cx="0.4" cy="0.3" r="0.8"><stop offset="0" stop-color="#fbf7e8"/><stop offset="0.7" stop-color="#c8f0ff"/><stop offset="1" stop-color="#73c0e8"/></radialGradient>
-    <radialGradient id="iris" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fff27a"/><stop offset="0.6" stop-color="#f0c030"/><stop offset="1" stop-color="#b07818"/></radialGradient>
+    <clipPath id="body"><ellipse cx="384" cy="420" rx="226" ry="226"/></clipPath>
+    <clipPath id="belly"><ellipse cx="384" cy="500" rx="140" ry="140"/></clipPath>
   </defs>
-  <rect width="768" height="768" fill="url(#bg)"/>
-  <g stroke="#2560a8" stroke-width="10" fill="none"><path d="M0 120 H 140 V 60 H 260"/><path d="M768 650 H 620 V 720 H 500"/><path d="M640 80 V 200 H 720"/></g>
-  <path d="M0 640 H 768 V 768 H 0 Z" fill="#553222"/><path d="M0 640 H 768 V 660 H 0 Z" fill="#ab7a44"/>
-  <!-- body -->
-  <ellipse cx="384" cy="440" rx="230" ry="260" fill="url(#body)"/>
-  <!-- ear tufts -->
-  <path d="M190 230 L 220 90 L 300 200 Z" fill="#3b8cd0"/><path d="M578 230 L 548 90 L 468 200 Z" fill="#1c3a78"/>
+  <rect width="768" height="768" fill="#1c3a78"/>
+  <rect y="560" width="768" height="80" fill="#142046"/>
+  <g stroke="#2560a8" stroke-width="14" fill="none"><path d="M0 120 H 140 V 60 H 260"/><path d="M640 80 V 200 H 720"/></g>
+  <!-- the perch -->
+  <rect y="640" width="768" height="128" fill="#553222"/><rect y="640" width="768" height="24" fill="#ab7a44"/>
+  <!-- ear tufts, lit and shaded -->
+  <path d="M176 250 L 214 80 L 316 210 Z" fill="#3b8cd0" stroke="#142046" stroke-width="14" stroke-linejoin="round"/>
+  <path d="M592 250 L 554 80 L 452 210 Z" fill="#2560a8" stroke="#142046" stroke-width="14" stroke-linejoin="round"/>
+  <!-- body: base, shade on the right, light on the upper left -->
+  <g clip-path="url(#body)">
+    <rect x="150" y="190" width="470" height="520" fill="#3b8cd0"/>
+    <ellipse cx="640" cy="470" rx="190" ry="300" fill="#2560a8"/>
+    <ellipse cx="250" cy="300" rx="80" ry="110" fill="#73c0e8"/>
+  </g>
+  <ellipse cx="384" cy="420" rx="226" ry="226" fill="none" stroke="#142046" stroke-width="16"/>
   <!-- belly with chevron feathers -->
-  <ellipse cx="384" cy="520" rx="140" ry="160" fill="url(#belly)"/>
-  <g stroke="#73c0e8" stroke-width="10" fill="none"><path d="M320 480 l 20 16 l 20 -16"/><path d="M400 480 l 20 16 l 20 -16"/><path d="M360 550 l 20 16 l 20 -16"/><path d="M320 610 l 20 16 l 20 -16"/><path d="M400 610 l 20 16 l 20 -16"/></g>
-  <!-- face disc -->
-  <ellipse cx="300" cy="330" rx="96" ry="90" fill="#fbf7e8"/><ellipse cx="468" cy="330" rx="96" ry="90" fill="#c8f0ff"/>
-  <circle cx="300" cy="330" r="54" fill="url(#iris)"/><circle cx="468" cy="330" r="54" fill="url(#iris)"/>
-  <circle cx="300" cy="334" r="24" fill="#140c1c"/><circle cx="468" cy="334" r="24" fill="#140c1c"/>
-  <circle cx="284" cy="314" r="12" fill="#fbf7e8"/><circle cx="452" cy="314" r="12" fill="#fbf7e8"/>
-  <!-- beak -->
-  <path d="M362 380 L 406 380 L 384 440 Z" fill="#f0c030"/><path d="M384 380 L 406 380 L 384 440 Z" fill="#b07818"/>
-  <!-- holographic sheen -->
-  <path d="M220 300 C 240 220, 300 190, 360 180" stroke="#d8ffff" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <g clip-path="url(#belly)">
+    <rect x="240" y="370" width="290" height="320" fill="#fbf7e8"/>
+    <ellipse cx="520" cy="560" rx="80" ry="190" fill="#c8f0ff"/>
+  </g>
+  <g stroke="#3b8cd0" stroke-width="14" fill="none" stroke-linecap="square"><path d="M318 466 l 22 18 l 22 -18"/><path d="M406 466 l 22 18 l 22 -18"/><path d="M362 528 l 22 18 l 22 -18"/><path d="M318 590 l 22 18 l 22 -18"/><path d="M406 590 l 22 18 l 22 -18"/></g>
+  <!-- face discs with a dark rim -->
+  <ellipse cx="298" cy="330" rx="100" ry="92" fill="#fbf7e8" stroke="#142046" stroke-width="14"/>
+  <ellipse cx="470" cy="330" rx="100" ry="92" fill="#c8f0ff" stroke="#142046" stroke-width="14"/>
+  <!-- eyes: gold iris with a darker ring, a big pupil and one white glint -->
+  <circle cx="298" cy="330" r="56" fill="#b07818"/><circle cx="298" cy="330" r="44" fill="#f0c030"/>
+  <circle cx="470" cy="330" r="56" fill="#b07818"/><circle cx="470" cy="330" r="44" fill="#f0c030"/>
+  <circle cx="302" cy="336" r="26" fill="#140c1c"/><circle cx="466" cy="336" r="26" fill="#140c1c"/>
+  <rect x="270" y="298" width="22" height="22" fill="#fbf7e8"/><rect x="442" y="298" width="22" height="22" fill="#fbf7e8"/>
+  <!-- beak, lit on the left, outlined -->
+  <path d="M346 382 L 422 382 L 384 470 Z" fill="#f0c030" stroke="#142046" stroke-width="12" stroke-linejoin="round"/>
+  <path d="M384 390 L 412 390 L 384 456 Z" fill="#b07818"/>
+  <!-- holographic sheen: two bright streaks across the lit side -->
+  <path d="M206 330 C 214 260, 250 220, 300 200" stroke="#d8ffff" stroke-width="16" fill="none" stroke-linecap="round"/>
+  <path d="M190 430 C 192 400, 200 380, 212 364" stroke="#5ef0ff" stroke-width="14" fill="none" stroke-linecap="round"/>
   <!-- feet on the perch -->
-  <g fill="#f0c030"><rect x="300" y="620" width="20" height="30"/><rect x="330" y="620" width="20" height="30"/><rect x="420" y="620" width="20" height="30"/><rect x="450" y="620" width="20" height="30"/></g>
+  <g fill="#f0c030" stroke="#142046" stroke-width="8"><rect x="296" y="616" width="26" height="36"/><rect x="334" y="616" width="26" height="36"/><rect x="408" y="616" width="26" height="36"/><rect x="446" y="616" width="26" height="36"/></g>
 </svg>

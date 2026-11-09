@@ -99,6 +99,10 @@ def _json(text: str) -> tuple[bool, Any]:
         return False, None
 
 
+# Actions added in contract 2.2.0: optional in KeyBindings, so settings written before them stay valid.
+OPTIONAL_KEY_ACTIONS = ("zoom_in", "zoom_out", "search", "rotate", "trace", "unrack", "undo")
+
+
 def duplicate_key(keys: dict[str, list[str]]) -> tuple[str, str, str] | None:
     """(key, first action, second action) when one key is bound to two actions, else None."""
     seen: dict[str, str] = {}
@@ -142,11 +146,13 @@ def upgrade_settings(raw: Any) -> dict[str, Any]:
     if duplicate_key(out["keys"]) and isinstance(raw.get("keys"), dict):
         # Settings from before an action existed: the player's own keys win, the new action's default gives way.
         mine = {k for a, codes in out["keys"].items() if a in raw["keys"] for k in codes}
-        for a in out["keys"]:
+        for a in list(out["keys"]):
             if a not in raw["keys"]:
                 left = [k for k in out["keys"][a] if k not in mine]
                 if left:
                     out["keys"][a] = left
+                elif a in OPTIONAL_KEY_ACTIONS:
+                    del out["keys"][a]  # every default key of a newer action is the player's: it waits for a remap
     if duplicate_key(out["keys"]):
         out["keys"] = copy.deepcopy(DEFAULT_SETTINGS["keys"])
     return out
@@ -276,6 +282,11 @@ class GameStore:
         if r is None or r["expires_at"] <= self.clock():
             return None
         return Session(r["user_id"], r["csrf"], r["expires_at"])
+
+    def end_user_sessions(self, user_id: int) -> None:
+        """Ends every session of one player (their NetBox user was deleted or deactivated)."""
+        with self._tx() as db:
+            db.execute("DELETE FROM session WHERE user_id=?", (user_id,))
 
     def end_session(self, token: str | None) -> None:
         if token:

@@ -1,8 +1,8 @@
 """Country landmarks, villagers and overworld markers, drawn in the art direction's palette and light.
 
-United Kingdom: a red telephone kiosk, a pillar box, a tea stall, a small rain cloud; villager: a badger in a
-bowler hat. Netherlands: a cheese cart (the windmill, cottage, tulips, bicycle and hedgehog come from the art
-direction). Anywhere else: a well and haystacks; villager: a rabbit holding a carrot.
+United Kingdom: a red telephone kiosk, a pillar box, a tea stall, a small rain cloud; villagers: a badger in a
+bowler hat and a red fox. Netherlands: a cheese cart (the windmill, cottage, tulips, bicycle and
+hedgehog come from the art direction). Anywhere else: a well and haystacks; villager: a rabbit holding a carrot.
 """
 
 from pix import Img, dith, from_rows, hsh
@@ -237,6 +237,37 @@ def badger():
     return [a, b]
 
 
+def fox():
+    """A red fox with a white chest and a white-tipped tail, front view; two idle frames (a blink)."""
+    base = [
+        "..xx......xx.....",
+        "..xOx....xOx.....",
+        "..xORx..xORx.....",
+        "..xOORxxxORRx....",
+        "..xOOOORRRRRx....",
+        "..xOEeRRREeRx....",
+        "..xOEERRREERx....",
+        "..xWOORRRRRWx....",
+        "...xWWRKRRWx.....",
+        "....xWWWWWx......",
+        "...xOxxxxxRx.....",
+        "..xORRWWWRRRx....",
+        "..xORWWWWWRRx..xx",
+        "..xORWWWWWRRx.xOx",
+        "..xORRRRRRRRxxOWx",
+        "..xOORRRRRRRRRWx.",
+        "...xRRxxxxRRxxx..",
+        "...xKKx..xKKx....",
+        "....xx....xx.....",
+    ]
+    legend = {"x": "r0", "R": "r2", "O": "r3", "W": "w", "E": "k0", "e": "w", "K": "k0"}
+    a = from_rows(base, legend)
+    b = a.copy()
+    for x in (4, 5, 9, 10):
+        b.set(x, 5, "r2")  # blink: the eyes close to a dark line
+    return [a, b]
+
+
 def rabbit():
     base = [
         "...ww...ww....",
@@ -312,7 +343,7 @@ def airfield_sign():
 
 
 def marker():
-    """The down-pointing marker over each door (a shape, so it reads without colour), bobbing over two frames."""
+    """The down-pointing marker in each doorway (a shape, so it reads without colour), bobbing over two frames."""
     rows = [
         "kkkkkkkkk",
         "kwwwwwwwk",
@@ -339,6 +370,7 @@ def make_props(add_sprite):
     add_sprite("haystack", haystack())
     add_sprite("badger", badger(), 7, 15)
     add_sprite("rabbit", rabbit(), 7, 14)
+    add_sprite("fox", fox(), 7, 18)
     add_sprite("airfield_pad", airfield_pad(), 22, 29)
     add_sprite("airfield_sign", airfield_sign(), 15, 29)
     add_sprite("marker", marker(), 4, 6)

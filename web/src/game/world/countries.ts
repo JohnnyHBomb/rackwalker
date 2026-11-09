@@ -70,7 +70,10 @@ export const COUNTRY_SETS: Readonly<Record<string, CountrySet>> = {
       { sprite: 'teapot_stall', fw: 2, fh: 1, count: 1, shadow: [2, 0, 12, 3] },
       { sprite: 'rain_cloud', fw: 2, fh: 1, count: 1, sky: true, fps: 6 },
     ],
-    villagers: [{ sprite: 'badger', what: 'a badger in a bowler hat' }],
+    villagers: [
+      { sprite: 'badger', what: 'a badger in a bowler hat' },
+      { sprite: 'fox', what: 'a red fox with a white-tipped tail' },
+    ],
     trees: ['tree_a', 'tree_b', 'tree_b', 'bush'],
   },
 };

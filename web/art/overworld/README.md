@@ -66,13 +66,13 @@ Same sites, same map, in any order (`web/tests/world-gen.test.ts`).
 ### Country sets
 
 Picked per region by its sites' most common country (`Site.country`: the site's `iso_country` custom field, else
-its region's slug when that is a two-letter code; see `contracts/api.md`). Landmarks, flora, food and weather only;
+its region's code or country name, else its address's last line; see `contracts/api.md`). Landmarks, flora, food and weather only;
 villagers are native animals, sometimes with one silly prop (a hat, a tool, food or a vehicle).
 
 | Code | Landmarks | Villager | Water, field |
 |---|---|---|---|
 | `NL` | windmill with turning sails, stepped-gable cottage, cheese cart, bicycles, poplars | a hedgehog wearing its bicycle bell as a hat | canal with bridges, tulips |
-| `GB` | red telephone kiosk, pillar box, tea stall with a steaming pot, a small rain cloud | a badger in a bowler hat | pond, yellow crop |
+| `GB` | red telephone kiosk, pillar box, tea stall with a steaming pot, a small rain cloud | a badger in a bowler hat; a red fox (second villager of a region with more than one site) | pond, yellow crop |
 | any other | a well, haystacks | a rabbit holding a carrot | pond, yellow crop |
 
 ### Buildings and roofs
@@ -94,13 +94,19 @@ The eaves cast a two-pixel shadow on the wall below them (one ramp step darker),
 ### Portraits
 
 Ilatea's, Byte's and Nocti's dialogue portraits start as hand-written SVG at 768 x 768 (`../portraits/*.svg`, from the
-traits in `docs/art/guide-ilatea.md`). `portrait.mjs` rasterises each in headless chromium, downscales it with an
-area filter (exact box averages, 12x to 64 x 64 and 8x to 96 x 96), maps it to the palette with no dither (ordered
-dither was tried and is shown in the sheet: it turned the skin and the background into noise at this size), using
-only the ramps the portrait is painted with (a skin tone never lands on path earth), then applies the hand clean-up:
-pixel edits stored as data in `../portraits/cleanup/<who>-<size>.json`, each step with its reason (brows as one line,
-eyes as lash line / white / gold iris / pupil, the nose shadow, the smile and lower lip, glints on the silver
-strands). `portrait-pipeline.png` shows source, raw downscale, both palette mappings and the cleaned result.
+traits in `docs/art/guide-ilatea.md`), painted the way a 16-bit portrait is: flat tones (lit, base, shade) with a dark
+outline, no soft gradients, framed close so the face fills the small sizes (Ilatea's scene is scaled 1.35x about her
+face). `portrait.mjs` rasterises each in headless chromium, downscales it with an area filter (exact box averages, 12x
+to 64 x 64 and 8x to 96 x 96), maps it to the palette with no dither (ordered dither was tried and is shown in the
+sheet: it turned the skin and the background into noise at this size), using only the ramps the portrait is painted
+with (a skin tone never lands on path earth), then applies the hand clean-up pass: pixel edits stored as data in
+`../portraits/cleanup/<who>-<size>.txt`, one file for every portrait at both sizes, each step headed by its reason.
+The format is one edit per line: `x,y colour` sets a pixel, `x0,y0 x1,y1 colour` a rectangle, `## why` starts a step.
+The steps: Ilatea's brows as one level line, eyes as lash line / white corner / gold iris / black pupil, the smile with
+upturned corners, one clean line per silver strand, holes and grey specks out of the hair, the circlet gem as a lit
+diamond; the owls' eyes (iris ring, round pupil, glint), the beak as an outlined triangle with a sharp tip, clean disc
+rims and chevrons, the toes, Byte's sheen kept, Nocti's goggles and sceptical lid. `portrait-pipeline.png` shows source,
+raw downscale, both palette mappings and the cleaned result.
 
 ### Frame times
 
@@ -130,6 +136,15 @@ front-facing roof rule, fix them, render again.
    floats with nothing under it; the tulip field's lower fence hides the last row; fields show no soil margin; no path
    leads to the windmill.
    Fixes: the skirt roof darkened one ramp step with a dark lip. The other four are left for later (below).
+4. **Door marker, portraits again** (every theme at 3x, the six portraits at 10x with a pixel grid).
+   Weaknesses: the door marker, raised above the door frame in round 1, now covered the sign over the door on every
+   theme that has one ("DA▼--" on the data hall); Ilatea's face was long and her hair one dark mass; the owls, painted
+   with soft gradients, came out mushy, Nocti's dark side was the same colour as its background, and Byte at 96 and
+   Nocti at both sizes had no hand pass.
+   Fixes: the marker bobs inside the upper half of the doorway, below the sign (a test keeps it there); the three
+   sources repainted in flat tones with a dark outline, Ilatea's face shortened, her hair broken into lit clumps with
+   one silver strand per side, the scene framed closer; Nocti against a slate-blue workshop wall, with a sceptical
+   lid and a screwdriver; a hand clean-up file for every portrait at both sizes.
 
 ## Where it still falls short
 
@@ -137,4 +152,4 @@ front-facing roof rule, fix them, render again.
   row.
 - Phones get 1x (256 px wide) because only whole-number scales are used.
 - The airfield pad is a placeholder: it moves the player between regions at once, with no flight.
-- Ilatea's portrait face is long, and her hair is a dark mass with few clumps; the owls had no hand pass at 96 px.
+- The portraits have no idle or talk frames yet.

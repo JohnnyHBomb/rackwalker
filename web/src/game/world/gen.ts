@@ -309,7 +309,9 @@ export class WorldMap {
       this.objects.push({ sprite: buildingSprite(theme), x: ax, y: ay, kind: 'building', site: id, shadow: [BW * 8 - 6, -4, 10, 6] });
       this.objects.push({ sprite: 'doormat', x: d.x * TILE + 8, y: (d.y + 1) * TILE + 2, flat: true, kind: 'decor' });
       this.objects.push({ sprite: `label:${id}`, x: ax, y: by * TILE - 3, top: true, kind: 'label', site: id });
-      this.objects.push({ sprite: 'marker', x: d.x * TILE + 8, y: d.y * TILE - 9, top: true, kind: 'marker', anim: { fps: 3 }, site: id });
+      // The marker bobs inside the upper half of the doorway (every door is 18 px tall from 6 px above the door tile),
+      // below the building's sign, so it never covers the sign or the name.
+      this.objects.push({ sprite: 'marker', x: d.x * TILE + 8, y: d.y * TILE + 2, top: true, kind: 'marker', anim: { fps: 3 }, site: id });
     }
     // The guide and the start in front of the first door of the world are kept free.
     const front = (d: Door) => ({ x: d.x, y: d.y + 1 });

@@ -204,7 +204,7 @@
               "type": "null"
             }
           ],
-          "description": "ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set."
+          "description": "ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's own region as a two-letter code or a country name, else the last line of its physical address); null = unknown. Picks the overworld's landmark and villager set."
         },
         "description": {
           "type": "string"
@@ -1860,14 +1860,7 @@
         "right",
         "interact",
         "cancel",
-        "menu",
-        "zoom_in",
-        "zoom_out",
-        "search",
-        "rotate",
-        "trace",
-        "unrack",
-        "undo"
+        "menu"
       ],
       "properties": {
         "up": {
@@ -1913,7 +1906,7 @@
           "$ref": "#/$defs/KeyList"
         }
       },
-      "description": "Up to three keys per action. up/down/left/right walk on the overworld; interact talks and chooses, and inside a building enters the selected object; cancel closes and goes back (inside a building: one level out); menu opens the menu; zoom_in, zoom_out, search, rotate (a rack), trace (a port), unrack (a device) and undo (with Ctrl or Cmd held) act inside buildings. Added in 2.2.0: zoom_in, zoom_out, search, rotate, trace, unrack, undo."
+      "description": "Up to three keys per action. up/down/left/right walk on the overworld; interact talks and chooses, and inside a building enters the selected object; cancel closes and goes back (inside a building: one level out); menu opens the menu; zoom_in, zoom_out, search, rotate (a rack), trace (a port), unrack (a device) and undo (with Ctrl or Cmd held) act inside buildings. Added in 2.2.0 and optional, so settings written before 2.2.0 stay valid: zoom_in, zoom_out, search, rotate, trace, unrack, undo. The proxy fills a missing one with its default (the player's own keys win over a default that clashes with them) on every read and write."
     },
     "KeyList": {
       "type": "array",

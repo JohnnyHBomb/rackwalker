@@ -352,7 +352,7 @@ export class GameShell {
           const s = await this.api.session().catch(() => null);
           if (s?.signed_in) continue;
         }
-        if (code === 'unauthorized' || code === 'forbidden') this.lostSession(what);
+        if (code === 'unauthorized' || code === 'forbidden') this.lostSession(what, e as SceneSourceError);
         else this.failed(what, `${WRITE_NAMES[what]} failed: ${errText(e)}`);
         return false;
       }
@@ -385,13 +385,18 @@ export class GameShell {
   }
 
   /** The session ended (signed out in another tab, expired): sign in again here, then everything waiting is sent. */
-  private lostSession(what: Write): void {
+  private lostSession(what: Write, e: SceneSourceError): void {
+    // The proxy names the reason when NetBox deleted or deactivated the user; otherwise the session ended elsewhere.
+    const reason = e.details?.reason;
+    const why = reason === 'gone' ? 'your NetBox user was deleted in NetBox'
+      : reason === 'inactive' ? 'your NetBox user was deactivated in NetBox'
+      : 'signed out, perhaps in another tab';
     this.failing.set(what, 'you are signed out');
-    this.error = `${WRITE_NAMES[what]} failed: the game session has ended (signed out, perhaps in another tab).`;
+    this.error = `${WRITE_NAMES[what]} failed: the game session has ended (${why}).`;
     if (this.signedOut) return;
     this.signedOut = true;
     clearTimeout(this.retryTimer);
-    this.notice('You are signed out (perhaps in another tab), so your progress is not being saved. Sign in again to keep it.', [
+    this.notice(`You are signed out (${why}), so your progress is not being saved. Sign in again to keep it.`, [
       { label: 'Sign in again', id: 'notice-signin', run: () => void this.signInAgain() },
     ]);
   }

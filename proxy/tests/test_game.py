@@ -226,7 +226,8 @@ def nb_transport(status: int, body: dict | None = None):
 
     def handler(req: httpx.Request) -> httpx.Response:
         seen.append(req)
-        assert req.url.path == "/api/authentication-check/"
+        # the sign-in check, and the read-only user lookup the proxy makes (with its own token) before a write
+        assert req.url.path in ("/api/authentication-check/", "/api/users/users/7/")
         return httpx.Response(status, json=body or {})
     return httpx.MockTransport(handler), seen
 
@@ -333,7 +334,8 @@ def test_store_flag_cap(tmp_path):
 
 
 def test_game_state_never_reaches_netbox(tmp_path):
-    """Every game route answers without one request to NetBox (the identity check at sign-in aside)."""
+    """No game state is ever sent to NetBox: the only requests are the identity check at sign-in and the read-only user
+    lookup before each write."""
     t, seen = nb_transport(200, {"id": 7, "username": "jdoe", "first_name": "", "last_name": ""})
     cl = netbox_client(tmp_path, t)
     csrf = cl.post("/api/game/session", json={"token": "nbt_player.playersecret"}, headers={CSRF_HEADER: "x"}).json()["csrf_token"]
@@ -342,7 +344,9 @@ def test_game_state_never_reaches_netbox(tmp_path):
     cl.put("/api/game/settings", json=DEFAULT_SETTINGS, headers=h)
     cl.patch("/api/game/flags", json={"flags": {"a": 1}}, headers=h)
     cl.get("/api/game/state")
-    assert [q.method for q in seen] == ["GET"]
+    assert [q.method for q in seen] == ["GET"] * 4
+    assert [q.url.path for q in seen[1:]] == ["/api/users/users/7/"] * 3
+    assert all(not q.content for q in seen)
     assert json.loads(cl.get("/api/game/session").content)["player"]["display_name"] is None
 
 

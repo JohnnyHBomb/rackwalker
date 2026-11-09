@@ -109,6 +109,7 @@ class Site(NbObject):
     longitude: float | None = None
     description: str = ""
     region: Ref | None = None
+    physical_address: str | None = ""
 
 
 class Location(NbObject):

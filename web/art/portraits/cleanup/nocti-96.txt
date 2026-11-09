@@ -1,0 +1,83 @@
+# Nocti, 96 x 96: hand clean-up after the area downscale and palette mapping (format: portrait.mjs, cleanup()).
+## left eye: amber iris, a round black pupil without a brown fringe, a clean two-by-two glint
+34,40 35,40 ye1
+36,40 k0
+36,39 ye1
+37,39 ye1
+39,40 k0
+34,42 ye1
+40,41 k0
+40,43 k0
+40,44 ye1
+35,44 k0
+36,45 ye1
+38,45 k0
+39,45 ye1
+## right eye: the lid casts a dark rim on the iris; the pupil, rounded, looks out from under it with one glint
+53,40 55,40 ye0
+60,40 k0
+61,40 63,40 ye0
+55,41 k0
+56,41 w
+55,43 k0
+55,44 ye1
+60,44 k0
+56,45 ye1
+57,45 k0
+59,45 ye1
+61,42 ye1
+## beak: a gold triangle, lit on the left, with a one-pixel black outline narrowing to a sharp tip
+43,49 k0
+44,49 47,49 ye1
+48,49 51,49 ye0
+52,49 k0
+43,50 wd4
+44,50 k0
+45,50 47,50 ye1
+48,50 50,50 ye0
+51,50 k0
+52,50 wd3
+44,51 k0
+45,51 47,51 ye1
+48,51 49,51 ye0
+50,51 k0
+45,52 k0
+46,52 47,52 ye1
+48,52 49,52 ye0
+50,52 k0
+45,53 k0
+46,53 47,53 ye1
+48,53 49,53 ye0
+50,53 k0
+45,54 wd4
+46,54 k0
+47,54 ye1
+48,54 ye0
+49,54 k0
+50,54 wd4
+45,55 wd4
+46,55 k0
+47,55 ye1
+48,55 ye0
+49,55 k0
+50,55 wd4
+46,56 wd4
+47,56 48,56 k0
+49,56 wd4
+46,57 wd4
+47,57 48,57 k0
+49,57 wd4
+## feet: four amber toes, lit on the left, on a dark line where the body meets the bench
+37,78 38,80 ye1
+39,78 39,80 ye0
+40,78 41,80 k0
+42,78 43,80 ye1
+44,78 44,80 ye0
+45,78 45,79 wd4
+50,78 50,79 wd4
+51,78 52,80 ye1
+53,78 53,80 ye0
+54,78 55,80 k0
+56,78 57,80 ye1
+58,78 58,80 ye0
+36,81 59,81 k0

@@ -1,0 +1,157 @@
+# Byte, 96 x 96: hand clean-up after the area downscale and palette mapping (format: portrait.mjs, cleanup()).
+## face discs: a clean dark rim, the white and the pale blue without grey or brown half-tones
+35,34 38,34 w
+33,35 w
+32,36 w
+31,37 w
+30,38 30,42 w
+45,38 45,44 w
+44,40 44,42 w
+43,38 w
+43,43 43,44 w
+42,45 w
+41,46 w
+31,45 w
+32,46 w
+33,47 34,47 w
+39,47 40,47 w
+36,48 38,48 w
+42,48 w
+46,34 46,46 b0
+47,35 47,46 b0
+56,34 60,34 b5
+55,35 b5
+62,35 b5
+53,36 b5
+63,36 b5
+52,37 b5
+52,38 b5
+52,43 52,44 b5
+53,45 b5
+54,46 b5
+63,46 b5
+53,47 b5
+55,47 56,47 b5
+61,47 62,47 b5
+53,48 b5
+57,48 59,48 b5
+33,51 39,51 w
+40,51 b0
+54,51 62,51 b5
+33,53 40,53 w
+55,53 61,53 b5
+## eyes: gold iris with a darker ring, a round black pupil and a white glint, both lit from the top left
+34,37 35,37 ye1
+36,39 k0
+39,39 k0
+40,40 40,43 k0
+36,44 k0
+39,44 k0
+55,37 55,39 ye1
+56,37 57,37 ye1
+56,38 57,39 w
+59,39 k0
+55,40 55,43 k0
+56,44 k0
+59,44 k0
+## beak: a gold triangle, lit on the left, with a one-pixel dark outline and a sharp tip
+44,48 51,48 b0
+43,49 b0
+44,49 b0
+45,49 47,49 ye1
+48,49 50,49 ye0
+51,49 52,49 b0
+42,50 w
+43,50 44,50 b0
+45,50 47,50 ye1
+48,50 50,50 ye0
+51,50 52,50 b0
+53,50 b5
+44,51 w
+45,51 b0
+46,51 47,51 ye1
+48,51 49,51 ye0
+50,51 b0
+41,52 b0
+42,52 44,52 w
+45,52 b0
+46,52 47,52 ye1
+48,52 49,52 ye0
+50,52 b0
+51,52 53,52 w
+54,52 b0
+44,53 45,53 w
+46,53 b0
+47,53 ye1
+48,53 ye0
+49,53 b0
+50,53 51,53 w
+45,54 w
+46,54 b0
+47,54 ye1
+48,54 ye0
+49,54 b0
+50,54 w
+45,55 w
+46,55 b0
+47,55 ye1
+48,55 ye0
+49,55 b0
+50,55 w
+46,56 w
+47,56 48,56 b0
+49,56 w
+46,57 49,58 w
+## belly: the chevron feathers without grey fringes
+40,57 w
+44,57 w
+51,57 w
+55,57 w
+38,58 w
+39,59 w
+45,59 w
+50,59 w
+55,60 w
+42,61 w
+53,61 w
+46,65 w
+49,65 w
+47,66 48,66 w
+45,67 w
+50,67 w
+46,68 w
+49,68 w
+39,72 w
+45,72 w
+50,72 w
+34,73 w
+38,73 w
+46,73 w
+49,73 w
+35,74 w
+42,74 w
+53,74 w
+36,75 w
+## feet: four gold toes, lit on the left, on a dark ground where the body meets the perch
+36,76 45,76 w
+50,76 56,76 w
+36,77 36,80 b0
+37,77 38,80 ye1
+39,77 39,80 ye0
+40,77 41,80 b0
+42,77 43,80 ye1
+44,77 44,80 ye0
+45,77 45,79 w
+50,77 50,79 w
+51,77 52,80 ye1
+53,77 53,80 ye0
+54,77 55,80 b0
+56,77 57,80 ye1
+58,77 58,80 ye0
+59,77 59,80 b0
+37,81 58,81 b0
+## no grey or brown specks left beside the right iris or under the beak
+64,37 64,43 b5
+52,36 b5
+52,41 52,42 b5
+47,59 48,59 w

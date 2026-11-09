@@ -25,7 +25,7 @@ describe('country sets', () => {
     expect(has(nl, 'windmill') && has(nl, 'sails') && has(nl, 'hog')).toBe(true);
     expect(nl.terrain.includes('F')).toBe(true); // tulip fields
     expect(nl.terrain.includes('B')).toBe(true); // a canal with a bridge
-    expect(has(gb, 'phone_box') && has(gb, 'badger')).toBe(true);
+    expect(has(gb, 'phone_box') && has(gb, 'badger') && has(gb, 'fox')).toBe(true);
     expect(has(none, 'well') && has(none, 'rabbit')).toBe(true);
     expect(has(none, 'windmill') || has(none, 'phone_box')).toBe(false);
   });

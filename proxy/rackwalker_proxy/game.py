@@ -31,6 +31,7 @@ from collections.abc import Callable
 from typing import Annotated, Any
 from urllib.parse import urlsplit
 
+import anyio
 import httpx
 from fastapi import Body, FastAPI, Request
 from fastapi.concurrency import run_in_threadpool
@@ -39,7 +40,7 @@ from fastapi.responses import JSONResponse
 
 from . import schema
 from .errors import ApiError
-from .gamestore import GameStore, Session, StoreError, duplicate_key
+from .gamestore import GameStore, Session, StoreError, duplicate_key, upgrade_settings
 from .netbox import auth_header
 
 log = logging.getLogger("rackwalker_proxy.game")
@@ -48,13 +49,12 @@ COOKIE = "rackwalker_session"
 COOKIE_PATH = "/api"
 CSRF_HEADER = "X-RackWalker-CSRF"
 LOCAL_PLAYER = {"id": 0, "username": "local", "display_name": "Local player"}
-# A session is checked against NetBox (does its user still exist, and is it active?) when the last good check is
-# older than RECHECK_SECONDS on any request, and older than WRITE_FRESH_SECONDS before any write, so a NetBox user who
-# is deactivated or deleted loses the game session within a minute, and at once before writing anything. When NetBox
-# cannot answer, reads go on and writes go on for GRACE_SECONDS after the last good check, then are refused.
+# A session is checked against NetBox (does its user still exist, and is it active?) before every write, and on reads
+# when the last good check is older than the recheck interval (RACKWALKER_SESSION_RECHECK, default RECHECK_SECONDS).
+# A user NetBox no longer has (gone) or has deactivated (inactive) ends every session of that player at once, with a 401
+# whose details give the reason. When NetBox cannot answer, a read keeps the session and a write is refused
+# (netbox_unreachable): nothing is written for a user NetBox has not just confirmed.
 RECHECK_SECONDS = 60.0
-WRITE_FRESH_SECONDS = 5.0
-GRACE_SECONDS = 300.0
 _now = time.monotonic
 Slot = Annotated[str, PathParam(pattern=r"^(auto|1|2|3)$")]
 Json = Annotated[Any, Body()]
@@ -105,36 +105,36 @@ async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTranspor
         raise ApiError("netbox_error", "NetBox's sign-in check answered in an unexpected shape.", None) from None
 
 
-def netbox_user_active(url: str, proxy_token: str, uid: int, transport: Any = None) -> bool | None:
-    """Is NetBox user `uid` still there and active? True / False, or None when NetBox cannot say (unreachable, an error,
+async def netbox_user_status(url: str, proxy_token: str, uid: int, transport: httpx.AsyncBaseTransport | None = None) -> str | None:
+    """'active', 'gone' (404) or 'inactive' for NetBox user `uid`, or None when NetBox cannot say (unreachable, an error,
     or the proxy's token may not view users). Asked with the proxy's own token: the player's token was never kept."""
     if not url or not proxy_token:
         return None
-    extra = {"transport": transport} if isinstance(transport, httpx.BaseTransport) else {}
+    extra = {"transport": transport} if transport is not None else {}
     try:
-        with httpx.Client(timeout=5, **extra) as hc:
-            r = hc.get(f"{url}/api/users/users/{uid}/", headers={"Authorization": auth_header(proxy_token), "Accept": "application/json"})
+        async with httpx.AsyncClient(timeout=5, **extra) as hc:
+            r = await hc.get(f"{url}/api/users/users/{uid}/", headers={"Authorization": auth_header(proxy_token), "Accept": "application/json"})
     except httpx.HTTPError:
         return None
     if r.status_code == 404:
-        return False
+        return "gone"
     if r.status_code != 200:
         if r.status_code == 403:
             log.warning("the proxy's NetBox token may not view users: game sessions cannot be rechecked")
         return None
     try:
-        return r.json().get("is_active", True) is not False
-    except ValueError:
+        return "active" if r.json().get("is_active", True) is not False else "inactive"
+    except (ValueError, AttributeError):
         return None
 
 
-def fixture_user_active(fixtures_dir: Path, uid: int) -> bool:
+def fixture_user_status(fixtures_dir: Path, uid: int) -> str:
     """Fixture mode: a player is active while fixtures/players.json lists them without "active": false."""
     path = fixtures_dir / "players.json"
     for p in (json.loads(path.read_text())["players"] if path.exists() else []):
         if p["user"]["id"] == uid:
-            return p.get("active", True) is not False
-    return False
+            return "active" if p.get("active", True) is not False else "inactive"
+    return "gone"
 
 
 def fixture_whoami(fixtures_dir: Path, token: str) -> dict[str, Any]:
@@ -150,7 +150,8 @@ def fixture_whoami(fixtures_dir: Path, token: str) -> dict[str, Any]:
 
 
 def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: str, fixtures_dir: Path | None, local_player: bool,
-            allowed_hosts: set[str], cookie_secure: bool, transport: Any = None, netbox_token: str = "") -> None:
+            allowed_hosts: set[str], cookie_secure: bool, transport: httpx.AsyncBaseTransport | None = None, netbox_token: str = "",
+            recheck_s: float = RECHECK_SECONDS) -> None:
 
     # Every route that touches the store is a plain `def`, which FastAPI runs in its thread pool: SQLite work (opening
     # the file, a migration, the fsync of each commit) can take seconds on a busy disk, and on the event loop it would
@@ -180,14 +181,16 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
     checked: dict[int, float] = {}  # user id -> time of the last check NetBox answered "active"
     checked_lock = threading.Lock()
 
-    def user_active(uid: int) -> bool | None:
+    def user_status(uid: int) -> str | None:
         if fixtures_dir:
-            return fixture_user_active(fixtures_dir, uid)
-        return netbox_user_active(netbox_url, netbox_token, uid, transport)
+            return fixture_user_status(fixtures_dir, uid)
+        # session_of runs in a worker thread (store routes are plain `def`), so the async lookup runs on the event loop
+        return anyio.from_thread.run(netbox_user_status, netbox_url, netbox_token, uid, transport)
 
     def session_of(request: Request, write: bool = False) -> Session | None:
-        """The request's session, rechecked against NetBox when due. A user NetBox no longer has, or has deactivated,
-        loses the session here (and every other session of theirs at its next request)."""
+        """The request's session, rechecked against NetBox before every write and on reads when the last check is older
+        than `recheck_s`. A user NetBox no longer has, or has deactivated, loses every session here: 401 with
+        details.reason "gone" or "inactive"."""
         cookie = request.cookies.get(COOKIE)
         # No cookie, no session: answered without the store, so a signed-out page never waits for the file.
         s = get_store().session(cookie) if cookie else None
@@ -196,24 +199,25 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         now = _now()
         with checked_lock:
             last = checked.get(s.user_id)
-        age = now - last if last is not None else float("inf")
-        if age < (WRITE_FRESH_SECONDS if write else RECHECK_SECONDS):
+        if not write and last is not None and now - last < recheck_s:
             return s
-        active = user_active(s.user_id)
-        if active is True:
+        status = user_status(s.user_id)
+        if status == "active":
             with checked_lock:
                 checked[s.user_id] = now
             return s
-        if active is False:
-            log.info("game session ended: NetBox user %s is gone or not active", s.user_id)
-            get_store().end_session(cookie)
-            with checked_lock:
-                checked.pop(s.user_id, None)
-            return None
-        if write and age > GRACE_SECONDS:
-            raise ApiError("netbox_unreachable", "NetBox cannot confirm your user right now, so nothing was written; "
-                           "your game keeps it and tries again.", None)
-        return s
+        if status is None:
+            if write:
+                raise ApiError("netbox_unreachable", "NetBox cannot confirm your user right now, so nothing was written; "
+                               "your game keeps it and tries again.", None)
+            return s
+        log.info("game sessions ended: NetBox user %s is %s", s.user_id, status)
+        get_store().end_user_sessions(s.user_id)
+        with checked_lock:
+            checked.pop(s.user_id, None)
+        what = "deleted" if status == "gone" else "deactivated"
+        raise ApiError("unauthorized", f"Your NetBox user was {what} in NetBox, so the game session has ended. "
+                       "Sign in again with an active NetBox user.", {"reason": status})
 
     def origin_ok(request: Request) -> bool:
         origin = request.headers.get("origin")
@@ -271,7 +275,12 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
 
     @app.get("/api/game/session")
     def get_session(request: Request):
-        s = session_of(request)
+        try:
+            s = session_of(request)
+        except ApiError as e:
+            if e.code != "unauthorized":
+                raise
+            s = None
         resp = no_store(JSONResponse(session_body(s)))
         if s is None and request.cookies.get(COOKIE):
             resp.delete_cookie(COOKIE, path=COOKIE_PATH, httponly=True, samesite="strict", secure=cookie_secure)
@@ -300,10 +309,15 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
 
     @app.delete("/api/game/session")
     def sign_out(request: Request):
+        # Signing out needs the same Origin and CSRF checks as a write, but not NetBox: it only ends this session.
         cookie = request.cookies.get(COOKIE)
-        if (get_store().session(cookie) if cookie else None) is not None:
-            require(request, write=True)
-        get_store().end_session(request.cookies.get(COOKIE))
+        s = get_store().session(cookie) if cookie else None
+        if s is not None:
+            if not origin_ok(request):
+                raise ApiError("forbidden", "Cross-origin game writes are refused.", None)
+            if request.headers.get(CSRF_HEADER) != s.csrf:
+                raise ApiError("forbidden", f"Game writes need the session's {CSRF_HEADER} header.", None)
+        get_store().end_session(cookie)
         resp = no_store(JSONResponse(session_body(None)))
         resp.delete_cookie(COOKIE, path=COOKIE_PATH, httponly=True, samesite="strict", secure=cookie_secure)
         return resp
@@ -325,7 +339,8 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
     @app.put("/api/game/settings")
     def put_settings(request: Request, body: Json):
         uid = require(request, write=True)
-        return no_store(JSONResponse(get_store().put_settings(uid, check_bindings(_valid("GameSettings", body)))))
+        # Keys the player sent must not clash; actions they did not send (a client from before 2.2.0) get defaults.
+        return no_store(JSONResponse(get_store().put_settings(uid, upgrade_settings(check_bindings(_valid("GameSettings", body))))))
 
     @app.patch("/api/game/flags")
     def patch_flags(request: Request, body: Json):

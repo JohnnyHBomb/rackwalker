@@ -7,12 +7,13 @@
     <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1e2440"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
     <linearGradient id="stream" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#1aa8d8" stop-opacity="0"/><stop offset="0.5" stop-color="#5ef0ff" stop-opacity="0.55"/><stop offset="1" stop-color="#1aa8d8" stop-opacity="0"/></linearGradient>
     <linearGradient id="col" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#e2dfd2"/><stop offset="0.6" stop-color="#b3aeb0"/><stop offset="1" stop-color="#5c5670"/></linearGradient>
-    <radialGradient id="skin" cx="0.38" cy="0.35" r="0.75"><stop offset="0" stop-color="#ffd8b0"/><stop offset="0.55" stop-color="#e8a678"/><stop offset="1" stop-color="#b8684a"/></radialGradient>
-    <linearGradient id="hair" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#4a2a6a"/><stop offset="0.45" stop-color="#2a1d33"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
+    <clipPath id="face"><path d="M272 306 C 272 234, 322 198, 384 198 C 446 198, 496 234, 496 306 C 496 378, 466 432, 424 462 C 402 478, 366 478, 344 462 C 302 432, 272 378, 272 306 Z"/></clipPath>
     <linearGradient id="robe" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#2f3a5e"/><stop offset="0.5" stop-color="#1e2440"/><stop offset="1" stop-color="#140c1c"/></linearGradient>
     <radialGradient id="iris" cx="0.4" cy="0.35" r="0.7"><stop offset="0" stop-color="#fff27a"/><stop offset="0.6" stop-color="#f0c030"/><stop offset="1" stop-color="#b07818"/></radialGradient>
   </defs>
   <rect width="768" height="768" fill="url(#bg)"/>
+  <!-- the scene is drawn at 768 and framed closer (x1.35 about the face) so the face fills the small portraits -->
+  <g transform="translate(384 330) scale(1.35) translate(-384 -330)">
   <!-- stream of light -->
   <path d="M0 520 C 180 470, 300 560, 470 480 S 700 420, 768 450 L 768 520 C 640 500, 560 560, 420 560 S 160 540, 0 590 Z" fill="url(#stream)"/>
   <!-- cracked marble column, left -->
@@ -24,8 +25,11 @@
   <rect x="610" y="90" width="150" height="678" fill="#2a1d33"/><rect x="622" y="102" width="126" height="666" fill="#140c1c"/>
   <g fill="#1e2440"><rect x="630" y="130" width="110" height="40"/><rect x="630" y="186" width="110" height="40"/><rect x="630" y="242" width="110" height="40"/><rect x="630" y="298" width="110" height="40"/><rect x="630" y="354" width="110" height="40"/></g>
   <g><circle cx="650" cy="150" r="7" fill="#8cc24a"/><circle cx="672" cy="150" r="7" fill="#5ef0ff"/><circle cx="650" cy="206" r="7" fill="#f0c030"/><circle cx="694" cy="262" r="7" fill="#8cc24a"/><circle cx="650" cy="318" r="7" fill="#5ef0ff"/><circle cx="672" cy="374" r="7" fill="#8cc24a"/></g>
-  <!-- hair behind the shoulders -->
-  <path d="M218 250 C 190 380, 170 520, 200 700 L 560 700 C 600 520, 580 380, 548 250 Z" fill="url(#hair)"/>
+  <!-- hair behind the shoulders: flat dark mass, outlined, with lit clumps falling like streams -->
+  <path d="M222 240 C 190 380, 176 540, 196 704 L 572 704 C 592 540, 578 380, 546 240 Z" fill="#2a1d33" stroke="#140c1c" stroke-width="12"/>
+  <path d="M236 330 C 224 440, 222 560, 214 690 L 250 690 C 252 560, 252 440, 262 330 Z" fill="#4a2a6a"/>
+  <path d="M520 330 C 530 440, 536 560, 548 690 L 566 690 C 560 560, 554 440, 540 330 Z" fill="#4a2a6a"/>
+  <g transform="translate(0 -44)">
   <!-- shoulders and chiton -->
   <path d="M120 768 C 140 620, 240 580, 300 570 L 470 570 C 540 580, 640 620, 660 768 Z" fill="url(#robe)"/>
   <path d="M300 570 C 330 640, 440 640, 470 570" fill="#b8684a"/>
@@ -38,46 +42,50 @@
   <!-- the aegis: a hexagon clasp on the left shoulder -->
   <polygon points="236,600 266,582 296,600 296,636 266,654 236,636" fill="#5ef0ff" stroke="#d8ffff" stroke-width="8"/>
   <polygon points="252,610 266,602 280,610 280,626 266,634 252,626" fill="#1aa8d8"/>
-  <!-- neck -->
-  <path d="M332 470 L 330 580 C 360 600, 410 600, 438 580 L 436 470 Z" fill="#b8684a"/>
-  <path d="M332 470 L 330 560 C 350 540, 370 520, 380 500 Z" fill="#e8a678"/>
-  <!-- face -->
-  <path d="M262 300 C 262 210, 330 168, 384 168 C 446 168, 506 214, 506 300 C 506 380, 470 452, 420 492 C 400 506, 368 506, 348 492 C 298 452, 262 380, 262 300 Z" fill="url(#skin)"/>
-  <!-- jaw shadow on the right -->
-  <path d="M506 300 C 506 380, 470 452, 420 492 C 440 440, 470 380, 476 300 Z" fill="#b8684a" opacity="0.8"/>
-  <!-- hair mass over the crown, clumps lit on their left -->
-  <path d="M236 330 C 220 200, 300 120, 384 118 C 476 116, 548 186, 536 330 C 524 260, 494 214, 450 196 C 420 240, 330 250, 300 220 C 280 250, 264 290, 236 330 Z" fill="url(#hair)"/>
-  <path d="M300 220 C 320 170, 360 150, 400 150 C 360 170, 330 200, 318 230 Z" fill="#8a58b8"/>
-  <path d="M240 330 C 236 420, 244 520, 232 620 C 214 520, 210 420, 226 300 Z" fill="#4a2a6a"/>
-  <path d="M532 330 C 540 430, 534 520, 548 620 C 566 520, 566 420, 544 300 Z" fill="#140c1c"/>
-  <!-- silver strands like fibre -->
-  <g stroke="#e2dfd2" stroke-width="7" fill="none" stroke-linecap="round">
-    <path d="M286 200 C 260 280, 252 400, 246 560"/><path d="M500 230 C 520 330, 528 430, 536 560"/>
   </g>
-  <g fill="#d8ffff"><circle cx="246" cy="560" r="8"/><circle cx="536" cy="560" r="8"/></g>
+  <!-- neck: in the face's shadow, lit on the left -->
+  <path d="M338 440 L 336 540 C 364 558, 406 558, 432 540 L 430 440 Z" fill="#b8684a"/>
+  <path d="M338 440 L 336 520 C 354 504, 366 488, 372 470 Z" fill="#e8a678"/>
+  <!-- face: flat tones (lit, base, shadow) and a dark outline, as a 16-bit portrait is painted -->
+  <g clip-path="url(#face)">
+    <rect x="240" y="180" width="300" height="320" fill="#e8a678"/>
+    <ellipse cx="548" cy="340" rx="96" ry="190" fill="#b8684a"/>
+    <ellipse cx="384" cy="508" rx="120" ry="44" fill="#b8684a"/>
+    <ellipse cx="330" cy="286" rx="46" ry="54" fill="#ffd8b0"/>
+  </g>
+  <path d="M272 306 C 272 234, 322 198, 384 198 C 446 198, 496 234, 496 306 C 496 378, 466 432, 424 462 C 402 478, 366 478, 344 462 C 302 432, 272 378, 272 306 Z" fill="none" stroke="#6b3830" stroke-width="12"/>
+  <!-- hair over the crown, parted on her left: a dark mass broken into clumps, lit from the top left -->
+  <path d="M244 330 C 226 196, 300 112, 384 110 C 470 108, 544 184, 530 330 C 518 276, 498 238, 462 220 C 440 248, 402 258, 372 250 C 340 260, 300 268, 282 262 C 266 280, 254 302, 244 330 Z" fill="#2a1d33" stroke="#140c1c" stroke-width="12"/>
+  <path d="M268 250 C 274 184, 322 136, 384 128 C 344 156, 316 196, 300 252 Z" fill="#4a2a6a"/>
+  <path d="M292 214 C 306 172, 336 148, 370 140 C 342 166, 324 192, 312 222 Z" fill="#8a58b8"/>
+  <path d="M400 130 C 450 138, 494 172, 510 230 C 486 196, 452 170, 414 158 Z" fill="#4a2a6a"/>
+  <path d="M418 140 C 452 150, 478 170, 492 196 C 470 178, 446 164, 424 156 Z" fill="#8a58b8"/>
+  <!-- silver strands like fibre, with lit tips -->
+  <g stroke="#e2dfd2" stroke-width="10" fill="none" stroke-linecap="round">
+    <path d="M292 190 C 262 280, 252 420, 240 600"/><path d="M490 214 C 518 320, 530 440, 540 600"/>
+  </g>
+  <g fill="#d8ffff"><circle cx="240" cy="604" r="10"/><circle cx="540" cy="604" r="10"/></g>
   <!-- circlet with a gem -->
-  <path d="M276 236 C 330 210, 440 210, 494 236" stroke="#f0c030" stroke-width="12" fill="none"/>
-  <polygon points="385,204 402,222 385,240 368,222" fill="#5ef0ff" stroke="#d8ffff" stroke-width="5"/>
-  <!-- brows: a little fierce -->
-  <path d="M300 288 C 320 274, 348 272, 364 282" stroke="#2a1d33" stroke-width="11" fill="none" stroke-linecap="round"/>
-  <path d="M404 282 C 422 272, 450 274, 470 288" stroke="#2a1d33" stroke-width="11" fill="none" stroke-linecap="round"/>
-  <!-- eyes: owl-gold, bright -->
-  <path d="M300 322 C 314 304, 352 302, 366 320 C 352 334, 316 336, 300 322 Z" fill="#fbf7e8"/>
-  <path d="M404 320 C 418 302, 456 304, 470 322 C 454 336, 418 334, 404 320 Z" fill="#fbf7e8"/>
-  <circle cx="334" cy="320" r="15" fill="url(#iris)"/><circle cx="436" cy="320" r="15" fill="url(#iris)"/>
-  <circle cx="334" cy="321" r="6" fill="#140c1c"/><circle cx="436" cy="321" r="6" fill="#140c1c"/>
-  <circle cx="328" cy="314" r="4" fill="#fbf7e8"/><circle cx="430" cy="314" r="4" fill="#fbf7e8"/>
-  <path d="M296 322 C 314 300, 354 298, 370 318" stroke="#140c1c" stroke-width="8" fill="none" stroke-linecap="round"/>
-  <path d="M400 318 C 416 298, 456 300, 474 322" stroke="#140c1c" stroke-width="8" fill="none" stroke-linecap="round"/>
-  <!-- nose: a shadow on the right side -->
-  <path d="M388 330 L 398 392 C 392 400, 380 400, 372 396" stroke="#b8684a" stroke-width="8" fill="none" stroke-linecap="round"/>
-  <!-- a calm, knowing smile -->
-  <path d="M346 432 C 368 448, 404 448, 424 430" stroke="#6b3830" stroke-width="9" fill="none" stroke-linecap="round"/>
-  <path d="M356 444 C 376 454, 398 454, 414 444" stroke="#e48c64" stroke-width="6" fill="none" stroke-linecap="round"/>
-  <!-- cheek warmth -->
-  <ellipse cx="312" cy="392" rx="22" ry="12" fill="#e48c64" opacity="0.45"/>
+  <path d="M280 252 C 336 228, 432 228, 490 252" stroke="#f0c030" stroke-width="14" fill="none"/>
+  <polygon points="385,216 404,236 385,256 366,236" fill="#5ef0ff" stroke="#d8ffff" stroke-width="6"/>
+  <!-- brows: short, level, a little fierce -->
+  <path d="M306 290 C 324 280, 346 280, 362 288" stroke="#2a1d33" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M406 288 C 422 280, 444 280, 462 290" stroke="#2a1d33" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <!-- eyes: owl-gold, bright, with a dark lash line -->
+  <path d="M302 320 C 316 304, 352 304, 366 320 C 352 332, 316 334, 302 320 Z" fill="#fbf7e8"/>
+  <path d="M402 320 C 416 304, 452 304, 466 320 C 452 334, 416 332, 402 320 Z" fill="#fbf7e8"/>
+  <circle cx="335" cy="319" r="14" fill="#f0c030"/><circle cx="433" cy="319" r="14" fill="#f0c030"/>
+  <circle cx="335" cy="320" r="6" fill="#140c1c"/><circle cx="433" cy="320" r="6" fill="#140c1c"/>
+  <path d="M298 320 C 316 300, 354 300, 370 316" stroke="#140c1c" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M398 316 C 414 300, 452 300, 470 320" stroke="#140c1c" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <!-- nose: a shadow on the right side and the tip -->
+  <path d="M390 334 L 398 384 C 392 392, 382 392, 374 388" stroke="#b8684a" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <!-- a calm, knowing smile: the corners turn up -->
+  <path d="M348 414 C 368 428, 402 428, 422 412" stroke="#6b3830" stroke-width="10" fill="none" stroke-linecap="round"/>
+  <path d="M360 428 C 376 436, 396 436, 410 428" stroke="#b8684a" stroke-width="8" fill="none" stroke-linecap="round"/>
   <!-- the stylus tip tracing a glyph, lower right -->
   <path d="M560 768 L 610 520" stroke="#b3aeb0" stroke-width="12"/>
   <circle cx="612" cy="510" r="18" fill="#d8ffff"/><circle cx="612" cy="510" r="34" fill="#5ef0ff" opacity="0.35"/>
   <path d="M612 510 l 40 -30 l 30 20 l 30 -40" stroke="#5ef0ff" stroke-width="6" fill="none"/>
+  </g>
 </svg>

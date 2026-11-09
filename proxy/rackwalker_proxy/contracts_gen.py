@@ -57,7 +57,7 @@ class Country(RootModel[str]):
     root: Annotated[
         str,
         Field(
-            description="ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set.",
+            description="ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's own region as a two-letter code or a country name, else the last line of its physical address); null = unknown. Picks the overworld's landmark and villager set.",
             pattern='^[A-Z]{2}$',
         ),
     ]
@@ -85,7 +85,7 @@ class Site(BaseModel):
     country: Annotated[
         Country | None,
         Field(
-            description="ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set."
+            description="ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's own region as a two-letter code or a country name, else the last line of its physical address); null = unknown. Picks the overworld's landmark and villager set."
         ),
     ]
     description: str
@@ -1207,61 +1207,61 @@ class KeyBindings(BaseModel):
         ),
     ]
     zoom_in: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
     zoom_out: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
     search: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
     rotate: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
     trace: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
     unrack: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
     undo: Annotated[
-        list[KeyListItem],
+        list[KeyListItem] | None,
         Field(
             description='KeyboardEvent.code values (layout-independent), e.g. ArrowUp, KeyW, Space.',
             max_length=3,
             min_length=1,
         ),
-    ]
+    ] = None
 
 
 class GameSettings(BaseModel):

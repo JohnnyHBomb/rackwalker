@@ -152,8 +152,10 @@ invalidates it, and a read that was still running when an apply finished is not 
 
 `Site.country` is the site's ISO 3166-1 alpha-2 country code, upper case, or `null` when unknown. The proxy takes the
 site's custom field `iso_country` (text, `^[A-Z]{2}$`, created by `devnetbox/seed.py`) when it holds two letters, else
-the slug of the site's own region when that slug is two letters (a region named after its country code), else
-`null`. Only the overworld uses it, to pick a region's landmark and villager set; it is read-only for the editor.
+the site's own region (not its parents): its slug or name when that is a two-letter code (`gb`) or a country name the
+proxy knows (`United Kingdom`, `Netherlands`, `UK`; `proxy/rackwalker_proxy/country.py`), else the last line of the
+site's physical address read the same way (`... Utrecht, Netherlands`), else `null`. Two-letter codes that are not
+countries (`EU`, `UN`, `XX`, `ZZ`) count as unknown. Only the overworld uses it, to pick a region's landmark and villager set; it is read-only for the editor.
 
 ## Game state (`/api/game/*`, added in 2.1.0)
 
@@ -173,13 +175,13 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   player). Only its SHA-256 is stored, with the player id and a CSRF token. Sign-out deletes it, and signing in again
   ends the previous session of that browser.
 * **Recheck (2.2.0).** The proxy asks NetBox, with its own token, whether the session's user still exists and is
-  active (`GET /api/users/users/<id>/`, `is_active`): on any request when the last good answer is older than 60 s,
-  and before every write (game writes and NetBox change writes) when it is older than 5 s. A user NetBox no longer
-  has (404) or has deactivated loses the session at once: the request answers 401 `unauthorized` (`GET
-  /api/game/session` answers signed out and clears the cookie). If NetBox cannot answer, reads go on, and writes go on
-  for 5 minutes after the last good answer, then 502 `netbox_unreachable` until NetBox answers again. The proxy's
-  NetBox user needs view permission on users (`devnetbox/proxy_tokens.py` grants it). In fixture mode a player whose
-  `fixtures/players.json` entry has `"active": false` cannot sign in.
+  active (`GET /api/users/users/<id>/`, `is_active`): before every write (game writes and NetBox change writes), and on
+  reads when the last good answer is older than `RACKWALKER_SESSION_RECHECK` seconds (default 60). A user NetBox no
+  longer has (404) or has deactivated loses every session at once: the request answers 401 `unauthorized` with
+  `details.reason` `gone` or `inactive` (`GET /api/game/session` answers signed out and clears the cookie). If NetBox
+  cannot answer, reads go on and writes answer 502 `netbox_unreachable` until NetBox answers again; sign-out never needs
+  NetBox. The proxy's NetBox user needs view permission on users (`devnetbox/proxy_tokens.py` grants it). In fixture
+  mode a player whose `fixtures/players.json` entry has `"active": false` cannot sign in.
 * **CSRF.** Every write (`POST`/`PUT`/`PATCH`/`DELETE` under `/api/game/`) needs the `X-RackWalker-CSRF` header: the
   session's `csrf_token` (from `GameSession`), or any value on sign-in. A custom header cannot be sent cross-site
   without a CORS preflight, which the proxy never grants; an `Origin` header, when present, must name an allowed host.

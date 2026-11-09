@@ -69,6 +69,8 @@ class Settings:
     local_player: bool = False
     # Secure flag on the session cookie: set RACKWALKER_COOKIE_SECURE=1 when the game is served over https.
     cookie_secure: bool = False
+    # Seconds between checks that a signed-in player's NetBox user still exists and is active (writes always check).
+    session_recheck: float = 60.0
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -83,7 +85,8 @@ class Settings:
                    docs=env.get("RACKWALKER_DOCS", "0") == "1",
                    state_dir=Path(env["RACKWALKER_STATE_DIR"]) if env.get("RACKWALKER_STATE_DIR") else REPO / "data",
                    local_player=env.get("RACKWALKER_LOCAL_PLAYER", "0") == "1",
-                   cookie_secure=env.get("RACKWALKER_COOKIE_SECURE", "0") == "1")
+                   cookie_secure=env.get("RACKWALKER_COOKIE_SECURE", "0") == "1",
+                   session_recheck=float(env.get("RACKWALKER_SESSION_RECHECK", "60")))
 
 
 class ReadCache:
@@ -312,5 +315,6 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
 
     game.install(app, open_store=lambda: GameStore(s.state_dir / "game.sqlite3"), netbox_url=s.netbox_url,
                  fixtures_dir=s.fixtures_dir, local_player=s.local_player, allowed_hosts=allowed_hosts,
-                 cookie_secure=s.cookie_secure, transport=transport, netbox_token=s.netbox_token)
+                 cookie_secure=s.cookie_secure, transport=transport, netbox_token=s.netbox_token,
+                 recheck_s=s.session_recheck)
     return app

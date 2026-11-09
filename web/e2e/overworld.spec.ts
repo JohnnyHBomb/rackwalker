@@ -44,6 +44,42 @@ test('every country set: its landmarks and villagers, at 3x', async ({ page }) =
   }
 });
 
+test('the tile engine draws only palette colours, in every theme, country set and region', async ({ page }) => {
+  await sheet(page);
+  const pal = JSON.parse(readFileSync(resolve(here, '../src/game/world/assets/palette.json'), 'utf8')).colours as string[];
+  const views: { theme?: string; country?: string; region: number }[] = [];
+  for (const theme of THEMES) views.push({ theme, region: 0 });
+  for (const country of ['NL', 'GB', 'ZZ']) {
+    const n = ((await page.evaluate((c) => window.__world!.info({ country: c }), country)) as { regions: unknown[] }).regions.length;
+    for (let region = 0; region < n; region++) views.push({ country, region });
+  }
+  const off = await page.evaluate(async ([views, pal]) => {
+    const ok = new Set(pal.map((h) => parseInt(h.slice(1), 16)));
+    const bad: string[] = [];
+    for (const v of views) {
+      const img = new Image();
+      img.src = window.__world!.capture({ ...v, scale: 1, t: 700 });
+      await img.decode();
+      const c = document.createElement('canvas');
+      c.width = img.width;
+      c.height = img.height;
+      const g = c.getContext('2d')!;
+      g.drawImage(img, 0, 0);
+      const d = g.getImageData(0, 0, c.width, c.height).data;
+      for (let i = 0; i < d.length; i += 4) {
+        const rgb = (d[i]! << 16) | (d[i + 1]! << 8) | d[i + 2]!;
+        if (!ok.has(rgb)) {
+          bad.push(`${JSON.stringify(v)} #${rgb.toString(16).padStart(6, '0')} at ${(i / 4) % c.width},${Math.floor(i / 4 / c.width)}`);
+          break;
+        }
+      }
+    }
+    return bad;
+  }, [views, pal] as const);
+  expect(views.length).toBeGreaterThan(8);
+  expect(off).toEqual([]);
+});
+
 test('the walk cycle in four directions, as a GIF', async ({ page }) => {
   await sheet(page);
   const dir = resolve(SHOTS, '.walk');

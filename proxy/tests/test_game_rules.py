@@ -306,6 +306,8 @@ def test_a_signed_in_players_write_names_them_in_the_netbox_changelog(tmp_path):
         async def handle_async_request(self, request):
             if request.url.path == "/api/authentication-check/":
                 return httpx.Response(200, json={"id": 9, "username": "player-nine", "first_name": "", "last_name": ""}, request=request)
+            if request.url.path == "/api/users/users/9/":  # the session recheck before the write
+                return httpx.Response(200, json={"id": 9, "username": "player-nine", "is_active": True}, request=request)
             return await super().handle_async_request(request)
 
     def on_write(req):
@@ -338,3 +340,21 @@ def test_settings_from_before_the_building_keys_keep_the_players_own_keys():
     assert up["keys"]["zoom_in"] == ["NumpadAdd"]          # the new action's default gives way
     assert up["keys"]["rotate"] == DEFAULT_SETTINGS["keys"]["rotate"]
     assert up["keys"]["cancel"] == ["Escape"] and up["hint_level"] == "low"
+
+
+def test_settings_put_in_the_shape_from_before_the_building_keys_is_taken_and_filled(tmp_path):
+    cl = fixture_client(tmp_path)
+    csrf = sign_in(cl)
+    old = {"hint_level": "low", "audio": {"muted": False, "volume": 0.5}, "reduce_motion": True,
+           "keys": {"up": ["ArrowUp"], "down": ["ArrowDown"], "left": ["ArrowLeft"], "right": ["ArrowRight"],
+                    "interact": ["Enter"], "cancel": ["Escape"], "menu": ["KeyR"]}}
+    r = cl.put("/api/game/settings", json=old, headers={CSRF_HEADER: csrf})
+    assert r.status_code == 200, r.text
+    keys = r.json()["keys"]
+    # the player's keys stay theirs; rotate's only default (R) is the player's menu key, so rotate waits for a remap
+    assert {a: keys[a] for a in old["keys"]} == old["keys"]
+    assert "rotate" not in keys
+    assert {a: keys[a] for a in ("zoom_in", "search", "trace", "unrack", "undo")} == \
+        {a: DEFAULT_SETTINGS["keys"][a] for a in ("zoom_in", "search", "trace", "unrack", "undo")}
+    assert cl.get("/api/game/state").json()["settings"]["keys"] == keys
+    assert not list(schema_validator("GameSettings").iter_errors(r.json()))

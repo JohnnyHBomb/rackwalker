@@ -20,16 +20,30 @@ describe('portraits', () => {
       }
     }
   });
+  it('every portrait, at both sizes, has a hand clean-up pass with a reason for each step', () => {
+    for (const who of ['ilatea', 'byte', 'nocti'])
+      for (const n of [64, 96]) {
+        const text = readFileSync(resolve(dir, `${who}-${n}.txt`), 'utf8');
+        const steps = text.split('\n').filter((l) => l.startsWith('## '));
+        expect(steps.length, `${who}-${n}`).toBeGreaterThanOrEqual(3);
+        for (const s of steps) expect(s.length, s).toBeGreaterThan(20);
+      }
+  });
   it('every clean-up edit is in the shipped pixels', () => {
     for (const f of readdirSync(dir)) {
-      const [who, n] = f.replace('.json', '').split('-') as [string, string];
-      const spec = JSON.parse(readFileSync(resolve(dir, f), 'utf8')) as { steps: { why: string; px: [number, number, string][] }[] };
+      const [who, n] = f.replace('.txt', '').split('-') as [string, string];
       const rows = (portraits as P)[who]![n]!.frames[0]!;
       const last = new Map<string, string>();
-      for (const s of spec.steps) {
-        expect(s.why.length).toBeGreaterThan(10);
-        for (const [x, y, c] of s.px) last.set(`${x},${y}`, c);
+      for (const line of readFileSync(resolve(dir, f), 'utf8').split('\n')) {
+        const m = /^(\d+),(\d+)(?: (\d+),(\d+))? ([a-z]+\d?)$/.exec(line.trim());
+        if (!m) {
+          expect(line.trim() === '' || line.startsWith('#'), `${f}: ${line}`).toBe(true);
+          continue;
+        }
+        const [x0, y0] = [+m[1]!, +m[2]!], [x1, y1] = m[3] ? [+m[3], +m[4]!] : [x0, y0];
+        for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) last.set(`${x},${y}`, m[5]!);
       }
+      expect(last.size, f).toBeGreaterThan(50);
       for (const [k, c] of last) {
         const [x, y] = k.split(',').map(Number) as [number, number];
         expect(palette.names[palette.alphabet.indexOf(rows[y]![x]!)], `${f} ${k}`).toBe(c);

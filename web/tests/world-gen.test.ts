@@ -104,6 +104,19 @@ describe('the map', () => {
     const moved = new WorldMap([seed[0]!, seed[1]!, { ...seed[2]!, latitude: 52.0 }]);
     expect(JSON.stringify(moved.doors)).not.toBe(JSON.stringify(m.doors));
   });
+  it('the door marker sits inside the doorway, below the sign above the door', async () => {
+    const { sprite } = await import('../src/game/world/engine');
+    const mk = sprite('marker');
+    expect(m.doors.length).toBe(3);
+    for (const d of m.doors) {
+      const o = m.objects.find((x) => x.kind === 'marker' && x.site === d.siteId)!;
+      const top = o.y - mk.oy - 1, bottom = o.y - mk.oy + mk.h; // the bob lifts the marker by up to one pixel
+      // every building's doorway spans 6 px above the door tile to 11 px into it (web/art/overworld/buildings.py door())
+      expect(top).toBeGreaterThanOrEqual(d.y * 16 - 6);
+      expect(bottom).toBeLessThanOrEqual(d.y * 16 + 11);
+      expect(o.x).toBe(d.x * 16 + 8);
+    }
+  });
   it('unknown themes fall back to the plain building', () => {
     const w = new WorldMap([S(1, 52, 4, 'NL', 'western')]);
     expect(w.doors[0]!.theme).toBe('debug');

@@ -12,6 +12,7 @@ from datetime import UTC, datetime
 from typing import Any
 
 from . import contracts_gen as c
+from . import country
 from . import netbox as nb
 from .errors import ApiError
 from .schema import CONTRACT_VERSION, enum
@@ -110,12 +111,9 @@ def cable_refs(cables: list[nb.Cable]) -> list[nb.PortRef]:
 
 
 def site_country(s: nb.Site) -> str | None:
-    """ISO 3166-1 alpha-2 country of a site: the custom field iso_country, else the site's own region slug when it is
-    two letters (a region named after its country code); anything else is unknown (None)."""
-    for v in (s.cf("iso_country"), s.region.slug if s.region else None):
-        if isinstance(v, str) and len(v.strip()) == 2 and v.strip().isascii() and v.strip().isalpha():
-            return v.strip().upper()
-    return None
+    """ISO 3166-1 alpha-2 country of a site, or None (see country.py for the order the sources are read in)."""
+    return country.site_country(s.cf("iso_country"), s.region.slug if s.region else None,
+                                s.region.name if s.region else None, s.physical_address)
 
 
 def site(s: nb.Site) -> c.Site:

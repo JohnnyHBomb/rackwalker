@@ -194,7 +194,7 @@ export interface Site {
    */
   iso_theme: ThemeId | null;
   /**
-   * ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's region slug when it is two letters); null = unknown. Picks the overworld's landmark and villager set.
+   * ISO 3166-1 alpha-2 country of the site (custom field iso_country, else the site's own region as a two-letter code or a country name, else the last line of its physical address); null = unknown. Picks the overworld's landmark and villager set.
    */
   country: string | null;
   description: string;
@@ -931,7 +931,7 @@ export interface SignInRequest {
   token: string;
 }
 /**
- * Up to three keys per action. up/down/left/right walk on the overworld; interact talks and chooses, and inside a building enters the selected object; cancel closes and goes back (inside a building: one level out); menu opens the menu; zoom_in, zoom_out, search, rotate (a rack), trace (a port), unrack (a device) and undo (with Ctrl or Cmd held) act inside buildings. Added in 2.2.0: zoom_in, zoom_out, search, rotate, trace, unrack, undo.
+ * Up to three keys per action. up/down/left/right walk on the overworld; interact talks and chooses, and inside a building enters the selected object; cancel closes and goes back (inside a building: one level out); menu opens the menu; zoom_in, zoom_out, search, rotate (a rack), trace (a port), unrack (a device) and undo (with Ctrl or Cmd held) act inside buildings. Added in 2.2.0 and optional, so settings written before 2.2.0 stay valid: zoom_in, zoom_out, search, rotate, trace, unrack, undo. The proxy fills a missing one with its default (the player's own keys win over a default that clashes with them) on every read and write.
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "KeyBindings".
@@ -944,13 +944,13 @@ export interface KeyBindings {
   interact: KeyList;
   cancel: KeyList;
   menu: KeyList;
-  zoom_in: KeyList;
-  zoom_out: KeyList;
-  search: KeyList;
-  rotate: KeyList;
-  trace: KeyList;
-  unrack: KeyList;
-  undo: KeyList;
+  zoom_in?: KeyList;
+  zoom_out?: KeyList;
+  search?: KeyList;
+  rotate?: KeyList;
+  trace?: KeyList;
+  unrack?: KeyList;
+  undo?: KeyList;
 }
 /**
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema

@@ -277,7 +277,7 @@ export function settingsPanel(host: HTMLElement, current: GameSettings, save: (s
       tr.dataset.action = a;
       tr.insertCell().textContent = ACTION_LABELS[a];
       const keys = tr.insertCell();
-      for (const k of s.keys[a]) {
+      for (const k of s.keys[a] ?? []) {
         const kbd = document.createElement('kbd');
         kbd.textContent = keyName(k);
         keys.append(kbd, ' ');

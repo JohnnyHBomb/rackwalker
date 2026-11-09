@@ -6,7 +6,7 @@ export const KEY_ACTIONS = ['up', 'down', 'left', 'right', 'interact', 'cancel',
 export type KeyAction = (typeof KEY_ACTIONS)[number];
 export const MAX_KEYS = 3;
 
-export const DEFAULT_KEYS: KeyBindings = {
+export const DEFAULT_KEYS: Required<KeyBindings> = {
   up: ['ArrowUp', 'KeyW'],
   down: ['ArrowDown', 'KeyS'],
   left: ['ArrowLeft', 'KeyA'],
@@ -60,15 +60,15 @@ const RESERVED = /^(Tab|F5|F11|F12|MetaLeft|MetaRight|ContextMenu|OSLeft|OSRight
  * Binds `code` to `action` as its first key (keeping up to two of its old keys). The code moves away from any other
  * action, unless that would leave the other action with no key at all: then the answer says why and nothing changes.
  */
-export function rebind(keys: KeyBindings, action: KeyAction, code: string): { keys: KeyBindings } | { error: string } {
+export function rebind<K extends KeyBindings>(keys: K, action: KeyAction, code: string): { keys: K } | { error: string } {
   if (!/^[A-Za-z0-9]{1,24}$/.test(code) || RESERVED.test(code)) return { error: `${code || 'That key'} cannot be bound.` };
   const other = actionOf(keys, code);
-  if (other && other !== action && keys[other].length === 1)
+  if (other && other !== action && keys[other]?.length === 1)
     return { error: `${keyName(code)} is the only key for "${ACTION_LABELS[other]}". Give that action another key first.` };
   const next = { ...keys } as Record<KeyAction, string[]>;
-  if (other && other !== action) next[other] = keys[other].filter((k) => k !== code);
-  next[action] = [code, ...keys[action].filter((k) => k !== code)].slice(0, MAX_KEYS);
-  return { keys: next as KeyBindings };
+  if (other && other !== action) next[other] = (keys[other] ?? []).filter((k) => k !== code);
+  next[action] = [code, ...(keys[action] ?? []).filter((k) => k !== code)].slice(0, MAX_KEYS);
+  return { keys: next as K };
 }
 
 /** The keys bound to `action`, for text the player reads ("↑/W"); an unknown action stays as written. */
