@@ -141,7 +141,7 @@ raw downscale, both palette mappings and the cleaned result.
 ### Frame times
 
 `web/e2e/overworld.spec.ts` walks the player in the real game at 768 x 672 (3x) with chromium's CPU throttled 4x and
-writes `perf.json`: frame interval p95 17.3 ms (60 fps), composing a frame 2.3 ms median, 3.1 ms p95, no layout shift.
+writes `perf.json`: frame interval p95 17.3 ms (60 fps), composing a frame 2.2 ms median, 2.8 ms p95, no layout shift.
 A frame looks only at the objects near the camera (`web/tests/world-engine.test.ts` checks that a world of 200 sites
 looks at no more than a world of 3): in node, unthrottled, composing a frame of a 200-site world (122,000 objects)
 takes 0.6 ms median, as for 3 sites.
