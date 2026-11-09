@@ -178,6 +178,15 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             sites_out.append({"site_id": sid, "name": e.sites[sid]["name"], "completeness": comp, "open_quests": len(open_lines),
                               "boss_ready": comp["total"] > 0 and comp["open"] == 0, "boss_acknowledged": sid in acks,
                               "giver": {"name": GIVER_NAMES[sid % len(GIVER_NAMES)]}})
+        # A line the player had begun whose finding is gone: someone recorded it by other means. It waits in the log as
+        # "ready" with nothing to write; checking it against NetBox completes it.
+        if scope == "netbox":
+            for r in rows.values():
+                if r["status"] in ("active", "parked", "ready", "practised") and r["quest_id"] not in by_id and site_id in (None, r["site_id"]):
+                    snap = r["snapshot"]
+                    gone = {"step": None, "proposal": None, "checklist": [], "said": [], "target": None,
+                            "note": "NetBox already shows this. Check it against NetBox to complete the line."}
+                    out_quests.append(quest_body(scope, {**snap, "finding": {**snap["finding"], "data": {}}}, r, gone, "ready"))
         done = sorted((r for r in rows.values() if r["status"] in ("done", "dismissed") and site_id in (None, r["site_id"])),
                       key=lambda r: r["updated_at"], reverse=True)[:MAX_DONE]
         for r in done:
@@ -298,7 +307,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         st = store()
         a = findings.analyse(after)
         base = row["checks"] if row else quests.check_ids(line)
-        still = set(quests.open_checks(a, line))
+        site_checks = a.checks.get(line["site_id"], {})
+        still = {cid for cid in base if site_checks.get(cid) is False}
         confirmed = [cid for cid in base if cid not in still]
         newly = [cid for cid in confirmed if cid not in (row["verified"] if row else [])]
         complete = not still
@@ -330,8 +340,15 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         st = store()
         rows = st.quests(uid, "netbox")
         prows = st.quests(uid, "practice")
-        state = quests.evaluate(e, line, s["saved"]["answers"], frozenset(st.rewards(uid)["tools"])) if s["saved"]["status"] == "active" else None
-        return {"quest": quest_body(scope, line, s["saved"], state, s["saved"]["status"]), "mode": mode, "verified": verified,
+        state = None
+        shown = line
+        if s["saved"]["status"] == "active":
+            # the rest of the line, as the estate stands now (an errand goes on with the labels still missing)
+            fresh = next((x for x in quests.lines(e, findings.analyse(e)) if x["id"] == line["id"]), None)
+            if fresh is not None:
+                tools = frozenset(["label_maker", "cable_tracer"] if scope == "practice" else st.rewards(uid)["tools"])
+                shown, state = fresh, quests.evaluate(e, fresh, s["saved"]["answers"], tools)
+        return {"quest": quest_body(scope, shown, s["saved"], state, s["saved"]["status"]), "mode": mode, "verified": verified,
                 "complete": s["complete"], "xp_awarded": s["xp"], "potions_awarded": s["potions"], "message": message,
                 "can_now": line["outcome"] if s["complete"] and verified else None, "unlocked": s["unlocked"], "trace": trace, "result": result,
                 "rewards": rewards_body(st.rewards(uid), rows, prows, 0, loan=scope == "practice")}
@@ -437,7 +454,6 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 raise ApiError("not_found", "That quest is not open.", {"quest_id": b["quest_id"]})
             snap = row["snapshot"]
             line = {**snap, "finding": {**snap["finding"], "data": {}}, "site_id": row["site_id"]}
-            line["finding"]["data"] = {"gap_ids": row["checks"]} if row["checks"] and row["checks"] != [snap["finding"]["id"]] else {}
         s = await run_in_threadpool(settle, uid, "netbox", line, row, after, True)
         msg = (f"NetBox confirms it. {line['outcome']}" if s["complete"] else
                f"NetBox confirms {len(s['newly'])} more; the rest stays open." if s["newly"] else "NetBox does not show it yet.")

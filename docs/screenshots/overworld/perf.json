@@ -1,15 +1,15 @@
 {
  "viewport": "768x672 (3x)",
  "cpu_throttle": 4,
- "frames": 300,
+ "frames": 301,
  "frame_p50": 16.7,
- "frame_p95": 17.5,
- "frame_max": 18.5,
- "draw_p50": 2.6,
- "draw_p95": 4.7,
- "draw_max": 6.7,
+ "frame_p95": 17.4,
+ "frame_max": 20.2,
+ "draw_p50": 2.5,
+ "draw_p95": 3.7,
+ "draw_max": 5.7,
  "layout_shift": 0,
- "trace_frames": 870,
- "trace_gap_p95": 16.66,
+ "trace_frames": 1160,
+ "trace_gap_p95": 16.71,
  "trace_long": 0
 }

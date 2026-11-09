@@ -1,4 +1,4 @@
-# Contracts (version 2.2.0)
+# Contracts (version 2.3.0)
 
 These files are the interface between the two halves of RackWalker: the Python proxy (`proxy/`) and the browser
 game (`web/`). Each side builds and tests against them on its own, so a change here is deliberate and versioned
@@ -7,11 +7,11 @@ game (`web/`). Each side builds and tests against them on its own, so a change h
 | File | What it fixes | Who implements it |
 |---|---|---|
 | `scene.schema.json` | Every JSON body between web and proxy (JSON Schema 2020-12, `$defs`). **Source of truth.** | proxy produces, web consumes |
-| `openapi.yaml` | The 15 HTTP routes (8 scene and change routes, 7 game routes), wired to the `$defs` above | proxy |
+| `openapi.yaml` | The 23 HTTP routes (8 scene and change routes, the gap scanner, 14 game routes), wired to the `$defs` above | proxy |
 | `api.md` | Route rules: errors, status codes, ChangeSet semantics, the `update_fields` whitelist, caching | proxy, web editor |
 | `iso.md` + `web/src/contracts/iso.ts` | Tile size, axes, facing, screen mapping, depth key, zoom levels, GPS projection | web engine |
 | `theme.md` + `theme-slots.json` + `web/src/contracts/theme.ts` | Theme interface, palette keys, the 21 sprite slots with size and anchor | web engine, themes |
-| `dialogue.schema.json` | The dialogue script format (`web/src/game/scripts/*.json`): nodes, choices, branches, flags, `{key:<action>}` tokens. Not an HTTP body; the graph rules are in `validateScript` (`web/src/game/dialogue.ts`) | web (game data) |
+| `dialogue.schema.json` | The dialogue script format (`web/src/game/scripts/*.json`, and the scripts the game makes from a quest's questions): nodes, choices, branches, flags, `{key:<action>}` tokens; speakers `ilatea`, `byte`, `nocti` and `giver` (the quest giver of the site in play). Not an HTTP body; the graph rules are in `validateScript` (`web/src/game/dialogue.ts`) | web (game data) |
 | `../fixtures/` | One canned response per route, rendered from the dev NetBox seed model | web (fixture mode), tests |
 
 ## Generated code (never edit by hand)
@@ -39,7 +39,20 @@ ErrorResponse   { error: {code, message, details}, request_id? }   (every non-2x
 GameSession     signed_in, player: Player|null, csrf_token, local_mode                     sign-in (cookie session)
 GameState       contract_version, player, settings: GameSettings, flags: Flags, saves[ SaveSlot ]
 SaveSlot        slot (auto|1|2|3), rev, updated_at, data: SaveData {scene, overworld {x,y,facing}, iso|null}
+
+GapList         site_id, total, offset, limit, unlisted, items[ Gap {id, kind, object_id, field, rank, label} ], completeness
+QuestBoard      scope (netbox|practice), site_id|null, can_write, write_blocked, all_in_order, message, findings[ Finding ],
+                quests[ Quest ], queued, next_quest_id, sites[ SiteProgress {completeness, boss_ready, giver} ], rewards: Rewards
+Quest           id, kind, rank, title, purpose, outcome, status, step: QuestStep|null, proposal: ChangeSet|null, checklist[],
+                said[], target: QuestTarget|null, finding: Finding, xp, minutes, progress {total, verified}, lapsed
+QuestStep       id, prompt, input (choice|text|form), choices[ QuestChoice {id, label, kind} ], fields[ QuestField ], hint, error
+QuestAnswer     scope, quest_id, step, choice? | text? | values?          (request)
+QuestVerdict    quest, mode (real|dry_run|practice), verified, complete, xp_awarded, potions_awarded, message, can_now,
+                unlocked[ ToolId ], trace, result: ChangeResult|null, rewards
 ```
+
+Quest bodies (2.3.0) are made by the proxy from NetBox (or from the practice island, which is made up and lives in the
+game store); rules in `api.md` "Quests", and for a NetBox admin in `docs/quests.md`.
 
 Game bodies (2.1.0) are the game's own state, kept by the proxy in SQLite and never written into NetBox; rules in
 `api.md` "Game state".
@@ -81,7 +94,7 @@ Rules that both sides rely on:
    are `#rrggbb`.
 5. **Time** is RFC 3339 with an offset. `last_updated` on Site/Location/Rack/Device feeds the optimistic lock
    `if_unmodified_since` on change ops.
-6. **Supported NetBox**: 4.7.x for contract 2.2.0 (`/api/health` reports `netbox.supported`). The proxy
+6. **Supported NetBox**: 4.7.x for contract 2.3.0 (`/api/health` reports `netbox.supported`). The proxy
    authenticates with a v2 token (`Authorization: Bearer nbt_<key>.<token>`, NetBox >= 4.5); a legacy v1 token
    (deprecated in 4.6, removed in 5.0) is still sent as `Token <hex>`.
 7. **Trace normalisation**: NetBox's `/trace/` segments become `hops` in order. Crossing a circuit is a hop with
@@ -95,6 +108,7 @@ Rules that both sides rely on:
 | 2.0.0 | 2026-11-08 | First public contract of World of Confusion: RackWalker. Bodies cover NetBox data only (sites, locations, racks, devices, ports, cables, traces, change sets); targets NetBox 4.7.x. |
 | 2.1.0 | 2026-11-08 | Additive: the game shell. Seven `/api/game/*` routes (sign-in as a NetBox user, sign-out, game state, save slots, settings, flags), their `$defs` (`GameSession`, `SignInRequest`, `Player`, `GameState`, `GameSettings`, `KeyBindings`, `SaveData`, `SaveSlot`, `Flags`, `FlagsPatch`, ...), error codes `unauthorized` (401) and `forbidden` (403), fixtures `game-*.json`, `players.json`, `error-unauthorized.json`. Scene and change bodies are unchanged apart from `contract_version`. Rules (`api.md`): with `WRITE_ENABLED=1` the change routes need a signed-in player and the session's CSRF header, and the changelog message names the player (`rackwalker (<username>): <reason>`); the session cookie's path is `/api`; stored game rows are checked on read. |
 | 2.2.0 | 2026-11-09 | Additive, for the overworld: `Site.country` (ISO 3166-1 alpha-2 or null; custom field `iso_country`, else the site's region code or country name, else its address's last line). `KeyBindings` gains `zoom_in`, `zoom_out`, `search`, `rotate`, `trace`, `unrack`, `undo` so every key inside a building is remappable (`cancel` defaults to Escape and Backspace); the new actions are optional, so 2.1.0-shaped settings stay valid, and the proxy fills a missing one with its default on read and write. Rules (`api.md`): the proxy rechecks a signed-in player's NetBox user (exists, active) before every write and on reads every 60 s (`RACKWALKER_SESSION_RECHECK`); a deleted or deactivated user gets 401 with `details.reason` (on every later request from that browser too); a proxy token NetBox refuses for the lookup keeps sessions and refuses writes with 502 `netbox_error`, `details.reason` `proxy_cannot_view_users`. Fixtures regenerated; the seed sets `iso_country` = `GB` on its three sites. |
+| 2.3.0 | 2026-11-09 | Additive, for quests. **Change ops**: `connect_cable`, `create_circuit`, `create_circuit_termination`, `assign_ip`, `create_prefix` join `ChangeOp` (`OpResult.op` and `OpResult.target.kind` grow with them); `update_fields` takes `facility` and `country` on a site and `platform_id` on a device. **Routes**: `GET /api/quests/gaps/{site_id}` (the gap scanner, paged) and seven game routes: `GET /api/game/quests`, `POST /api/game/quests/answer`, `/preview`, `/apply`, `/verify`, `POST /api/game/practice/reset`, `POST /api/game/boss/ack`. **`$defs`**: `GapList`, `Gap`, `Finding`, `Completeness`, `QuestBoard`, `Quest`, `QuestStep`, `QuestChoice`, `QuestField`, `QuestTarget`, `QuestAnswer`, `QuestRef`, `QuestVerdict`, `Rewards`, `SiteProgress`, `BossAck` and their parts. **Health**: `HealthNetbox.permission_check` (`ok`, `cannot_view_users`, `cannot_view_permissions`, `unknown`). **Rules** (`api.md`): `POST /api/changes/apply` and a quest's apply are refused (403 `forbidden`, `details.reason` `player_lacks_permission`) unless the signed-in player's own NetBox object permissions cover the change; the practice island's ids (above 9,000,000) are served by the proxy as made-up scenes and refused by the change routes. Dialogue scripts gain the speaker `giver`. The game store moves to schema 2 (quest log, reward ledger, practice changes, boss acknowledgements); a version 1 file is migrated in place and keeps its saves. Fixtures: `quest-*.json`, `boss-ack-request.json`, `estate.json` (what the scanner analyses in fixture mode); `health.json` gains `permission_check`. The proxy's NetBox user needs more view permissions and `add` on what a quest may create (`devnetbox/proxy_tokens.py`). |
 
 ## NetBox 4.7 notes
 

@@ -25,13 +25,15 @@ export const TOOLS: Readonly<Record<ToolId, { name: string; icon: string; unlock
 };
 
 const CSS = `
-#quest-next{position:fixed;left:8px;bottom:8px;z-index:15;max-width:min(520px,calc(100vw - 140px));font:14px/1.35 ui-monospace,monospace;color:#1d1a14;background:#f6efd9;
-  border:3px solid #1d1a14;padding:5px 9px;min-height:40px;cursor:pointer;text-align:left;display:flex;gap:8px;align-items:center}
-#quest-next b{white-space:nowrap}
-#quest-next span{overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-#quest-giver{position:fixed;left:8px;bottom:60px;z-index:15;font:13px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:4px 8px 4px 4px;
+#quest-next{position:fixed;left:8px;bottom:8px;z-index:15;width:min(440px,calc(100vw - 132px));height:48px;box-sizing:border-box;font:13px/1.35 ui-monospace,monospace;
+  color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:3px 9px;cursor:pointer;text-align:left;display:block;overflow:hidden}
+#quest-next b,#quest-next span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;height:18px}
+#quest-giver{position:fixed;left:8px;bottom:64px;z-index:15;font:13px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:4px 8px 4px 4px;
   cursor:pointer;display:flex;gap:8px;align-items:center;min-height:44px}
 #quest-giver canvas{width:40px;height:40px;border:2px solid #1d1a14;image-rendering:pixelated}
+/* inside a building the bottom-left corner is the editor's tray: the quest chips sit left of the menu button */
+body[data-scene=iso] #quest-next{left:auto;right:112px;width:min(400px,calc(100vw - 124px))}
+body[data-scene=iso] #quest-giver{left:auto;right:112px}
 #quest-pin{position:fixed;z-index:14;pointer-events:none;font:bold 20px ui-monospace,monospace;color:#1d1a14;text-shadow:0 0 0 #000;transform:translate(-50%,-100%)}
 #quest-pin i{display:block;width:0;height:0;border-left:11px solid transparent;border-right:11px solid transparent;border-top:16px solid #1d1a14;position:relative}
 #quest-pin i::after{content:"";position:absolute;left:-7px;top:-14px;border-left:7px solid transparent;border-right:7px solid transparent;border-top:10px solid #fff27a}
@@ -120,6 +122,7 @@ export class Quests {
   /** The site whose building the player is in, or null on the overworld. */
   private inside: number | null = null;
   lastVerdict: QuestVerdict | null = null;
+  private logSite: number | null = null;
   lastError: string | null = null;
 
   constructor(
@@ -196,6 +199,8 @@ export class Quests {
     this.tracked = still || all.find((q) => q.scope === 'netbox' && q.id === nextId) || null;
     this.paintNext();
     this.hooks.changed();
+    // an open quest log shows what was just read
+    if (this.panel?.id === 'quest-log') this.openLog(this.logSite);
   }
 
   /** The player went into a site's building, or back out (null). */
@@ -215,9 +220,11 @@ export class Quests {
   private paintNext(): void {
     const q = this.tracked;
     const r = this.rewards();
-    const head = el('b', r ? `Quests · L${r.level} · ${r.xp} XP` : 'Quests');
+    // two fixed lines whose text changes in place: nothing on screen moves when the log loads or a line completes
+    if (!this.next.firstChild) this.next.append(el('b'), el('span'));
     const where = q?.target ? ` → ${q.target.label}` : '';
-    this.next.replaceChildren(head, el('span', q ? `Next: ${q.title}${where}` : this.lastError ? 'The quest log is not available right now.' : 'Nothing open: all in order.'));
+    this.next.children[0]!.textContent = r ? `Quests · Level ${r.level} · ${r.xp} XP` : 'Quests';
+    this.next.children[1]!.textContent = q ? `Next: ${q.title}${where}` : this.lastError ? 'The quest log is not available right now.' : this.boards.netbox ? 'Nothing open: all in order.' : 'Reading the quest log…';
     this.next.title = 'Open the quest log';
     this.next.dataset.quest = q?.id ?? '';
   }
@@ -272,6 +279,12 @@ export class Quests {
     try {
       for (;;) {
         if (q.status === 'done' || q.status === 'dismissed') break;
+        if (q.status === 'ready' && !q.proposal) {
+          // NetBox already shows what this line was about (recorded by other means): read it again and settle the line.
+          const v = await this.api.questVerify(q.id);
+          await this.reward(v);
+          break;
+        }
         if (q.status === 'ready' || q.status === 'practised') {
           const v = await this.preview(q);
           if (!v) break;
@@ -281,7 +294,8 @@ export class Quests {
           }
           await this.reward(v);
           q = v.quest;
-          if (v.complete || v.mode !== 'real' || q.status !== 'active') break;
+          // what NetBox (or the island) confirmed is done; the rest of an errand goes on at once. A dry run changed nothing.
+          if (v.complete || v.mode === 'dry_run' || q.status !== 'active') break;
           continue;
         }
         const step = q.step;
@@ -515,7 +529,9 @@ export class Quests {
     box.dataset.mode = v.mode;
     box.dataset.verified = String(v.verified);
     const real = v.mode === 'real';
-    box.append(el('h2', real ? (v.complete ? 'NetBox confirms it' : v.verified ? 'Partly confirmed' : 'Not confirmed yet') : v.complete ? 'Practice complete' : 'Practice run'));
+    // a dry run on real data wrote nothing, so it is never "complete"; the practice island's own check can be
+    box.append(el('h2', real ? (v.complete ? 'NetBox confirms it' : v.verified ? 'Partly confirmed' : 'Not confirmed yet')
+      : v.mode === 'practice' && v.complete ? 'Practice complete' : 'Practice run'));
     box.append(el('p', v.message));
     if (v.can_now) box.append(el('p', v.can_now, 'now'));
     if (v.trace) box.append(el('p', v.trace, 'hint'));
@@ -540,7 +556,7 @@ export class Quests {
     const done = new Promise<void>((r) => (finish = r));
     const ok = btn('Onwards', 'quest-reward-ok', () => (box.remove(), finish()));
     box.append(el('div'), ok);
-    const felt = v.complete && (real ? v.verified : true);
+    const felt = v.complete && (real ? v.verified : v.mode === 'practice');
     if (felt && !calm) {
       const sp = el('div', undefined, 'sparkle');
       for (let i = 0; i < 10; i++) {
@@ -569,6 +585,7 @@ export class Quests {
 
   /** The quest log: rewards, each site's progress, and every line the player has open, waiting or done. */
   openLog(siteId: number | null = null): void {
+    this.logSite = siteId;
     const { el: p, close } = this.open('quest-log', 'Quest log');
     const r = this.rewards();
     if (r) {
@@ -610,8 +627,9 @@ export class Quests {
           card.append(el('div', q.purpose, 's'));
           if (q.status === 'parked' && q.checklist.length) card.append(el('div', `Look for: ${q.checklist[0]}`, 's'));
           else if (q.step) card.append(el('div', `Next step: ${q.step.prompt}`, 's'));
+          else if (q.note) card.append(el('div', q.note, 's'));
           const row = el('div', undefined, 'row');
-          row.append(btn(q.status === 'offered' ? 'Start' : q.status === 'parked' ? 'I know more now' : q.status === 'ready' || q.status === 'practised' ? 'Show the change' : 'Carry on', `quest-go-${box.children.length}`,
+          row.append(btn(q.status === 'ready' && !q.proposal ? 'Check NetBox' : q.status === 'offered' ? 'Start' : q.status === 'parked' ? 'I know more now' : q.status === 'ready' || q.status === 'practised' ? 'Show the change' : 'Carry on', `quest-go-${box.children.length}`,
             () => (close(), void this.run(q))));
           if (q.target) row.append(btn('Point me there', `quest-track-${box.children.length}`, () => {
             this.tracked = q;

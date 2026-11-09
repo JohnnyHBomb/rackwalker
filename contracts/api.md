@@ -93,10 +93,10 @@ resolved field are the real id. `changes-preview.json` op 5 moves `@newrack`.
 
 | kind | editable fields |
 |---|---|
-| site | `name`, `description`, `status`, `latitude`, `longitude`, `iso_theme` |
+| site | `name`, `description`, `status`, `latitude`, `longitude`, `iso_theme`, `facility`, `country` (2.3.0: two upper-case letters or null; written to the custom field `iso_country`) |
 | location | `name`, `description`, `status`, `iso_x`, `iso_y`, `iso_w`, `iso_h`, `iso_facing`, `latitude`, `longitude` |
 | rack | `name`, `description`, `status`, `comments`, `iso_x`, `iso_y`, `iso_facing`, `latitude`, `longitude` |
-| device | `name`, `status`, `serial`, `asset_tag`, `description`, `comments` |
+| device | `name`, `status`, `serial`, `asset_tag`, `description`, `comments`, `platform_id` (2.3.0: an existing platform's id, or null) |
 | cable | `label`, `status`, `type`, `color`, `length`, `length_unit` |
 | interface | `description`, `enabled` (kind interface only) |
 
@@ -119,7 +119,20 @@ Semantics:
   without a session 401 `unauthorized`, without the header 403 `forbidden`. In the single-user local mode the header
   alone is enough (`local`). A dry-run proxy previews for anyone, as before. The write itself still uses the proxy's
   NetBox token, so NetBox records the proxy's user as the author; the changelog message names the player (below).
-  The player's own NetBox permissions are not checked: give a write-enabled proxy only to people who may edit.
+  **The player's own NetBox permissions must cover the write (2.3.0).** Before `POST /api/changes/apply` writes, the
+  proxy reads the signed-in player's NetBox object permissions with its own token (`GET /api/users/users/<id>/`,
+  `GET /api/users/users/?id=<id>&is_superuser=true`, `GET /api/users/permissions/?user_id=<id>&enabled=true` and the
+  same with `group_id` for each of the user's groups) and needs, for every op, an enabled permission without
+  constraints that names the object type and the action: `change` on the target's type for `update_fields`,
+  `move_rack`, `place_device` and `unplace_device`; `add` on `dcim.rack`, `dcim.cable`, `circuits.circuit`,
+  `circuits.circuittermination` and `ipam.prefix` for the ops that create them; `add` on `ipam.ipaddress` and `change`
+  on `dcim.device` for `assign_ip`. A superuser may do everything; an inactive user nothing. A permission with
+  constraints never counts (the proxy cannot evaluate a constraint). Otherwise the answer is 403 `forbidden` with
+  `details.reason` `player_lacks_permission` and `details.missing` (`[{object_type, action, constrained}]`), and nothing
+  is written. When NetBox refuses the proxy's token the view of users or of object permissions, writes answer 502
+  `netbox_error` with `details.reason` `proxy_cannot_view_users` or `proxy_cannot_view_permissions`, and `/api/health`
+  reports the same in `netbox.permission_check`. The single-user local mode has no NetBox user and is not checked.
+  Permissions are read at most every 30 s per player and again after any write. Preview is not restricted.
 * **Apply** is refused with 403 `write_disabled` unless the proxy runs with `WRITE_ENABLED=1` (dry-run is the
   default). Otherwise it runs the preview first; if any op errors, nothing is written and the answer is 200
   with `applied: false`. Then it writes ops in order. If a write fails, later ops are `skipped` and
@@ -141,6 +154,71 @@ Semantics:
 * `status` per op: `ok`, `no_change` (target already had those values), `error`, `skipped`.
 * The NetBox changelog is the audit trail; the proxy logs the player and `reason` with each apply and sends both to
   NetBox as each write's `changelog_message` (`"rackwalker (<username>): <reason>"`, at most 200 characters).
+
+## Change ops added in 2.3.0
+
+Each creates one NetBox object (status `active` / `connected`) or assigns an address; all go through preview and apply
+like the others, and each write carries the changelog message.
+
+| Op | Target | Fields | Refused when |
+|---|---|---|---|
+| `connect_cable` | `{kind: "cable", id: null}` | `a_kind`, `a_id`, `b_kind`, `b_id` (an end is an `interface`, `front_port`, `rear_port`, `power_port`, `power_outlet` or `circuit_termination`; an id or `@<client_ref>` of a termination made earlier in the set), optional `type`, `label` | an end does not exist (`not_found`); an end already has a cable (`conflict`, `details.cable_id`); both ends are the same; a power end meets a data end |
+| `create_circuit` | `{kind: "circuit", id: null}` | `cid`, `provider_id`, `type_id` | the provider or circuit type does not exist; the provider already has a circuit with that `cid` |
+| `create_circuit_termination` | `{kind: "circuit_termination", id: null}` | `circuit_id` (id or `@ref`), `term_side` (`A` or `Z`), `site_id` | the circuit or site does not exist; that side already has a termination (`conflict`) |
+| `assign_ip` | `{kind: "device", id}` | `address` (with mask), `interface_id`, optional `primary` (default true) | the interface is not on that device; the address is not valid or has no mask; the same host address already exists elsewhere (`conflict`). An address already on that interface is reused |
+| `create_prefix` | `{kind: "prefix", id: null}` | `prefix` (host bits zero) | not a network; that prefix exists (`conflict`) |
+
+Ids above 9,000,000 belong to the practice island, which is not in NetBox: both change routes refuse them with 400
+`bad_request` (`details.reason` `practice_island`).
+
+## Quests (2.3.0)
+
+`docs/quests.md` describes the rules for a NetBox admin; this section fixes what the routes do.
+
+* **The estate.** The quest routes analyse one bounded read of NetBox (slim field selections, capped lists), kept for
+  `RACKWALKER_ESTATE_TTL` seconds (default 60) and dropped by any write made through the proxy. In fixture mode the
+  estate is `fixtures/estate.json`. Lists that were capped, or that NetBox refused to the proxy's token, are named in
+  `incomplete`; rules that need them report nothing.
+* **`GET /api/quests/gaps/{site_id}?offset=&limit=`** (no sign-in, like a scene): the site's gaps, one per empty
+  field, id `<object type>:<object id>:<field>`, ordered by rank, object type, object id, field; `limit` 1 to 500
+  (default 100). `unlisted` counts expected-cable gaps beyond the per-site cap of 50. `completeness` is checks passed
+  out of checks made at the site.
+* **`GET /api/game/quests?scope=netbox|practice&site_id=`**: the quest log. Without `site_id`, the lines open at
+  every site. At most three fresh lines are listed per site (the most valuable first: connectivity, identity,
+  layout), parked and practised lines beside them, the rest counted in `queued`; then the last finished lines.
+  `next_quest_id` is the most valuable fresh line of the scope. `can_write` is false, with `write_blocked` saying why,
+  on the practice island, in fixture mode and on a dry-run proxy.
+* **Statuses.** `offered` (not started), `active` (a question waits), `ready` (a change waits for preview and apply;
+  with `proposal: null`, NetBox already shows the outcome and only `/verify` is needed), `parked` (the player
+  answered "I don't know yet": `checklist` says what to look for; no penalty), `dismissed` (the player says the
+  finding is how things are), `practised` (completed as a dry run), `done` (NetBox confirms it).
+* **`POST /api/game/quests/answer`** takes the answer to the step the line is waiting at: `choice` (a choice id),
+  `text`, or `values` (form field id to value; blank or absent means not known). An answer to any other step
+  changes nothing and returns the line as it stands; `step: "restart"` clears the line's answers. Choice kinds:
+  `candidate` (an object of the estate), `other` (not listed, or a typed value follows), `unknown` ("I don't know
+  yet"), `not_applicable`, `confirm`, `skip`. A typed value or a form value that does not fit comes back as the same
+  step with `error`.
+* **`POST /api/game/quests/preview`** previews the proposal exactly as `/api/changes/preview` would. Never writes.
+* **`POST /api/game/quests/apply`**: on the practice island the proposal changes the player's island (game store
+  only). On the player's NetBox it is written through the same code as `/api/changes/apply`, only when the proxy is
+  write-enabled and the player's NetBox permissions cover it; otherwise it is a dry run (`mode: "dry_run"`, the line
+  becomes `practised`, no XP, the message says why). After a write the proxy reads the estate again and analyses it
+  again: `verified` and `complete` come from that read, never from the request. `trace` quotes NetBox's own
+  `/trace/` from the first interface the proposal cabled.
+* **`POST /api/game/quests/verify`** does the read and the settlement without a write (scope `netbox` only).
+* **Rewards.** XP per settlement: the line's rank XP (120, 50, 30) times the share of the line's checks newly
+  confirmed, times 1, 0.8, 0.6 or 0.4 for the first, second, third and later XP award of that quest kind at that
+  site. Only `mode: "real"` pays. A potion with each new level (250 XP). `label_maker` with the first completed
+  identity line, `cable_tracer` with the first completed connectivity line. A line that was done and whose checks
+  are open again in NetBox is `lapsed`: nothing is reopened or taken away; `Rewards.lapsed` counts them.
+* **Site boss.** `SiteProgress.boss_ready` is true when the site has no open check (dismissed findings count as
+  answered for that player). `POST /api/game/boss/ack` records that the player has seen it (409 `conflict` when the
+  site is not ready).
+* **Practice island.** Site id 9,000,001 and the ids of its rooms, racks, devices and ports are made up by the
+  proxy. `scope: "practice"` plays on it; `GET /api/scene/site|rack/...`, `/api/device/...` and `/api/trace/...`
+  answer for those ids with `meta.source: "fixture"` and the signed-in player's practice changes applied;
+  `POST /api/game/practice/reset` puts the island and its quest log back. Nothing about it is read from or written
+  to NetBox.
 
 ## Caching (proxy-internal, visible only as `meta.source`)
 

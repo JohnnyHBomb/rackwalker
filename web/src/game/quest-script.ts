@@ -55,13 +55,11 @@ function say(prefix: string, text: string, last: (text: string) => DialogueNode)
 export function stepScript(step: QuestStep): Script {
   const unknown = step.choices.find((c) => c.kind === 'unknown');
   const rest = step.choices.filter((c) => c.kind !== 'unknown');
-  const per = (hasMore: boolean) => MAX_CHOICES - (unknown ? 1 : 0) - (hasMore ? 1 : 0);
+  // One page when everything fits; else every page also carries "More choices" (the last: "Back to the first choices").
+  const room = MAX_CHOICES - (unknown ? 1 : 0);
+  const per = rest.length <= room ? room : room - 1;
   const pages: QuestChoice[][] = [];
-  for (let i = 0; i < rest.length; ) {
-    const n = rest.length - i <= per(false) ? rest.length - i : per(true);
-    pages.push(rest.slice(i, i + n));
-    i += n;
-  }
+  for (let i = 0; i < rest.length; i += per) pages.push(rest.slice(i, i + per));
   if (!pages.length) pages.push([]);
   const nodes: Record<string, DialogueNode> = {};
   const pageChoices = (p: number): Choice[] => {

@@ -208,6 +208,70 @@
         "username": "weigher",
         "display_name": "Ade Weigher"
       }
+    },
+    {
+      "token": "nbt_fixtureplayer27.synthetic-not-a-secret",
+      "user": {
+        "id": 37,
+        "username": "quester",
+        "display_name": "Quin Quester"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer28.synthetic-not-a-secret",
+      "user": {
+        "id": 38,
+        "username": "prober",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer29.synthetic-not-a-secret",
+      "user": {
+        "id": 39,
+        "username": "asker",
+        "display_name": "Ada Asker"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer30.synthetic-not-a-secret",
+      "user": {
+        "id": 40,
+        "username": "islander",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer31.synthetic-not-a-secret",
+      "user": {
+        "id": 41,
+        "username": "checker",
+        "display_name": "Che Checker"
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer32.synthetic-not-a-secret",
+      "user": {
+        "id": 42,
+        "username": "pointer",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer33.synthetic-not-a-secret",
+      "user": {
+        "id": 43,
+        "username": "auditor2",
+        "display_name": null
+      }
+    },
+    {
+      "token": "nbt_fixtureplayer34.synthetic-not-a-secret",
+      "user": {
+        "id": 44,
+        "username": "listener",
+        "display_name": "Lou Listener"
+      }
     }
   ]
 }

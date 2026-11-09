@@ -2,7 +2,7 @@
   "$schema": "../../../../contracts/dialogue.schema.json",
   "id": "ilatea-quests",
   "once": "ilatea.quests.seen",
-  "min_hint": "low",
+  "min_hint": "normal",
   "start": "giver",
   "nodes": {
     "giver": {

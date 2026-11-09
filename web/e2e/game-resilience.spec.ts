@@ -477,7 +477,8 @@ test('a NetBox without sites: Ilatea names the one next step (add a site), and n
     await r.fulfill({ json: { ...w, sites: [], links: [] } });
   });
   await signIn(page, 16, { closeIntro: false });
-  expect(await page.evaluate(() => window.__game!.shell.map!.doors.length)).toBe(0);
+  // no site of NetBox's; the practice island (made up, in a region of its own) is always there
+  expect(await page.evaluate(() => window.__game!.shell.map!.doors.map((d) => d.siteId))).toEqual([9_000_001]);
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-empty');
   expect((await game(page)).dialogue!.text).toContain('add one site in NetBox');
   await page.keyboard.press('Escape');

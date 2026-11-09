@@ -56,6 +56,8 @@ const SYNTHETIC = new WeakSet<Event>();
 
 export type Scene = 'loading' | 'signin' | 'overworld' | 'iso';
 export const VISITED = 'game.visited-building';
+/** Set once the player has talked to any quest giver (so Ilatea never points them out after that). */
+export const MET_GIVER = 'game.met-quest-giver';
 const SAVE_DEBOUNCE_MS = 250;
 /** A failed game write (proxy or disk trouble) is tried again this often until it lands. */
 export const RETRY_MS = 10_000;
@@ -360,13 +362,14 @@ export class GameShell {
     this.owSince = performance.now();
     this.scheduleSave();
     this.questsChanged();
-    // Ilatea's one line when the player first comes near something new (each said once, never again).
+    // Ilatea's one line when the player first stops near something new (each said once, never again). Never while
+    // a walk is still going: she does not cut a walk short.
+    if (this.overworld?.walking) return;
     const map = this.map!;
     const near = (t: Pos | null | undefined, d: number) => !!t && Math.abs(t.x - p.x) + Math.abs(t.y - p.y) <= d;
     const region = map.regionAt(p);
     if (region.siteIds.includes(PRACTICE_SITE.id)) void this.autoTalk(SCRIPTS.practice);
-    else if (near(region.airfield, 3)) void this.autoTalk(SCRIPTS.airfield);
-    else if (map.givers.some((g) => near(g, 2)) && this.flags['ilatea.intro.seen']) void this.autoTalk(SCRIPTS.quests);
+    else if (near(region.airfield, 2)) void this.autoTalk(SCRIPTS.airfield);
   }
 
   // ------------------------------------------------------------------------------------------- quests
@@ -385,6 +388,7 @@ export class GameShell {
   talkToGiver(siteId: number): void {
     if (this.dialogue.open || this.menu || this.quests?.panelOpen) return;
     this.owSince = performance.now();
+    if (!this.flags[MET_GIVER]) this.persistFlags({ [MET_GIVER]: true });
     void this.quests?.talkToGiver(siteId);
   }
 
@@ -680,9 +684,13 @@ export class GameShell {
   }
 
   private stuckCheck(): void {
-    if (this.scene !== 'overworld' || this.flags[VISITED] || this.dialogue.open || this.menu || this.overworld?.walking) return;
+    if (this.scene !== 'overworld' || this.dialogue.open || this.menu || this.quests?.panelOpen || this.overworld?.walking) return;
     if (!this.realSites) return; // no building to point at: the empty-world line already said what to do
-    if (performance.now() - this.owSince >= this.stuckMs) void this.autoTalk(SCRIPTS.stuck);
+    if (performance.now() - this.owSince < this.stuckMs) return;
+    // Stuck before the first building: the nudge towards a door. Stuck after it without ever having talked to a
+    // quest giver: one line about them. Each is said once.
+    if (!this.flags[VISITED]) void this.autoTalk(SCRIPTS.stuck);
+    else if (!this.flags[MET_GIVER]) void this.autoTalk(SCRIPTS.quests);
   }
 
   // ------------------------------------------------------------------------------------------- menu

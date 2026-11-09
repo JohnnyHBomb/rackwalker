@@ -29,7 +29,7 @@ from .findings import Analysis
 
 XP = {"connectivity": 120, "identity": 50, "layout": 30}
 MINUTES = {"connectivity": 4, "identity": 5, "layout": 3}
-MAX_CANDIDATES = 8
+MAX_CANDIDATES = 6
 MAX_PORTS = 6
 MAX_BUNDLE = 4
 CABLE_TYPES = [("cat6", "Copper patch lead (Cat 6)"), ("mmf", "Multimode fibre"), ("smf", "Single-mode fibre"),
@@ -167,13 +167,19 @@ def _dev_label(e: Estate, d: dict[str, Any]) -> str:
     return f"{d['name'] or 'unnamed'} ({role.lower()})"
 
 
-def peer_candidates(e: Estate, dev: dict[str, Any], among: list[int] | None = None, circuits: bool = True) -> list[dict[str, str]]:
+def peer_candidates(e: Estate, dev: dict[str, Any], among: list[int] | None = None, circuits: bool = True,
+                    linked_too: bool = False) -> list[dict[str, str]]:
     """Plausible far ends for a link from `dev`, likeliest first: routers and firewalls, then switches (busiest
-    first), same room before other rooms; then circuits that end nowhere yet; then patch panels in the same rack."""
+    first), same room before other rooms; then circuits that end nowhere yet; then patch panels in the same rack.
+    Devices `dev` already reaches are left out, unless `linked_too` (a second link, such as a management port)."""
     comp = e.components()
     pool = [e.devices[i] for i in among] if among is not None else [d for d in e.site_devices(dev["site_id"]) if is_network(d)]
-    pool = [d for d in pool if d["id"] != dev["id"] and not comp.same(d["id"], dev["id"]) and e.free_ports(d["id"])]
-    pool.sort(key=lambda d: (not is_router(d), d["location_id"] != dev["location_id"], -comp.degree(d["id"]), natural(d["name"] or ""), d["id"]))
+    pool = [d for d in pool if d["id"] != dev["id"] and (linked_too or not comp.same(d["id"], dev["id"])) and e.free_ports(d["id"])]
+    if linked_too:
+        pool.sort(key=lambda d: (d["rack_id"] != dev["rack_id"], d["location_id"] != dev["location_id"], not is_router(d),
+                                 natural(d["name"] or ""), d["id"]))
+    else:
+        pool.sort(key=lambda d: (not is_router(d), d["location_id"] != dev["location_id"], -comp.degree(d["id"]), natural(d["name"] or ""), d["id"]))
     out = [choice(f"device:{d['id']}", _dev_label(e, d)) for d in pool]
     if circuits and among is None:
         landed = {t["circuit_id"] for t in e.cterms.values() if t["cable_id"] is not None}
@@ -618,7 +624,7 @@ def flow_port(ctx: Ctx) -> list[dict[str, Any]]:
     port = e.ports[("interface", f["data"]["interface_id"])]
     dev = e.devices[port["device_id"]]
     ctx.at(device_id=dev["id"])
-    cands = peer_candidates(e, dev) + [d for d in [] if d]
+    cands = peer_candidates(e, dev, linked_too=True)
     servers = [d for d in e.site_devices(dev["site_id"]) if d["id"] != dev["id"] and not is_network(d) and not is_passive(d) and e.free_ports(d["id"])]
     cands = (cands + [choice(f"device:{d['id']}", _dev_label(e, d)) for d in servers])[:MAX_CANDIDATES]
     why = f"described as {port['description'].strip()[:40]!r}" if port["description"].strip() else "carrying an address"

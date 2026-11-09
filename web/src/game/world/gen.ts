@@ -251,7 +251,7 @@ export class WorldMap {
   readonly regions: Region[] = [];
   readonly doors: Door[] = [];
   readonly objects: WorldObject[] = [];
-  /** One quest giver per site, on the tile to the right of the door's front tile (the view draws them: they animate). */
+  /** One quest giver per site, two tiles right of the door's front tile (the view draws them: they animate). */
   readonly givers: Giver[] = [];
   readonly start: Pos;
   readonly guide: Pos;
@@ -382,16 +382,17 @@ export class WorldMap {
     // The guide and the start in front of the first door of the world are kept free.
     const front = (d: Door) => ({ x: d.x, y: d.y + 1 });
     const keep: Pos[] = [];
-    for (const d of doors) keep.push(front(d), { x: d.x, y: d.y + 2 }, { x: d.x - 1, y: d.y + 1 }, { x: d.x + 1, y: d.y + 1 });
+    for (const d of doors) keep.push(front(d), { x: d.x, y: d.y + 2 }, { x: d.x - 1, y: d.y + 1 }, { x: d.x + 1, y: d.y + 1 }, { x: d.x + 2, y: d.y + 1 });
     for (const k of keep) this.unflag(k.x, k.y, SOLID), this.flag(k.x, k.y, RESERVED);
     if (index === 0 && doors[0]) {
       this.guideAt = { x: doors[0].x - 1, y: doors[0].y + 1 };
       this.flag(this.guideAt.x, this.guideAt.y, SOLID);
     }
-    // Each site's quest giver stands right of its door's front tile (kept free above), never in the doorway.
+    // Each site's quest giver stands two tiles right of its door's front tile (kept free above): never in the
+    // doorway, and the tiles either side of the front tile stay free to step onto.
     for (const d of doors) {
-      this.givers.push({ siteId: d.siteId, x: d.x + 1, y: d.y + 1 });
-      this.flag(d.x + 1, d.y + 1, SOLID);
+      this.givers.push({ siteId: d.siteId, x: d.x + 2, y: d.y + 1 });
+      this.flag(d.x + 2, d.y + 1, SOLID);
     }
     const cx = rx + Math.floor(w / 2), cy = Math.floor(h / 2);
     const arrive = doors[0] ? { x: doors[0].x, y: doors[0].y + 2 } : { x: cx, y: cy };

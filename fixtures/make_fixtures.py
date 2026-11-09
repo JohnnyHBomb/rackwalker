@@ -348,7 +348,8 @@ def render() -> dict[str, object]:
              ("auditor", "Ana Auditor"), ("cooler", None), ("mounter", "Sam Mounter"), ("splicer", None), ("tester", "Jo Tester"),
              ("cataloguer", None), ("surveyor", "Pat Surveyor"), ("fixer", None), ("scout", "Ren Scout"), ("keeper", None),
              ("drafter", None), ("lister", "Val Lister"), ("router", None), ("sweeper", "Max Sweeper"), ("finder", None),
-             ("weigher", "Ade Weigher")]
+             ("weigher", "Ade Weigher"), ("quester", "Quin Quester"), ("prober", None), ("asker", "Ada Asker"), ("islander", None),
+             ("checker", "Che Checker"), ("pointer", None), ("auditor2", None), ("listener", "Lou Listener")]
     players = [{"token": f"nbt_fixtureplayer{i}.synthetic-not-a-secret", "user": {"id": 10 + i, "username": u, "display_name": d}}
                for i, (u, d) in enumerate(names, 1)]
     out["players.json"] = {"$comment": "Fixture mode only: synthetic sign-in tokens -> the NetBox user each stands for. Not secrets.",
