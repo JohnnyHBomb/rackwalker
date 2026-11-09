@@ -23,7 +23,7 @@ const WHO = ['ilatea', 'byte', 'nocti'];
 // Each portrait maps to a sub-palette of the ramps it is painted with (as a 16-bit sprite uses its own palette rows),
 // so a skin tone never lands on path earth or brick.
 const RAMPS_OF = {
-  ilatea: ['k', 's', 'sk', 'pu', 'l', 'c', 'ye', 'b'],
+  ilatea: ['k', 's', 'sk', 'l', 'c', 'ye', 'b'],
   byte: ['k', 's', 'b', 'ye', 'l', 'wd', 'c'],
   nocti: ['k', 's', 'wd', 'ye', 'b', 'l', 'tu'],
 };
@@ -73,6 +73,7 @@ function quantise(rgb, n, dither) {
  *   ## why            starts a step and says what it fixes
  *   x,y colour        sets one pixel to a palette colour name
  *   x0,y0 x1,y1 colour  sets every pixel of the rectangle (corners included)
+ *   x0,y0 x1,y1 a>b   recolours a to b inside the rectangle, leaving every other colour alone
  *   # ...             a comment
  */
 function cleanup(idx, n, who) {
@@ -84,12 +85,14 @@ function cleanup(idx, n, who) {
     const l = line.trim();
     if (l.startsWith('## ')) return void steps++;
     if (!l || l.startsWith('#')) return;
-    const m = /^(\d+),(\d+)(?: (\d+),(\d+))? ([a-z]+\d?)$/.exec(l);
-    const c = m && IDX.get(m[5]);
-    if (c === undefined || c === null) throw new Error(`${f}:${i + 1}: cannot read "${l}"`);
+    const m = /^(\d+),(\d+)(?: (\d+),(\d+))? (?:([a-z]+\d?)>)?([a-z]+\d?)$/.exec(l);
+    const c = m && IDX.get(m[6]);
+    const from = m && m[5] !== undefined ? IDX.get(m[5]) : null;
+    if (c === undefined || c === null || from === undefined || (from !== null && !m[3])) throw new Error(`${f}:${i + 1}: cannot read "${l}"`);
     const [x0, y0] = [+m[1], +m[2]], [x1, y1] = m[3] ? [+m[3], +m[4]] : [x0, y0];
     if (x1 < x0 || y1 < y0 || x1 >= n || y1 >= n) throw new Error(`${f}:${i + 1}: outside the ${n} x ${n} portrait`);
-    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) (out[y * n + x] = c), edits++;
+    for (let y = y0; y <= y1; y++)
+      for (let x = x0; x <= x1; x++) if ((from === null || out[y * n + x] === from) && out[y * n + x] !== c) (out[y * n + x] = c), edits++;
   });
   return { idx: out, edits, steps };
 }

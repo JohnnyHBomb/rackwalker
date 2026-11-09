@@ -1,282 +1,125 @@
-# Ilatea, 96 x 96: hand clean-up after the area downscale and palette mapping (format: portrait.mjs, cleanup()).
-## silver strands: one clean line each, no grey half-tones beside them (the left one lit, the right one in shade)
-32,17 32,18 s4
-31,16 31,18 k1
-33,17 33,18 pu1
-31,19 31,22 s4
-30,19 30,22 k1
-32,19 32,21 pu1
-30,23 30,25 s4
-29,23 29,25 k1
-31,23 31,25 k1
-29,26 29,31 s4
-28,26 28,31 k1
-30,26 31,26 ye1
-30,28 ye0
-30,29 30,31 k1
-28,32 28,37 s4
-27,32 27,37 k1
-29,32 29,35 sk0
-27,38 27,45 s4
-26,38 26,45 k1
-28,38 28,45 k1
-26,46 26,55 s4
-25,46 25,55 pu0
-27,46 27,55 k1
-25,56 25,68 s4
-24,56 24,68 pu0
-26,56 26,68 k1
-24,69 s4
-66,21 66,25 s3
-65,20 65,25 k1
-67,21 67,25 k1
-67,26 67,30 s3
-66,26 66,28 k1
-68,26 68,30 k1
-68,31 68,35 s3
-67,31 67,35 sk0
-69,31 69,35 k1
-69,36 69,41 s3
-68,36 68,41 k1
-70,36 70,41 k1
-70,42 70,48 s3
-69,42 69,48 k1
-71,42 71,48 pu0
-71,49 71,56 s3
-70,49 70,56 k1
-72,49 72,56 pu0
-72,57 72,67 s3
-71,57 71,67 k1
-73,57 73,67 pu0
-73,68 73,69 s3
-72,68 72,69 k1
-## the gem of the circlet: a clear diamond, lit on its upper left, set between the ends of the band
-46,22 47,22 k1
-48,22 c2
-49,22 k1
-46,23 k1
-47,23 48,23 c2
-49,23 c1
-50,23 k1
-45,24 ye1
-46,24 47,24 c2
-48,24 w
-49,24 c1
-50,24 c0
-44,25 ye1
-45,25 46,25 c2
-47,25 49,25 c1
-50,25 c0
-51,25 ye1
-45,26 ye0
-46,26 48,26 c1
-49,26 50,26 c0
-51,26 52,26 ye0
-46,27 k0
-47,27 c1
-48,27 49,27 c0
+# Ilatea, 96 x 96: hand clean-up of the palette mapping without dither (format: portrait.mjs, cleanup()).
+# Light comes from the top left. Every edit is a single, deliberate pixel or run; nothing is drawn across the skin.
+## forehead: grey specks where the circlet, fringe and brows blended into the skin become skin
+43,26 45,26 sk2
+51,26 52,26 sk2
+37,27 37,28 k1
 50,27 k0
-47,28 k1
-48,28 c0
-49,28 k0
-## fringe and forehead: the fringe ends in one dark edge, the skin under it clean
-42,29 k1
-43,29 sk2
-44,29 sk3
-37,30 k1
-38,30 39,30 sk2
-## brows: one dark line each, level, the inner ends a pixel lower (calm, a little fierce)
-36,32 42,32 sk3
+42,29 44,29 sk3
+36,30 k1
+37,30 39,30 sk3
+## brows: one level run each, dark slate like her hair, nine pixels over each eye; the blended rows above and below
+## become skin
+36,32 44,32 sk3
+53,32 58,32 sk2
+35,33 43,33 l0
 34,33 sk3
-35,33 42,33 k1
-43,33 44,33 sk3
-34,34 42,34 sk3
-43,34 44,34 k1
-34,35 35,35 sk3
-51,32 58,32 sk2
-51,33 52,33 sk2
-53,33 60,33 k1
-51,34 52,34 k1
-53,34 59,34 sk2
+44,33 sk3
+51,33 sk2
+52,33 60,33 l0
+34,34 45,34 sk3
+51,34 59,34 sk2
 60,34 61,34 sk1
-## eyes: an arched black lash line, owl-gold iris with a black pupil and a white glint, white corners, a lid line under
-36,36 37,36 sk3
-38,36 41,36 k1
-42,36 43,36 sk3
-34,37 sk3
-35,37 44,37 k0
+## eyes, wide open: a lash line with a dark wing at the outer corner, white corners, a gold iris round a black
+## pupil with a glint on its upper left, the lower iris lit (her eyes glow), the lower lid one shade step
+35,36 44,36 k0
+51,36 60,36 k0
 45,37 sk2
-34,38 k0
-35,38 36,38 w
-37,38 38,38 ye1
-39,38 w
-40,38 k0
-41,38 ye1
-42,38 w
-43,38 sk3
-44,38 45,38 sk2
-33,39 sk2
-34,39 sk2
-35,39 sk3
-36,39 w
-37,39 ye0
-38,39 ye1
-39,39 40,39 k0
-41,39 ye0
-42,39 w
-43,39 45,39 sk2
-35,40 36,40 sk2
-37,40 sk1
-38,40 40,40 ye0
-41,40 sk1
-42,40 43,40 sk2
-39,41 40,41 sk3
-53,36 sk2
-54,36 57,36 k1
-58,36 sk1
 50,37 sk2
-51,37 60,37 k0
-51,38 52,38 sk2
-53,38 w
-54,38 55,38 ye1
-56,38 w
-57,38 k0
-58,38 ye1
-59,38 60,38 w
-61,38 k0
-50,39 sk1
-51,39 52,39 sk2
-53,39 w
-54,39 ye0
-55,39 ye1
-56,39 57,39 k0
-58,39 ye0
-59,39 w
-60,39 61,39 sk1
-62,39 sk0
-52,40 sk2
-53,40 54,40 sk1
-55,40 57,40 ye0
-58,40 60,40 sk1
-55,41 56,41 sk2
-## the face between and beside the eyes: one skin tone, no grey or dark specks left from the downscale
-33,38 sk3
-50,38 sk2
-52,36 sk2
-## eyes redrawn open: whites, a four-pixel gold iris with a two-pixel black pupil and a white glint on its upper left, the iris's lower half in shade, a lid line under
-35,38 w
-36,38 w
+34,37 k0
+35,37 s4
+36,37 w
+37,37 41,37 ye0
+42,37 w
+43,37 s4
+44,37 sk2
+33,38 34,38 sk2
+35,38 36,38 w
 37,38 ye1
 38,38 w
-39,38 k0
-40,38 ye1
-41,38 w
-42,38 w
-35,39 sk1
+39,38 40,38 k0
+41,38 ye1
+42,38 43,38 w
+44,38 45,38 sk2
+33,39 34,39 sk2
+35,39 s4
 36,39 w
-37,39 ye0
-38,39 k0
-39,39 k0
-40,39 ye0
-41,39 w
-42,39 sk1
-35,40 sk2
-36,40 sk1
-37,40 sk1
-38,40 ye0
-39,40 ye0
-40,40 sk1
-41,40 sk1
+37,39 ye1
+38,39 40,39 k0
+41,39 ye1
+42,39 w
+43,39 s4
+44,39 sk2
+45,39 sk1
+35,40 sk3
+36,40 sk2
+37,40 ye1
+38,40 40,40 ye2
+41,40 ye1
 42,40 sk2
-51,38 w
-52,38 w
-53,38 ye1
-54,38 w
-55,38 k0
-56,38 ye1
-57,38 w
-58,38 w
+43,40 sk3
+37,41 41,41 sk2
+51,37 sk2
+52,37 s4
+53,37 w
+54,37 58,37 ye0
+59,37 w
+60,37 s4
+61,37 k0
+50,38 51,38 sk2
+52,38 53,38 w
+54,38 ye1
+55,38 w
+56,38 57,38 k0
+58,38 ye1
+59,38 60,38 w
+61,38 62,38 sk1
 51,39 sk1
-52,39 w
-53,39 ye0
-54,39 k0
-55,39 k0
-56,39 ye0
-57,39 w
-58,39 sk1
-51,40 sk2
-52,40 sk1
-53,40 sk1
-54,40 ye0
-55,40 ye0
-56,40 sk1
-57,40 sk1
-58,40 sk2
-## no dark cluster at the outer corner of the eye on the right: skin there, the lash ends in one dipped pixel
-59,38 k0
-60,38 61,38 sk1
-59,39 61,39 sk1
-59,40 61,40 sk1
-62,38 62,40 sk1
-## forehead and cheek light: a slanting, dithered edge instead of a hard-edged lit rectangle
-43,29 sk3
-47,29 sk3
-38,30 sk3
-39,30 sk3
-40,30 sk3
-45,30 sk2
-42,31 sk2
-44,31 sk2
-45,31 sk2
-30,32 sk3
-41,32 sk2
-42,32 sk2
-44,32 sk2
-45,32 sk2
-46,32 sk2
-30,33 sk3
-43,33 sk2
-44,33 sk2
-45,33 sk2
-46,33 sk2
-30,34 sk3
-37,34 sk2
-38,34 sk2
-39,34 sk2
-40,34 sk2
-41,34 sk2
-42,34 sk2
-46,34 sk2
-30,35 sk3
-34,35 sk2
-36,35 sk2
-37,35 sk2
-38,35 sk2
-39,35 sk2
-40,35 sk2
-41,35 sk2
-42,35 sk2
-43,35 sk2
-44,35 sk2
-45,35 sk2
-46,35 sk2
-30,36 sk3
-33,36 sk2
-34,36 sk2
-35,36 sk2
-36,36 sk2
-37,36 sk2
-42,36 sk2
-43,36 sk2
-44,36 sk2
-45,36 sk2
-35,41 sk2
-36,41 sk2
-37,41 sk1
-38,41 sk1
-39,41 sk1
-40,41 sk1
-41,41 sk1
-42,41 sk1
-37,42 sk2
-39,42 sk2
+52,39 s4
+53,39 w
+54,39 ye1
+55,39 57,39 k0
+58,39 ye1
+59,39 w
+60,39 s4
+61,39 sk1
+62,39 sk0
+52,40 sk3
+53,40 sk2
+54,40 ye1
+55,40 57,40 ye2
+58,40 ye1
+59,40 60,40 sk2
+54,41 58,41 sk2
+## nose: one shade step down its right side (away from the light) and under the tip
+48,41 50,43 sk2
+48,44 48,49 sk2
+50,44 50,49 sk2
+46,50 sk2
+50,50 sk2
+46,51 sk2
+47,51 49,51 sk1
+## mouth: a dark lip line with upturned corners and a soft shade under the lower lip (the warm smile)
+41,55 sk2
+42,55 sk0
+43,55 sk2
+52,55 sk2
+53,55 sk0
+54,55 sk2
+42,56 sk2
+43,56 52,56 sk0
+53,56 sk2
+43,57 52,57 sk2
+44,58 45,58 sk2
+46,58 49,58 sk1
+50,58 51,58 sk2
+## outline: the face and neck edge in dark skin, not grey, so the face sits in the hair with a coloured outline
+26,40 69,72 s0>sk0
+36,60 60,72 s1>sk0
+## the skin above and below the eyes: any grey left where hair or brows blended in becomes skin
+30,29 66,36 s1>sk3
+30,29 66,36 s2>sk3
+30,29 66,36 s3>sk3
+30,41 66,54 s1>sk2
+30,41 66,54 s2>sk2
+30,41 66,54 s3>sk2

@@ -26,9 +26,10 @@
   <g fill="#1e2440"><rect x="630" y="130" width="110" height="40"/><rect x="630" y="186" width="110" height="40"/><rect x="630" y="242" width="110" height="40"/><rect x="630" y="298" width="110" height="40"/><rect x="630" y="354" width="110" height="40"/></g>
   <g><circle cx="650" cy="150" r="7" fill="#8cc24a"/><circle cx="672" cy="150" r="7" fill="#5ef0ff"/><circle cx="650" cy="206" r="7" fill="#f0c030"/><circle cx="694" cy="262" r="7" fill="#8cc24a"/><circle cx="650" cy="318" r="7" fill="#5ef0ff"/><circle cx="672" cy="374" r="7" fill="#8cc24a"/></g>
   <!-- hair behind the shoulders: flat dark mass, outlined, with lit clumps falling like streams -->
-  <path d="M222 240 C 190 380, 176 540, 196 704 L 572 704 C 592 540, 578 380, 546 240 Z" fill="#2a1d33" stroke="#140c1c" stroke-width="12"/>
-  <path d="M236 330 C 224 440, 222 560, 214 690 L 250 690 C 252 560, 252 440, 262 330 Z" fill="#4a2a6a"/>
-  <path d="M520 330 C 530 440, 536 560, 548 690 L 566 690 C 560 560, 554 440, 540 330 Z" fill="#4a2a6a"/>
+  <path d="M222 240 C 190 380, 176 540, 196 704 L 572 704 C 592 540, 578 380, 546 240 Z" fill="#2f3a5e" stroke="#140c1c" stroke-width="12"/>
+  <path d="M500 250 C 540 380, 556 540, 560 700 L 572 704 C 592 540, 578 380, 546 240 Z" fill="#1e2440"/>
+  <path d="M236 330 C 224 440, 222 560, 214 690 L 250 690 C 252 560, 252 440, 262 330 Z" fill="#46597e"/>
+  <path d="M520 330 C 530 440, 536 560, 548 690 L 566 690 C 560 560, 554 440, 540 330 Z" fill="#2f3a5e"/>
   <g transform="translate(0 -44)">
   <!-- shoulders and chiton -->
   <path d="M120 768 C 140 620, 240 580, 300 570 L 470 570 C 540 580, 640 620, 660 768 Z" fill="url(#robe)"/>
@@ -55,22 +56,27 @@
   </g>
   <path d="M272 306 C 272 234, 322 198, 384 198 C 446 198, 496 234, 496 306 C 496 378, 466 432, 424 462 C 402 478, 366 478, 344 462 C 302 432, 272 378, 272 306 Z" fill="none" stroke="#6b3830" stroke-width="12"/>
   <!-- hair over the crown, parted on her left: a dark mass broken into clumps, lit from the top left -->
-  <path d="M244 330 C 226 196, 300 112, 384 110 C 470 108, 544 184, 530 330 C 518 276, 498 238, 462 220 C 440 248, 402 258, 372 250 C 340 260, 300 268, 282 262 C 266 280, 254 302, 244 330 Z" fill="#2a1d33" stroke="#140c1c" stroke-width="12"/>
-  <path d="M268 250 C 274 184, 322 136, 384 128 C 344 156, 316 196, 300 252 Z" fill="#4a2a6a"/>
-  <path d="M292 214 C 306 172, 336 148, 370 140 C 342 166, 324 192, 312 222 Z" fill="#8a58b8"/>
-  <path d="M400 130 C 450 138, 494 172, 510 230 C 486 196, 452 170, 414 158 Z" fill="#4a2a6a"/>
-  <path d="M418 140 C 452 150, 478 170, 492 196 C 470 178, 446 164, 424 156 Z" fill="#8a58b8"/>
+  <path d="M244 330 C 226 196, 300 112, 384 110 C 470 108, 544 184, 530 330 C 518 276, 498 238, 462 220 C 440 248, 402 258, 372 250 C 340 260, 300 268, 282 262 C 266 280, 254 302, 244 330 Z" fill="#2f3a5e" stroke="#140c1c" stroke-width="12"/>
+  <path d="M470 150 C 520 190, 536 250, 530 330 C 520 280, 504 246, 476 226 Z" fill="#1e2440"/>
+  <path d="M268 250 C 274 184, 322 136, 384 128 C 344 156, 316 196, 300 252 Z" fill="#46597e"/>
+  <path d="M292 214 C 306 172, 336 148, 370 140 C 342 166, 324 192, 312 222 Z" fill="#6c84a0"/>
+  <path d="M400 130 C 450 138, 494 172, 510 230 C 486 196, 452 170, 414 158 Z" fill="#46597e"/>
+  <path d="M418 140 C 452 150, 478 170, 492 196 C 470 178, 446 164, 424 156 Z" fill="#6c84a0"/>
   <!-- silver strands like fibre, with lit tips -->
-  <g stroke="#e2dfd2" stroke-width="10" fill="none" stroke-linecap="round">
-    <path d="M292 190 C 262 280, 252 420, 240 600"/><path d="M490 214 C 518 320, 530 440, 540 600"/>
+  <g stroke="#b3aeb0" stroke-width="10" fill="none" stroke-linecap="round">
+    <path d="M336 140 C 296 176, 268 236, 258 320"/><path d="M246 400 C 238 450, 234 500, 232 540"/><path d="M262 600 C 258 630, 256 660, 254 700"/>
+    <path d="M440 140 C 482 168, 508 214, 518 290"/><path d="M526 400 C 534 450, 538 500, 540 540"/><path d="M510 600 C 514 630, 516 660, 518 700"/>
   </g>
-  <g fill="#d8ffff"><circle cx="240" cy="604" r="10"/><circle cx="540" cy="604" r="10"/></g>
+  <g stroke="#e2dfd2" stroke-width="10" fill="none" stroke-linecap="round">
+    <path d="M318 154 C 304 168, 294 182, 286 198"/><path d="M242 430 C 238 460, 236 490, 234 520"/>
+  </g>
+  <g fill="#d8ffff"><circle cx="232" cy="544" r="9"/><circle cx="540" cy="544" r="9"/></g>
   <!-- circlet with a gem -->
   <path d="M280 252 C 336 228, 432 228, 490 252" stroke="#f0c030" stroke-width="14" fill="none"/>
   <polygon points="385,216 404,236 385,256 366,236" fill="#5ef0ff" stroke="#d8ffff" stroke-width="6"/>
   <!-- brows: short, level, a little fierce -->
-  <path d="M306 290 C 324 280, 346 280, 362 288" stroke="#2a1d33" stroke-width="12" fill="none" stroke-linecap="round"/>
-  <path d="M406 288 C 422 280, 444 280, 462 290" stroke="#2a1d33" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M306 290 C 324 280, 346 280, 362 288" stroke="#1e2440" stroke-width="12" fill="none" stroke-linecap="round"/>
+  <path d="M406 288 C 422 280, 444 280, 462 290" stroke="#1e2440" stroke-width="12" fill="none" stroke-linecap="round"/>
   <!-- eyes: owl-gold, bright, with a dark lash line -->
   <path d="M302 320 C 316 304, 352 304, 366 320 C 352 332, 316 334, 302 320 Z" fill="#fbf7e8"/>
   <path d="M402 320 C 416 304, 452 304, 466 320 C 452 334, 416 332, 402 320 Z" fill="#fbf7e8"/>

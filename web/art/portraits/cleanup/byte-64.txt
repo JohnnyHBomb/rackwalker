@@ -1,138 +1,49 @@
-# Byte, 64 x 64: hand clean-up after the area downscale and palette mapping (format: portrait.mjs, cleanup()).
-## face discs: a clean dark rim, no grey or slate half-tones where the white met the outline
-22,20 26,20 b0
-20,21 b0
-28,21 b0
-30,22 b0
-37,20 41,20 b0
-35,21 b0
-43,21 b0
-44,22 b0
-31,22 31,31 b0
-30,23 30,30 w
-28,31 30,31 w
-20,33 b0
-28,33 b0
-35,33 b0
-22,34 27,34 b0
-34,34 41,34 b0
-22,35 27,35 w
-36,35 37,35 w
-38,35 41,35 b5
-## left eye: gold iris with a darker ring, a round black pupil, a two-pixel white glint, white around it
-22,23 w
-26,23 w
-21,24 w
-28,24 w
-20,25 w
-24,25 ye1
-29,25 w
-20,26 ye0
-23,26 w
-24,26 26,26 k0
-29,26 w
-20,27 ye0
-23,27 26,27 k0
-29,27 w
-20,28 ye0
-23,28 26,28 k0
-29,28 w
-20,29 w
-23,29 ye1
-24,29 26,29 k0
-21,30 w
-28,30 w
-22,31 w
-26,31 w
-## right eye: the same eye on the pale-blue disc
-37,23 b5
-41,23 b5
-35,24 b5
-42,24 b5
-37,25 w
-38,25 ye1
-43,25 b5
-34,26 b5
-37,26 w
-38,26 40,26 k0
-43,26 ye0
-34,27 b5
-36,27 ye1
-37,27 40,27 k0
-43,27 ye0
-36,28 ye1
-37,28 40,28 k0
-43,28 ye0
-37,29 ye1
-38,29 40,29 k0
-43,29 ye0
-35,30 b5
-42,30 b5
-37,31 b5
-41,31 b5
-## beak: a gold triangle, lit on the left, with a one-pixel dark outline
-28,32 35,32 b0
-28,33 b0
-29,33 31,33 ye1
-32,33 34,33 ye0
-35,33 b0
-29,34 b0
-30,34 31,34 ye1
-32,34 33,34 ye0
-34,34 b0
-30,35 b0
-31,35 ye1
-32,35 ye0
-33,35 b0
-30,36 b0
-31,36 ye1
-32,36 ye0
-33,36 b0
-31,37 32,37 b0
-29,35 w
-34,35 w
-29,36 w
-34,36 w
-30,37 w
-33,37 w
-31,38 32,38 w
-## belly: five clean chevron feathers on clean white
-25,38 36,40 w
-28,43 35,45 w
-25,48 36,50 w
-26,39 b4
-27,40 28,40 b4
-29,39 b4
-34,39 b4
-35,40 36,40 b4
-37,39 b4
-30,44 b4
-31,45 32,45 b4
-33,44 b4
-26,49 b4
-27,50 28,50 b4
-29,49 b4
-34,49 b4
-35,50 36,50 b4
-37,49 b4
-## feet: four gold toes, lit on the left, on a clean outline where the body meets the perch
-27,51 27,52 w
-30,51 33,52 w
-36,51 36,52 w
-24,53 39,53 b0
-25,51 25,53 ye1
-26,51 26,53 ye0
-28,51 28,53 ye1
-29,51 29,53 ye0
-34,51 34,53 ye1
-35,51 35,53 ye0
-37,51 37,53 ye1
-38,51 38,53 ye0
-## the discs: no grey specks left inside the white
-22,22 w
-27,22 w
-24,32 25,32 w
-36,23 b5
-40,22 b5
-36,29 b5
-40,32 b5
+# Byte, 64 x 64: hand clean-up of the palette mapping without dither (format: portrait.mjs, cleanup()).
+# Light comes from the top left. Flat tones inside each shape; the holographic sheen stays as one cyan arc.
+## the crown: flat lit blue, the sheen a single arc with no grey beside it
+21,16 27,19 l1>b3
+21,16 27,19 l2>b3
+21,16 27,19 l3>b3
+18,16 26,21 s3>b4
+## face discs: white on the lit left, pale cyan on the right, no grey specks; a slate rim and a slate line between them
+17,21 29,33 s4>w
+17,21 29,33 s3>w
+17,21 29,33 s2>w
+31,20 45,33 s4>b5
+31,20 45,33 s3>b5
+22,20 26,20 l3
+29,24 31,31 s1>l1
+29,24 31,31 s2>l1
+## eyes: a gold iris round a big black pupil with a white glint on its upper left
+23,25 24,25 ye1
+23,26 23,28 ye1
+24,26 26,29 k0
+24,27 w
+37,25 38,25 ye1
+37,26 39,29 k0
+40,27 40,28 ye1
+37,27 w
+## breast feathers: flat white, with small blue chevrons in two rows instead of grey halos
+21,37 36,40 w
+37,38 42,40 b5
+25,38 b3
+26,39 b3
+27,38 b3
+31,38 b3
+32,39 b3
+33,38 b3
+38,38 b3
+39,39 b3
+40,38 b3
+21,43 36,45 w
+22,43 b3
+23,44 b3
+24,43 b3
+28,43 b3
+29,44 b3
+30,43 b3
+34,43 b3
+35,44 b3
+36,43 b3
+## the beak's tip stays dark; the white under it is clean
+31,37 32,37 s0

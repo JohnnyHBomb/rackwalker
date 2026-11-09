@@ -1,100 +1,55 @@
-# Nocti, 64 x 64: hand clean-up after the area downscale and palette mapping (format: portrait.mjs, cleanup()).
-## work goggles: two round lenses with a steel rim and one glint, on a black strap
-24,15 k0
-25,15 27,15 s2
-28,15 k0
-24,16 24,19 s2
-28,16 28,19 s2
-25,16 b5
-26,16 27,16 b3
-25,17 27,19 b3
-24,20 k0
-25,20 27,20 s2
-28,20 k0
-35,15 k0
-36,15 38,15 s2
-39,15 k0
-35,16 35,19 s2
-39,16 39,19 s2
-36,16 b3
-37,16 38,16 b2
-36,17 38,19 b2
-35,20 k0
-36,20 38,20 s2
-39,20 k0
-## left eye: amber iris with a darker ring, a round black pupil and a two-pixel glint
-22,25 ye1
-23,25 w
-24,26 25,26 ye1
-23,27 ye1
+# Nocti, 64 x 64: hand clean-up of the palette mapping without dither (format: portrait.mjs, cleanup()).
+# Light comes from the top left. Flat tones inside each shape; every mark is deliberate.
+## face discs: one flat tone each (the lit left disc pale, the right disc a step darker), no specks inside them
+20,21 28,23 wd3>wd4
+19,31 28,34 wd3>wd4
+34,32 43,34 ye0>wd3
+34,32 43,34 wd2>wd3
+30,27 30,29 wd3
+31,24 31,31 wd0
+## the open left eye: a gold ring, the iris lit at the bottom, a round black pupil with a glint on its upper left
+21,25 27,30 ye1
+21,25 ye0
+28,25 28,30 ye0
+21,30 ye0
+22,31 27,31 ye0
+22,30 25,30 ye2
 24,27 26,27 k0
-23,29 k0
-20,29 ye0
-24,30 25,30 ye1
-## right eye: half under a heavy, sceptical lid with a dark edge; the pupil looks out from under it
-35,23 42,23 k0
-34,24 k0
-35,24 42,24 wd1
-43,24 k0
-34,25 k0
-35,25 42,25 wd1
-43,25 k0
+23,28 26,28 k0
+24,29 26,29 k0
+24,27 w
+## the sceptical right eye: a flat lid with one lit run and a dark top edge, the iris below it, pupil and glint
+35,23 wd0
+36,23 41,23 k0
+42,23 wd0
+34,24 42,25 wd1
+36,24 39,24 wd2
+35,27 43,30 wd1>ye1
+35,27 43,30 wd2>ye1
+37,30 40,30 ye2
 37,27 w
-40,27 k0
-40,29 k0
-38,30 39,30 ye1
-## beak: a gold triangle, lit on the left, with a one-pixel black outline
-28,32 35,32 k0
-28,33 k0
-29,33 31,33 ye1
-32,33 34,33 ye0
-35,33 k0
-29,34 k0
-30,34 31,34 ye1
-32,34 33,34 ye0
-34,34 k0
-30,35 k0
-31,35 ye1
-32,35 ye0
-33,35 k0
-30,36 k0
-31,36 ye1
-32,36 ye0
-33,36 k0
-31,37 32,37 k0
-30,37 wd4
-33,37 wd4
-31,38 32,38 wd4
-## belly: five clean dark chevron feathers on the pale belly
-25,38 36,40 wd4
-28,43 35,45 wd4
-25,48 36,49 wd4
-26,50 36,50 wd4
-26,39 wd1
-27,40 28,40 wd1
-29,39 wd1
-34,39 wd1
-35,40 36,40 wd1
-37,39 wd1
-30,44 wd1
-31,45 32,45 wd1
-33,44 wd1
-26,49 wd1
-27,50 28,50 wd1
-29,49 wd1
-34,49 wd1
-35,50 36,50 wd1
-37,49 wd1
-## feet: four amber toes on a dark line where the body meets the bench
-27,51 27,52 wd4
-30,51 33,52 wd4
-36,51 36,52 wd4
-24,53 39,53 k0
-25,51 25,53 ye1
-26,51 26,53 ye0
-28,51 28,53 ye1
-29,51 29,53 ye0
-34,51 34,53 ye1
-35,51 35,53 ye0
-37,51 37,53 ye1
-38,51 38,53 ye0
+## breast feathers: flat, with three small chevrons in each of two rows instead of scattered specks
+21,38 36,40 wd4
+37,38 42,40 wd3
+25,39 wd2
+26,40 wd2
+27,39 wd2
+31,39 wd2
+32,40 wd2
+33,39 wd2
+38,39 wd1
+39,40 wd1
+40,39 wd1
+21,43 36,45 wd4
+22,44 wd2
+23,45 wd2
+24,44 wd2
+28,44 wd2
+29,45 wd2
+30,44 wd2
+34,44 wd2
+35,45 wd2
+36,44 wd2
+## the lower belly a step darker and flat (it turns away from the light)
+21,47 37,50 wd1>wd3
+21,47 37,50 wd2>wd3
