@@ -44,9 +44,9 @@
     }
   ],
   "completeness": {
-    "percent": 89,
-    "total": 149,
-    "open": 16
+    "percent": 87,
+    "total": 134,
+    "open": 17
   },
   "source": "fixture",
   "incomplete": []

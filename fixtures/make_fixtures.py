@@ -206,7 +206,7 @@ class World:
             "cterms": [{"id": t["id"], "circuit_id": self.circ_id[t["cid"]], "side": t["side"], "site_id": self.site_id[t["site"]],
                         "cable_id": t["cable"]} for t in self.cterm.values()],
             "feeds": [], "platforms": [], "ips": ips,
-            "prefixes": [{"id": i, "prefix": f"{s.net}.0/24"} for i, s in enumerate(m.sites, 1)],
+            "prefixes": [],  # the seed creates addresses but no prefixes, as devnetbox/seed.py does
             "truncated": [], "unreadable": [], "synthetic": False}
 
     @staticmethod

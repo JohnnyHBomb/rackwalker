@@ -6,7 +6,9 @@
 Ensures (idempotently, with the admin token):
   * user `rackwalker-proxy` (not staff, not superuser) and two ObjectPermissions on it:
       - `rackwalker-proxy view`:  view on exactly the object types the proxy reads (netbox.py / scene.py / changes.py);
-      - `rackwalker-proxy write`: change on the types update_fields/move/place may write, add on dcim.rack (create_rack);
+      - `rackwalker-proxy write`: change on the types update_fields/move/place may write;
+      - `rackwalker-proxy add rack`: add on racks (create_rack) and on what a quest line may create (cables, circuits,
+        circuit terminations, IP addresses, prefixes);
   * two v2 tokens for that user, each expiring after TOKEN_DAYS:
       - ro: write_enabled=false  -> the dry-run default (.env with WRITE_ENABLED=0): NetBox itself refuses writes;
       - rw: write_enabled=true   -> only for WRITE_ENABLED=1.
@@ -30,10 +32,16 @@ TOKEN_DAYS = 30
 VIEW = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.devicetype", "dcim.devicerole", "dcim.cable",
         "dcim.interface", "dcim.frontport", "dcim.rearport", "dcim.consoleport", "dcim.consoleserverport",
         "dcim.powerport", "dcim.poweroutlet", "dcim.powerfeed", "circuits.circuit", "circuits.circuittermination",
-        "users.user"]  # users: the game rechecks that a signed-in player's NetBox user still exists and is active
+        "users.user",  # the game rechecks that a signed-in player's NetBox user still exists and is active
+        # the quest scanner reads these as well (estate.py):
+        "circuits.provider", "circuits.circuittype", "dcim.platform", "ipam.ipaddress", "ipam.prefix",
+        # and before any write the proxy reads the player's own permissions (perms.py):
+        "users.group", "users.objectpermission"]
 CHANGE = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.cable", "dcim.interface"]  # changes.ENDPOINT
+# what a quest line may create: a cable, a circuit and its end at a site, an address, a prefix (changes.NET_OPS)
+ADD = ["dcim.rack", "dcim.cable", "circuits.circuit", "circuits.circuittermination", "ipam.ipaddress", "ipam.prefix"]
 PERMS = [("rackwalker-proxy view", VIEW, ["view"]), ("rackwalker-proxy write", CHANGE, ["change"]),
-         ("rackwalker-proxy add rack", ["dcim.rack"], ["add"])]
+         ("rackwalker-proxy add rack", ADD, ["add"])]
 
 
 def main() -> None:
@@ -43,7 +51,7 @@ def main() -> None:
     url, admin, secrets = os.environ["NETBOX_URL"].rstrip("/"), os.environ["NETBOX_TOKEN"], Path(os.environ["SECRETS"])
     var = f"PROXY_{which.upper()}_TOKEN"
     stored = dict(re.findall(r"^(PROXY_R[OW]_TOKEN)=(\S+)$", secrets.read_text(), re.M)).get(var)
-    if stored and works(url, stored):
+    if stored and works(url, stored) and sees(url, stored, "users/permissions"):
         print(stored)
         return
     s = requests.Session()
@@ -79,6 +87,12 @@ def main() -> None:
     secrets.write_text(text.rstrip("\n") + f"\n{var}={plain}\n")
     os.chmod(secrets, 0o600)
     print(plain)
+
+
+def sees(url: str, token: str, path: str) -> bool:
+    """False when a token minted before the permission list grew cannot read `path` yet (then it is minted again)."""
+    r = requests.get(f"{url}/api/{path}/", params={"limit": 1}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
+    return r.status_code == 200
 
 
 def works(url: str, token: str) -> bool:

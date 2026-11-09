@@ -59,7 +59,7 @@ test-proxy: $(VENV_OK)
 # changelog and undoes the test writes.
 test-live: $(VENV_OK)
 	@eval "$$(PY=$(PY) devnetbox/nb.sh env rw | sed 's/^/export /')"; \
-	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 $(PY) -m pytest proxy/tests/test_live_netbox.py -p no:cacheprovider
+	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 $(PY) -m pytest proxy/tests/test_live_netbox.py proxy/tests/test_live_quests.py -p no:cacheprovider
 
 test-web: web/node_modules/.package-lock.json
 	cd web && npx tsc --noEmit -p . && npx vitest run
