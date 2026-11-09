@@ -2,7 +2,7 @@
 // fixture sites), the door transition and a walk in the real game, the walk cycle as a GIF, and frame times at 3x
 // while walking (no layout shift). Writes docs/screenshots/overworld/.
 import { expect, test, type Page } from '@playwright/test';
-import { execFileSync } from 'node:child_process';
+import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -103,7 +103,9 @@ test('the walk cycle in four directions, as a GIF', async ({ page }) => {
     const url = await page.evaluate(([p, at, t]) => window.__world!.capture({ scale: 2, player: p as never, at: at as never, t: t as number }), [frames[i]!, info.start, i * 33]);
     save(`.walk/f${String(i).padStart(3, '0')}.png`, url);
   }
-  execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '30', '-i', resolve(dir, 'f%03d.png'), '-vf', 'split[a][b];[a]palettegen=max_colors=64:reserve_transparent=0[p];[b][p]paletteuse=dither=none', resolve(SHOTS, 'walk.gif')]);
+  // The GIF is a docs artefact: without ffmpeg (as on CI runners) the frames are still captured and checked, and no GIF is written.
+  const hasFfmpeg = !spawnSync('ffmpeg', ['-version']).error;
+  if (hasFfmpeg) execFileSync('ffmpeg', ['-y', '-loglevel', 'error', '-framerate', '30', '-i', resolve(dir, 'f%03d.png'), '-vf', 'split[a][b];[a]palettegen=max_colors=64:reserve_transparent=0[p];[b][p]paletteuse=dither=none', resolve(SHOTS, 'walk.gif')]);
   rmSync(dir, { recursive: true, force: true });
 });
 
