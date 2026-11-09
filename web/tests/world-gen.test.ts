@@ -372,3 +372,18 @@ describe('a stream', () => {
     expect(wide).toBeGreaterThan(0);
   });
 });
+
+describe('weather', () => {
+  it('the rain cloud never hangs over a doorway (the fixture world in every theme)', async () => {
+    const { default: world } = await import('../../fixtures/world.json');
+    for (const theme of ['debug', 'industrial-robotic', 'farm', 'business', 'pagodas-nature', null]) {
+      const m = new WorldMap(world.sites.map(({ site: s }) => ({ id: s.id, name: s.name, latitude: s.latitude, longitude: s.longitude, theme: theme ?? s.iso_theme, country: 'GB' })));
+      const clouds = m.objects.filter((o) => o.sprite === 'rain_cloud');
+      expect(clouds.length).toBeGreaterThan(0);
+      // the cloud is drawn 28 px above its footprint's bottom edge; its footprint is two tiles wide
+      for (const o of clouds)
+        for (const d of m.doors)
+          expect(Math.max(Math.abs(Math.floor(o.x / 16) - d.x), Math.abs(Math.floor((o.y + 28) / 16) - d.y)), `${theme}: cloud near door ${d.siteId}`).toBeGreaterThanOrEqual(5);
+    }
+  });
+});

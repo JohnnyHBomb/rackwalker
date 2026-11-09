@@ -77,16 +77,32 @@ Same sites, same map, in any order (`web/tests/world-gen.test.ts`).
    Longitudes wrap at the 180th meridian. Sites without GPS stand in a square block below the others. Then each
    site, nearest the centre first, takes the free place nearest its own, so buildings never overlap, however many
    sites share one point (200 sites at one point make a region about 200 tiles square).
-3. **Filling the space.** A forest border; a canal with a sandy bank, a moored boat and reeds (or a pond); paths
-   joining every site of the region (a minimum spanning tree over the doors, routed around buildings, crossing water
-   straight as a bridge); fenced fields; the country's landmarks and villagers; groves and single trees; flowers.
+3. **Filling the space** (design rule 18: no empty world; the bar is the art direction's scene). A forest border; a
+   canal with a sandy bank, a moored boat and reeds, or a pond with a stream running from it out under the forest
+   (east-west, so paths cross it on bridges), with reeds and lily pads; both a few rows below the first building, so
+   the village has its water. Paths joining every site of the region (a minimum spanning tree over the doors, routed
+   around buildings, crossing water straight as a bridge). Fenced fields of four to six by two or three tiles, each
+   with a gate in its bottom fence. The country's landmarks and villagers. Then the dressing:
+   - side paths from the network to the front of every landmark and to every field gate, and two lanes that leave
+     the network for the woods, so the paths branch and meet;
+   - a signpost at a junction, benches beside straight stretches of path, short fences along paths;
+   - a yard in front of each building in its theme (crates, paired barrels, a cooling unit, a cable drum, a bench, a
+     rock), on the front corners and against the east wall;
+   - two-tile flower beds beside paths (warm colours; cool ones in the business and pagoda themes), rock clusters
+     with small stones, clumps of bushes with flowers at their feet, patches of wildflowers;
+   - tufts and flowers along the path verges; groves; single trees and pairs at uneven gaps, some with a bush.
+
+   Fields, landmarks and the dressing go nearest the buildings first (a sweep from the doors), so the village round
+   each door is the busiest part, and a steady scatter of rocks, bushes and flowers keeps the rest from going bare.
    How much goes down scales with the region's area.
 4. **Distant regions** sit side by side on one map, but no path joins them and the camera never leaves the player's
    region. Each region of a world with more than one has an **airfield pad, a placeholder**: a label over it names
    where it goes, and stepping on it takes the player to the next region's pad, with a card saying where, until
    flights replace it. A canal that no path crossed gets one crossing, so both banks can be reached.
-5. **Collisions.** Buildings (except the door tile), water (except bridges), trees, fields with their fences,
-   landmarks, villagers and the guide block the way. Walking onto a door enters that site's first room through the
+5. **Collisions.** Buildings (except the door tile), water (except bridges), trees, fields with their fences and
+   gates, landmarks, villagers, the guide and every prop (signposts, benches, fences, yards, beds, rocks, bushes)
+   block the way. A prop never stands on a path, a bridge, a door or the tiles kept free in front of a door, so every
+   door stays reachable along the paths (`web/tests/world-gen.test.ts` walks it in every country set and theme). Walking onto a door enters that site's first room through the
    game shell's scene switcher; leaving puts the player on the tile in front of the same door.
 6. **A saved place after an edit in NetBox.** Adding, moving or deleting a site, or changing its GPS or country,
    regenerates the map. A saved tile is kept only if the player can walk on from it to the region's doors (a reach
@@ -126,25 +142,36 @@ The eaves cast a two-pixel shadow on the wall below them (one ramp step darker),
 Ilatea's, Byte's and Nocti's dialogue portraits start as hand-written SVG at 768 x 768 (`../portraits/*.svg`, from the
 traits in `docs/art/guide-ilatea.md`), painted the way a 16-bit portrait is: flat tones (lit, base, shade) with a dark
 outline, no soft gradients, framed close so the face fills the small sizes (Ilatea's scene is scaled 1.35x about her
-face). `portrait.mjs` rasterises each in headless chromium, downscales it with an area filter (exact box averages, 12x
-to 64 x 64 and 8x to 96 x 96), maps it to the palette with no dither (ordered dither was tried and is shown in the
-sheet: it turned the skin and the background into noise at this size), using only the ramps the portrait is painted
-with (a skin tone never lands on path earth), then applies the hand clean-up pass: pixel edits stored as data in
-`../portraits/cleanup/<who>-<size>.txt`, one file for every portrait at both sizes, each step headed by its reason.
-The format is one edit per line: `x,y colour` sets a pixel, `x0,y0 x1,y1 colour` a rectangle, `## why` starts a step.
-The steps: Ilatea's brows as one level line, eyes as lash line / white corner / gold iris / black pupil, the smile with
-upturned corners, one clean line per silver strand, holes and grey specks out of the hair, the circlet gem as a lit
-diamond; the owls' eyes (iris ring, round pupil, glint), the beak as an outlined triangle with a sharp tip, clean disc
-rims and chevrons, the toes, Byte's sheen kept, Nocti's goggles and sceptical lid. `portrait-pipeline.png` shows source,
+face). Ilatea's hair is the guide's first variant: dark slate, flowing like streams of code, with a few silver strands
+like fibre (the art direction's own colours for it, the slate ramp), never purple.
+
+`portrait.mjs` rasterises each in headless chromium, downscales it with an area filter (exact box averages, 12x to
+64 x 64 and 8x to 96 x 96), maps it to the palette with no dither (ordered dither is shown in the sheet for
+comparison: it turns the skin and the background into noise at this size), using only the ramps the portrait is
+painted with (a skin tone never lands on path earth), then applies the hand clean-up pass: pixel edits stored as data
+in `../portraits/cleanup/<who>-<size>.txt`, one file for every portrait at both sizes, each step headed by its reason.
+The format is one edit per line: `x,y colour` sets a pixel, `x0,y0 x1,y1 colour` a rectangle, `x0,y0 x1,y1 a>b`
+recolours `a` to `b` inside a rectangle (or `x,y a>b` at one pixel), `## why` starts a step.
+
+The clean-up starts from the no-dither mapping and only makes single, deliberate marks; nothing is drawn across the
+skin. Ilatea: each eye a lash line with a dark wing at the outer corner, white corners, a gold iris round a black
+pupil with a glint on its upper left and the lower iris lit; level brows in the hair's dark slate; the nose as one
+shade step down its shaded side; a short smile with upturned corners; the face and neck outlined in dark skin instead
+of grey; grey specks where hair and skin blended taken out. The owls: flat face discs (no specks), round pupils with a
+glint, the sceptical lid of Nocti as one flat shape with one lit run, deliberate chevrons on the breast instead of
+grey halos, Byte's beak with a clean outline and his sheen kept as one cyan arc. `portrait-pipeline.png` shows source,
 raw downscale, both palette mappings and the cleaned result.
 
 ### Frame times
 
 `web/e2e/overworld.spec.ts` walks the player in the real game at 768 x 672 (3x) with chromium's CPU throttled 4x and
-writes `perf.json`: frame interval p95 17.3 ms (60 fps), composing a frame 2.2 ms median, 2.8 ms p95, no layout shift.
-A frame looks only at the objects near the camera (`web/tests/world-engine.test.ts` checks that a world of 200 sites
-looks at no more than a world of 3): in node, unthrottled, composing a frame of a 200-site world (122,000 objects)
-takes 0.6 ms median, as for 3 sites.
+writes `perf.json`: frame interval p95 17.5 ms (60 fps), composing a frame 2.6 ms median, 4.7 ms p95, no layout shift
+(composing p95 was 3.2 to 4.7 ms over five runs on the dressed map, 2.8 ms before it). The dressing added about a
+quarter more objects; a frame still looks only at the objects near the camera
+(`web/tests/world-engine.test.ts` checks that a world of 200 sites looks at no more than a world of 3): in node,
+unthrottled, composing a frame of a 200-site world (152,000 objects) takes 0.6 ms median, as for 3 sites. Building the
+map of that world takes about 1.4 s once at load (0.8 s before the dressing; the side paths and lanes are routed per
+region).
 
 ## Art notes
 
@@ -188,10 +215,33 @@ front-facing roof rule, fix them, render again.
    flowers; rounded water and sand shapes, path wobble and curved corners, the canal under the forest; stacked side
    fences; her eyes open (two rows of gold iris, a glint on each pupil), the forehead light on a slant.
 
+6. **Portraits from the no-dither mapping** (the six portraits at 10x with a pixel grid, beside the art direction's
+   portrait).
+   Weaknesses: the hand pass drew pale lines across Ilatea's face, brows and hair, so the cleaned portrait read worse
+   than the plain mapping, worst at 96; her hair was purple, outside the guide's "dark, with silver strands"; her face
+   had a grey outline; Nocti's face disc at 64 was speckled; the owls' pupils had no glint and Byte's discs a grey halo.
+   Fixes: every clean-up file rewritten from the no-dither result with single marks only (above); the hair repainted
+   in dark slate with short silver strands inside the mass instead of two long lines framing the face; a recolour
+   edit for sweeping specks out of an area without touching anything else.
+7. **Density** (every theme and country at 3x beside the art direction's scene; 6x crops of both).
+   Weaknesses: open grass with one landmark and one straight path; no water in view of any building; no fences or
+   gates except round the two fields; no props by the buildings; trees only in groves or alone at even gaps.
+   Fixes: the dressing (above), fields and water placed near the village, side paths and lanes, uneven tree spacing.
+8. **Density, second look** (same views).
+   Weaknesses: three signposts in one screen; flower beds sat on the water's bank and on the fields' top fences; the
+   flower bed was a thin strip; the stream left the pond with a notch of grass; stretches far from the doors were
+   still bare.
+   Fixes: at most one signpost per ten steps of path; no prop right above water or a field; a taller bed with a timber
+   edge and three rows of flowers; the pond's corner joins the stream; a steady scatter of rocks, bushes and flowers
+   away from the village; tufts and flowers along the path verges; barrels in pairs; the rain cloud, which now came
+   down near the village with the other landmarks and hung over a doorway, keeps six steps from any door.
+
 ## Where it still falls short
 
-- The rain cloud casts no shadow; landmarks are not joined to the paths; the tulip field's lower fence hides its last
-  row.
+- The rain cloud casts no shadow; the tulip field's lower fence hides its last row.
+- The ground is flat: the art direction's scene has a raised bank with a stone wall and steps, which the map has no
+  height for yet.
+- A big world takes longer to build at load since the dressing (see Frame times).
 - The pond's outline follows whole tiles, so its curves step at tile corners; the quay stones follow those steps.
 - Nothing points at buildings off screen yet (a map and a marker to the next small fix come with the quest log).
 - Phones get 1x (256 px wide) because only whole-number scales are used.

@@ -110,7 +110,8 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   (off by default).
 * **Overworld.** A 16-bit tile world (256 x 224, whole-number scaling) made from your sites: sites within 250 km of
   each other share a walkable region with compressed distances, joined by paths over bridges, filled with forest,
-  water, fields and the landmarks and animal villagers of the region's country (`Site.country`); one front-facing
+  water, fenced fields with gates, side paths to every landmark, signposts, benches, flower beds, rocks and shrubs,
+  and the landmarks and animal villagers of the region's country (`Site.country`); one front-facing
   building per site in its theme, labelled with the site's name. Distant regions are reached through an airfield pad
   (a placeholder until flights). How it is built: [`web/art/overworld/README.md`](web/art/overworld/README.md). Walk
   with the arrow keys or WASD (or your own keys), or tap/click where you want to go. Each door has a bobbing marker in

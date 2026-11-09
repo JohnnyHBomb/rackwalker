@@ -531,7 +531,7 @@ export class WorldMap {
     const lmSpots = byVillage(6, spots);
     for (const l of set.landmarks)
       for (let n = 0; n < l.count * fill; n++) {
-        const s = lmSpots.find((q) => (l.sky ? this.freeRect(q.x, q.y, l.fw, l.fh, 0) : this.freeRect(q.x, q.y, l.fw, l.fh, 1)) && doorDist(q.x, q.y) >= 3);
+        const s = lmSpots.find((q) => (l.sky ? this.freeRect(q.x, q.y, l.fw, l.fh, 0) : this.freeRect(q.x, q.y, l.fw, l.fh, 1)) && doorDist(q.x, q.y) >= (l.sky ? 6 : 3)); // weather keeps clear of the doorways
         if (!s) break;
         const ax = s.x * TILE + l.fw * 8, ay = (s.y + l.fh) * TILE - 1;
         if (l.sky) {
@@ -661,14 +661,16 @@ export class WorldMap {
     const { rx, w, h, R, doors, theme, fronts, fill, seed } = c;
     const x0 = rx + BORDER + 1, x1 = rx + w - BORDER - 1, y0 = BORDER + 1, y1 = h - BORDER - 1;
     const isPath = (x: number, y: number) => this.at(x, y) === 'P' || this.at(x, y) === 'B';
-    // a tile right above a field holds the field's top fence
-    const room = (x: number, y: number) => this.free(x, y) && this.at(x, y + 1) !== 'F' && this.at(x, y + 1) !== 'C';
+    // a tile right above a field holds the field's top fence, one right above water its bank
+    const room = (x: number, y: number) => this.free(x, y) && !['F', 'C', 'W'].includes(this.at(x, y + 1) ?? 'G');
     const awayFromDoors = (x: number, y: number) => !doors.some((d) => Math.abs(x - d.x) <= 2 && y >= d.y - 1 && y <= d.y + 3);
     const placed: Pos[] = [];
     const spaced = (x: number, y: number, d: number) => !placed.some((p) => Math.abs(p.x - x) <= d && Math.abs(p.y - y) <= d);
     const prop = (sprite: string, x: number, y: number, shadow?: readonly [number, number, number, number], dx = 8, dy = 14) => {
       this.flag(x, y, SOLID | RESERVED);
       placed.push({ x, y });
+      // barrels stand in pairs, the second a step behind
+      if (sprite === 'barrel') this.objects.push({ sprite, x: x * TILE + dx + 5, y: y * TILE + dy - 3, kind: 'prop' });
       this.objects.push({ sprite, x: x * TILE + dx, y: y * TILE + dy, kind: sprite === 'bush' ? 'tree' : 'prop', ...(shadow ? { shadow } : {}) });
     };
     const decor = (sprite: string, x: number, y: number, k: number) => {
@@ -745,10 +747,11 @@ export class WorldMap {
     // Signposts at junctions: a path tile with three or four path neighbours gets one on a free corner beside it.
     const junctions = shuffled(20, (x, y) => this.at(x, y) === 'P' && STEPS.filter((s) => isPath(x + s.x, y + s.y)).length >= 3 && awayFromDoors(x, y));
     let signs = 0;
+    const signAt: Pos[] = [];
     for (const j of junctions) {
-      if (signs >= 2 + 2 * fill) break;
-      const at = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy]) => ({ x: j.x + dx!, y: j.y + dy! })).find((q) => room(q.x, q.y) && spaced(q.x, q.y, 3));
-      if (at) prop('signpost', at.x, at.y, [2, 0, 5, 2]), signs++;
+      if (signs >= 1 + fill) break;
+      const at = [[-1, -1], [1, -1], [-1, 1], [1, 1]].map(([dx, dy]) => ({ x: j.x + dx!, y: j.y + dy! })).find((q) => room(q.x, q.y) && spaced(q.x, q.y, 3) && !signAt.some((p) => Math.abs(p.x - q.x) + Math.abs(p.y - q.y) < 10));
+      if (at) signAt.push(at), prop('signpost', at.x, at.y, [2, 0, 5, 2]), signs++;
     }
     // Benches on the grass beside a straight east-west path, facing it.
     let benches = 0;
@@ -825,6 +828,12 @@ export class WorldMap {
           placed.push({ x, y });
         }
       }
+    // Path verges: tufts and flowers in the grass along the paths, as the art direction lets the grass lean over them.
+    const verge = groundTheme(theme).flora;
+    for (let y = y0; y < y1; y++)
+      for (let x = x0; x < x1; x++)
+        if (this.free(x, y) && STEPS.some((st) => isPath(x + st.x, y + st.y)) && R(x, y, 55) < 0.3)
+          decor(R(x, y, 56) < 0.5 ? 'tuft' : verge[Math.floor(R(x, y, 57) * verge.length)]!, x, y, 58);
     // Wildflower patches: a few tiles of one flower, thick, as the art direction scatters them by the paths.
     const flora = groundTheme(theme).flora.filter((f) => f !== 'stone' && f !== 'tuft');
     let patches = 0;
