@@ -1,0 +1,121 @@
+{
+  "mode": "preview",
+  "applied": false,
+  "write_enabled": false,
+  "ops": [
+    {
+      "index": 0,
+      "op": "create_circuit",
+      "client_ref": "circuit",
+      "target": {
+        "kind": "circuit",
+        "id": 1
+      },
+      "status": "ok",
+      "before": null,
+      "after": {
+        "cid": "EXF-20417",
+        "provider_id": 9000001,
+        "type_id": 9000001
+      },
+      "diff": [
+        {
+          "field": "cid",
+          "before": null,
+          "after": "EXF-20417"
+        },
+        {
+          "field": "provider_id",
+          "before": null,
+          "after": 9000001
+        },
+        {
+          "field": "type_id",
+          "before": null,
+          "after": 9000001
+        }
+      ],
+      "error": null
+    },
+    {
+      "index": 1,
+      "op": "create_circuit_termination",
+      "client_ref": "handoff",
+      "target": {
+        "kind": "circuit_termination",
+        "id": 1
+      },
+      "status": "ok",
+      "before": null,
+      "after": {
+        "circuit_id": "@circuit",
+        "term_side": "A",
+        "site_id": 9000001
+      },
+      "diff": [
+        {
+          "field": "circuit_id",
+          "before": null,
+          "after": "@circuit"
+        },
+        {
+          "field": "term_side",
+          "before": null,
+          "after": "A"
+        },
+        {
+          "field": "site_id",
+          "before": null,
+          "after": 9000001
+        }
+      ],
+      "error": null
+    },
+    {
+      "index": 2,
+      "op": "connect_cable",
+      "client_ref": null,
+      "target": {
+        "kind": "cable",
+        "id": 1
+      },
+      "status": "ok",
+      "before": null,
+      "after": {
+        "a_kind": "interface",
+        "a_id": 9000026,
+        "b_kind": "circuit_termination",
+        "b_id": "@handoff",
+        "type": "smf"
+      },
+      "diff": [
+        {
+          "field": "a_kind",
+          "before": null,
+          "after": "interface"
+        },
+        {
+          "field": "a_id",
+          "before": null,
+          "after": 9000026
+        },
+        {
+          "field": "b_kind",
+          "before": null,
+          "after": "circuit_termination"
+        },
+        {
+          "field": "b_id",
+          "before": null,
+          "after": "@handoff"
+        },
+        {
+          "field": "type",
+          "before": null,
+          "after": "smf"
+        }
+      ],
+      "error": null
+    }
+  ]
+}

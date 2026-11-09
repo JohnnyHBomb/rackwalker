@@ -69,8 +69,9 @@ def _fake_netbox(monkeypatch, version: str, seen: list):
     import httpx
 
     def handler(req: httpx.Request) -> httpx.Response:
-        seen.append(req.headers.get("authorization"))
-        return httpx.Response(200, json={"netbox-version": version})
+        if req.url.path.endswith("/api/status/"):  # the health probe itself; the permission probes follow it
+            seen.append(req.headers.get("authorization"))
+        return httpx.Response(200, json={"netbox-version": version, "results": [], "count": 0})
 
     real = httpx.AsyncClient
     monkeypatch.setattr(httpx, "AsyncClient", lambda **kw: real(transport=httpx.MockTransport(handler), **kw))

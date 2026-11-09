@@ -1,0 +1,447 @@
+{
+  "contract_version": "2.3.0",
+  "scope": "practice",
+  "site_id": null,
+  "write_enabled": false,
+  "can_write": false,
+  "write_blocked": "The practice island is made up: nothing you do here reaches NetBox.",
+  "all_in_order": false,
+  "message": "9 things to find out at the practice island; the most useful one comes first.",
+  "findings": [
+    {
+      "id": "site_no_way_out:site:9000001",
+      "kind": "site_no_way_out",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "Nobody can tell from NetBox how Practice Island reaches the outside world.",
+      "evidence": [
+        {
+          "kind": "site",
+          "id": 9000001,
+          "name": "Practice Island"
+        },
+        {
+          "kind": "provider",
+          "id": 9000001,
+          "name": "Example Fibre"
+        }
+      ]
+    },
+    {
+      "id": "locations_not_linked:location:9000002",
+      "kind": "locations_not_linked",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "Loft and Quay Room at Practice Island have no link between them.",
+      "evidence": [
+        {
+          "kind": "location",
+          "id": 9000002,
+          "name": "Loft"
+        },
+        {
+          "kind": "location",
+          "id": 9000001,
+          "name": "Quay Room"
+        },
+        {
+          "kind": "device",
+          "id": 9000003,
+          "name": "sw-loft-1"
+        }
+      ]
+    },
+    {
+      "id": "device_unconnected:device:9000001",
+      "kind": "device_unconnected",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "sw-quay-1 has 26 ports and nothing recorded on any of them.",
+      "evidence": [
+        {
+          "kind": "device",
+          "id": 9000001,
+          "name": "sw-quay-1"
+        }
+      ]
+    },
+    {
+      "id": "device_unconnected:device:9000002",
+      "kind": "device_unconnected",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "sw-quay-2 has 26 ports and nothing recorded on any of them.",
+      "evidence": [
+        {
+          "kind": "device",
+          "id": 9000002,
+          "name": "sw-quay-2"
+        }
+      ]
+    },
+    {
+      "id": "device_unconnected:device:9000003",
+      "kind": "device_unconnected",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "sw-loft-1 has 26 ports and nothing recorded on any of them.",
+      "evidence": [
+        {
+          "kind": "device",
+          "id": 9000003,
+          "name": "sw-loft-1"
+        }
+      ]
+    },
+    {
+      "id": "rack_audit:rack:9000001",
+      "kind": "rack_audit",
+      "rank": "identity",
+      "site_id": 9000001,
+      "title": "1 device in rack PI-Q1 cannot be told apart on paper (serial, asset tag or platform missing).",
+      "evidence": [
+        {
+          "kind": "rack",
+          "id": 9000001,
+          "name": "PI-Q1"
+        },
+        {
+          "kind": "device",
+          "id": 9000002,
+          "name": "sw-quay-2"
+        }
+      ]
+    },
+    {
+      "id": "site_record:site:9000001",
+      "kind": "site_record",
+      "rank": "identity",
+      "site_id": 9000001,
+      "title": "Practice Island cannot be put on a map or named to a carrier (gps and facility missing).",
+      "evidence": [
+        {
+          "kind": "site",
+          "id": 9000001,
+          "name": "Practice Island"
+        }
+      ]
+    },
+    {
+      "id": "rack_devices_unpositioned:rack:9000002",
+      "kind": "rack_devices_unpositioned",
+      "rank": "layout",
+      "site_id": 9000001,
+      "title": "1 device in rack PI-L1 has no rack unit.",
+      "evidence": [
+        {
+          "kind": "rack",
+          "id": 9000002,
+          "name": "PI-L1"
+        },
+        {
+          "kind": "device",
+          "id": 9000003,
+          "name": "sw-loft-1"
+        }
+      ]
+    },
+    {
+      "id": "room_layout:location:9000002",
+      "kind": "room_layout",
+      "rank": "layout",
+      "site_id": 9000001,
+      "title": "1 rack in Loft has no room or no place on the floor plan.",
+      "evidence": [
+        {
+          "kind": "rack",
+          "id": 9000002,
+          "name": "PI-L1"
+        }
+      ]
+    }
+  ],
+  "quests": [
+    {
+      "id": "q:site_no_way_out:site:9000001",
+      "scope": "practice",
+      "kind": "site_no_way_out",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "The way out of Practice Island",
+      "purpose": "Nobody can tell how Practice Island reaches the internet. Let's find out.",
+      "outcome": "You can now trace Practice Island to the carrier's hand-off.",
+      "status": "offered",
+      "step": {
+        "id": "device",
+        "prompt": "Which device at Practice Island does the line to the outside plug into?",
+        "input": "choice",
+        "choices": [
+          {
+            "id": "device:9000003",
+            "label": "sw-loft-1 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "device:9000001",
+            "label": "sw-quay-1 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "device:9000002",
+            "label": "sw-quay-2 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "other",
+            "label": "Something not listed",
+            "kind": "other"
+          },
+          {
+            "id": "unknown",
+            "label": "I don't know yet",
+            "kind": "unknown"
+          }
+        ],
+        "fields": [],
+        "hint": null,
+        "error": null
+      },
+      "proposal": null,
+      "checklist": [],
+      "note": null,
+      "said": [],
+      "target": {
+        "site_id": 9000001,
+        "view": "site:9000001",
+        "entity": "site:9000001",
+        "label": "Practice Island"
+      },
+      "finding": {
+        "id": "site_no_way_out:site:9000001",
+        "kind": "site_no_way_out",
+        "rank": "connectivity",
+        "site_id": 9000001,
+        "title": "Nobody can tell from NetBox how Practice Island reaches the outside world.",
+        "evidence": [
+          {
+            "kind": "site",
+            "id": 9000001,
+            "name": "Practice Island"
+          },
+          {
+            "kind": "provider",
+            "id": 9000001,
+            "name": "Example Fibre"
+          }
+        ]
+      },
+      "xp": 120,
+      "minutes": 4,
+      "progress": {
+        "total": 1,
+        "verified": 0
+      },
+      "lapsed": false,
+      "updated_at": null
+    },
+    {
+      "id": "q:locations_not_linked:location:9000002",
+      "scope": "practice",
+      "kind": "locations_not_linked",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "The link between two rooms",
+      "purpose": "If the link between these rooms fails, nobody knows which cable to check. Let's record it.",
+      "outcome": "You can now trace from one room to the other.",
+      "status": "offered",
+      "step": {
+        "id": "peer",
+        "prompt": "What does sw-loft-1 connect to in Quay Room?",
+        "input": "choice",
+        "choices": [
+          {
+            "id": "device:9000001",
+            "label": "sw-quay-1 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "device:9000002",
+            "label": "sw-quay-2 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "other",
+            "label": "Something not listed",
+            "kind": "other"
+          },
+          {
+            "id": "none",
+            "label": "Nothing: it stands alone, on purpose",
+            "kind": "not_applicable"
+          },
+          {
+            "id": "unknown",
+            "label": "I don't know yet",
+            "kind": "unknown"
+          }
+        ],
+        "fields": [],
+        "hint": null,
+        "error": null
+      },
+      "proposal": null,
+      "checklist": [],
+      "note": null,
+      "said": [],
+      "target": {
+        "site_id": 9000001,
+        "view": "rack:9000002",
+        "entity": "device:9000003",
+        "label": "sw-loft-1 (rack PI-L1 in Loft)"
+      },
+      "finding": {
+        "id": "locations_not_linked:location:9000002",
+        "kind": "locations_not_linked",
+        "rank": "connectivity",
+        "site_id": 9000001,
+        "title": "Loft and Quay Room at Practice Island have no link between them.",
+        "evidence": [
+          {
+            "kind": "location",
+            "id": 9000002,
+            "name": "Loft"
+          },
+          {
+            "kind": "location",
+            "id": 9000001,
+            "name": "Quay Room"
+          },
+          {
+            "kind": "device",
+            "id": 9000003,
+            "name": "sw-loft-1"
+          }
+        ]
+      },
+      "xp": 120,
+      "minutes": 4,
+      "progress": {
+        "total": 1,
+        "verified": 0
+      },
+      "lapsed": false,
+      "updated_at": null
+    },
+    {
+      "id": "q:device_unconnected:device:9000001",
+      "scope": "practice",
+      "kind": "device_unconnected",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "What sw-quay-1 plugs into",
+      "purpose": "If sw-quay-1 drops off the network, nobody can tell which port to check. Let's record its uplink.",
+      "outcome": "You can now trace sw-quay-1 to what it plugs into.",
+      "status": "offered",
+      "step": {
+        "id": "peer",
+        "prompt": "sw-quay-1 has 26 ports and nothing recorded on any of them. What does it uplink to?",
+        "input": "choice",
+        "choices": [
+          {
+            "id": "device:9000002",
+            "label": "sw-quay-2 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "device:9000003",
+            "label": "sw-loft-1 (switch)",
+            "kind": "candidate"
+          },
+          {
+            "id": "other",
+            "label": "Something not listed",
+            "kind": "other"
+          },
+          {
+            "id": "none",
+            "label": "Nothing: it stands alone, on purpose",
+            "kind": "not_applicable"
+          },
+          {
+            "id": "unknown",
+            "label": "I don't know yet",
+            "kind": "unknown"
+          }
+        ],
+        "fields": [],
+        "hint": null,
+        "error": null
+      },
+      "proposal": null,
+      "checklist": [],
+      "note": null,
+      "said": [],
+      "target": {
+        "site_id": 9000001,
+        "view": "rack:9000001",
+        "entity": "device:9000001",
+        "label": "sw-quay-1 (rack PI-Q1 U10 in Quay Room)"
+      },
+      "finding": {
+        "id": "device_unconnected:device:9000001",
+        "kind": "device_unconnected",
+        "rank": "connectivity",
+        "site_id": 9000001,
+        "title": "sw-quay-1 has 26 ports and nothing recorded on any of them.",
+        "evidence": [
+          {
+            "kind": "device",
+            "id": 9000001,
+            "name": "sw-quay-1"
+          }
+        ]
+      },
+      "xp": 120,
+      "minutes": 4,
+      "progress": {
+        "total": 1,
+        "verified": 0
+      },
+      "lapsed": false,
+      "updated_at": null
+    }
+  ],
+  "queued": 6,
+  "next_quest_id": "q:site_no_way_out:site:9000001",
+  "sites": [
+    {
+      "site_id": 9000001,
+      "name": "Practice Island",
+      "completeness": {
+        "percent": 60,
+        "total": 30,
+        "open": 12
+      },
+      "open_quests": 9,
+      "boss_ready": false,
+      "boss_acknowledged": false,
+      "giver": {
+        "name": "Tansy"
+      }
+    }
+  ],
+  "rewards": {
+    "xp": 0,
+    "level": 1,
+    "next_level_xp": 250,
+    "potions": 0,
+    "tools": [
+      "label_maker",
+      "cable_tracer"
+    ],
+    "completed": 0,
+    "practised": 0,
+    "lapsed": 0
+  },
+  "incomplete": []
+}

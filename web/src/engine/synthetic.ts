@@ -3,7 +3,7 @@ import type { Device, Rack, SiteScene, WorldResponse } from '../contracts/scene.
 import type { SceneSource } from './source';
 import { SceneSourceError } from './source';
 
-const META = { contract_version: '2.2.0', generated_at: '2026-11-07T00:00:00Z', netbox_version: null, source: 'fixture' } as const;
+const META = { contract_version: '2.3.0', generated_at: '2026-11-07T00:00:00Z', netbox_version: null, source: 'fixture' } as const;
 const ROLES = [
   { id: 1, slug: 'switch', name: 'Switch', color: '2196f3' },
   { id: 2, slug: 'server', name: 'Server', color: '4caf50' },

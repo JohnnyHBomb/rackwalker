@@ -70,6 +70,46 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (user_id, name)
     );
     """,
+    # 1 -> 2: quests. The quest log (one row per quest line a player has touched), the reward ledger (XP, potions and
+    # tools, one row per award, so a total is always the sum of what was really earned), the player's practice-island
+    # changes, and which sites' "Confusion" they have acknowledged. Nothing of version 1 changes: old saves keep working.
+    """
+    CREATE TABLE quest (
+        user_id    INTEGER NOT NULL REFERENCES player(user_id) ON DELETE CASCADE,
+        scope      TEXT NOT NULL,                   -- 'netbox' or 'practice'
+        quest_id   TEXT NOT NULL,                   -- 'q:' + the finding's stable id
+        site_id    INTEGER NOT NULL,
+        status     TEXT NOT NULL,                   -- active, ready, parked, dismissed, practised, done
+        answers    TEXT NOT NULL,                   -- JSON: step id -> the player's answer
+        checks     TEXT NOT NULL,                   -- JSON list: every check the line stood for when first offered
+        verified   TEXT NOT NULL,                   -- JSON list: the checks NetBox has confirmed (and paid XP for)
+        snapshot   TEXT NOT NULL,                   -- JSON: the line as last shown (title, purpose, finding)
+        updated_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, scope, quest_id)
+    );
+    CREATE TABLE reward (
+        id        INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id   INTEGER NOT NULL REFERENCES player(user_id) ON DELETE CASCADE,
+        quest_id  TEXT NOT NULL,
+        kind      TEXT NOT NULL,                    -- 'xp', 'potion' or 'tool'
+        amount    INTEGER NOT NULL,
+        item      TEXT,                             -- the tool's id
+        signature TEXT NOT NULL,                    -- what kind of fix it was (repeats earn less)
+        at        TEXT NOT NULL
+    );
+    CREATE INDEX reward_user ON reward(user_id);
+    CREATE TABLE practice (
+        user_id INTEGER PRIMARY KEY REFERENCES player(user_id) ON DELETE CASCADE,
+        ops     TEXT NOT NULL                       -- JSON list of change ops applied to the practice island
+    );
+    CREATE TABLE boss (
+        user_id INTEGER NOT NULL REFERENCES player(user_id) ON DELETE CASCADE,
+        scope   TEXT NOT NULL,
+        site_id INTEGER NOT NULL,
+        at      TEXT NOT NULL,
+        PRIMARY KEY (user_id, scope, site_id)
+    );
+    """,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
 SESSION_SECONDS = 7 * 24 * 3600
@@ -367,6 +407,80 @@ class GameStore:
                        (user_id, slot, json.dumps(data, sort_keys=True), now))
             rev = db.execute("SELECT rev FROM save WHERE user_id=? AND slot=?", (user_id, slot)).fetchone()[0]
         return {"slot": slot, "rev": rev, "updated_at": now, "data": data}
+
+
+    # ------------------------------------------------------------------------------------------- quests and rewards
+
+    def quests(self, user_id: int, scope: str) -> dict[str, dict[str, Any]]:
+        """The player's quest rows of one scope, by quest id. A row that is not valid JSON is left out and logged."""
+        with self._tx() as db:
+            rows = db.execute("SELECT quest_id, site_id, status, answers, checks, verified, snapshot, updated_at FROM quest "
+                              "WHERE user_id=? AND scope=? ORDER BY quest_id", (user_id, scope)).fetchall()
+        out: dict[str, dict[str, Any]] = {}
+        for r in rows:
+            parts = [_json(r[k]) for k in ("answers", "checks", "verified", "snapshot")]
+            if not all(ok for ok, _ in parts) or not isinstance(parts[0][1], dict) or not isinstance(parts[3][1], dict) \
+                    or not all(isinstance(p[1], list) for p in parts[1:3]):
+                log.warning("quest row %s of player %d is damaged; left out", r["quest_id"], user_id)
+                continue
+            out[r["quest_id"]] = {"quest_id": r["quest_id"], "site_id": r["site_id"], "status": r["status"], "answers": parts[0][1],
+                                  "checks": parts[1][1], "verified": parts[2][1], "snapshot": parts[3][1], "updated_at": r["updated_at"]}
+        return out
+
+    def put_quest(self, user_id: int, scope: str, row: dict[str, Any]) -> dict[str, Any]:
+        now = _now_iso()
+        with self._tx() as db:
+            db.execute("INSERT INTO quest(user_id, scope, quest_id, site_id, status, answers, checks, verified, snapshot, updated_at) "
+                       "VALUES (?,?,?,?,?,?,?,?,?,?) ON CONFLICT(user_id, scope, quest_id) DO UPDATE SET status=excluded.status, "
+                       "answers=excluded.answers, checks=excluded.checks, verified=excluded.verified, snapshot=excluded.snapshot, "
+                       "updated_at=excluded.updated_at",
+                       (user_id, scope, row["quest_id"], row["site_id"], row["status"], json.dumps(row["answers"], sort_keys=True),
+                        json.dumps(row["checks"]), json.dumps(row["verified"]), json.dumps(row["snapshot"], sort_keys=True), now))
+        return {**row, "updated_at": now}
+
+    def clear_quests(self, user_id: int, scope: str) -> None:
+        with self._tx() as db:
+            db.execute("DELETE FROM quest WHERE user_id=? AND scope=?", (user_id, scope))
+            db.execute("DELETE FROM boss WHERE user_id=? AND scope=?", (user_id, scope))
+
+    def add_reward(self, user_id: int, quest_id: str, kind: str, amount: int, signature: str, item: str | None = None) -> None:
+        with self._tx() as db:
+            db.execute("INSERT INTO reward(user_id, quest_id, kind, amount, item, signature, at) VALUES (?,?,?,?,?,?,?)",
+                       (user_id, quest_id, kind, amount, item, signature, _now_iso()))
+
+    def rewards(self, user_id: int) -> dict[str, Any]:
+        """Totals from the ledger: XP, potions, tools (in the order earned), and how often each kind of fix has paid XP."""
+        with self._tx() as db:
+            rows = db.execute("SELECT kind, amount, item, signature FROM reward WHERE user_id=? ORDER BY id", (user_id,)).fetchall()
+        xp = sum(r["amount"] for r in rows if r["kind"] == "xp")
+        tools: list[str] = []
+        for r in rows:
+            if r["kind"] == "tool" and r["item"] and r["item"] not in tools:
+                tools.append(r["item"])
+        repeats: dict[str, int] = {}
+        for r in rows:
+            if r["kind"] == "xp":
+                repeats[r["signature"]] = repeats.get(r["signature"], 0) + 1
+        return {"xp": xp, "potions": sum(r["amount"] for r in rows if r["kind"] == "potion"), "tools": tools, "repeats": repeats}
+
+    def practice_ops(self, user_id: int) -> list[dict[str, Any]]:
+        with self._tx() as db:
+            r = db.execute("SELECT ops FROM practice WHERE user_id=?", (user_id,)).fetchone()
+        ok, ops = _json(r["ops"]) if r else (True, [])
+        return ops if ok and isinstance(ops, list) else []
+
+    def set_practice_ops(self, user_id: int, ops: list[dict[str, Any]]) -> None:
+        with self._tx() as db:
+            db.execute("INSERT INTO practice(user_id, ops) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET ops=excluded.ops",
+                       (user_id, json.dumps(ops)))
+
+    def boss_acks(self, user_id: int, scope: str) -> set[int]:
+        with self._tx() as db:
+            return {r["site_id"] for r in db.execute("SELECT site_id FROM boss WHERE user_id=? AND scope=?", (user_id, scope))}
+
+    def ack_boss(self, user_id: int, scope: str, site_id: int) -> None:
+        with self._tx() as db:
+            db.execute("INSERT OR IGNORE INTO boss(user_id, scope, site_id, at) VALUES (?,?,?,?)", (user_id, scope, site_id, _now_iso()))
 
 
 class _Rollback(Exception):

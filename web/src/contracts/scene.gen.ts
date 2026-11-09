@@ -99,7 +99,17 @@ export type IdOrRef = Id | Ref;
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "ChangeOp".
  */
-export type ChangeOp = MoveRackOp | PlaceDeviceOp | UnplaceDeviceOp | CreateRackOp | UpdateFieldsOp;
+export type ChangeOp =
+  | MoveRackOp
+  | PlaceDeviceOp
+  | UnplaceDeviceOp
+  | CreateRackOp
+  | UpdateFieldsOp
+  | ConnectCableOp
+  | CreateCircuitOp
+  | CreateCircuitTerminationOp
+  | AssignIpOp
+  | CreatePrefixOp;
 /**
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "ErrorCode".
@@ -152,9 +162,28 @@ export type SaveSlotId = "auto" | "1" | "2" | "3";
  * via the `definition` "FlagValue".
  */
 export type FlagValue = boolean | number | string;
+/**
+ * What a finding is worth: connectivity (can it be reached, and how) before identity (which box is it) before layout (where it stands).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestRank".
+ */
+export type QuestRank = "connectivity" | "identity" | "layout";
+/**
+ * netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestScope".
+ */
+export type QuestScope = "netbox" | "practice";
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "ToolId".
+ */
+export type ToolId = "label_maker" | "cable_tracer";
 
 /**
- * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.2.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 adds the site country for the overworld). Change only by contract change; see contracts/README.md.
+ * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.3.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.
  */
 export interface RackWalkerSceneContract {}
 /**
@@ -164,7 +193,7 @@ export interface RackWalkerSceneContract {}
  * via the `definition` "Meta".
  */
 export interface Meta {
-  contract_version: "2.2.0";
+  contract_version: "2.3.0";
   generated_at: Timestamp;
   /**
    * Version reported by NetBox /api/status/, e.g. 4.7.4; null for fixtures.
@@ -532,7 +561,7 @@ export interface HealthResponse {
    */
   status: "ok" | "degraded" | "down";
   app_version: string;
-  contract_version: "2.2.0";
+  contract_version: "2.3.0";
   /**
    * true only when the proxy runs with WRITE_ENABLED=1.
    */
@@ -547,9 +576,13 @@ export interface HealthNetbox {
   reachable: boolean;
   version: string | null;
   /**
-   * Version is in the supported range (4.7.x for contract 2.2.0).
+   * Version is in the supported range (4.7.x for contract 2.3.0).
    */
   supported: boolean;
+  /**
+   * Can the proxy's token read NetBox users and object permissions? Both are needed before any write: 'cannot_view_users' or 'cannot_view_permissions' mean every write is refused until the proxy's NetBox user is given view on that type; 'unknown' when NetBox was not reachable (and in fixture mode).
+   */
+  permission_check: "ok" | "cannot_view_users" | "cannot_view_permissions" | "unknown";
 }
 /**
  * GET /api/scene/world. Feeds zoom level 'world'.
@@ -799,6 +832,156 @@ export interface UpdateFieldsFields {
   [k: string]: string | number | boolean | null | undefined;
 }
 /**
+ * A new cable between two ends that have none (2.3.0). An end is a port (kind, id) or a circuit termination; '@<client_ref>' names a termination created earlier in the set.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "ConnectCableOp".
+ */
+export interface ConnectCableOp {
+  op: "connect_cable";
+  target: ConnectCableTarget;
+  fields: ConnectCableFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface ConnectCableTarget {
+  kind: "cable";
+  id: null;
+}
+export interface ConnectCableFields {
+  a_kind: "interface" | "front_port" | "rear_port" | "power_port" | "power_outlet" | "circuit_termination";
+  a_id: IdOrRef;
+  b_kind: "interface" | "front_port" | "rear_port" | "power_port" | "power_outlet" | "circuit_termination";
+  b_id: IdOrRef;
+  /**
+   * A NetBox cable type (cat6, mmf, smf, dac-passive, power, ...). Left out: the cable has no type.
+   */
+  type?: string;
+  label?: string;
+}
+/**
+ * A new circuit of an existing provider and circuit type (2.3.0); status active.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreateCircuitOp".
+ */
+export interface CreateCircuitOp {
+  op: "create_circuit";
+  target: CreateCircuitTarget;
+  fields: CreateCircuitFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreateCircuitTarget {
+  kind: "circuit";
+  id: null;
+}
+export interface CreateCircuitFields {
+  cid: string;
+  provider_id: Id;
+  type_id: Id;
+}
+/**
+ * A new end of a circuit at a site (2.3.0). The side must be free.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreateCircuitTerminationOp".
+ */
+export interface CreateCircuitTerminationOp {
+  op: "create_circuit_termination";
+  target: CreateCircuitTerminationTarget;
+  fields: CreateCircuitTerminationFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreateCircuitTerminationTarget {
+  kind: "circuit_termination";
+  id: null;
+}
+export interface CreateCircuitTerminationFields {
+  circuit_id: IdOrRef;
+  term_side: "A" | "Z";
+  site_id: Id;
+}
+/**
+ * Puts an address on an interface of the target device (reusing the address object when that interface already has it) and, unless primary is false, makes it the device's primary IP (2.3.0).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "AssignIpOp".
+ */
+export interface AssignIpOp {
+  op: "assign_ip";
+  target: AssignIpTarget;
+  fields: AssignIpFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface AssignIpTarget {
+  kind: "device";
+  id: Id;
+}
+export interface AssignIpFields {
+  /**
+   * Address with its mask, e.g. 192.0.2.10/24.
+   */
+  address: string;
+  interface_id: Id;
+  primary?: boolean;
+}
+/**
+ * A new prefix (2.3.0); refused when that exact prefix exists.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreatePrefixOp".
+ */
+export interface CreatePrefixOp {
+  op: "create_prefix";
+  target: CreatePrefixTarget;
+  fields: CreatePrefixFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreatePrefixTarget {
+  kind: "prefix";
+  id: null;
+}
+export interface CreatePrefixFields {
+  /**
+   * Network with its mask, host bits zero, e.g. 192.0.2.0/24.
+   */
+  prefix: string;
+}
+/**
  * Body of POST /api/changes/preview and POST /api/changes/apply. Ops run in order.
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
@@ -830,7 +1013,17 @@ export interface FieldDiff {
  */
 export interface OpResult {
   index: number;
-  op: "move_rack" | "place_device" | "unplace_device" | "create_rack" | "update_fields";
+  op:
+    | "move_rack"
+    | "place_device"
+    | "unplace_device"
+    | "create_rack"
+    | "update_fields"
+    | "connect_cable"
+    | "create_circuit"
+    | "create_circuit_termination"
+    | "assign_ip"
+    | "create_prefix";
   client_ref: string | null;
   target: OpTarget;
   /**
@@ -853,7 +1046,7 @@ export interface OpResult {
   error: ErrorBody | null;
 }
 export interface OpTarget {
-  kind: "site" | "location" | "rack" | "device" | "cable" | "interface";
+  kind: "site" | "location" | "rack" | "device" | "cable" | "interface" | "circuit" | "circuit_termination" | "prefix";
   /**
    * Resolved target. Preview: the request's id, or the request's '@<client_ref>' string unchanged when the target was created by an earlier op of the same ChangeSet; null for create_rack. Apply: always the real NetBox id.
    */
@@ -1045,7 +1238,7 @@ export interface FlagsPatch {
  * via the `definition` "GameState".
  */
 export interface GameState {
-  contract_version: "2.2.0";
+  contract_version: "2.3.0";
   player: Player;
   settings: GameSettings;
   flags: Flags;
@@ -1066,4 +1259,342 @@ export interface GameState {
 export interface ErrorResponse {
   error: ErrorBody;
   request_id?: string;
+}
+/**
+ * A NetBox object named as evidence.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "ObjectRef".
+ */
+export interface ObjectRef {
+  kind: string;
+  id: Id;
+  name: string;
+}
+/**
+ * Something the estate as a whole does not say yet (docs/quests.md lists the kinds).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Finding".
+ */
+export interface Finding {
+  /**
+   * Stable: <finding kind>:<object type>:<object id>.
+   */
+  id: string;
+  kind: string;
+  rank: QuestRank;
+  site_id: Id;
+  title: string;
+  evidence: ObjectRef[];
+}
+/**
+ * One empty field on one object.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Gap".
+ */
+export interface Gap {
+  /**
+   * Stable: <object type>:<object id>:<field>.
+   */
+  id: string;
+  kind: "site" | "rack" | "device" | "interface";
+  object_id: Id;
+  field: string;
+  site_id: Id;
+  rank: QuestRank;
+  label: string;
+}
+/**
+ * Checks passed out of checks made at a site.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Completeness".
+ */
+export interface Completeness {
+  percent: number;
+  total: number;
+  open: number;
+}
+/**
+ * One page of a site's gaps, in a fixed order (rank, object type, object id, field).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "GapList".
+ */
+export interface GapList {
+  contract_version: "2.3.0";
+  site_id: Id;
+  total: number;
+  offset: number;
+  limit: number;
+  /**
+   * Expected-cable gaps beyond the per-site cap: counted, not listed.
+   */
+  unlisted: number;
+  items: Gap[];
+  completeness: Completeness;
+  source: "netbox" | "cache" | "fixture";
+  /**
+   * Lists the scan could not read in full (capped or refused to the proxy's token); rules that need them stay silent.
+   */
+  incomplete: string[];
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestChoice".
+ */
+export interface QuestChoice {
+  id: string;
+  label: string;
+  kind: "candidate" | "other" | "unknown" | "not_applicable" | "confirm" | "skip";
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestOption".
+ */
+export interface QuestOption {
+  id: string;
+  label: string;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestField".
+ */
+export interface QuestField {
+  id: string;
+  label: string;
+  type: "text" | "number" | "select";
+  hint: string | null;
+  /**
+   * A value the label maker proposes; never filled in for the player.
+   */
+  suggestion: string | null;
+  options: QuestOption[];
+}
+/**
+ * The next question of a quest line.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestStep".
+ */
+export interface QuestStep {
+  id: string;
+  prompt: string;
+  input: "choice" | "text" | "form";
+  choices: QuestChoice[];
+  fields: QuestField[];
+  hint: string | null;
+  /**
+   * Why the last answer to this step was not taken.
+   */
+  error: string | null;
+}
+/**
+ * Where the marker points.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestTarget".
+ */
+export interface QuestTarget {
+  site_id: Id;
+  /**
+   * The level to open, as in ?view= (rack:5, site:1).
+   */
+  view: string;
+  /**
+   * The object to mark there (device:12).
+   */
+  entity: string;
+  label: string;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestSaid".
+ */
+export interface QuestSaid {
+  step: string;
+  question: string;
+  answer: string;
+}
+/**
+ * Checks this line stands for, and how many NetBox has confirmed.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestProgress".
+ */
+export interface QuestProgress {
+  total: number;
+  verified: number;
+}
+/**
+ * One quest line and where the player stands in it.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Quest".
+ */
+export interface Quest {
+  id: string;
+  scope: QuestScope;
+  kind: string;
+  rank: QuestRank;
+  site_id: Id;
+  title: string;
+  /**
+   * Why it matters, in plain words for a site admin.
+   */
+  purpose: string;
+  /**
+   * What the admin can do once the line is complete.
+   */
+  outcome: string;
+  /**
+   * offered = not started; active = a question is waiting; ready = a change is waiting for preview and apply; parked = the player did not know yet (a field task; no penalty); dismissed = the player says this is how things are; practised = completed as a dry run (no XP); done = NetBox confirms it.
+   */
+  status: "offered" | "active" | "ready" | "parked" | "dismissed" | "practised" | "done";
+  step: QuestStep | null;
+  proposal: ChangeSet | null;
+  /**
+   * What to look for on site while the line is parked.
+   */
+  checklist: string[];
+  note: string | null;
+  said: QuestSaid[];
+  target: QuestTarget | null;
+  finding: Finding;
+  xp: number;
+  minutes: number;
+  progress: QuestProgress;
+  /**
+   * Done once, but NetBox no longer shows it. Nothing is reopened; it is only counted.
+   */
+  lapsed: boolean;
+  updated_at: NullableTimestamp;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Rewards".
+ */
+export interface Rewards {
+  xp: number;
+  level: number;
+  next_level_xp: number;
+  potions: number;
+  tools: ToolId[];
+  completed: number;
+  practised: number;
+  lapsed: number;
+}
+/**
+ * The site's quest giver. The game draws them as an animal of the site's country.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestGiver".
+ */
+export interface QuestGiver {
+  name: string;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SiteProgress".
+ */
+export interface SiteProgress {
+  site_id: Id;
+  name: string;
+  completeness: Completeness;
+  open_quests: number;
+  /**
+   * 100 % complete: the site's Confusion can be faced (the fight comes later).
+   */
+  boss_ready: boolean;
+  boss_acknowledged: boolean;
+  giver: QuestGiver;
+}
+/**
+ * The quest log: the lines open at a site (or the estate), the player's rewards, and each site's progress.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestBoard".
+ */
+export interface QuestBoard {
+  contract_version: "2.3.0";
+  scope: QuestScope;
+  site_id: NullableId;
+  write_enabled: boolean;
+  /**
+   * A real write would be attempted for this player (write-enabled proxy and no known permission problem). Otherwise completions are practice.
+   */
+  can_write: boolean;
+  write_blocked: string | null;
+  all_in_order: boolean;
+  message: string;
+  findings: Finding[];
+  quests: Quest[];
+  /**
+   * Open lines not offered yet (at most a few are open per site).
+   */
+  queued: number;
+  next_quest_id: string | null;
+  sites: SiteProgress[];
+  rewards: Rewards;
+  incomplete: string[];
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestRef".
+ */
+export interface QuestRef {
+  scope: QuestScope;
+  quest_id: string;
+}
+/**
+ * One answer to the step a quest line is waiting at: a choice id, a typed text, or form values (blank or absent = not known yet).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestAnswer".
+ */
+export interface QuestAnswer {
+  scope: QuestScope;
+  quest_id: string;
+  step: string;
+  choice?: string;
+  text?: string;
+  values?: {
+    [k: string]: string | number | null | undefined;
+  };
+}
+/**
+ * What applying or checking a quest line led to.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "QuestVerdict".
+ */
+export interface QuestVerdict {
+  quest: Quest;
+  mode: "real" | "dry_run" | "practice";
+  /**
+   * NetBox (or, on the practice island, the island) was read again and shows the outcome.
+   */
+  verified: boolean;
+  complete: boolean;
+  xp_awarded: number;
+  potions_awarded: number;
+  message: string;
+  can_now: string | null;
+  unlocked: ToolId[];
+  /**
+   * What NetBox's own cable trace found after a cable was written.
+   */
+  trace: string | null;
+  result: ChangeResult | null;
+  rewards: Rewards;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "BossAck".
+ */
+export interface BossAck {
+  scope: QuestScope;
+  site_id: Id;
 }

@@ -272,6 +272,80 @@
       "schema": "ErrorResponse",
       "file": "error-unauthorized.json",
       "store": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/quests/gaps/1",
+      "status": 200,
+      "schema": "GapList",
+      "file": "quest-gaps-1.json",
+      "store": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/quests",
+      "status": 200,
+      "schema": "QuestBoard",
+      "file": "quest-board.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/quests/answer",
+      "status": 200,
+      "schema": "Quest",
+      "file": "quest.json",
+      "request_schema": "QuestAnswer",
+      "request_file": "quest-answer-request.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/quests/preview",
+      "status": 200,
+      "schema": "ChangeResult",
+      "file": "quest-preview.json",
+      "request_schema": "QuestRef",
+      "request_file": "quest-ref-request.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/quests/apply",
+      "status": 200,
+      "schema": "QuestVerdict",
+      "file": "quest-verdict.json",
+      "request_schema": "QuestRef",
+      "request_file": "quest-ref-request.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/quests/verify",
+      "status": 200,
+      "schema": "QuestVerdict",
+      "file": "quest-verdict.json",
+      "request_schema": "QuestRef",
+      "request_file": "quest-ref-request.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/practice/reset",
+      "status": 200,
+      "schema": "QuestBoard",
+      "file": "quest-board.json",
+      "store": true
+    },
+    {
+      "method": "POST",
+      "path": "/api/game/boss/ack",
+      "status": 200,
+      "schema": "QuestBoard",
+      "file": "quest-board.json",
+      "request_schema": "BossAck",
+      "request_file": "boss-ack-request.json",
+      "store": true
     }
   ]
 }

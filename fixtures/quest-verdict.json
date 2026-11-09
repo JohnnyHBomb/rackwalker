@@ -1,0 +1,189 @@
+{
+  "quest": {
+    "id": "q:site_no_way_out:site:9000001",
+    "scope": "practice",
+    "kind": "site_no_way_out",
+    "rank": "connectivity",
+    "site_id": 9000001,
+    "title": "The way out of Practice Island",
+    "purpose": "Nobody can tell how Practice Island reaches the internet. Let's find out.",
+    "outcome": "You can now trace Practice Island to the carrier's hand-off.",
+    "status": "done",
+    "step": null,
+    "proposal": null,
+    "checklist": [],
+    "note": null,
+    "said": [],
+    "target": null,
+    "finding": {
+      "id": "site_no_way_out:site:9000001",
+      "kind": "site_no_way_out",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "Nobody can tell from NetBox how Practice Island reaches the outside world.",
+      "evidence": [
+        {
+          "kind": "site",
+          "id": 9000001,
+          "name": "Practice Island"
+        },
+        {
+          "kind": "provider",
+          "id": 9000001,
+          "name": "Example Fibre"
+        }
+      ]
+    },
+    "xp": 120,
+    "minutes": 4,
+    "progress": {
+      "total": 1,
+      "verified": 1
+    },
+    "lapsed": false,
+    "updated_at": "2026-11-07T09:00:00Z"
+  },
+  "mode": "practice",
+  "verified": true,
+  "complete": true,
+  "xp_awarded": 0,
+  "potions_awarded": 0,
+  "message": "Practice complete: the island now shows it. On your own NetBox this would earn XP once NetBox confirms it.",
+  "can_now": "You can now trace Practice Island to the carrier's hand-off.",
+  "unlocked": [],
+  "trace": null,
+  "result": {
+    "mode": "apply",
+    "applied": true,
+    "write_enabled": false,
+    "ops": [
+      {
+        "index": 0,
+        "op": "create_circuit",
+        "client_ref": "circuit",
+        "target": {
+          "kind": "circuit",
+          "id": 1
+        },
+        "status": "ok",
+        "before": null,
+        "after": {
+          "cid": "EXF-20417",
+          "provider_id": 9000001,
+          "type_id": 9000001
+        },
+        "diff": [
+          {
+            "field": "cid",
+            "before": null,
+            "after": "EXF-20417"
+          },
+          {
+            "field": "provider_id",
+            "before": null,
+            "after": 9000001
+          },
+          {
+            "field": "type_id",
+            "before": null,
+            "after": 9000001
+          }
+        ],
+        "error": null
+      },
+      {
+        "index": 1,
+        "op": "create_circuit_termination",
+        "client_ref": "handoff",
+        "target": {
+          "kind": "circuit_termination",
+          "id": 1
+        },
+        "status": "ok",
+        "before": null,
+        "after": {
+          "circuit_id": "@circuit",
+          "term_side": "A",
+          "site_id": 9000001
+        },
+        "diff": [
+          {
+            "field": "circuit_id",
+            "before": null,
+            "after": "@circuit"
+          },
+          {
+            "field": "term_side",
+            "before": null,
+            "after": "A"
+          },
+          {
+            "field": "site_id",
+            "before": null,
+            "after": 9000001
+          }
+        ],
+        "error": null
+      },
+      {
+        "index": 2,
+        "op": "connect_cable",
+        "client_ref": null,
+        "target": {
+          "kind": "cable",
+          "id": 1
+        },
+        "status": "ok",
+        "before": null,
+        "after": {
+          "a_kind": "interface",
+          "a_id": 9000026,
+          "b_kind": "circuit_termination",
+          "b_id": "@handoff",
+          "type": "smf"
+        },
+        "diff": [
+          {
+            "field": "a_kind",
+            "before": null,
+            "after": "interface"
+          },
+          {
+            "field": "a_id",
+            "before": null,
+            "after": 9000026
+          },
+          {
+            "field": "b_kind",
+            "before": null,
+            "after": "circuit_termination"
+          },
+          {
+            "field": "b_id",
+            "before": null,
+            "after": "@handoff"
+          },
+          {
+            "field": "type",
+            "before": null,
+            "after": "smf"
+          }
+        ],
+        "error": null
+      }
+    ]
+  },
+  "rewards": {
+    "xp": 0,
+    "level": 1,
+    "next_level_xp": 250,
+    "potions": 0,
+    "tools": [
+      "label_maker",
+      "cable_tracer"
+    ],
+    "completed": 0,
+    "practised": 1,
+    "lapsed": 0
+  }
+}

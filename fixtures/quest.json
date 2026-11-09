@@ -1,0 +1,69 @@
+{
+  "id": "q:site_no_way_out:site:9000001",
+  "scope": "practice",
+  "kind": "site_no_way_out",
+  "rank": "connectivity",
+  "site_id": 9000001,
+  "title": "The way out of Practice Island",
+  "purpose": "Nobody can tell how Practice Island reaches the internet. Let's find out.",
+  "outcome": "You can now trace Practice Island to the carrier's hand-off.",
+  "status": "active",
+  "step": {
+    "id": "circuit_id",
+    "prompt": "What is the circuit ID? Example Fibre prints it on the bill and on the hand-off box.",
+    "input": "text",
+    "choices": [
+      {
+        "id": "unknown",
+        "label": "I don't know yet",
+        "kind": "unknown"
+      }
+    ],
+    "fields": [],
+    "hint": "exactly as printed, for example EXF-20417",
+    "error": null
+  },
+  "proposal": null,
+  "checklist": [],
+  "note": null,
+  "said": [
+    {
+      "step": "device",
+      "question": "Which device at Practice Island does the line to the outside plug into?",
+      "answer": "sw-quay-1 (switch)"
+    }
+  ],
+  "target": {
+    "site_id": 9000001,
+    "view": "rack:9000001",
+    "entity": "device:9000001",
+    "label": "sw-quay-1 (rack PI-Q1 U10 in Quay Room)"
+  },
+  "finding": {
+    "id": "site_no_way_out:site:9000001",
+    "kind": "site_no_way_out",
+    "rank": "connectivity",
+    "site_id": 9000001,
+    "title": "Nobody can tell from NetBox how Practice Island reaches the outside world.",
+    "evidence": [
+      {
+        "kind": "site",
+        "id": 9000001,
+        "name": "Practice Island"
+      },
+      {
+        "kind": "provider",
+        "id": 9000001,
+        "name": "Example Fibre"
+      }
+    ]
+  },
+  "xp": 120,
+  "minutes": 4,
+  "progress": {
+    "total": 1,
+    "verified": 0
+  },
+  "lapsed": false,
+  "updated_at": "2026-11-07T09:00:00Z"
+}

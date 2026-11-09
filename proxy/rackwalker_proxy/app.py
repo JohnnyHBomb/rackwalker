@@ -31,7 +31,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
-from . import changes, game, scene, schema
+from . import changes, game, perms, questroutes, scene, schema
 from . import contracts_gen as c
 from .errors import STATUS_FOR, ApiError  # noqa: F401  (STATUS_FOR re-exported)
 from .gamestore import GameStore
@@ -44,7 +44,9 @@ SLOW_SECONDS = 2.0  # /api/status/ slower than this -> health "degraded" (Health
 REPO = Path(__file__).resolve().parents[2]
 PORT_KINDS = schema.enum("PortKind")
 OP_DEF = {"move_rack": "MoveRackOp", "place_device": "PlaceDeviceOp", "unplace_device": "UnplaceDeviceOp",
-          "create_rack": "CreateRackOp", "update_fields": "UpdateFieldsOp"}
+          "create_rack": "CreateRackOp", "update_fields": "UpdateFieldsOp", "connect_cable": "ConnectCableOp",
+          "create_circuit": "CreateCircuitOp", "create_circuit_termination": "CreateCircuitTerminationOp", "assign_ip": "AssignIpOp",
+          "create_prefix": "CreatePrefixOp"}
 log = logging.getLogger("rackwalker_proxy")
 
 netbox_auth_header = auth_header  # older name, kept for callers
@@ -71,6 +73,8 @@ class Settings:
     cookie_secure: bool = False
     # Seconds between checks that a signed-in player's NetBox user still exists and is active (writes always check).
     session_recheck: float = 60.0
+    # Seconds the quest scanner keeps one read of the estate (any write through the proxy drops it at once).
+    estate_ttl: float = 60.0
 
     @classmethod
     def from_env(cls, env: dict[str, str] | None = None) -> "Settings":
@@ -86,7 +90,8 @@ class Settings:
                    state_dir=Path(env["RACKWALKER_STATE_DIR"]) if env.get("RACKWALKER_STATE_DIR") else REPO / "data",
                    local_player=env.get("RACKWALKER_LOCAL_PLAYER", "0") == "1",
                    cookie_secure=env.get("RACKWALKER_COOKIE_SECURE", "0") == "1",
-                   session_recheck=float(env.get("RACKWALKER_SESSION_RECHECK", "60")))
+                   session_recheck=float(env.get("RACKWALKER_SESSION_RECHECK", "60")),
+                   estate_ttl=float(env.get("RACKWALKER_ESTATE_TTL", "60")))
 
 
 class ReadCache:
@@ -180,6 +185,7 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             fixtures[(f["method"], f["path"])] = (f["status"], json.loads((s.fixtures_dir / f["file"]).read_text()))
 
     allowed_hosts = {h.lower() for h in s.allowed_hosts}
+    perm_health: dict[str, Any] = {"at": 0.0, "value": None}
 
     @app.middleware("http")
     async def _trusted_host(request: Request, call_next):
@@ -258,10 +264,18 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             except (httpx.HTTPError, ValueError):
                 reachable = False
         supported = bool(version) and version.startswith(SUPPORTED_NETBOX)
+        # Writes need the proxy to read the player's user and object permissions: say so here when it cannot.
+        permission_check = "unknown"
+        if reachable and client is not None:
+            # asked at most once a minute: health is polled, and the answer changes only when an admin edits permissions
+            if perm_health["value"] is None or time.monotonic() - perm_health["at"] > 60:
+                perm_health.update(at=time.monotonic(), value=await perms.check_health(client))
+            permission_check = perm_health["value"]
         status = "ok" if reachable and supported and not slow else ("degraded" if reachable else "down")
         return c.HealthResponse(status=status, app_version=APP_VERSION, contract_version=CONTRACT_VERSION,
                                 write_enabled=s.write_enabled,
-                                netbox=c.HealthNetbox(url=public_url(s.netbox_url), reachable=reachable, version=version, supported=supported))
+                                netbox=c.HealthNetbox(url=public_url(s.netbox_url), reachable=reachable, version=version, supported=supported,
+                                                      permission_check=permission_check))
 
     @app.get("/api/scene/world", response_model=c.WorldResponse)
     async def world():
@@ -303,18 +317,27 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
     async def apply(request: Request, body: ChangeBody):
         if not s.write_enabled:
             raise ApiError("write_disabled", "Apply is refused: the proxy runs in dry-run mode (WRITE_ENABLED is not 1).")
-        player = await writer(request)
+        uid, player = await run_in_threadpool(app.state.change_identity, request)
         if s.fixtures_dir:
             raise ApiError("bad_request", "Fixture mode never writes.")
         cs = changeset(body)
+        # The proxy's token never widens what a player may change: the player's own NetBox permissions must cover it.
+        allowed = await app.state.may_write(uid)
+        if allowed is not None:
+            missing = allowed.missing(perms.needs_of(body["ops"]))
+            if missing:
+                raise perms.refusal(missing)
         try:
             res = await changes.apply(need_client(), cs, s.write_enabled, player=player)
         finally:
             cache.clear()  # also after a refused or partial apply: never serve pre-write state as current
+            app.state.drop_estate()
         return JSONResponse(_dump(res))
 
     game.install(app, open_store=lambda: GameStore(s.state_dir / "game.sqlite3"), netbox_url=s.netbox_url,
                  fixtures_dir=s.fixtures_dir, local_player=s.local_player, allowed_hosts=allowed_hosts,
                  cookie_secure=s.cookie_secure, transport=transport, netbox_token=s.netbox_token,
                  recheck_s=s.session_recheck)
+    questroutes.install(app, client=client, fixtures_dir=s.fixtures_dir, write_enabled=s.write_enabled, estate_ttl=s.estate_ttl,
+                        clear_cache=cache.clear)
     return app

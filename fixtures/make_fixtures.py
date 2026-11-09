@@ -22,7 +22,7 @@ import seed_model as sm  # noqa: E402
 
 NB = "http://netbox.example.invalid"
 TS = "2026-11-07T09:00:00Z"
-META = {"contract_version": "2.2.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
+META = {"contract_version": "2.3.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
 
 PASS_THROUGH = {"front_port", "rear_port"}
 # PortKind enum order (contracts/scene.schema.json): DeviceDetail.interfaces is ordered by kind in this order.
@@ -171,6 +171,48 @@ class World:
                 "enabled": True, "mgmt_only": p["mgmt_only"], "description": "", "cable_id": p["cable"],
                 "link_peers": [self.term(peer)] if peer else [], "connected_endpoint": ce}
 
+    def estate(self) -> dict:
+        """The seed as the quest scanner's estate (proxy/rackwalker_proxy/estate.py `Estate.to_json`): what the proxy
+        analyses in fixture mode, where there is no NetBox to read."""
+        m = self.m
+        key = lambda p: self.cterm_key(p) if p["kind"] == "circuit_termination" else [p["kind"], p["id"]]  # noqa: E731
+        ports = [{"kind": p["kind"], "id": p["id"], "device_id": self.dev_id[p["device"]], "name": p["name"], "type": p["type"],
+                  "enabled": True, "mgmt_only": p["mgmt_only"], "cable_id": p["cable"], "description": "", "mark_connected": False,
+                  "rear_ids": [self.ports[("rear_port", p["device"], p["name"])]["id"]] if p["kind"] == "front_port" else []}
+                 for p in self.ports.values()]
+        ips, n = [], 0
+        for d in m.devices:
+            if d.ip:
+                n += 1
+                first = next(p for p in self.ports.values() if p["device"] == d.name and p["kind"] == "interface")
+                ips.append({"id": n, "address": d.ip, "interface_id": first["id"]})
+        return {
+            "sites": [{"id": self.site_id[s.slug], "name": s.name, "slug": s.slug, "status": "active", "latitude": s.lat, "longitude": s.lon,
+                       "facility": None, "country": s.country} for s in m.sites],
+            "locations": [{"id": self.loc_id[x.slug], "name": x.name, "site_id": self.site_id[x.site]} for x in m.locations],
+            "racks": [{"id": self.rack_id[r.name], "name": r.name, "site_id": self.site_id[r.site], "location_id": self.loc_id[r.location],
+                       "u_height": r.u_height, "iso_x": r.iso[0], "iso_y": r.iso[1]} for r in m.racks],
+            "devices": [{"id": self.dev_id[d.name], "name": d.name, "site_id": self.site_id[d.site], "location_id": self.loc_id[d.location],
+                         "rack_id": self.rack_id[d.rack] if d.rack else None, "position": d.position, "face": d.face, "role": d.role,
+                         "role_name": sm.ROLES[d.role][0], "status": d.status, "serial": d.serial, "asset_tag": None, "platform": None,
+                         "primary_ip": d.ip, "u_height": float(sm.DEVICE_TYPES[d.dtype].u_height), "model": sm.DEVICE_TYPES[d.dtype].model,
+                         "manufacturer": sm.DEVICE_TYPES[d.dtype].manufacturer} for d in m.devices],
+            "ports": sorted(ports, key=lambda p: (p["kind"], p["id"])),
+            "cables": [{"id": c["id"], "type": c["spec"].type, "label": c["spec"].label, "status": c["spec"].status,
+                        "a": [key(c["a"])], "b": [key(c["b"])]} for c in self.cables],
+            "circuits": [{"id": self.circ_id[c.cid], "cid": c.cid, "provider_id": 1, "type": c.type, "status": c.status} for c in m.circuits],
+            "providers": [{"id": 1, "name": m.circuits[0].provider}] if m.circuits else [],
+            "circuit_types": [{"id": 1, "name": m.circuits[0].type}] if m.circuits else [],
+            "cterms": [{"id": t["id"], "circuit_id": self.circ_id[t["cid"]], "side": t["side"], "site_id": self.site_id[t["site"]],
+                        "cable_id": t["cable"]} for t in self.cterm.values()],
+            "feeds": [], "platforms": [], "ips": ips,
+            "prefixes": [{"id": i, "prefix": f"{s.net}.0/24"} for i, s in enumerate(m.sites, 1)],
+            "truncated": [], "unreadable": [], "synthetic": False}
+
+    @staticmethod
+    def cterm_key(p: dict) -> list:
+        return ["circuit_termination", p["id"]]
+
     def cable_sites(self, c: dict) -> set[int]:
         return {self.term(c["a"])["site_id"], self.term(c["b"])["site_id"]}
 
@@ -179,8 +221,9 @@ def render() -> dict[str, object]:
     m = sm.build()
     w = World(m)
     out: dict[str, object] = {}
-    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.2.0", "write_enabled": False,
-                          "netbox": {"url": "http://netbox.example.invalid", "reachable": True, "version": "4.7.4", "supported": True}}
+    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.3.0", "write_enabled": False,
+                          "netbox": {"url": "http://netbox.example.invalid", "reachable": True, "version": "4.7.4", "supported": True,
+                                     "permission_check": "unknown"}}
     sites = []
     for s in m.sites:
         sid = w.site_id[s.slug]
@@ -284,9 +327,9 @@ def render() -> dict[str, object]:
                   {"field": "face", "before": srv.face, "after": None}], "error": None},
         {"index": 4, "op": "update_fields", "client_ref": None, "target": {"kind": "device", "id": detail_ids[0]}, "status": "error",
          "before": None, "after": None, "diff": [],
-         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.2.0.",
+         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.3.0.",
                    "details": {"field": "primary_ip",
-                               "allowed": ["name", "status", "serial", "asset_tag", "description", "comments"]}}},
+                               "allowed": ["name", "status", "serial", "asset_tag", "description", "comments", "platform_id"]}}},
         {"index": 5, "op": "move_rack", "client_ref": None, "target": {"kind": "rack", "id": "@newrack"}, "status": "ok",
          "before": {"iso_facing": "S"}, "after": {"iso_facing": "E"},
          "diff": [{"field": "iso_facing", "before": "S", "after": "E"}], "error": None}]}
@@ -367,9 +410,81 @@ def render() -> dict[str, object]:
         {"method": "GET", "path": "/api/game/state", "status": 401, "schema": "ErrorResponse", "file": "error-unauthorized.json",
          "store": True},
     ]
+    # What the quest scanner analyses in fixture mode (not a route body, so it is not in the index).
+    out["estate.json"] = w.estate()
+    quest_files, quest_index = quest_examples(out, index, players[0]["token"])
+    out.update(quest_files)
+    index += quest_index
     out["index.json"] = {"$comment": "Fixture catalogue: request -> canned response, with the $defs name each body validates against.",
                          "fixtures": index}
     return out
+
+
+def quest_examples(files: dict[str, object], index: list[dict], token: str) -> tuple[dict[str, object], list[dict]]:
+    """Example bodies of the quest routes (contract 2.3.0), made by a fixture-mode proxy with an empty game store: the
+    first practice-island quest line played from its offer to its practice completion. Like the other game routes they
+    answer from the proxy's own state, so they are examples for the schema checks ("store": true), not canned answers.
+    Time stamps are fixed so the files are reproducible."""
+    import tempfile
+
+    from fastapi.testclient import TestClient
+
+    from rackwalker_proxy.app import Settings, create_app
+
+    def fixed(x):
+        if isinstance(x, dict):
+            return {k: (TS if k == "updated_at" and v is not None else fixed(v)) for k, v in x.items()}
+        return [fixed(v) for v in x] if isinstance(x, list) else x
+
+    out: dict[str, object] = {}
+    with tempfile.TemporaryDirectory() as tmp:
+        fx = Path(tmp) / "fixtures"
+        fx.mkdir()
+        for name, body in {**files, "index.json": {"fixtures": index}}.items():
+            (fx / name).write_text(json.dumps(body))
+        app = create_app(Settings.from_env({"RACKWALKER_FIXTURES": str(fx), "RACKWALKER_STATE_DIR": str(Path(tmp) / "state")}))
+        with TestClient(app, base_url="http://127.0.0.1") as cl:
+            csrf = cl.post("/api/game/session", json={"token": token}, headers={"X-RackWalker-CSRF": "sign-in"}).json()["csrf_token"]
+            h = {"X-RackWalker-CSRF": csrf}
+
+            def call(method: str, path: str, body=None):
+                r = cl.request(method, path, json=body, headers=h)
+                assert r.status_code == 200, (path, r.text)
+                return fixed(r.json())
+
+            out["quest-gaps-1.json"] = call("GET", "/api/quests/gaps/1?limit=5")
+            board = call("GET", "/api/game/quests?scope=practice")
+            out["quest-board.json"] = board
+            qid = board["next_quest_id"]
+            ref = {"scope": "practice", "quest_id": qid}
+            answers = [("device", {"choice": "device:9000001"}), ("circuit_id", {"text": "EXF-20417"}), ("circuit_type", {"choice": "type:9000001"}),
+                       ("local_port", {"choice": "interface:9000026"}), ("cable_type", {"choice": "smf"})]
+            for step, a in answers:
+                body = {**ref, "step": step, **a}
+                quest = call("POST", "/api/game/quests/answer", body)
+                if step == "device":
+                    out["quest-answer-request.json"], out["quest.json"] = body, quest
+            out["quest-ref-request.json"] = ref
+            out["quest-preview.json"] = call("POST", "/api/game/quests/preview", ref)
+            out["quest-verdict.json"] = call("POST", "/api/game/quests/apply", ref)
+            out["boss-ack-request.json"] = {"scope": "practice", "site_id": 9000001}
+            cl.post("/api/game/practice/reset", headers=h)
+    idx = [
+        {"method": "GET", "path": "/api/quests/gaps/1", "status": 200, "schema": "GapList", "file": "quest-gaps-1.json", "store": True},
+        {"method": "GET", "path": "/api/game/quests", "status": 200, "schema": "QuestBoard", "file": "quest-board.json", "store": True},
+        {"method": "POST", "path": "/api/game/quests/answer", "status": 200, "schema": "Quest", "file": "quest.json",
+         "request_schema": "QuestAnswer", "request_file": "quest-answer-request.json", "store": True},
+        {"method": "POST", "path": "/api/game/quests/preview", "status": 200, "schema": "ChangeResult", "file": "quest-preview.json",
+         "request_schema": "QuestRef", "request_file": "quest-ref-request.json", "store": True},
+        {"method": "POST", "path": "/api/game/quests/apply", "status": 200, "schema": "QuestVerdict", "file": "quest-verdict.json",
+         "request_schema": "QuestRef", "request_file": "quest-ref-request.json", "store": True},
+        {"method": "POST", "path": "/api/game/quests/verify", "status": 200, "schema": "QuestVerdict", "file": "quest-verdict.json",
+         "request_schema": "QuestRef", "request_file": "quest-ref-request.json", "store": True},
+        {"method": "POST", "path": "/api/game/practice/reset", "status": 200, "schema": "QuestBoard", "file": "quest-board.json", "store": True},
+        {"method": "POST", "path": "/api/game/boss/ack", "status": 200, "schema": "QuestBoard", "file": "quest-board.json",
+         "request_schema": "BossAck", "request_file": "boss-ack-request.json", "store": True},
+    ]
+    return out, idx
 
 
 def main(argv: list[str]) -> int:

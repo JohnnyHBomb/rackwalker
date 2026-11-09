@@ -308,6 +308,8 @@ def test_a_signed_in_players_write_names_them_in_the_netbox_changelog(tmp_path):
                 return httpx.Response(200, json={"id": 9, "username": "player-nine", "first_name": "", "last_name": ""}, request=request)
             if request.url.path == "/api/users/users/9/":  # the session recheck before the write
                 return httpx.Response(200, json={"id": 9, "username": "player-nine", "is_active": True}, request=request)
+            if request.url.path == "/api/users/users/":  # is the player a superuser? (yes: may change anything)
+                return httpx.Response(200, json={"count": 1, "results": [{"id": 9}]}, request=request)
             return await super().handle_async_request(request)
 
     def on_write(req):

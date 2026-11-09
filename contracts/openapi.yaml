@@ -1,10 +1,10 @@
-# RackWalker HTTP API between web/ and proxy/. Contract 2.2.0.
+# RackWalker HTTP API between web/ and proxy/. Contract 2.3.0.
 # Bodies are defined once in scene.schema.json ($defs); this file only wires paths to them.
 # Prose, rules and the update_fields whitelist: api.md. Examples: ../fixtures/ (index.json maps request -> file).
 openapi: 3.1.0
 info:
   title: RackWalker proxy API
-  version: 2.2.0
+  version: 2.3.0
   license: {name: Apache-2.0, identifier: Apache-2.0}
 servers:
   - url: http://localhost:8710
@@ -194,4 +194,103 @@ paths:
         "200":
           description: All of the player's flags after the patch.
           content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/Flags"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/quests/gaps/{site_id}:
+    get:
+      summary: The gap scanner (2.3.0). One page of what NetBox is missing at a site, one gap per item, in a fixed order, with the site's completeness.
+      parameters:
+        - {name: site_id, $ref: "#/components/parameters/Id"}
+        - {name: offset, in: query, schema: {type: integer, minimum: 0, default: 0}}
+        - {name: limit, in: query, schema: {type: integer, minimum: 1, maximum: 500, default: 100}}
+      responses:
+        "200":
+          description: A page of gaps.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/GapList"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/quests:
+    get:
+      summary: The quest log (2.3.0). Open quest lines at a site (or the estate), each site's progress and boss marker, and the player's rewards.
+      security: [{session: []}]
+      parameters:
+        - {name: scope, in: query, schema: {$ref: "scene.schema.json#/$defs/QuestScope"}}
+        - {name: site_id, in: query, schema: {type: integer, minimum: 1}}
+      responses:
+        "200":
+          description: The board.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestBoard"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/quests/answer:
+    post:
+      summary: Answer the question a quest line is waiting at (step "restart" starts the line again). "I don't know yet" parks the line.
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestAnswer"}}}
+      responses:
+        "200":
+          description: The quest line after the answer.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/Quest"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/quests/preview:
+    post:
+      summary: Preview the change a ready quest line proposes (never writes).
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestRef"}}}
+      responses:
+        "200":
+          description: The preview.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/ChangeResult"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/quests/apply:
+    post:
+      summary: Apply a ready quest line's change, read NetBox again and settle the line. A dry-run proxy, a player without the NetBox permission, and the practice island never write to NetBox.
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestRef"}}}
+      responses:
+        "200":
+          description: What it led to.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestVerdict"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/quests/verify:
+    post:
+      summary: Read NetBox again for a quest line that may have been fixed by other means, and settle it.
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestRef"}}}
+      responses:
+        "200":
+          description: What NetBox shows.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestVerdict"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/practice/reset:
+    post:
+      summary: Put the player's practice island back to its first state (their practice quest log too). Never touches NetBox.
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      responses:
+        "200":
+          description: The practice board.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestBoard"}}}
+        default: {$ref: "#/components/responses/Error"}
+  /api/game/boss/ack:
+    post:
+      summary: Acknowledge a site's Confusion (shown when the site is at 100 %; the fight itself comes later).
+      security: [{session: []}]
+      parameters: [{$ref: "#/components/parameters/Csrf"}]
+      requestBody:
+        required: true
+        content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/BossAck"}}}
+      responses:
+        "200":
+          description: The board after the acknowledgement.
+          content: {application/json: {schema: {$ref: "scene.schema.json#/$defs/QuestBoard"}}}
         default: {$ref: "#/components/responses/Error"}

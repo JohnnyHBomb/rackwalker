@@ -43,4 +43,6 @@ def test_openapi_refs_resolve():
     paths = set(spec["paths"])
     assert paths == {"/api/health", "/api/scene/world", "/api/scene/site/{site_id}", "/api/scene/rack/{rack_id}",
                      "/api/device/{device_id}", "/api/trace/{kind}/{port_id}", "/api/changes/preview", "/api/changes/apply",
-                     "/api/game/session", "/api/game/state", "/api/game/saves/{slot}", "/api/game/settings", "/api/game/flags"}
+                     "/api/game/session", "/api/game/state", "/api/game/saves/{slot}", "/api/game/settings", "/api/game/flags",
+                     "/api/quests/gaps/{site_id}", "/api/game/quests", "/api/game/quests/answer", "/api/game/quests/preview",
+                     "/api/game/quests/apply", "/api/game/quests/verify", "/api/game/practice/reset", "/api/game/boss/ack"}

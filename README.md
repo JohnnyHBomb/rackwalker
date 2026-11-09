@@ -43,7 +43,7 @@ token never reaches the browser, a response body or a log line.
 
 | Path | What |
 |---|---|
-| `contracts/` | Contract 2.2.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
+| `contracts/` | Contract 2.3.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
 | `web/` | The game in the browser: TypeScript + Vite + PixiJS 8, Vitest and Playwright; npm with a pinned `package-lock.json` |
 | `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in and the game store (SQLite); pytest; pinned `requirements.lock` |
 | `fixtures/` | Canned responses for every route, rendered from the synthetic seed model; the web side can run on them alone |

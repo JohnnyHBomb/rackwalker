@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rackwalker.invalid/contracts/scene.schema.json",
   "title": "RackWalker scene contract",
-  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.2.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 adds the site country for the overworld). Change only by contract change; see contracts/README.md.",
-  "$comment": "contract_version=2.2.0",
+  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.3.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.",
+  "$comment": "contract_version=2.3.0",
   "$defs": {
     "Id": {
       "type": "integer",
@@ -122,7 +122,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.2.0"
+          "const": "2.3.0"
         },
         "generated_at": {
           "$ref": "#/$defs/Timestamp"
@@ -959,7 +959,7 @@
         },
         "contract_version": {
           "type": "string",
-          "const": "2.2.0"
+          "const": "2.3.0"
         },
         "write_enabled": {
           "type": "boolean",
@@ -972,7 +972,8 @@
             "url",
             "reachable",
             "version",
-            "supported"
+            "supported",
+            "permission_check"
           ],
           "properties": {
             "url": {
@@ -990,7 +991,17 @@
             },
             "supported": {
               "type": "boolean",
-              "description": "Version is in the supported range (4.7.x for contract 2.2.0)."
+              "description": "Version is in the supported range (4.7.x for contract 2.3.0)."
+            },
+            "permission_check": {
+              "type": "string",
+              "enum": [
+                "ok",
+                "cannot_view_users",
+                "cannot_view_permissions",
+                "unknown"
+              ],
+              "description": "Can the proxy's token read NetBox users and object permissions? Both are needed before any write: 'cannot_view_users' or 'cannot_view_permissions' mean every write is refused until the proxy's NetBox user is given view on that type; 'unknown' when NetBox was not reachable (and in fixture mode)."
             }
           },
           "title": "HealthNetbox"
@@ -1565,6 +1576,21 @@
         },
         {
           "$ref": "#/$defs/UpdateFieldsOp"
+        },
+        {
+          "$ref": "#/$defs/ConnectCableOp"
+        },
+        {
+          "$ref": "#/$defs/CreateCircuitOp"
+        },
+        {
+          "$ref": "#/$defs/CreateCircuitTerminationOp"
+        },
+        {
+          "$ref": "#/$defs/AssignIpOp"
+        },
+        {
+          "$ref": "#/$defs/CreatePrefixOp"
         }
       ]
     },
@@ -1633,7 +1659,12 @@
             "place_device",
             "unplace_device",
             "create_rack",
-            "update_fields"
+            "update_fields",
+            "connect_cable",
+            "create_circuit",
+            "create_circuit_termination",
+            "assign_ip",
+            "create_prefix"
           ]
         },
         "client_ref": {
@@ -1658,7 +1689,10 @@
                 "rack",
                 "device",
                 "cable",
-                "interface"
+                "interface",
+                "circuit",
+                "circuit_termination",
+                "prefix"
               ]
             },
             "id": {
@@ -2159,7 +2193,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.2.0"
+          "const": "2.3.0"
         },
         "player": {
           "$ref": "#/$defs/Player"
@@ -2235,6 +2269,1260 @@
         },
         "request_id": {
           "type": "string"
+        }
+      }
+    },
+    "ConnectCableOp": {
+      "type": "object",
+      "description": "A new cable between two ends that have none (2.3.0). An end is a port (kind, id) or a circuit termination; '@<client_ref>' names a termination created earlier in the set.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "connect_cable"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "cable"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "ConnectCableTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "a_kind",
+            "a_id",
+            "b_kind",
+            "b_id"
+          ],
+          "properties": {
+            "a_kind": {
+              "type": "string",
+              "enum": [
+                "interface",
+                "front_port",
+                "rear_port",
+                "power_port",
+                "power_outlet",
+                "circuit_termination"
+              ]
+            },
+            "a_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "b_kind": {
+              "type": "string",
+              "enum": [
+                "interface",
+                "front_port",
+                "rear_port",
+                "power_port",
+                "power_outlet",
+                "circuit_termination"
+              ]
+            },
+            "b_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "type": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50,
+              "description": "A NetBox cable type (cat6, mmf, smf, dac-passive, power, ...). Left out: the cable has no type."
+            },
+            "label": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          "title": "ConnectCableFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateCircuitOp": {
+      "type": "object",
+      "description": "A new circuit of an existing provider and circuit type (2.3.0); status active.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_circuit"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "circuit"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateCircuitTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "cid",
+            "provider_id",
+            "type_id"
+          ],
+          "properties": {
+            "cid": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "provider_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "type_id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "CreateCircuitFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateCircuitTerminationOp": {
+      "type": "object",
+      "description": "A new end of a circuit at a site (2.3.0). The side must be free.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_circuit_termination"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "circuit_termination"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateCircuitTerminationTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "circuit_id",
+            "term_side",
+            "site_id"
+          ],
+          "properties": {
+            "circuit_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "term_side": {
+              "type": "string",
+              "enum": [
+                "A",
+                "Z"
+              ]
+            },
+            "site_id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "CreateCircuitTerminationFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "AssignIpOp": {
+      "type": "object",
+      "description": "Puts an address on an interface of the target device (reusing the address object when that interface already has it) and, unless primary is false, makes it the device's primary IP (2.3.0).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "assign_ip"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "AssignIpTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "address",
+            "interface_id"
+          ],
+          "properties": {
+            "address": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 50,
+              "description": "Address with its mask, e.g. 192.0.2.10/24."
+            },
+            "interface_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "primary": {
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "title": "AssignIpFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreatePrefixOp": {
+      "type": "object",
+      "description": "A new prefix (2.3.0); refused when that exact prefix exists.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_prefix"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "prefix"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreatePrefixTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "prefix"
+          ],
+          "properties": {
+            "prefix": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 50,
+              "description": "Network with its mask, host bits zero, e.g. 192.0.2.0/24."
+            }
+          },
+          "title": "CreatePrefixFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "QuestRank": {
+      "type": "string",
+      "enum": [
+        "connectivity",
+        "identity",
+        "layout"
+      ],
+      "description": "What a finding is worth: connectivity (can it be reached, and how) before identity (which box is it) before layout (where it stands)."
+    },
+    "QuestScope": {
+      "type": "string",
+      "enum": [
+        "netbox",
+        "practice"
+      ],
+      "description": "netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox)."
+    },
+    "ToolId": {
+      "type": "string",
+      "enum": [
+        "label_maker",
+        "cable_tracer"
+      ]
+    },
+    "ObjectRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "id",
+        "name"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string"
+        },
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "description": "A NetBox object named as evidence."
+    },
+    "Finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "rank",
+        "site_id",
+        "title",
+        "evidence"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable: <finding kind>:<object type>:<object id>."
+        },
+        "kind": {
+          "type": "string"
+        },
+        "rank": {
+          "$ref": "#/$defs/QuestRank"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "title": {
+          "type": "string"
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ObjectRef"
+          }
+        }
+      },
+      "description": "Something the estate as a whole does not say yet (docs/quests.md lists the kinds)."
+    },
+    "Gap": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "object_id",
+        "field",
+        "site_id",
+        "rank",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Stable: <object type>:<object id>:<field>."
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "site",
+            "rack",
+            "device",
+            "interface"
+          ]
+        },
+        "object_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "field": {
+          "type": "string"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "rank": {
+          "$ref": "#/$defs/QuestRank"
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "description": "One empty field on one object."
+    },
+    "Completeness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "percent",
+        "total",
+        "open"
+      ],
+      "properties": {
+        "percent": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "open": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Checks passed out of checks made at a site."
+    },
+    "GapList": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "site_id",
+        "total",
+        "offset",
+        "limit",
+        "unlisted",
+        "items",
+        "completeness",
+        "source",
+        "incomplete"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "const": "2.3.0"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "limit": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 500
+        },
+        "unlisted": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Expected-cable gaps beyond the per-site cap: counted, not listed."
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Gap"
+          }
+        },
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "netbox",
+            "cache",
+            "fixture"
+          ]
+        },
+        "incomplete": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Lists the scan could not read in full (capped or refused to the proxy's token); rules that need them stay silent."
+        }
+      },
+      "description": "One page of a site's gaps, in a fixed order (rank, object type, object id, field)."
+    },
+    "QuestChoice": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "kind"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 48
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "candidate",
+            "other",
+            "unknown",
+            "not_applicable",
+            "confirm",
+            "skip"
+          ]
+        }
+      }
+    },
+    "QuestOption": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        }
+      }
+    },
+    "QuestField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "label",
+        "type",
+        "hint",
+        "suggestion",
+        "options"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "label": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "text",
+            "number",
+            "select"
+          ]
+        },
+        "hint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "suggestion": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "A value the label maker proposes; never filled in for the player."
+        },
+        "options": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuestOption"
+          }
+        }
+      }
+    },
+    "QuestStep": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "prompt",
+        "input",
+        "choices",
+        "fields",
+        "hint",
+        "error"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "prompt": {
+          "type": "string"
+        },
+        "input": {
+          "type": "string",
+          "enum": [
+            "choice",
+            "text",
+            "form"
+          ]
+        },
+        "choices": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuestChoice"
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuestField"
+          }
+        },
+        "hint": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "error": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Why the last answer to this step was not taken."
+        }
+      },
+      "description": "The next question of a quest line."
+    },
+    "QuestTarget": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "site_id",
+        "view",
+        "entity",
+        "label"
+      ],
+      "properties": {
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "view": {
+          "type": "string",
+          "description": "The level to open, as in ?view= (rack:5, site:1)."
+        },
+        "entity": {
+          "type": "string",
+          "description": "The object to mark there (device:12)."
+        },
+        "label": {
+          "type": "string"
+        }
+      },
+      "description": "Where the marker points."
+    },
+    "QuestSaid": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "step",
+        "question",
+        "answer"
+      ],
+      "properties": {
+        "step": {
+          "type": "string"
+        },
+        "question": {
+          "type": "string"
+        },
+        "answer": {
+          "type": "string"
+        }
+      }
+    },
+    "QuestProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "total",
+        "verified"
+      ],
+      "properties": {
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "verified": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "description": "Checks this line stands for, and how many NetBox has confirmed."
+    },
+    "Quest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "scope",
+        "kind",
+        "rank",
+        "site_id",
+        "title",
+        "purpose",
+        "outcome",
+        "status",
+        "step",
+        "proposal",
+        "checklist",
+        "note",
+        "said",
+        "target",
+        "finding",
+        "xp",
+        "minutes",
+        "progress",
+        "lapsed",
+        "updated_at"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "scope": {
+          "$ref": "#/$defs/QuestScope"
+        },
+        "kind": {
+          "type": "string"
+        },
+        "rank": {
+          "$ref": "#/$defs/QuestRank"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "title": {
+          "type": "string"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Why it matters, in plain words for a site admin."
+        },
+        "outcome": {
+          "type": "string",
+          "description": "What the admin can do once the line is complete."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "offered",
+            "active",
+            "ready",
+            "parked",
+            "dismissed",
+            "practised",
+            "done"
+          ],
+          "description": "offered = not started; active = a question is waiting; ready = a change is waiting for preview and apply; parked = the player did not know yet (a field task; no penalty); dismissed = the player says this is how things are; practised = completed as a dry run (no XP); done = NetBox confirms it."
+        },
+        "step": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/QuestStep"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "proposal": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChangeSet"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "checklist": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What to look for on site while the line is parked."
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "said": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/QuestSaid"
+          }
+        },
+        "target": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/QuestTarget"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "finding": {
+          "$ref": "#/$defs/Finding"
+        },
+        "xp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minutes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "progress": {
+          "$ref": "#/$defs/QuestProgress"
+        },
+        "lapsed": {
+          "type": "boolean",
+          "description": "Done once, but NetBox no longer shows it. Nothing is reopened; it is only counted."
+        },
+        "updated_at": {
+          "$ref": "#/$defs/NullableTimestamp"
+        }
+      },
+      "description": "One quest line and where the player stands in it."
+    },
+    "Rewards": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "xp",
+        "level",
+        "next_level_xp",
+        "potions",
+        "tools",
+        "completed",
+        "practised",
+        "lapsed"
+      ],
+      "properties": {
+        "xp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "level": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "next_level_xp": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "potions": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolId"
+          }
+        },
+        "completed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "practised": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "lapsed": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "QuestGiver": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        }
+      },
+      "description": "The site's quest giver. The game draws them as an animal of the site's country."
+    },
+    "SiteProgress": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "site_id",
+        "name",
+        "completeness",
+        "open_quests",
+        "boss_ready",
+        "boss_acknowledged",
+        "giver"
+      ],
+      "properties": {
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "name": {
+          "type": "string"
+        },
+        "completeness": {
+          "$ref": "#/$defs/Completeness"
+        },
+        "open_quests": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "boss_ready": {
+          "type": "boolean",
+          "description": "100 % complete: the site's Confusion can be faced (the fight comes later)."
+        },
+        "boss_acknowledged": {
+          "type": "boolean"
+        },
+        "giver": {
+          "$ref": "#/$defs/QuestGiver"
+        }
+      }
+    },
+    "QuestBoard": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "scope",
+        "site_id",
+        "write_enabled",
+        "can_write",
+        "write_blocked",
+        "all_in_order",
+        "message",
+        "findings",
+        "quests",
+        "queued",
+        "next_quest_id",
+        "sites",
+        "rewards",
+        "incomplete"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "const": "2.3.0"
+        },
+        "scope": {
+          "$ref": "#/$defs/QuestScope"
+        },
+        "site_id": {
+          "$ref": "#/$defs/NullableId"
+        },
+        "write_enabled": {
+          "type": "boolean"
+        },
+        "can_write": {
+          "type": "boolean",
+          "description": "A real write would be attempted for this player (write-enabled proxy and no known permission problem). Otherwise completions are practice."
+        },
+        "write_blocked": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "all_in_order": {
+          "type": "boolean"
+        },
+        "message": {
+          "type": "string"
+        },
+        "findings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Finding"
+          }
+        },
+        "quests": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Quest"
+          }
+        },
+        "queued": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Open lines not offered yet (at most a few are open per site)."
+        },
+        "next_quest_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "sites": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/SiteProgress"
+          }
+        },
+        "rewards": {
+          "$ref": "#/$defs/Rewards"
+        },
+        "incomplete": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "description": "The quest log: the lines open at a site (or the estate), the player's rewards, and each site's progress."
+    },
+    "QuestRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "quest_id"
+      ],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/QuestScope"
+        },
+        "quest_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        }
+      }
+    },
+    "QuestAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "quest_id",
+        "step"
+      ],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/QuestScope"
+        },
+        "quest_id": {
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 120
+        },
+        "step": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 64
+        },
+        "choice": {
+          "type": "string",
+          "maxLength": 64
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "values": {
+          "type": "object",
+          "maxProperties": 60,
+          "additionalProperties": {
+            "type": [
+              "string",
+              "number",
+              "null"
+            ],
+            "maxLength": 200
+          }
+        }
+      },
+      "description": "One answer to the step a quest line is waiting at: a choice id, a typed text, or form values (blank or absent = not known yet)."
+    },
+    "QuestVerdict": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "quest",
+        "mode",
+        "verified",
+        "complete",
+        "xp_awarded",
+        "potions_awarded",
+        "message",
+        "can_now",
+        "unlocked",
+        "trace",
+        "result",
+        "rewards"
+      ],
+      "properties": {
+        "quest": {
+          "$ref": "#/$defs/Quest"
+        },
+        "mode": {
+          "type": "string",
+          "enum": [
+            "real",
+            "dry_run",
+            "practice"
+          ]
+        },
+        "verified": {
+          "type": "boolean",
+          "description": "NetBox (or, on the practice island, the island) was read again and shows the outcome."
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "xp_awarded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "potions_awarded": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "message": {
+          "type": "string"
+        },
+        "can_now": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unlocked": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/ToolId"
+          }
+        },
+        "trace": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "What NetBox's own cable trace found after a cable was written."
+        },
+        "result": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/ChangeResult"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rewards": {
+          "$ref": "#/$defs/Rewards"
+        }
+      },
+      "description": "What applying or checking a quest line led to."
+    },
+    "BossAck": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scope",
+        "site_id"
+      ],
+      "properties": {
+        "scope": {
+          "$ref": "#/$defs/QuestScope"
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
         }
       }
     }

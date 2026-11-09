@@ -20,7 +20,7 @@ class RackWalkerSceneContract(RootModel[Any]):
     root: Annotated[
         Any,
         Field(
-            description='Source of truth for every body exchanged between web/ and proxy/. Contract version 2.2.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 adds the site country for the overworld). Change only by contract change; see contracts/README.md.',
+            description='Source of truth for every body exchanged between web/ and proxy/. Contract version 2.3.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.',
             title='RackWalker scene contract',
         ),
     ]
@@ -34,7 +34,7 @@ class Meta(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    contract_version: Literal['2.2.0']
+    contract_version: Literal['2.3.0']
     generated_at: Annotated[
         AwareDatetime,
         Field(
@@ -503,7 +503,13 @@ class HealthNetbox(BaseModel):
     supported: Annotated[
         bool,
         Field(
-            description='Version is in the supported range (4.7.x for contract 2.2.0).'
+            description='Version is in the supported range (4.7.x for contract 2.3.0).'
+        ),
+    ]
+    permission_check: Annotated[
+        Literal['ok', 'cannot_view_users', 'cannot_view_permissions', 'unknown'],
+        Field(
+            description="Can the proxy's token read NetBox users and object permissions? Both are needed before any write: 'cannot_view_users' or 'cannot_view_permissions' mean every write is refused until the proxy's NetBox user is given view on that type; 'unknown' when NetBox was not reachable (and in fixture mode)."
         ),
     ]
 
@@ -519,7 +525,7 @@ class HealthResponse(BaseModel):
         ),
     ]
     app_version: str
-    contract_version: Literal['2.2.0']
+    contract_version: Literal['2.3.0']
     write_enabled: Annotated[
         bool, Field(description='true only when the proxy runs with WRITE_ENABLED=1.')
     ]
@@ -770,7 +776,17 @@ class OpTarget(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    kind: Literal['site', 'location', 'rack', 'device', 'cable', 'interface']
+    kind: Literal[
+        'site',
+        'location',
+        'rack',
+        'device',
+        'cable',
+        'interface',
+        'circuit',
+        'circuit_termination',
+        'prefix',
+    ]
     id: Annotated[
         Id | Ref | None,
         Field(
@@ -974,6 +990,371 @@ class ErrorResponse(BaseModel):
     request_id: str | None = None
 
 
+class ConnectCableTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['cable']
+    id: None
+
+
+class ConnectCableFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    a_kind: Literal[
+        'interface',
+        'front_port',
+        'rear_port',
+        'power_port',
+        'power_outlet',
+        'circuit_termination',
+    ]
+    a_id: Id | Ref
+    b_kind: Literal[
+        'interface',
+        'front_port',
+        'rear_port',
+        'power_port',
+        'power_outlet',
+        'circuit_termination',
+    ]
+    b_id: Id | Ref
+    type: Annotated[
+        str | None,
+        Field(
+            description='A NetBox cable type (cat6, mmf, smf, dac-passive, power, ...). Left out: the cable has no type.',
+            max_length=50,
+            min_length=1,
+        ),
+    ] = None
+    label: Annotated[str | None, Field(max_length=100)] = None
+
+
+class CreateCircuitTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['circuit']
+    id: None
+
+
+class CreateCircuitFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    cid: Annotated[str, Field(max_length=100, min_length=1)]
+    provider_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    type_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+
+
+class CreateCircuitTerminationTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['circuit_termination']
+    id: None
+
+
+class CreateCircuitTerminationFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    circuit_id: Id | Ref
+    term_side: Literal['A', 'Z']
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+
+
+class AssignIpTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['device']
+    id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+
+
+class AssignIpFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    address: Annotated[
+        str,
+        Field(
+            description='Address with its mask, e.g. 192.0.2.10/24.',
+            max_length=50,
+            min_length=3,
+        ),
+    ]
+    interface_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    primary: bool | None = True
+
+
+class CreatePrefixTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['prefix']
+    id: None
+
+
+class CreatePrefixFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    prefix: Annotated[
+        str,
+        Field(
+            description='Network with its mask, host bits zero, e.g. 192.0.2.0/24.',
+            max_length=50,
+            min_length=3,
+        ),
+    ]
+
+
+class ObjectRef(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: str
+    id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    name: str
+
+
+class Finding(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: Annotated[
+        str, Field(description='Stable: <finding kind>:<object type>:<object id>.')
+    ]
+    kind: str
+    rank: Annotated[
+        Literal['connectivity', 'identity', 'layout'],
+        Field(
+            description='What a finding is worth: connectivity (can it be reached, and how) before identity (which box is it) before layout (where it stands).'
+        ),
+    ]
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    title: str
+    evidence: list[ObjectRef]
+
+
+class Gap(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: Annotated[str, Field(description='Stable: <object type>:<object id>:<field>.')]
+    kind: Literal['site', 'rack', 'device', 'interface']
+    object_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    field: str
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    rank: Annotated[
+        Literal['connectivity', 'identity', 'layout'],
+        Field(
+            description='What a finding is worth: connectivity (can it be reached, and how) before identity (which box is it) before layout (where it stands).'
+        ),
+    ]
+    label: str
+
+
+class Completeness(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    percent: Annotated[int, Field(ge=0, le=100)]
+    total: Annotated[int, Field(ge=0)]
+    open: Annotated[int, Field(ge=0)]
+
+
+class GapList(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    contract_version: Literal['2.3.0']
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    total: Annotated[int, Field(ge=0)]
+    offset: Annotated[int, Field(ge=0)]
+    limit: Annotated[int, Field(ge=1, le=500)]
+    unlisted: Annotated[
+        int,
+        Field(
+            description='Expected-cable gaps beyond the per-site cap: counted, not listed.',
+            ge=0,
+        ),
+    ]
+    items: list[Gap]
+    completeness: Completeness
+    source: Literal['netbox', 'cache', 'fixture']
+    incomplete: Annotated[
+        list[str],
+        Field(
+            description="Lists the scan could not read in full (capped or refused to the proxy's token); rules that need them stay silent."
+        ),
+    ]
+
+
+class QuestChoice(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: Annotated[str, Field(max_length=48, min_length=1)]
+    kind: Literal['candidate', 'other', 'unknown', 'not_applicable', 'confirm', 'skip']
+
+
+class QuestOption(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+
+
+class QuestField(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    label: str
+    type: Literal['text', 'number', 'select']
+    hint: str | None
+    suggestion: Annotated[
+        str | None,
+        Field(
+            description='A value the label maker proposes; never filled in for the player.'
+        ),
+    ]
+    options: list[QuestOption]
+
+
+class QuestStep(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    prompt: str
+    input: Literal['choice', 'text', 'form']
+    choices: list[QuestChoice]
+    fields: list[QuestField]
+    hint: str | None
+    error: Annotated[
+        str | None, Field(description='Why the last answer to this step was not taken.')
+    ]
+
+
+class QuestTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    view: Annotated[
+        str, Field(description='The level to open, as in ?view= (rack:5, site:1).')
+    ]
+    entity: Annotated[str, Field(description='The object to mark there (device:12).')]
+    label: str
+
+
+class QuestSaid(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    step: str
+    question: str
+    answer: str
+
+
+class QuestProgress(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    total: Annotated[int, Field(ge=0)]
+    verified: Annotated[int, Field(ge=0)]
+
+
+class Rewards(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    xp: Annotated[int, Field(ge=0)]
+    level: Annotated[int, Field(ge=1)]
+    next_level_xp: Annotated[int, Field(ge=0)]
+    potions: Annotated[int, Field(ge=0)]
+    tools: list[Literal['label_maker', 'cable_tracer']]
+    completed: Annotated[int, Field(ge=0)]
+    practised: Annotated[int, Field(ge=0)]
+    lapsed: Annotated[int, Field(ge=0)]
+
+
+class QuestGiver(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    name: str
+
+
+class SiteProgress(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    name: str
+    completeness: Completeness
+    open_quests: Annotated[int, Field(ge=0)]
+    boss_ready: Annotated[
+        bool,
+        Field(
+            description="100 % complete: the site's Confusion can be faced (the fight comes later)."
+        ),
+    ]
+    boss_acknowledged: bool
+    giver: QuestGiver
+
+
+class QuestRef(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    scope: Annotated[
+        Literal['netbox', 'practice'],
+        Field(
+            description="netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox)."
+        ),
+    ]
+    quest_id: Annotated[str, Field(max_length=120, min_length=3)]
+
+
+class QuestAnswer(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    scope: Annotated[
+        Literal['netbox', 'practice'],
+        Field(
+            description="netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox)."
+        ),
+    ]
+    quest_id: Annotated[str, Field(max_length=120, min_length=3)]
+    step: Annotated[str, Field(max_length=64, min_length=1)]
+    choice: Annotated[str | None, Field(max_length=64)] = None
+    text: Annotated[str | None, Field(max_length=200)] = None
+    values: Annotated[
+        dict[str, constr(max_length=200) | float | None] | None, Field(max_length=60)
+    ] = None
+
+
+class BossAck(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    scope: Annotated[
+        Literal['netbox', 'practice'],
+        Field(
+            description="netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox)."
+        ),
+    ]
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+
+
 class MoveRackOp(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -1084,30 +1465,22 @@ class UpdateFieldsOp(BaseModel):
     ] = None
 
 
-class ChangeSet(BaseModel):
-    model_config = ConfigDict(
-        extra='forbid',
-    )
-    ops: Annotated[
-        list[MoveRackOp | PlaceDeviceOp | UnplaceDeviceOp | CreateRackOp | UpdateFieldsOp],
-        Field(max_length=100, min_length=1),
-    ]
-    reason: Annotated[
-        str | None,
-        Field(
-            description='Optional note; the proxy logs it with the apply.',
-            max_length=200,
-        ),
-    ] = None
-
-
 class OpResult(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
     index: Annotated[int, Field(ge=0)]
     op: Literal[
-        'move_rack', 'place_device', 'unplace_device', 'create_rack', 'update_fields'
+        'move_rack',
+        'place_device',
+        'unplace_device',
+        'create_rack',
+        'update_fields',
+        'connect_cable',
+        'create_circuit',
+        'create_circuit_termination',
+        'assign_ip',
+        'create_prefix',
     ]
     client_ref: str | None
     target: Annotated[OpTarget, Field(title='OpTarget')]
@@ -1288,7 +1661,7 @@ class GameState(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
     )
-    contract_version: Literal['2.2.0']
+    contract_version: Literal['2.3.0']
     player: Player
     settings: GameSettings
     flags: Flags
@@ -1296,3 +1669,253 @@ class GameState(BaseModel):
         list[SaveSlot],
         Field(description='Existing slots, autosave first.', max_length=4),
     ]
+
+
+class ConnectCableOp(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: Literal['connect_cable']
+    target: Annotated[ConnectCableTarget, Field(title='ConnectCableTarget')]
+    fields: Annotated[ConnectCableFields, Field(title='ConnectCableFields')]
+    client_ref: Annotated[
+        str | None,
+        Field(
+            description="Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.",
+            pattern='^[A-Za-z0-9_-]{1,64}$',
+        ),
+    ] = None
+    if_unmodified_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        ),
+    ] = None
+
+
+class CreateCircuitOp(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: Literal['create_circuit']
+    target: Annotated[CreateCircuitTarget, Field(title='CreateCircuitTarget')]
+    fields: Annotated[CreateCircuitFields, Field(title='CreateCircuitFields')]
+    client_ref: Annotated[
+        str | None,
+        Field(
+            description="Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.",
+            pattern='^[A-Za-z0-9_-]{1,64}$',
+        ),
+    ] = None
+    if_unmodified_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        ),
+    ] = None
+
+
+class CreateCircuitTerminationOp(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: Literal['create_circuit_termination']
+    target: Annotated[
+        CreateCircuitTerminationTarget, Field(title='CreateCircuitTerminationTarget')
+    ]
+    fields: Annotated[
+        CreateCircuitTerminationFields, Field(title='CreateCircuitTerminationFields')
+    ]
+    client_ref: Annotated[
+        str | None,
+        Field(
+            description="Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.",
+            pattern='^[A-Za-z0-9_-]{1,64}$',
+        ),
+    ] = None
+    if_unmodified_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        ),
+    ] = None
+
+
+class AssignIpOp(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: Literal['assign_ip']
+    target: Annotated[AssignIpTarget, Field(title='AssignIpTarget')]
+    fields: Annotated[AssignIpFields, Field(title='AssignIpFields')]
+    client_ref: Annotated[
+        str | None,
+        Field(
+            description="Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.",
+            pattern='^[A-Za-z0-9_-]{1,64}$',
+        ),
+    ] = None
+    if_unmodified_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        ),
+    ] = None
+
+
+class CreatePrefixOp(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: Literal['create_prefix']
+    target: Annotated[CreatePrefixTarget, Field(title='CreatePrefixTarget')]
+    fields: Annotated[CreatePrefixFields, Field(title='CreatePrefixFields')]
+    client_ref: Annotated[
+        str | None,
+        Field(
+            description="Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.",
+            pattern='^[A-Za-z0-9_-]{1,64}$',
+        ),
+    ] = None
+    if_unmodified_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        ),
+    ] = None
+
+
+class ChangeSet(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    ops: Annotated[
+        list[MoveRackOp | PlaceDeviceOp | UnplaceDeviceOp | CreateRackOp | UpdateFieldsOp | ConnectCableOp | CreateCircuitOp | CreateCircuitTerminationOp | AssignIpOp | CreatePrefixOp],
+        Field(max_length=100, min_length=1),
+    ]
+    reason: Annotated[
+        str | None,
+        Field(
+            description='Optional note; the proxy logs it with the apply.',
+            max_length=200,
+        ),
+    ] = None
+
+
+class Quest(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    id: str
+    scope: Annotated[
+        Literal['netbox', 'practice'],
+        Field(
+            description="netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox)."
+        ),
+    ]
+    kind: str
+    rank: Annotated[
+        Literal['connectivity', 'identity', 'layout'],
+        Field(
+            description='What a finding is worth: connectivity (can it be reached, and how) before identity (which box is it) before layout (where it stands).'
+        ),
+    ]
+    site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+    title: str
+    purpose: Annotated[
+        str, Field(description='Why it matters, in plain words for a site admin.')
+    ]
+    outcome: Annotated[
+        str, Field(description='What the admin can do once the line is complete.')
+    ]
+    status: Annotated[
+        Literal['offered', 'active', 'ready', 'parked', 'dismissed', 'practised', 'done'],
+        Field(
+            description='offered = not started; active = a question is waiting; ready = a change is waiting for preview and apply; parked = the player did not know yet (a field task; no penalty); dismissed = the player says this is how things are; practised = completed as a dry run (no XP); done = NetBox confirms it.'
+        ),
+    ]
+    step: QuestStep | None
+    proposal: ChangeSet | None
+    checklist: Annotated[
+        list[str],
+        Field(description='What to look for on site while the line is parked.'),
+    ]
+    note: str | None
+    said: list[QuestSaid]
+    target: QuestTarget | None
+    finding: Finding
+    xp: Annotated[int, Field(ge=0)]
+    minutes: Annotated[int, Field(ge=0)]
+    progress: QuestProgress
+    lapsed: Annotated[
+        bool,
+        Field(
+            description='Done once, but NetBox no longer shows it. Nothing is reopened; it is only counted.'
+        ),
+    ]
+    updated_at: AwareDatetime | None
+
+
+class QuestBoard(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    contract_version: Literal['2.3.0']
+    scope: Annotated[
+        Literal['netbox', 'practice'],
+        Field(
+            description="netbox = the player's real NetBox; practice = the practice island (synthetic, never written to NetBox)."
+        ),
+    ]
+    site_id: Annotated[int | None, Field(ge=1)]
+    write_enabled: bool
+    can_write: Annotated[
+        bool,
+        Field(
+            description='A real write would be attempted for this player (write-enabled proxy and no known permission problem). Otherwise completions are practice.'
+        ),
+    ]
+    write_blocked: str | None
+    all_in_order: bool
+    message: str
+    findings: list[Finding]
+    quests: list[Quest]
+    queued: Annotated[
+        int,
+        Field(
+            description='Open lines not offered yet (at most a few are open per site).',
+            ge=0,
+        ),
+    ]
+    next_quest_id: str | None
+    sites: list[SiteProgress]
+    rewards: Rewards
+    incomplete: list[str]
+
+
+class QuestVerdict(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    quest: Quest
+    mode: Literal['real', 'dry_run', 'practice']
+    verified: Annotated[
+        bool,
+        Field(
+            description='NetBox (or, on the practice island, the island) was read again and shows the outcome.'
+        ),
+    ]
+    complete: bool
+    xp_awarded: Annotated[int, Field(ge=0)]
+    potions_awarded: Annotated[int, Field(ge=0)]
+    message: str
+    can_now: str | None
+    unlocked: list[Literal['label_maker', 'cable_tracer']]
+    trace: Annotated[
+        str | None,
+        Field(
+            description="What NetBox's own cable trace found after a cable was written."
+        ),
+    ]
+    result: ChangeResult | None
+    rewards: Rewards

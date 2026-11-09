@@ -34,10 +34,10 @@ Key = tuple[str, int | str]  # (kind, NetBox id) or (kind, "@client_ref" / "#<op
 
 # contracts/api.md update_fields whitelist (contract field names, in the order api.md lists them).
 WHITELIST: dict[str, list[str]] = {
-    "site": ["name", "description", "status", "latitude", "longitude", "iso_theme"],
+    "site": ["name", "description", "status", "latitude", "longitude", "iso_theme", "facility", "country"],
     "location": ["name", "description", "status", "iso_x", "iso_y", "iso_w", "iso_h", "iso_facing", "latitude", "longitude"],
     "rack": ["name", "description", "status", "comments", "iso_x", "iso_y", "iso_facing", "latitude", "longitude"],
-    "device": ["name", "status", "serial", "asset_tag", "description", "comments"],
+    "device": ["name", "status", "serial", "asset_tag", "description", "comments", "platform_id"],
     "cable": ["label", "status", "type", "color", "length", "length_unit"],
     "interface": ["description", "enabled"],
 }
@@ -52,13 +52,19 @@ STATUS: dict[str, list[str]] = {
 ENDPOINT = {"site": "dcim/sites", "location": "dcim/locations", "rack": "dcim/racks", "device": "dcim/devices",
             "cable": "dcim/cables", "interface": "dcim/interfaces"}
 CUSTOM = {"iso_x", "iso_y", "iso_w", "iso_h", "iso_facing", "iso_theme"}
+# Ops added in contract 2.3.0 (what a quest line ends in): each creates one NetBox object, or assigns an address.
+NET_OPS = ("connect_cable", "create_circuit", "create_circuit_termination", "assign_ip", "create_prefix")
+# A cable end's contract kind -> NetBox content type.
+END_TYPE = {"interface": "dcim.interface", "front_port": "dcim.frontport", "rear_port": "dcim.rearport", "power_port": "dcim.powerport",
+            "power_outlet": "dcim.poweroutlet", "circuit_termination": "circuits.circuittermination"}
 CREATE_RACK_ORDER = list(SCHEMA["$defs"]["CreateRackOp"]["properties"]["fields"]["properties"])
 
 # Value rules for update_fields: the contract's own property schema for that field (by entity) AND NetBox's
 # limits (max lengths, status choices). Fields the contract entities do not carry use NetBox's limits alone.
 _CONTRACT_PROP = {"site": "Site", "location": "Location", "rack": "Rack", "device": "Device", "cable": "Cable",
                   "interface": "Interface"}
-_EXTRA_PROP = {("device", f): "DeviceInfo" for f in ("serial", "asset_tag", "description", "comments")}
+_EXTRA_PROP = {("device", f): "DeviceInfo" for f in ("serial", "asset_tag", "description", "comments", "platform_id")}
+_EXTRA_PROP[("site", "facility")] = "DeviceInfo"  # not a contract entity field: NetBox's limits alone apply
 _NETBOX_LIMITS: dict[str, dict[str, Any]] = {
     "name": {"type": "string", "minLength": 1, "maxLength": 100},
     "description": {"type": "string", "maxLength": 200},
@@ -66,6 +72,9 @@ _NETBOX_LIMITS: dict[str, dict[str, Any]] = {
     "serial": {"maxLength": 50},
     "asset_tag": {"type": ["string", "null"], "minLength": 1, "maxLength": 50},
     "label": {"maxLength": 100},
+    "facility": {"type": "string", "maxLength": 50},
+    "country": {"type": ["string", "null"], "pattern": "^[A-Z]{2}$"},
+    "platform_id": {"type": ["integer", "null"], "minimum": 1},
 }
 
 
@@ -154,8 +163,10 @@ def _cf_num(o: nb.NbObject, name: str) -> float | None:
 
 def rec_site(s: nb.Site) -> Rec:
     theme = s.cf("iso_theme")
+    country = s.cf("iso_country")
     return Rec("site", s.id, s.last_updated, {"name": s.name, "description": s.description, "status": s.status,
-                                              "latitude": s.latitude, "longitude": s.longitude, "iso_theme": theme})
+                                              "latitude": s.latitude, "longitude": s.longitude, "iso_theme": theme,
+                                              "facility": s.facility or "", "country": country or None})
 
 
 def rec_location(loc: nb.Location) -> Rec:
@@ -181,10 +192,11 @@ def rec_device(d: nb.Device, dtypes: dict[int, nb.DeviceType]) -> Rec:
         "site_id": d.site.id, "location_id": d.location.id if d.location else None, "rack_id": d.rack.id if d.rack else None,
         "position": d.position, "face": d.face, "name": d.name, "status": d.status, "serial": d.serial,
         "asset_tag": d.asset_tag, "description": d.description, "comments": d.comments,
+        "platform_id": d.platform.id if d.platform else None,
         # planner-only facts (never shown in before/after, which list only touched fields)
         "_u_height": dt.u_height if dt else 1.0, "_full_depth": dt.is_full_depth if dt else True,
         "_child": bool(d.parent_device) or (dt is not None and dt.subdevice_role == "child"),
-        "_tenant_id": d.tenant.id if d.tenant else None})
+        "_tenant_id": d.tenant.id if d.tenant else None, "_primary_ip": d.primary_ip.address if d.primary_ip else None})
 
 
 def rec_cable(cb: nb.Cable) -> Rec:
@@ -274,7 +286,63 @@ async def gather(client: nb.NetBox, ops: list[Any]) -> State:
     dtypes = await client.device_types({d.device_type.id for d in devices})
     for o in devices:
         st.add(rec_device(o, dtypes))
+    await gather_net(client, ops, st)
     return st
+
+
+def _fields(op: Any) -> dict[str, Any]:
+    f = op.fields.model_dump(mode="json", exclude_unset=True) if hasattr(op.fields, "model_dump") else {}
+    return {k: (v.root if hasattr(v, "root") else v) for k, v in f.items()}
+
+
+async def _one(client: nb.NetBox, path: str, oid: int) -> dict[str, Any] | None:
+    rows = await client.list_raw(path, {"id": oid})
+    return rows[0] if rows else None
+
+
+async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
+    """What the 2.3.0 ops can touch: the cable ends they name, circuits with their terminations, providers, circuit
+    types, platforms, and any address or prefix that already holds a value they set."""
+    for op in ops:
+        f = _fields(op)
+        if op.op == "update_fields" and isinstance(f.get("platform_id"), int) and ("platform", f["platform_id"]) not in st.recs:
+            row = await _one(client, "dcim/platforms", f["platform_id"])
+            if row:
+                st.add(Rec("platform", row["id"], None, {"name": row["name"]}))
+        if op.op == "connect_cable":
+            for side in ("a", "b"):
+                kind, oid = f[f"{side}_kind"], f[f"{side}_id"]
+                if isinstance(oid, int) and ("end:" + kind, oid) not in st.recs:
+                    row = await _one(client, nb.PORT_ENDPOINT[kind], oid)
+                    if row:
+                        dev = row.get("device") or {}
+                        st.add(Rec("end:" + kind, oid, None, {"cable": (row.get("cable") or {}).get("id"), "name": row.get("name") or row.get("term_side"),
+                                                              "device_id": dev.get("id"), "device": dev.get("name")}))
+        if op.op == "create_circuit":
+            for kind, path, oid in (("provider", "circuits/providers", f["provider_id"]), ("circuit_type", "circuits/circuit-types", f["type_id"])):
+                row = await _one(client, path, oid)
+                if row:
+                    st.add(Rec(kind, oid, None, {"name": row["name"]}))
+            for row in await client.list_raw("circuits/circuits", {"cid": f["cid"], "provider_id": f["provider_id"]}):
+                st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": f["provider_id"]}))
+        if op.op == "create_circuit_termination":
+            if isinstance(f["circuit_id"], int):
+                row = await _one(client, "circuits/circuits", f["circuit_id"])
+                if row:
+                    st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": (row.get("provider") or {}).get("id")}))
+                    for term in await client.list_raw("circuits/circuit-terminations", {"circuit_id": row["id"]}):
+                        st.add(Rec("circuit_termination", term["id"], None, {"circuit_id": row["id"], "term_side": term["term_side"]}))
+        if op.op == "assign_ip":
+            row = await _one(client, "dcim/interfaces", f["interface_id"])
+            if row:
+                st.add(Rec("end:interface", row["id"], None, {"cable": (row.get("cable") or {}).get("id"), "name": row["name"],
+                                                              "device_id": (row.get("device") or {}).get("id"), "device": (row.get("device") or {}).get("name")}))
+            for ip in await client.list_raw("ipam/ip-addresses", {"address": f["address"]}):
+                st.add(Rec("ip_address", ip["id"], None, {"address": ip["address"], "assigned_type": ip.get("assigned_object_type"),
+                                                          "assigned_id": ip.get("assigned_object_id")}))
+        if op.op == "create_prefix":
+            for pf in await client.list_raw("ipam/prefixes", {"prefix": f["prefix"]}):
+                st.add(Rec("prefix", pf["id"], None, {"prefix": pf["prefix"]}))
 
 
 # ---------------------------------------------------------------- plan (pure)
@@ -504,8 +572,148 @@ class Planner:
                     self.site_coordinate(k, f[k])
         if p.kind == "cable" and ("length" in f or "length_unit" in f):
             self.cable_length(rec, f)
+        if p.kind == "device" and f.get("platform_id") is not None and ("platform", f["platform_id"]) not in self.st.recs:
+            raise OpError("not_found", f"Platform {f['platform_id']} does not exist.", {"field": "platform_id", "id": f["platform_id"]})
         p.key = rec.key
         self.change(p, rec, f, dict(f))
+
+
+    # -- ops added in 2.3.0 --
+    def _new(self, p: Planned, op: Any, kind: str, values: dict[str, Any], shown: dict[str, Any]) -> Rec:
+        rec = Rec(kind, f"@{op.client_ref}" if op.client_ref else f"#{p.index}", None, values)
+        self.st.add(rec)
+        p.key, p.before, p.after, p.write = rec.key, None, shown, dict(shown)
+        return rec
+
+    def _end(self, kind: str, ident: Any, field_name: str) -> Rec:
+        if isinstance(ident, str):
+            rec = self.resolve("circuit_termination", ident, field_name)
+            if kind != "circuit_termination":
+                raise OpError("validation_failed", f"Reference {ident} names a circuit termination, not a {kind}.", {"field": field_name})
+            return rec
+        rec = self.st.recs.get(("end:" + kind, ident))
+        if rec is None:
+            raise OpError("not_found", f"{kind.replace('_', ' ').capitalize()} {ident} does not exist.", {"field": field_name, "kind": kind, "id": ident})
+        return rec
+
+    def connect_cable(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        a, b = self._end(f["a_kind"], f["a_id"], "a_id"), self._end(f["b_kind"], f["b_id"], "b_id")
+        if a is b:
+            raise OpError("validation_failed", "A cable needs two different ends.", {"field": "b_id"})
+        power = {"power_port", "power_outlet"}
+        if (f["a_kind"] in power) != (f["b_kind"] in power):
+            raise OpError("validation_failed", "A power port connects only to a power outlet, not to a data port.", {"field": "b_kind"})
+        for side, rec in (("a_id", a), ("b_id", b)):
+            if rec.v.get("cable") is not None:
+                where = f"{rec.v.get('device') or ''} {rec.v.get('name') or ''}".strip() or "That end"
+                raise OpError("conflict", f"{where} already has a cable (NetBox: one cable per port).", {"field": side, "cable_id": rec.v["cable"]})
+        shown = {k: f[k] for k in ("a_kind", "a_id", "b_kind", "b_id", "type", "label") if k in f}
+        rec = self._new(p, op, "cable", {"label": f.get("label"), "status": "connected", "type": f.get("type"), "color": None,
+                                         "length": None, "length_unit": None}, shown)
+        p.write = {**shown, "a_id": a.id, "b_id": b.id}
+        a.v["cable"] = b.v["cable"] = rec.id
+
+    def create_circuit(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        for kind, key in (("provider", "provider_id"), ("circuit_type", "type_id")):
+            if (kind, f[key]) not in self.st.recs:
+                raise OpError("not_found", f"{kind.replace('_', ' ').capitalize()} {f[key]} does not exist.", {"field": key, "id": f[key]})
+        for c in self.st.of("circuit"):
+            if c.v["cid"] == f["cid"] and c.v.get("provider_id") == f["provider_id"]:
+                raise OpError("validation_failed", f"Circuit {f['cid']} already exists for that provider (NetBox: a circuit ID is "
+                              "unique per provider).", {"field": "cid"})
+        self._new(p, op, "circuit", {"cid": f["cid"], "provider_id": f["provider_id"]}, dict(f))
+
+    def create_circuit_termination(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        circuit = self.resolve("circuit", f["circuit_id"], "circuit_id")
+        if ("site", f["site_id"]) not in self.st.recs:
+            raise OpError("not_found", f"Site {f['site_id']} does not exist.", {"field": "site_id", "kind": "site", "id": f["site_id"]})
+        for term in self.st.of("circuit_termination"):
+            if term.v.get("circuit_id") == circuit.id and term.v.get("term_side") == f["term_side"]:
+                raise OpError("conflict", f"Side {f['term_side']} of circuit {circuit.v['cid']} already has a termination.", {"field": "term_side"})
+        self._new(p, op, "circuit_termination", {"circuit_id": circuit.id, "term_side": f["term_side"], "cable": None,
+                                                 "name": f["term_side"], "device": f"circuit {circuit.v['cid']}"}, dict(f))
+        p.write = {**f, "circuit_id": circuit.id}
+
+    def assign_ip(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        import ipaddress
+
+        dev = self.resolve("device", p.target_id)
+        self.lock(dev, op.if_unmodified_since)
+        try:
+            addr = ipaddress.ip_interface(f["address"])
+        except ValueError:
+            raise OpError("validation_failed", f"{f['address']!r} is not an IP address with a mask (for example 192.0.2.10/24).", {"field": "address"}) from None
+        if "/" not in f["address"]:
+            raise OpError("validation_failed", "The address needs its mask (for example /24).", {"field": "address"})
+        iface = self.st.recs.get(("end:interface", f["interface_id"]))
+        if iface is None or iface.v.get("device_id") != dev.id:
+            raise OpError("validation_failed", f"Interface {f['interface_id']} is not an interface of {dev.v['name'] or 'that device'}.", {"field": "interface_id"})
+        existing = None
+        for ip in self.st.of("ip_address"):
+            if ipaddress.ip_interface(ip.v["address"]).ip != addr.ip:
+                continue
+            if ip.v.get("assigned_type") == "dcim.interface" and ip.v.get("assigned_id") == iface.id and ip.v["address"] == str(addr):
+                existing = ip
+            else:
+                raise OpError("conflict", f"{addr.ip} is already in NetBox as {ip.v['address']}"
+                              + (", on another interface." if ip.v.get("assigned_id") else ", not assigned to an interface."),
+                              {"field": "address", "ip_address_id": ip.id})
+        primary = f.get("primary", True)
+        p.key = dev.key
+        p.before = {"primary_ip": dev.v.get("_primary_ip")}
+        p.after = {"address": str(addr), "interface_id": iface.id, "primary_ip": str(addr) if primary else dev.v.get("_primary_ip")}
+        p.write = {"address": str(addr), "interface_id": iface.id, "primary": primary, "ip_id": existing.id if existing else None,
+                   "family": addr.version}
+        dev.v["_primary_ip"] = p.after["primary_ip"]
+        if existing is None:
+            self.st.add(Rec("ip_address", f"#{p.index}", None, {"address": str(addr), "assigned_type": "dcim.interface", "assigned_id": iface.id}))
+
+    def create_prefix(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        import ipaddress
+
+        try:
+            net = ipaddress.ip_network(f["prefix"], strict=True)
+        except ValueError:
+            raise OpError("validation_failed", f"{f['prefix']!r} is not a network with its mask and no host bits (for example 192.0.2.0/24).",
+                          {"field": "prefix"}) from None
+        for pf in self.st.of("prefix"):
+            if pf.v["prefix"] == str(net):
+                raise OpError("conflict", f"Prefix {net} already exists in NetBox.", {"field": "prefix", "prefix_id": pf.id})
+        self._new(p, op, "prefix", {"prefix": str(net)}, {"prefix": str(net)})
+
+
+async def write_net(client: nb.NetBox, p: Planned, real: dict[Key, int], message: str) -> dict[str, Any]:
+    """Writes one 2.3.0 op. Returns the created object (assign_ip: the device)."""
+    w = p.write
+
+    def rid(kind: str, v: Any) -> int:
+        return real[(kind, v)] if isinstance(v, str) else v
+
+    if p.op == "connect_cable":
+        ends = {side: [{"object_type": END_TYPE[w[f"{side}_kind"]],
+                        "object_id": rid("circuit_termination", w[f"{side}_id"])}] for side in ("a", "b")}
+        body = {"a_terminations": ends["a"], "b_terminations": ends["b"], "status": "connected",
+                **({"type": w["type"]} if w.get("type") else {}), **({"label": w["label"]} if w.get("label") else {})}
+        return await client.request("POST", "dcim/cables/", json={**body, "changelog_message": message})
+    if p.op == "create_circuit":
+        return await client.request("POST", "circuits/circuits/", json={"cid": w["cid"], "provider": w["provider_id"], "type": w["type_id"],
+                                                                        "status": "active", "changelog_message": message})
+    if p.op == "create_circuit_termination":
+        return await client.request("POST", "circuits/circuit-terminations/", json={
+            "circuit": rid("circuit", w["circuit_id"]), "term_side": w["term_side"], "termination_type": "dcim.site",
+            "termination_id": w["site_id"], "changelog_message": message})
+    if p.op == "assign_ip":
+        ip_id = w["ip_id"]
+        if ip_id is None:
+            ip = await client.request("POST", "ipam/ip-addresses/", json={
+                "address": w["address"], "assigned_object_type": "dcim.interface", "assigned_object_id": w["interface_id"],
+                "status": "active", "changelog_message": message})
+            ip_id = ip["id"]
+        if w["primary"]:
+            return await client.request("PATCH", f"dcim/devices/{p.key[1]}/", json={  # type: ignore[index]
+                f"primary_ip{w['family']}": ip_id, "changelog_message": message})
+        return {"id": p.key[1]}  # type: ignore[index]
+    return await client.request("POST", "ipam/prefixes/", json={"prefix": w["prefix"], "status": "active", "changelog_message": message})
 
 
 def plan(ops: list[Any], state: State) -> list[Planned]:
@@ -543,7 +751,9 @@ def _payload(kind: str, fields: dict[str, Any], real: dict[Key, int]) -> dict[st
             cf[k] = v
         elif k in ("latitude", "longitude") and kind in ("location", "rack"):
             cf["iso_" + k] = v
-        elif k in ("site_id", "location_id", "rack_id"):
+        elif k == "country":
+            cf["iso_country"] = v
+        elif k in ("site_id", "location_id", "rack_id", "platform_id"):
             out[k[:-3]] = v
         else:
             out[k] = v
@@ -583,6 +793,16 @@ async def apply(client: nb.NetBox, cs: c.ChangeSet, write_enabled: bool, player:
         try:
             if p.status == "no_change":
                 ids[p.index] = real.get(p.key, p.key[1])  # type: ignore[index]
+                continue
+            if p.op in NET_OPS:
+                obj = await write_net(client, p, real, message)
+                if p.op != "assign_ip":
+                    real[p.key] = obj["id"]  # type: ignore[index]
+                written.append(p.index)
+                ids[p.index] = obj["id"]
+                p.after = {f: (real.get(("circuit_termination", v), real.get(("circuit", v), v)) if isinstance(v, str) and v.startswith("@") else v)
+                           for f, v in (p.after or {}).items()}
+                log.info("apply: op %d %s %s ok", p.index, p.op, obj["id"])
                 continue
             body = {**_payload(kind, p.write, real), "changelog_message": message}
             if p.op == "create_rack":

@@ -291,6 +291,15 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
 
     app.state.change_player = change_player
 
+    def change_identity(request: Request) -> tuple[int | None, str]:
+        """Like change_player, with the player's NetBox user id (None in the single-user local mode, which has no NetBox user)."""
+        name = change_player(request)
+        s = get_store().session(request.cookies.get(COOKIE)) if request.cookies.get(COOKIE) else None
+        return (s.user_id if s is not None else None), name
+
+    app.state.change_identity = change_identity
+    app.state.game_require = require
+
     def session_body(s: Session | None) -> dict[str, Any]:
         if s is not None:
             return {"signed_in": True, "player": get_store().player(s.user_id), "csrf_token": s.csrf, "local_mode": local_player}
