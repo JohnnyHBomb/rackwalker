@@ -30,6 +30,25 @@ from pix import ALPH, DARKER, GLOW, LIGHTER, NAMES, PALETTE, RAMPS  # noqa: E402
 
 OUT = os.path.join(HERE, "..", "..", "src", "game", "world", "assets")
 
+# One ground palette per building theme: remaps inside the 63 colours (web/src/game/world/themes.ts applies them to a
+# region's ground tiles, trees and flowers). "grass" covers grass and foliage, "earth" path and sand. The plain
+# palette (debug) is the art direction's own meadow and earth.
+GROUNDS = {
+    "debug": {"grass": {}, "earth": {}},
+    # a warm late-summer meadow and a dry dirt track
+    "farm": {"grass": {"g1": "g2", "g2": "g3", "g4": "g5"},
+             "earth": {"d1": "d2", "d2": "d3", "d3": "d4", "d4": "d5"}},
+    # dusty, darker grass and grey gravel
+    "industrial-robotic": {"grass": {"g4": "g3", "g5": "g4", "g3": "g2", "g2": "g1"},
+                           "earth": {"d0": "k1", "d1": "s0", "d2": "s1", "d3": "s2", "d4": "s3", "d5": "s4"}},
+    # a smooth mown lawn (no light blade tips, the darkest lifted) and pale paving
+    "business": {"grass": {"g1": "g2", "g0": "g1", "g4": "g3"},
+                 "earth": {"d1": "s1", "d2": "s2", "d3": "s3", "d4": "s4", "d5": "w"}},
+    # deep moss green and blue-grey stone flags
+    "pagodas-nature": {"grass": {"g4": "g3", "g5": "g4", "g3": "g2"},
+                       "earth": {"d0": "l0", "d1": "l1", "d2": "l2", "d3": "l3", "d4": "s3", "d5": "s4"}},
+}
+
 # Art-lab sprites the overworld uses as they are.
 FROM_LAB = [
     "player_down", "player_up", "player_left", "player_right", "guide", "guide_talk", "hog",
@@ -67,7 +86,7 @@ def main():
     tiles, table = ground.build_tileset(grass, tulips)
     os.makedirs(OUT, exist_ok=True)
     pal = {"colours": ["#" + hx for _, hx in PALETTE], "names": NAMES, "count": len(PALETTE) - 1,
-           "ramps": RAMPS, "darker": DARKER, "lighter": LIGHTER, "glow": GLOW, "alphabet": ALPH}
+           "ramps": RAMPS, "darker": DARKER, "lighter": LIGHTER, "glow": GLOW, "alphabet": ALPH, "grounds": GROUNDS}
     with open(os.path.join(OUT, "palette.json"), "w") as f:
         json.dump(pal, f, indent=1)
         f.write("\n")

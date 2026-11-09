@@ -6,7 +6,7 @@
 //    lowest-id site. Regions are ordered by their lowest site id.
 // 2. Walking scale. Inside a region each site's offset from the region's centre (km, east and north) is compressed
 //    logarithmically (TILES_PER_DOUBLING tiles per doubling of distance beyond KM0), so 10 km and 200 km both stay
-//    walkable, then nudged apart until buildings keep their spacing.
+//    walkable. A site whose building would overlap another moves to the nearest free place.
 // 3. Filling the space. A forest border, water (a canal with bridges, or a pond), paths joining every site of the
 //    region (a minimum spanning tree, routed around buildings and over bridges), fields, the country's landmarks,
 //    villagers, scattered trees and flowers.
@@ -14,6 +14,7 @@
 //    region, and no path joins two regions. Each region of a multi-region world has an airfield pad (a placeholder:
 //    stepping on it takes the player to the next region's pad until flights exist).
 import { countrySet, type CountrySet, TREE_SHADOW } from './countries';
+import { groundTheme } from './themes';
 
 export const TILE = 16;
 /** Terrain classes: grass, path, water, bridge (path over water), sand, tulip field, crop field. */
@@ -57,6 +58,8 @@ export interface Region {
   readonly siteIds: readonly number[];
   readonly country: string;
   readonly set: CountrySet;
+  /** The ground, trees and flowers follow this theme: the most common theme of the region's sites. */
+  readonly theme: string;
   /** The airfield pad (a walkable tile), or null in a one-region world. */
   readonly airfield: Pos | null;
   /** Where the player arrives in this region (in front of its first door, or its centre when it has none). */
@@ -92,6 +95,10 @@ const MARGIN = 12;
 const MIN_W = 48;
 const MIN_H = 38;
 const SEP = BW + 7;
+/** The pond's outline, W = water. */
+const POND = ['..WWWW.', '.WWWWWW', 'WWWWWWW', '.WWWWW.'];
+/** How far (steps) clampPos looks for a free tile around a saved place before it falls back to the start. */
+export const CLAMP_REACH = 8;
 
 export function hash(...v: number[]): number {
   let h = 0x811c9dc5 | 0;
@@ -156,40 +163,69 @@ export function compress(eastKm: number, northKm: number): { x: number; y: numbe
   return { x: (eastKm / r) * t, y: (-northKm / r) * t };
 }
 
+/** Wraps a longitude difference into [-180, 180), so two sites either side of the 180th meridian stay close. */
+export const wrapLon = (d: number): number => ((((d + 180) % 360) + 360) % 360) - 180;
+
 /** Building origins (tiles, relative) for the sites of one region. */
 export function layoutRegion(sites: readonly WorldSite[]): Map<number, Pos> {
   const gps = sites.filter(hasGps);
+  const noGps = sites.filter((s) => !hasGps(s));
   const lat0 = gps.length ? gps.reduce((a, s) => a + s.latitude!, 0) / gps.length : 0;
-  const lon0 = gps.length ? gps.reduce((a, s) => a + s.longitude!, 0) / gps.length : 0;
+  // The mean longitude, taken relative to the first site so a region across the 180th meridian is not averaged to 0.
+  const lonRef = gps[0]?.longitude ?? 0;
+  const lon0 = gps.length ? lonRef + gps.reduce((a, s) => a + wrapLon(s.longitude! - lonRef), 0) / gps.length : 0;
   const k = Math.cos((lat0 * Math.PI) / 180) * 111.32;
-  const pts = sites.map((s, i) => {
-    if (!hasGps(s)) return { id: s.id, x: (i - gps.length) * SEP, y: 3 * SEP }; // a row below the others
-    const c = compress((s.longitude! - lon0) * k, (s.latitude! - lat0) * 110.57);
+  const gpsPts = gps.map((s) => {
+    const c = compress(wrapLon(s.longitude! - lon0) * k, (s.latitude! - lat0) * 110.57);
     return { id: s.id, x: c.x, y: c.y };
   });
-  // Push apart pairs closer than SEP on both axes, along the axis that needs less (deterministic order).
-  for (let it = 0; it < 200; it++) {
-    let moved = false;
-    for (let i = 0; i < pts.length; i++)
-      for (let j = i + 1; j < pts.length; j++) {
-        const a = pts[i]!, b = pts[j]!;
-        const dx = b.x - a.x, dy = b.y - a.y;
-        if (Math.abs(dx) >= SEP || Math.abs(dy) >= SEP) continue;
-        moved = true;
-        if (SEP - Math.abs(dx) <= SEP - Math.abs(dy)) {
-          const s = (SEP - Math.abs(dx)) / 2 + 0.01, d = dx > 0 || (dx === 0 && a.id < b.id) ? 1 : -1;
-          a.x -= s * d, b.x += s * d;
-        } else {
-          const s = (SEP - Math.abs(dy)) / 2 + 0.01, d = dy > 0 || (dy === 0 && a.id < b.id) ? 1 : -1;
-          a.y -= s * d, b.y += s * d;
-        }
-      }
-    if (!moved) break;
-  }
+  // Sites without GPS stand in a square block below the others (not one long row).
+  const cols = Math.max(1, Math.ceil(Math.sqrt(noGps.length)));
+  const below = gpsPts.reduce((a, p) => Math.max(a, p.y), -SEP) + 2 * SEP;
+  const pts = [
+    ...gpsPts,
+    ...noGps.map((s, i) => ({ id: s.id, x: ((i % cols) - (cols - 1) / 2) * SEP, y: below + Math.floor(i / cols) * SEP })),
+  ];
+  // Each site, nearest the centre first (ties by id), takes the whole-tile origin nearest its own that keeps SEP from
+  // every site already placed, so buildings never overlap however many sites share one point (a grid of SEP-sized
+  // cells keeps the check cheap). The centre's sites keep their places; crowded ones move out.
+  pts.sort((a, b) => Math.hypot(a.x, a.y) - Math.hypot(b.x, b.y) || a.id - b.id);
   const out = new Map<number, Pos>();
-  // Round outward from the centre so rounding never pulls two buildings closer together.
-  for (const p of pts) out.set(p.id, { x: Math.round(p.x - BW / 2), y: Math.round(p.y - BH / 2) });
+  const grid = new Map<string, Pos[]>();
+  const cell = (x: number, y: number) => `${Math.floor(x / SEP)},${Math.floor(y / SEP)}`;
+  const clash = (x: number, y: number) => {
+    const cx = Math.floor(x / SEP), cy = Math.floor(y / SEP);
+    for (let j = cy - 1; j <= cy + 1; j++)
+      for (let i = cx - 1; i <= cx + 1; i++)
+        for (const q of grid.get(`${i},${j}`) ?? []) if (Math.abs(q.x - x) < SEP && Math.abs(q.y - y) < SEP) return true;
+    return false;
+  };
+  for (const p of pts) {
+    const x0 = Math.round(p.x - BW / 2), y0 = Math.round(p.y - BH / 2);
+    let at: Pos | null = null;
+    for (let r = 0; !at; r++) {
+      for (const o of ring(r)) if (!clash(x0 + o.x, y0 + o.y)) {
+        at = { x: x0 + o.x, y: y0 + o.y };
+        break;
+      }
+    }
+    out.set(p.id, at);
+    const c = cell(at.x, at.y);
+    if (!grid.has(c)) grid.set(c, []);
+    grid.get(c)!.push(at);
+  }
   return out;
+}
+
+/** The offsets at Chebyshev distance r, nearest first (then north before south, west before east). */
+const rings: Pos[][] = [];
+function ring(r: number): Pos[] {
+  if (!rings[r]) {
+    const out: Pos[] = [];
+    for (let y = -r; y <= r; y++) for (let x = -r; x <= r; x++) if (Math.max(Math.abs(x), Math.abs(y)) === r) out.push({ x, y });
+    rings[r] = out.sort((a, b) => a.x * a.x + a.y * a.y - (b.x * b.x + b.y * b.y) || a.y - b.y || a.x - b.x);
+  }
+  return rings[r]!;
 }
 
 const THEME_IDS = ['debug', 'industrial-robotic', 'farm', 'business', 'pagodas-nature'];
@@ -208,6 +244,8 @@ export class WorldMap {
   readonly start: Pos;
   readonly guide: Pos;
   private readonly flags: Uint8Array;
+  /** 1 where the player can get to on foot from a region's arrival tile (doors and pads included, as ends). */
+  private readonly reach: Uint8Array;
   private guideAt: Pos | null = null;
 
   constructor(sitesIn: readonly WorldSite[]) {
@@ -241,6 +279,8 @@ export class WorldMap {
     this.start = r0.arrive;
     this.guide = this.guideAt ?? { x: this.start.x - 2, y: this.start.y };
     this.flag(this.guide.x, this.guide.y, SOLID);
+    this.reach = new Uint8Array(this.w * this.h);
+    for (const r of this.regions) this.flood(r.arrive);
     // Ilatea (drawn by the view: she animates), glow and shadow come with her.
     this.objects.sort((a, b) => a.y - b.y || a.x - b.x || (a.sprite < b.sprite ? -1 : a.sprite > b.sprite ? 1 : 0));
   }
@@ -286,6 +326,13 @@ export class WorldMap {
     }
     const country = [...counts.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0] ?? '';
     const set = countrySet(country);
+    // Theme: the same vote over the sites' themes (unknown or none do not vote); none = the plain debug ground.
+    const tcounts = new Map<string, number>();
+    for (const id of p.ids) {
+      const t = byId.get(id)!.theme;
+      if (t && THEME_IDS.includes(t)) tcounts.set(t, (tcounts.get(t) ?? 0) + 1);
+    }
+    const theme = [...tcounts.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1))[0]?.[0] ?? 'debug';
     for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) this.flags[y * this.w + rx + x] = 0;
     // Forest border.
     for (let y = 0; y < h; y++)
@@ -338,19 +385,19 @@ export class WorldMap {
           break;
         }
       }
-      if (canalY >= 0)
-        for (let x = rx + BORDER; x < rx + w - BORDER; x++) for (let j = canalY; j < canalY + 2; j++) (this.setT(x, j, 'W'), this.flag(x, j, SOLID));
+      // The canal runs on under the forest border to the region's edge, so it flows out of the picture.
+      if (canalY >= 0) for (let x = rx; x < rx + w; x++) for (let j = canalY; j < canalY + 2; j++) (this.setT(x, j, 'W'), this.flag(x, j, SOLID));
     }
     if (canalY < 0) {
-      // A pond: 6 x 3, as near the region's centre as fits.
+      // A pond: an irregular 7 x 4 blob (its rounded outline comes from the ground tiles), as near the centre as fits.
       const spots: Pos[] = [];
-      for (let y = BORDER + 2; y < h - BORDER - 5; y++) for (let x = BORDER + 2; x < w - BORDER - 8; x++) spots.push({ x: rx + x, y });
+      for (let y = BORDER + 2; y < h - BORDER - 6; y++) for (let x = BORDER + 2; x < w - BORDER - 9; x++) spots.push({ x: rx + x, y });
       spots.sort((a, b) => Math.hypot(a.x - cx, a.y - cy) - Math.hypot(b.x - cx, b.y - cy) || a.y - b.y || a.x - b.x);
-      const s = spots.find((q) => this.freeRect(q.x, q.y, 6, 3, 2) && !doors.some((d) => Math.abs(q.y - d.y) < 3 && q.x <= d.x + 1 && q.x + 6 >= d.x - 1));
+      const s = spots.find((q) => this.freeRect(q.x, q.y, 7, 4, 2) && !doors.some((d) => Math.abs(q.y - d.y) < 4 && q.x <= d.x + 1 && q.x + 7 >= d.x - 1));
       if (s) {
-        for (let j = 0; j < 3; j++) for (let i = 0; i < 6; i++) (this.setT(s.x + i, s.y + j, 'W'), this.flag(s.x + i, s.y + j, SOLID));
-        this.objects.push({ sprite: 'reeds', x: s.x * TILE + 4, y: (s.y + 3) * TILE + 6, anim: { fps: 2 }, kind: 'decor' });
-        this.objects.push({ sprite: 'reeds', x: (s.x + 6) * TILE + 2, y: (s.y + 1) * TILE + 2, anim: { fps: 2, phase: 1 }, kind: 'decor' });
+        POND.forEach((row, j) => [...row].forEach((c, i) => c === 'W' && (this.setT(s.x + i, s.y + j, 'W'), this.flag(s.x + i, s.y + j, SOLID))));
+        this.objects.push({ sprite: 'reeds', x: (s.x + 1) * TILE + 6, y: (s.y + 3) * TILE + 4, anim: { fps: 2 }, kind: 'decor' });
+        this.objects.push({ sprite: 'reeds', x: (s.x + 6) * TILE + 6, y: (s.y + 1) * TILE + 6, anim: { fps: 2, phase: 1 }, kind: 'decor' });
         this.objects.push({ sprite: 'lilypad', x: (s.x + 2) * TILE + 4, y: (s.y + 1) * TILE + 8, flat: true, kind: 'decor' });
         this.objects.push({ sprite: 'lilypad_flower', x: (s.x + 4) * TILE + 2, y: (s.y + 2) * TILE + 4, flat: true, kind: 'decor' });
       }
@@ -376,7 +423,6 @@ export class WorldMap {
     const nodes: Pos[] = doors.map(front);
     if (airfield) nodes.push({ x: airfield.x, y: airfield.y + 1 });
     for (const n of nodes) this.setT(n.x, n.y, 'P');
-    for (const d of doors) this.setT(d.x, d.y + 2, 'P');
     if (airfield) this.setT(airfield.x, airfield.y, 'P'), this.unflag(airfield.x, airfield.y + 1, SOLID);
     const inTree = [0];
     while (inTree.length < nodes.length) {
@@ -389,6 +435,19 @@ export class WorldMap {
         }
       this.route(nodes[best![1]]!, nodes[best![2]]!, rx, w, h);
       inTree.push(best![2]);
+    }
+    // A canal splits the region: when no path crossed it, one path crosses from the first door to the far bank, so
+    // every bank can be reached.
+    if (canalY >= 0 && doors[0] && !this.anyIn(rx, w, h, 'B')) {
+      const d = doors[0], north = d.y > canalY;
+      const ys = north ? [canalY - 3, canalY - 2, canalY - 4] : [canalY + 4, canalY + 3, canalY + 5];
+      const goal = ys.flatMap((y) => [0, 1, -1, 2, -2, 3, -3].map((o) => ({ x: d.x + o, y }))).find((q) => this.free(q.x, q.y));
+      if (goal) this.route(front(d), goal, rx, w, h);
+    }
+    // A door whose path does not come from the side gets a straight two-tile approach.
+    for (const d of doors) {
+      const f = front(d);
+      if (!['P', 'B'].includes(this.at(f.x - 1, f.y) ?? '') && !['P', 'B'].includes(this.at(f.x + 1, f.y) ?? '')) this.setT(d.x, d.y + 2, 'P');
     }
     // Bridges: a plank deck with rails over each crossing (drawn flat; the deck is walkable, the water beside it not).
     for (let y = 0; y < h; y++)
@@ -406,7 +465,9 @@ export class WorldMap {
         let ok = true;
         for (let i = 0; i < 6 && ok; i++) for (let j = 0; j < 2; j++) if (!this.free(x0 + i, y + j)) ok = false;
         if (ok && R(x0, 1) < 0.5) {
+          // a sand bank: six tiles along the water, four below them, so its outline is a rounded lump
           for (let i = 0; i < 6; i++) this.setT(x0 + i, y, 'S');
+          for (let i = 1; i < 5; i++) this.setT(x0 + i, y + 1, 'S');
           this.objects.push({ sprite: 'boat', x: (x0 + 3) * TILE, y: canalY * TILE + 26, anim: { fps: 2 }, kind: 'decor' });
           this.objects.push({ sprite: 'mooring_post', x: (x0 + 1) * TILE + 4, y: (canalY + 2) * TILE + 6, kind: 'decor', shadow: [2, 0, 3, 1] });
           this.flag(x0 + 1, y, SOLID);
@@ -478,13 +539,14 @@ export class WorldMap {
     }
     // The forest border and scattered trees.
     const trees = set.trees;
+    const gt = groundTheme(theme);
     for (let y = 0; y < h; y++)
       for (let x = 0; x < w; x++) {
         const X = rx + x;
         const edge = x < BORDER || y < BORDER || x >= w - BORDER || y >= h - BORDER;
         if (edge) {
-          // two trees per border tile row, staggered, so the edge reads as forest
-          if ((x + y) % 2 === 0 || y >= h - BORDER) {
+          // two trees per border tile row, staggered, so the edge reads as forest; none stands in the canal
+          if (this.at(X, y) !== 'W' && ((x + y) % 2 === 0 || y >= h - BORDER)) {
             const s = trees[Math.floor(R(X, y, 8) * trees.length)]! === 'bush' ? 'tree_a' : trees[Math.floor(R(X, y, 8) * trees.length)]!;
             this.objects.push({ sprite: s, x: X * TILE + 8 + Math.floor(R(X, y, 9) * 7) - 3, y: y * TILE + 14, kind: 'tree', shadow: s === 'poplar' ? [4, -1, 6, 3] : TREE_SHADOW });
           }
@@ -497,20 +559,20 @@ export class WorldMap {
         }));
         const v = R(X, y, 10);
         // Groves: a coarse noise picks wooded patches, where most free tiles get a tree; elsewhere a few singles.
-        const grove = valueNoise(X / 5, y / 5, seed) > 0.64;
+        const grove = valueNoise(X / 5, y / 5, seed) > gt.grove;
         if (!nearBusy && (grove ? v < 0.5 : v < 0.025)) {
           const s = trees[Math.floor(R(X, y, 11) * trees.length)]!;
           this.flag(X, y, SOLID);
           // a few pixels off the tile centre, so a grove does not stand in rows
           const jx = grove ? Math.floor(R(X, y, 15) * 7) - 3 : 0, jy = grove ? Math.floor(R(X, y, 16) * 5) - 3 : 0;
           this.objects.push({ sprite: s, x: X * TILE + 8 + jx, y: y * TILE + 14 + jy, kind: 'tree', shadow: s === 'poplar' ? [4, -1, 6, 3] : s === 'bush' ? [3, 0, 8, 3] : TREE_SHADOW });
-        } else if (v > 0.86 && !grove) {
-          const kinds = ['daisy', 'violet', 'buttercup', 'tuft', 'daisy', 'tuft', 'stone'];
+        } else if (v > 1 - gt.floraRate && !grove) {
+          const kinds = gt.flora;
           const s = kinds[Math.floor(R(X, y, 12) * kinds.length)]!;
           this.objects.push({ sprite: s, x: X * TILE + 3 + Math.floor(R(X, y, 13) * 10), y: y * TILE + 4 + Math.floor(R(X, y, 14) * 10), kind: 'decor', ...(s === 'stone' ? {} : { anim: { fps: 2, phase: (X + y) % 2 } }) });
         }
       }
-    return { index, x0: rx, y0: 0, w, h, siteIds: p.ids, country, set, airfield, arrive };
+    return { index, x0: rx, y0: 0, w, h, siteIds: p.ids, country, set, theme, airfield, arrive };
   }
 
   /** Routes a path between two tiles: cheapest walk over grass (existing paths are cheaper; water is crossed straight N-S as a bridge). */
@@ -573,7 +635,36 @@ export class WorldMap {
     }
   }
 
+  private anyIn(rx: number, w: number, h: number, t: Terrain): boolean {
+    for (let y = 0; y < h; y++) for (let x = rx; x < rx + w; x++) if (this.at(x, y) === t) return true;
+    return false;
+  }
+
+  /** Marks everything reachable on foot from p; doors and pads are reached but not walked through. */
+  private flood(p: Pos): void {
+    if (!this.walkable(p.x, p.y)) return;
+    const q = [p.y * this.w + p.x];
+    this.reach[q[0]!] = 1;
+    while (q.length) {
+      const k = q.pop()!;
+      const x = k % this.w, y = (k - x) / this.w;
+      if (this.has(x, y, DOOR | WARP)) continue;
+      for (const s of Object.values(STEP)) {
+        const nx = x + s.x, ny = y + s.y, nk = ny * this.w + nx;
+        if (this.walkable(nx, ny) && !this.reach[nk]) (this.reach[nk] = 1), q.push(nk);
+      }
+    }
+  }
+
   // ---------------------------------------------------------------- queries
+  /** Can the player get here on foot from a region's arrival tile? */
+  reachable(x: number, y: number): boolean {
+    return this.inside(x, y) && this.reach[y * this.w + x] === 1;
+  }
+  /** A tile a game may put the player on: reachable, not a door, not an airfield pad. */
+  standable(x: number, y: number): boolean {
+    return this.reachable(x, y) && !this.has(x, y, DOOR | WARP);
+  }
   /** Can the player stand here? Doors count: stepping onto one enters the building. */
   walkable(x: number, y: number): boolean {
     return this.inside(x, y) && !this.has(x, y, SOLID);
@@ -616,8 +707,22 @@ export class WorldMap {
   outside(d: Door): Pos {
     return { x: d.x, y: d.y + 1 };
   }
+  /**
+   * A saved place made safe for a changed map: the place itself when the player can stand there and walk on from it,
+   * else the nearest such tile of the same region within CLAMP_REACH steps (an edit in NetBox can wall a saved tile
+   * in, cover it or move a door onto it), else the start.
+   */
   clampPos(p: Pos): Pos {
-    return this.walkable(p.x, p.y) && !this.doorAt(p.x, p.y) && !this.isWarp(p.x, p.y) ? p : this.start;
+    if (!this.inside(p.x, p.y)) return this.start;
+    if (this.standable(p.x, p.y)) return p;
+    const r = this.regionAt(p);
+    for (let d = 1; d <= CLAMP_REACH; d++)
+      for (let dy = -d; dy <= d; dy++)
+        for (const dx of dy === -d || dy === d ? [0] : [-(d - Math.abs(dy)), d - Math.abs(dy)]) {
+          const x = p.x + dx, y = p.y + dy;
+          if (x >= r.x0 && x < r.x0 + r.w && this.standable(x, y)) return { x, y };
+        }
+    return this.start;
   }
   /** The building whose footprint covers a tile. */
   buildingAt(x: number, y: number): Door | null {

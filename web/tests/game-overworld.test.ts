@@ -69,14 +69,17 @@ describe('OverworldMap', () => {
       expect(o).toEqual({ x: d.x + STEP.S.x, y: d.y + STEP.S.y });
     }
   });
-  it('clampPos refuses doors, walls, airfield pads and tiles off the map', () => {
+  it('clampPos moves a door, a wall or an airfield pad to the nearest free tile, and off-map places to the start', () => {
     const d = m.doors[0]!;
-    expect(m.clampPos({ x: d.x, y: d.y })).toEqual(m.start);
+    expect(m.clampPos({ x: d.x, y: d.y })).toEqual(m.outside(d));
     expect(m.clampPos({ x: 999, y: 999 })).toEqual(m.start);
-    expect(m.clampPos({ x: d.bx, y: d.by })).toEqual(m.start);
+    expect(m.clampPos({ x: -1, y: 3 })).toEqual(m.start);
     expect(m.clampPos(m.outside(d))).toEqual(m.outside(d));
-    const a = m.regions[0]!.airfield!;
-    expect(m.clampPos(a)).toEqual(m.start);
+    for (const p of [{ x: d.bx, y: d.by }, m.regions[0]!.airfield!, m.regions[1]!.airfield!]) {
+      const c = m.clampPos(p);
+      expect(m.standable(c.x, c.y)).toBe(true);
+      expect(Math.abs(c.x - p.x) + Math.abs(c.y - p.y)).toBeLessThanOrEqual(2);
+    }
   });
   it('works for no site, one site and many without GPS', () => {
     expect(new OverworldMap([]).doors).toHaveLength(0);

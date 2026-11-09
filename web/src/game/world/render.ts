@@ -1,9 +1,12 @@
-// Draws a WorldMap through the tile engine: the per-cell autotile ids are worked out once per map, the static objects
-// are sorted once, and each frame only the cells and objects under the camera are composed.
+// Draws a WorldMap through the tile engine: the per-cell autotile ids are worked out once per map (in the ground
+// palette of the cell's region theme), the objects are sorted once and filed into screen-sized buckets, and each frame
+// only the cells and the objects of the buckets under the camera are composed, so a frame costs the same however big
+// the world is.
 import { labelBuffer } from '../../engine/font';
 import type { Palette as ThemePalette } from '../../contracts/theme';
 import { addSprite, Frame, PALETTE, SPRITES, sprite, TILE, TILESET, tileKey, type Drawable } from './engine';
 import { hash, type WorldMap, type WorldObject } from './gen';
+import { groundLut, THEMED_SPRITES } from './themes';
 
 const ANIM_FRAMES = 4;
 
@@ -22,13 +25,69 @@ export function nameplate(text: string): string {
   return name;
 }
 
+/** A sprite redrawn through a ground palette (trees and flowers in a region's theme), made once and kept. */
+function themedSprite(name: string, theme: string): string {
+  const lut = groundLut(theme, false);
+  if (!lut || !THEMED_SPRITES.has(name)) return name;
+  const out = `${name}~${theme}`;
+  if (!SPRITES.has(out)) {
+    const s = sprite(name);
+    addSprite(out, { ...s, frames: s.frames.map((f) => f.map((v) => lut[v]!)) });
+  }
+  return out;
+}
+
+/** Bucket size (map pixels) of the object index: about half a view, so a frame looks at a few buckets. */
+const BUCKET = 128;
+
+/**
+ * Objects in draw order, filed under every bucket their sprite overlaps. `under` returns the objects whose buckets
+ * meet a rectangle, still in draw order, each once.
+ */
+class Buckets {
+  private readonly cols: number;
+  private readonly lists = new Map<number, number[]>();
+  private readonly seen: Uint32Array;
+  private stamp = 0;
+  constructor(readonly objects: readonly WorldObject[], mapW: number) {
+    this.cols = Math.ceil(mapW / BUCKET) + 2;
+    this.seen = new Uint32Array(objects.length);
+    objects.forEach((o, i) => {
+      const s = SPRITES.get(o.sprite);
+      if (!s) return;
+      const x0 = o.x - s.ox, y0 = o.y - s.oy - 1;
+      for (let by = Math.floor(y0 / BUCKET); by <= Math.floor((y0 + s.h) / BUCKET); by++)
+        for (let bx = Math.floor(x0 / BUCKET); bx <= Math.floor((x0 + s.w) / BUCKET); bx++) {
+          const k = this.key(bx, by);
+          let l = this.lists.get(k);
+          if (!l) this.lists.set(k, (l = []));
+          l.push(i);
+        }
+    });
+  }
+  private key(bx: number, by: number): number {
+    return (by + 1) * this.cols + bx + 1;
+  }
+  under(x: number, y: number, w: number, h: number): WorldObject[] {
+    if (++this.stamp === 0xffffffff) (this.seen.fill(0), (this.stamp = 1));
+    const ids: number[] = [];
+    for (let by = Math.floor(y / BUCKET); by <= Math.floor((y + h) / BUCKET); by++)
+      for (let bx = Math.floor(x / BUCKET); bx <= Math.floor((x + w) / BUCKET); bx++)
+        for (const i of this.lists.get(this.key(bx, by)) ?? [])
+          if (this.seen[i] !== this.stamp) (this.seen[i] = this.stamp), ids.push(i);
+    return ids.sort((a, b) => a - b).map((i) => this.objects[i]!);
+  }
+}
+
 export class WorldRenderer {
-  /** Tile id per cell and animation frame: cells[(y * w + x) * 4 + f]. */
+  /** Tile id per cell and animation frame: cells[(y * w + x) * 4 + f], into `tiles`. */
   private readonly cells: Uint16Array;
+  /** The tile set plus its copies in each region's ground palette. */
+  private readonly tiles: Uint8Array[] = [...TILESET.tiles];
   readonly frame: Frame;
-  private readonly statics: WorldObject[];
-  private readonly flats: WorldObject[];
-  private readonly tops: WorldObject[];
+  private readonly statics: Buckets;
+  private readonly flats: Buckets;
+  private readonly tops: Buckets;
   private readonly labelOf = new Map<number, string>();
 
   constructor(readonly map: WorldMap, w: number, h: number) {
@@ -36,20 +95,42 @@ export class WorldRenderer {
     this.cells = new Uint16Array(map.w * map.h * ANIM_FRAMES);
     const T = (x: number, y: number) => map.at(Math.max(0, Math.min(map.w - 1, x)), Math.max(0, Math.min(map.h - 1, y)))!;
     const fallback = TILESET.keys.get('GGGGG0')!;
-    for (let y = 0; y < map.h; y++)
-      for (let x = 0; x < map.w; x++) {
+    const colTheme = new Array<string>(map.w);
+    for (const r of map.regions) colTheme.fill(r.theme, r.x0, r.x0 + r.w);
+    const themeAt = (x: number) => colTheme[Math.max(0, Math.min(map.w - 1, x))] ?? 'debug';
+    // per ground palette: tile id -> id of its copy in that palette (-1 = not made yet)
+    const copies = new Map<Uint8Array, Int32Array>();
+    const themed = (id: number, lut: Uint8Array | null) => {
+      if (!lut) return id;
+      let ids = copies.get(lut);
+      if (!ids) copies.set(lut, (ids = new Int32Array(TILESET.tiles.length).fill(-1)));
+      if (ids[id]! < 0) {
+        ids[id] = this.tiles.length;
+        this.tiles.push(TILESET.tiles[id]!.map((v) => lut[v]!));
+      }
+      return ids[id]!;
+    };
+    for (let x = 0; x < map.w; x++) {
+      const grass = groundLut(themeAt(x), false), earth = groundLut(themeAt(x), true);
+      for (let y = 0; y < map.h; y++) {
         const c = T(x, y);
         // grass: the art direction's mix of its four variants; other terrains: an even mix
         const variant = c === 'G' ? [0, 0, 1, 1, 2, 3, 0][Math.floor(hash(x, y, 5) * 7)]! : Math.floor(hash(x, y, 6) * 4);
         const key = tileKey(c, T(x, y - 1), T(x + 1, y), T(x, y + 1), T(x - 1, y), variant);
         const ids = TILESET.keys.get(key) ?? fallback;
-        for (let f = 0; f < ANIM_FRAMES; f++) this.cells[(y * map.w + x) * ANIM_FRAMES + f] = ids[f % ids.length]!;
+        // paths and sand take the theme's earth as well as its grass; field soil and water keep theirs
+        const lut = c === 'P' || c === 'S' ? earth : grass;
+        for (let f = 0; f < ANIM_FRAMES; f++) this.cells[(y * map.w + x) * ANIM_FRAMES + f] = themed(ids[f % ids.length]!, lut);
       }
+    }
     for (const d of map.doors) this.labelOf.set(d.siteId, nameplate(d.name));
-    const objs = map.objects.map((o) => (o.kind === 'label' ? { ...o, sprite: this.labelOf.get(o.site!)! } : o));
-    this.flats = objs.filter((o) => o.flat);
-    this.tops = objs.filter((o) => o.top && !o.flat);
-    this.statics = objs.filter((o) => !o.flat && !o.top);
+    const objs = map.objects.map((o) =>
+      o.kind === 'label' ? { ...o, sprite: this.labelOf.get(o.site!)! }
+        : (o.kind === 'tree' || o.kind === 'decor') ? { ...o, sprite: themedSprite(o.sprite, themeAt(Math.floor(o.x / TILE))) }
+        : o);
+    this.flats = new Buckets(objs.filter((o) => o.flat), map.w * TILE);
+    this.tops = new Buckets(objs.filter((o) => o.top && !o.flat), map.w * TILE);
+    this.statics = new Buckets(objs.filter((o) => !o.flat && !o.top), map.w * TILE);
   }
 
   /** Every autotile key the map uses that the tile set lacks (tests: always empty). */
@@ -82,7 +163,7 @@ export class WorldRenderer {
     for (let ty = ty0; ty < ty1; ty++)
       for (let tx = tx0; tx < tx1; tx++) {
         const id = m.inside(tx, ty) ? this.tileAt(tx, ty, tf) : this.tileAt(0, 0, 0);
-        fr.tile(TILESET.tiles[id]!, tx * TILE - cx, ty * TILE - cy);
+        fr.tile(this.tiles[id]!, tx * TILE - cx, ty * TILE - cy);
       }
     const visible = (o: { sprite: string; x: number; y: number }) => {
       const s = SPRITES.get(o.sprite);
@@ -91,8 +172,8 @@ export class WorldRenderer {
       return x0 < fr.w && y0 < fr.h && x0 + s.w > 0 && y0 + s.h > 0;
     };
     const frameOf = (o: WorldObject) => (o.anim && !reduceMotion ? Math.floor((t * o.anim.fps) / 1000) + (o.anim.phase ?? 0) : 0);
-    for (const o of this.flats) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
-    const vis = this.statics.filter(visible);
+    for (const o of this.flats.under(cx, cy, fr.w, fr.h)) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
+    const vis = this.statics.under(cx, cy, fr.w, fr.h).filter(visible);
     const act = actors.filter(visible);
     for (const o of vis) if (o.shadow) fr.ellipse(o.x - cx + o.shadow[0], o.y - cy + o.shadow[1], o.shadow[2], o.shadow[3], PALETTE.darker);
     for (const a of act) if (a.shadow) fr.ellipse(a.x - cx + a.shadow[0]!, a.y - cy + a.shadow[1]!, a.shadow[2]!, a.shadow[3]!, PALETTE.darker);
@@ -106,7 +187,7 @@ export class WorldRenderer {
       fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy - bob);
     }
     while (i < sortedActs.length) this.drawActor(sortedActs[i++]!, cx, cy);
-    for (const o of this.tops) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
+    for (const o of this.tops.under(cx, cy, fr.w, fr.h)) if (visible(o)) fr.sprite(sprite(o.sprite), frameOf(o), o.x - cx, o.y - cy);
     return fr;
   }
 

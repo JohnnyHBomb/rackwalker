@@ -17,7 +17,7 @@ from pix import IDX, Img, dith, hsh
 
 # For each centre class: neighbour class -> the reduced class the centre's pixels depend on.
 SIDES = {
-    "G": {"G": "G", "P": "P", "W": "L", "B": "L", "S": "L", "F": "L", "C": "L"},
+    "G": {"G": "G", "P": "P", "W": "W", "B": "W", "S": "S", "F": "L", "C": "L"},
     "P": {"G": "G", "P": "P", "W": "W", "B": "P", "S": "G", "F": "G", "C": "G"},
     "W": {"G": "L", "P": "L", "W": "W", "B": "W", "S": "S", "F": "L", "C": "L"},
     "S": {"G": "G", "P": "G", "W": "W", "B": "W", "S": "S", "F": "G", "C": "G"},
@@ -54,7 +54,8 @@ def probe(key):
         # a water tile's land neighbours: grass for the quay / foam rules, sand is kept as sand
         N, E, S_, Wc = (("G" if x == "L" else CONCRETE[x]) for x in (n, e, s, w))
     if c == "G":
-        N, E, S_, Wc = (("W" if x == "L" else CONCRETE[x]) for x in (n, e, s, w))
+        # a grass tile beside a field only needs to know the ground there is lower
+        N, E, S_, Wc = (("F" if x == "L" else CONCRETE[x]) for x in (n, e, s, w))
 
     def diag(a, b):
         return a if a == b else "G"
@@ -71,6 +72,28 @@ def render_key(key, grass, tulips, crop_frames):
         ty = max(0, min(2, ty))
         return grid[ty][tx]
 
+    # Water and sand shapes: a bilinear field over the tile centres of the probe (1 inside, 0 outside), as the art
+    # direction's sand is drawn, so every corner of a pond, a canal end or a sand bank comes out rounded, the
+    # inside corners as well as the outside ones (the diagonal of a probe follows its two neighbours). Sand gets the
+    # art direction's lumpy wobble and spills a pixel or two onto the grass; water edges stay level for the quay.
+    def field(member, x, y, smooth=False):
+        fx, fy = (x - 7.5) / 16.0, (y - 7.5) / 16.0
+        x0, y0 = math.floor(fx), math.floor(fy)
+        ax, ay = fx - x0, fy - y0
+        if smooth:
+            # smoothstep weights: corners come out as round curves, not 45-degree cuts
+            ax, ay = ax * ax * (3 - 2 * ax), ay * ay * (3 - 2 * ay)
+
+        def node(tx, ty):
+            return 1.0 if member(cell(tx, ty)) else 0.0
+        return (node(x0, y0) * (1 - ax) * (1 - ay) + node(x0 + 1, y0) * ax * (1 - ay)
+                + node(x0, y0 + 1) * (1 - ax) * ay + node(x0 + 1, y0 + 1) * ax * ay)
+
+    def sand_wobble(x, y):
+        lx, ly = x % 16, y % 16
+        return 0.1 * (math.sin(lx * 0.785 + 1.1 + variant) * 0.6 + math.sin(ly * 0.785 + 2.3) * 0.6
+                      + ((hsh(lx, ly, 77, variant) % 100) / 100.0 - 0.5) * 0.5)
+
     # pixel class
     def nodes_linked(tx, ty, dx, dy):
         a, b = cell(tx, ty), cell(tx + dx, ty + dy)
@@ -86,19 +109,34 @@ def render_key(key, grass, tulips, crop_frames):
             if c == "P":
                 # path network: segments from the tile centre to each linked neighbour, half-width 6 with a wobble
                 d = math.hypot(lx - 7.5, ly - 7.5)
-                for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
-                    if nodes_linked(tx, ty, dx, dy):
-                        # distance to the half segment from the centre to the edge in that direction
-                        if dx and (lx - 7.5) * dx >= 0:
-                            d = min(d, abs(ly - 7.5))
-                        elif dy and (ly - 7.5) * dy >= 0:
-                            d = min(d, abs(lx - 7.5))
-                wob = 0.45 * math.sin(lx * 0.785 + ly * 0.39 + 0.7 + variant * 1.7) + 0.7 * ((hsh(lx, ly, 3, variant) % 100) / 100 - 0.5)
+                links = [(dx, dy) for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)) if nodes_linked(tx, ty, dx, dy)]
+                for dx, dy in links:
+                    # distance to the half segment from the centre to the edge in that direction
+                    if dx and (lx - 7.5) * dx >= 0:
+                        d = min(d, abs(ly - 7.5))
+                    elif dy and (ly - 7.5) * dy >= 0:
+                        d = min(d, abs(lx - 7.5))
+                # a turn or a junction: the inside corner between two linked sides is filled in a curve (radius 4)
+                for (dx, _a) in [l for l in links if l[0]]:
+                    for (_b, dy) in [l for l in links if l[1]]:
+                        u, v = (lx - 7.5) * dx, (ly - 7.5) * dy
+                        a = 6.0 + 4.0
+                        if 0 <= u <= a and 0 <= v <= a and math.hypot(a - u, a - v) >= 4.0:
+                            d = min(d, 6.0)
+                # the art direction's edge wobble: the grass leans over the path in uneven clumps
+                wob = 0.9 * math.sin(lx * 0.785 + ly * 0.39 + 0.7 + variant * 1.7) + 0.6 * ((hsh(lx, ly, 3, variant) % 100) / 100 - 0.5)
                 k = "P" if d <= 6.0 + wob else "G"
-            elif c in ("W", "B", "S", "F", "C"):
-                same = (lambda q: q in WATERISH) if c in WATERISH else (lambda q: q == c)
-                r = 5 if c in WATERISH else 3
-                k = "W" if c in WATERISH else c
+            elif c in ("W", "B", "S", "G"):
+                if field(lambda q: q in WATERISH, x, y, True) > 0.5:
+                    k = "W"
+                elif field(lambda q: q == "S", x, y) + sand_wobble(x, y) > 0.42:
+                    k = "S"
+                else:
+                    k = "G"
+            elif c in ("F", "C"):
+                same = (lambda q: q == c)
+                r = 3
+                k = c
                 for qx, qy in ((-1, -1), (1, -1), (-1, 1), (1, 1)):
                     if not same(cell(tx + qx, ty)) and not same(cell(tx, ty + qy)) and 0 <= tx + qx <= 2 and 0 <= ty + qy <= 2:
                         cx = r - 0.5 if qx < 0 else T - r - 0.5

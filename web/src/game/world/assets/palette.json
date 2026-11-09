@@ -425,5 +425,69 @@
   63,
   63
  ],
- "alphabet": ".ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+ "alphabet": ".ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/",
+ "grounds": {
+  "debug": {
+   "grass": {},
+   "earth": {}
+  },
+  "farm": {
+   "grass": {
+    "g1": "g2",
+    "g2": "g3",
+    "g4": "g5"
+   },
+   "earth": {
+    "d1": "d2",
+    "d2": "d3",
+    "d3": "d4",
+    "d4": "d5"
+   }
+  },
+  "industrial-robotic": {
+   "grass": {
+    "g4": "g3",
+    "g5": "g4",
+    "g3": "g2",
+    "g2": "g1"
+   },
+   "earth": {
+    "d0": "k1",
+    "d1": "s0",
+    "d2": "s1",
+    "d3": "s2",
+    "d4": "s3",
+    "d5": "s4"
+   }
+  },
+  "business": {
+   "grass": {
+    "g1": "g2",
+    "g0": "g1",
+    "g4": "g3"
+   },
+   "earth": {
+    "d1": "s1",
+    "d2": "s2",
+    "d3": "s3",
+    "d4": "s4",
+    "d5": "w"
+   }
+  },
+  "pagodas-nature": {
+   "grass": {
+    "g4": "g3",
+    "g5": "g4",
+    "g3": "g2"
+   },
+   "earth": {
+    "d0": "l0",
+    "d1": "l1",
+    "d2": "l2",
+    "d3": "l3",
+    "d4": "s3",
+    "d5": "s4"
+   }
+  }
+ }
 }
