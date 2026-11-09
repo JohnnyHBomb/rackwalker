@@ -25,6 +25,7 @@ export interface Pos {
   readonly y: number;
 }
 export const STEP: Readonly<Record<Dir, Pos>> = { N: { x: 0, y: -1 }, S: { x: 0, y: 1 }, W: { x: -1, y: 0 }, E: { x: 1, y: 0 } };
+const STEPS = Object.values(STEP);
 
 export interface WorldSite {
   readonly id: number;
@@ -742,28 +743,39 @@ export class WorldMap {
   path(from: Pos, to: Pos): Pos[] {
     const b = this.buildingAt(to.x, to.y);
     const goal = b ?? to;
-    if (!this.walkable(goal.x, goal.y)) return [];
-    const key = (p: Pos) => p.y * this.w + p.x;
-    const prev = new Map<number, number>([[key(from), -1]]);
-    const q: Pos[] = [from];
-    for (let qi = 0; qi < q.length; qi++) {
-      const p = q[qi]!;
-      if (p.x === goal.x && p.y === goal.y) break;
-      for (const s of Object.values(STEP)) {
-        const n = { x: p.x + s.x, y: p.y + s.y };
-        const end = n.x === goal.x && n.y === goal.y;
+    if (!this.walkable(goal.x, goal.y) || !this.inside(from.x, from.y)) return [];
+    // typed arrays and a flat queue: a tap on a big region searches thousands of tiles within one frame
+    const w = this.w, start = from.y * w + from.x, end = goal.y * w + goal.x;
+    if (bfs.prev.length < w * this.h) (bfs.prev = new Int32Array(w * this.h)), (bfs.seen = new Uint32Array(w * this.h)), (bfs.queue = new Int32Array(w * this.h));
+    if (++bfs.stamp === 0xffffffff) (bfs.seen.fill(0), (bfs.stamp = 1));
+    const { prev, seen, queue: q, stamp } = bfs;
+    seen[start] = stamp;
+    prev[start] = -1;
+    let head = 0, tail = 0;
+    q[tail++] = start;
+    while (head < tail) {
+      const k = q[head++]!;
+      if (k === end) break;
+      const x = k % w, y = (k - x) / w;
+      for (const s of STEPS) {
+        const nx = x + s.x, ny = y + s.y, n = ny * w + nx;
+        if (!this.walkable(nx, ny) || seen[n] === stamp) continue;
         // Doors and the airfield pad are ends, never stepping stones.
-        if (!this.walkable(n.x, n.y) || prev.has(key(n)) || ((this.doorAt(n.x, n.y) || this.isWarp(n.x, n.y)) && !end)) continue;
-        prev.set(key(n), key(p));
-        q.push(n);
+        if (n !== end && this.has(nx, ny, DOOR | WARP)) continue;
+        seen[n] = stamp;
+        prev[n] = k;
+        q[tail++] = n;
       }
     }
-    if (!prev.has(key(goal))) return [];
+    if (seen[end] !== stamp || end === start) return [];
     const out: Pos[] = [];
-    for (let k = key(goal); k !== key(from); k = prev.get(k)!) out.push({ x: k % this.w, y: Math.floor(k / this.w) });
+    for (let k = end; k !== start; k = prev[k]!) out.push({ x: k % w, y: Math.floor(k / w) });
     return out.reverse();
   }
 }
+
+/** Scratch space of path(), shared by every map and reused between calls (one walk is searched at a time). */
+const bfs = { prev: new Int32Array(0), seen: new Uint32Array(0), queue: new Int32Array(0), stamp: 0 };
 
 export function dirTo(a: Pos, b: Pos): Dir {
   return b.x > a.x ? 'E' : b.x < a.x ? 'W' : b.y < a.y ? 'N' : 'S';
