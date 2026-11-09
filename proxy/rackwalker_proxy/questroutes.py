@@ -56,6 +56,12 @@ def rewards_body(raw: dict[str, Any], rows: dict[str, dict[str, Any]], practice_
             "lapsed": lapsed}
 
 
+def xp_for(line_xp: int, newly: int, total: int, repeats: int) -> int:
+    """XP for `newly` confirmed checks of a line that stands for `total`: the line's rank XP, by the share NetBox now
+    confirms, times the repeat factor (the same kind of fix at the same site has paid `repeats` times before)."""
+    return round(line_xp * newly / max(1, total) * REPEAT[min(repeats, len(REPEAT) - 1)])
+
+
 def finding_body(f: dict[str, Any]) -> dict[str, Any]:
     return {k: f[k] for k in ("id", "kind", "rank", "site_id", "title", "evidence")}
 
@@ -301,8 +307,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         if real and newly:
             signature = f"{line['kind']}:{line['site_id']}"
             raw = st.rewards(uid)
-            factor = REPEAT[min(raw["repeats"].get(signature, 0), len(REPEAT) - 1)]
-            xp = round(line["xp"] * len(newly) / max(1, len(base)) * factor)
+            xp = xp_for(line["xp"], len(newly), len(base), raw["repeats"].get(signature, 0))
             before_level = 1 + raw["xp"] // LEVEL_XP
             st.add_reward(uid, line["id"], "xp", xp, signature)
             if 1 + (raw["xp"] + xp) // LEVEL_XP > before_level:

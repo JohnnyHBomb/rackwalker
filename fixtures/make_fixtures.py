@@ -184,8 +184,9 @@ class World:
         for d in m.devices:
             if d.ip:
                 n += 1
-                first = next(p for p in self.ports.values() if p["device"] == d.name and p["kind"] == "interface")
-                ips.append({"id": n, "address": d.ip, "interface_id": first["id"]})
+                # devnetbox/seed.py puts each primary address on the device type's management-ish interface
+                name = {"ex-c9000": "mgmt0", "ex-a2400": "mgmt0", "ex-r400": "ge-0/0/0", "ex-f200": "port8", "ex-s2": "eth0"}[d.dtype]
+                ips.append({"id": n, "address": d.ip, "interface_id": self.ports[("interface", d.name, name)]["id"]})
         return {
             "sites": [{"id": self.site_id[s.slug], "name": s.name, "slug": s.slug, "status": "active", "latitude": s.lat, "longitude": s.lon,
                        "facility": None, "country": s.country} for s in m.sites],

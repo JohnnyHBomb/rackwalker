@@ -1,7 +1,7 @@
 {
   "contract_version": "2.3.0",
   "site_id": 1,
-  "total": 4,
+  "total": 8,
   "offset": 0,
   "limit": 5,
   "unlisted": 0,
@@ -25,28 +25,37 @@
       "label": "nd-rtr1 ge-0/0/0 has an address but no cable."
     },
     {
-      "id": "interface:148:cable",
+      "id": "interface:39:cable",
       "kind": "interface",
-      "object_id": 148,
+      "object_id": 39,
       "field": "cable",
       "site_id": 1,
       "rank": "connectivity",
-      "label": "nd-acc-nd-c1 Gi1/0/1 has an address but no cable."
+      "label": "nd-fw1 port8 has an address but no cable."
     },
     {
-      "id": "site:1:facility",
-      "kind": "site",
-      "object_id": 1,
-      "field": "facility",
+      "id": "interface:64:cable",
+      "kind": "interface",
+      "object_id": 64,
+      "field": "cable",
       "site_id": 1,
-      "rank": "identity",
-      "label": "North Depot has no facility name."
+      "rank": "connectivity",
+      "label": "nd-acc-nd-r2 mgmt0 has an address but no cable."
+    },
+    {
+      "id": "interface:100:cable",
+      "kind": "interface",
+      "object_id": 100,
+      "field": "cable",
+      "site_id": 1,
+      "rank": "connectivity",
+      "label": "nd-acc-nd-r3 mgmt0 has an address but no cable."
     }
   ],
   "completeness": {
-    "percent": 87,
+    "percent": 84,
     "total": 134,
-    "open": 17
+    "open": 21
   },
   "source": "fixture",
   "incomplete": []
