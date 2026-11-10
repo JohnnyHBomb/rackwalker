@@ -2,7 +2,7 @@
 
 This page is for a NetBox admin. It says what RackWalker reads, what it counts as missing, how it turns that into
 questions, and what it writes back. The code is `proxy/rackwalker_proxy/estate.py` (the read), `findings.py` (the
-rules), `quests.py` (the questions) and `questroutes.py` (the log, the check and the rewards).
+rules), `quests.py` (the questions), `chains.py` (the chains) and `questroutes.py` (the log, the check and the rewards).
 
 A quest is never "fill in field X". The game first looks at the whole estate and works out what you cannot answer
 from NetBox today ("how does this site reach the internet?"). It then asks you what you know, a little at a time,
@@ -21,12 +21,19 @@ how anything connects. The game finds, in this order:
 | "Nobody can tell from NetBox how Mill Lane reaches the outside world." | Which device does the line to the outside plug into? What is the circuit ID on the bill? What kind of service? Which port? What cable? | a circuit, its end at Mill Lane, a cable; the reward quotes NetBox's own trace from the port to the circuit |
 | "Comms Room and Store Room at Mill Lane have no link between them." | Which device in the Store Room has the link? What does it connect to in the Comms Room? Which ports? | a cable; you can trace from one room to the other |
 | "ml-sw2 has 24 ports and nothing recorded on any of them." | What is it plugged into? Which port (the fibre cages and the highest-numbered ports are offered first)? | a cable |
-| "NetBox does not say how to reach ml-sw1, ml-sw2 and ml-sw3 to manage them." | For each: one of its addresses, a typed one and its interface, "I don't know yet", or "It has none: nobody logs in to it" | each device's primary IP |
+| "Circuit NLT-7001 from Northlight Telecom plugs into ml-sw1 Te1/1/1, but NetBox has no address on that port." | Does that port carry an address of yours? Which, with its mask? Record its subnet too? | the address on the port, and its prefix |
+| "Circuit NLT-7001 ... is plugged in at Mill Lane, but NetBox does not hold the provider's network it lands on, the account ..." | Which network of theirs? Which account? Who do you call? Install date and commit rate? What does it cost? Each "if known" | the provider network and account, contacts with their roles, the circuit's dates, rate and charges |
+| "NetBox does not say how ml-sw2 is managed, or how to reach it." | How is it managed: locally, by a cloud or controller service, or not at all? Only if locally: which address, on which interface? | how the device is managed, and its primary IP if it has one |
 | "ml-sw1 and ml-sw2 in rack ML-C1 have no serial number on record." | One form for the rack; blank is "could not read it" | the serials you read |
 
 Every answer you do not have is a field task with a checklist ("Find ml-sw2: rack ML-C1 U20 in Comms Room. Follow the
 cable from its uplink port..."). When the lines are done, NetBox can answer what it could not: the trace from a switch
 port reaches the carrier's circuit.
+
+The first three rows are one **chain** ("The way out of Mill Lane": physical, logical, administrative). It ends with the
+whole record read back from NetBox in one sentence: "Mill Lane: ml-sw1 Te1/1/1 -> circuit NLT-7001 (Internet), Northlight
+Telecom, network Northlight Internet, your address 203.0.113.2/30, account 44-1021, Support / NOC: Northlight NOC 0800 000
+0000, 240.00 GBP a month, installed 2024-03-01, 100 Mbps committed." See "Chains" below.
 
 ## What the game reads
 
@@ -35,10 +42,11 @@ One bounded read of NetBox with the proxy's own token (view permission only):
 | Read | Used for |
 |---|---|
 | sites, locations, racks | where things are; GPS, facility and country of a site; a rack's room and floor position |
-| devices with role, device type, platform, status, serial, asset tag, primary IP, rack and unit, virtual chassis | what each box is and where; which switches are one stack |
+| devices with role, device type, platform, status, serial, asset tag, primary IP, rack and unit, virtual chassis, and the custom fields `rw_mgmt_mode` and `rw_mgmt_service` (on the device type: `rw_mgmt_default`) | what each box is and where; which switches are one stack; how each is managed |
 | interfaces, front and rear ports, power ports, power outlets | what can take a cable, and which of them have one |
 | cables with both ends | the connectivity graph and the power graph |
-| circuits, providers, circuit types, circuit terminations | the way out of a site, and links between sites |
+| circuits (with provider account, install date, commit rate and the custom fields `rw_mrc`, `rw_nrc`, `rw_currency`), providers, circuit types, circuit terminations | the way out of a site, and links between sites |
+| provider accounts, provider networks, contacts, contact roles, and the contact assignments of providers and circuits | a circuit's administrative record |
 | IP addresses, prefixes, each with its VRF | which interface has an address, and whether a prefix of the same VRF holds it |
 | power feeds, platforms (with the manufacturer a platform is tied to) | choices offered in a question |
 
@@ -104,11 +112,13 @@ which quests are offered: **connectivity** (can it be reached, and how) before *
 | `switch_no_uplink` | connectivity | a switch has cables, but none of them leads to another network device or a circuit | when the switch goes quiet, nobody can tell what sits above it | what it uplinks to, both ports, the cable | a cable |
 | `circuit_unterminated` | connectivity | a circuit has no termination that is cabled to anything, or has an end recorded at a site with no cable on it | a circuit you pay for ends nowhere | which site it comes into, which device, which port | a termination if needed, a cable |
 | `provider_unused` | connectivity | a provider has no circuit at all (and no site is waiting for a way out) | a carrier is on record with nothing of theirs recorded | which site their line comes into, then as for `site_no_way_out`. "We no longer use them" is an answer | a circuit, its termination, a cable |
+| `circuit_handoff` | connectivity | a circuit is cabled to an interface of one of your devices, and that interface has no address | nobody can tell which subnet is the carrier's | whether that port carries an address of yours, which (with its mask), and whether to record its subnet. "No address there: bridged, or theirs to hold" is an answer | an address on that interface (never the primary IP), and a prefix if you say so |
+| `circuit_record` | connectivity | a circuit is cabled to one of your devices, and NetBox lacks one of: a provider network at its far end, its provider account, a contact for it or its provider, its install date, its commit rate, its monthly charge, its one-off charge (see "A circuit's record") | when the line is down you need to know who to call and what to quote | each fact in turn, each "if known": "I don't know yet" on one leaves the others to be written | a provider network and the circuit's end on it, a provider account, contacts and their assignments, the circuit's own fields |
 | `device_unconnected` | connectivity | a live device that is not passive has physical interfaces and no cable on any of them | if it drops off the network, nobody can tell which port to check | "What is sw-north-1 (rack N1 U20 in Comms Room) plugged into?" then both ports and the cable | a cable |
 | `router_no_address` | connectivity | a router or firewall has no IP address on any interface | NetBox cannot say on which address it routes | how you reach it: an address it already has, or one you type, and its interface | an IP address on the interface, set as primary |
 | `interface_no_cable` | connectivity | see "Expected cables" below (one finding per device, for all of its such ports) | ports are marked as in use, with no record of their far ends | for several ports, first what they are: "desk and wall-outlet leads, not kept in NetBox" answers all of them at once. Else, a few ports at a time: what is on the other end, the far port, the cable. "The port is not in use" is an answer per port | a cable per port you knew |
 | `device_no_power` | connectivity | devices with power ports have no power cable, while other devices at the site do (one finding per rack) | if a power strip trips, nobody can tell what goes dark | which power strip each device is plugged into, and which outlet | a power cable per device |
-| `device_unreachable` | connectivity | live devices that are not passive have no primary IP (one finding per site) | when something breaks, the first question is how to log in | for each device (at most four per quest): one of its addresses, or a typed one and its interface. "It has none: nobody logs in to it" is an answer per device | the primary IP of each device you knew |
+| `device_unreachable` | connectivity | a live device that is not passive has no primary IP, and NetBox does not say that a cloud or controller service manages it or that it is not managed (one finding per device; see "How a device is managed") | when something breaks, the first question is how to get at it | first how it is managed; only for a locally managed device: one of its addresses, or a typed one and its interface | how the device is managed (and optionally its model's default), and the primary IP if it has one |
 | `address_no_prefix` | connectivity | addresses on a site's interfaces lie in no prefix of their own VRF (one finding per implied subnet and VRF; all host addresses, /32 or /128, of one VRF are one finding) | addresses with no prefix cannot be planned around | "their mask says the subnet is 192.0.2.0/24. Is that right?" or the right one, typed. For host addresses the range is asked for, never guessed. For an address in a VRF the game does not write: it says which prefix to add to which VRF, and "Check NetBox" completes the line | a prefix (global table only) |
 | `rack_audit` | identity | devices in one rack lack a serial or an asset tag | a device with no serial cannot be matched to a support contract | one form for the rack, top to bottom; leave blank what you cannot read | the fields you filled in, per device |
 | `shelf_audit` | identity | the same, for devices that are in no rack (per room) | the same | one form for the devices outside the racks of that room | the fields you filled in |
@@ -129,7 +139,8 @@ quest giver then offers is a **spot check** of one device at a time ("is sw-quay
 ...?"). "Yes" closes it with nothing written and no XP; "no" is a field task: correct the record, then say it matches.
 A spot check exists only at a site with nothing open; asked for anywhere else it is refused.
 
-Not in this version: a VLAN check (a prefix with no VLAN behind it), and console ports.
+Not in this version: a VLAN check (a prefix with no VLAN behind it; the logical stage of a chain records addresses and
+prefixes, not VLANs), and console ports.
 
 ## Gaps: single empty fields
 
@@ -141,7 +152,7 @@ The gap scanner (`GET /api/quests/gaps/<site id>`, paged, in a fixed order) list
 | `device:<id>:serial` | the device has no serial number and is not passive (patch panels, shelves and blanking plates often carry none) |
 | `device:<id>:asset_tag` | the device has no asset tag, **and at least one device in NetBox has one** (if nobody uses asset tags, their absence is not a gap) |
 | `device:<id>:platform` | the device has no platform, it is not passive, **and NetBox has at least one platform** |
-| `device:<id>:primary_ip` | a live device that is not passive has no primary IP (a stack: when no member has one, asked of its first member) |
+| `device:<id>:primary_ip` | a live device that is not passive has no primary IP, unless NetBox says a cloud or controller service manages it or that it is not managed (a stack: when no member says how it is managed, asked of its first member) |
 | `rack:<id>:location` | the rack is in no location (room), at a site that has locations on record |
 | `rack:<id>:iso` | the rack has no `iso_x` or no `iso_y` |
 | `interface:<id>:cable` | see "Expected cables" |
@@ -157,13 +168,111 @@ have a cable only when NetBox already says it is in use:
 
 * it is enabled and physical (not virtual, bridge, LAG or wireless), on a live device that is in a rack and already
   has at least one cable; **and**
-* it has a description, **or** it carries an IP address and is not a management-only port; **and**
+* it has a description, **or** it carries an IP address and is not a management-only port, and that address is not
+  the management address of a device recorded as locally managed; **and**
 * it has no cable and is not marked as connected (`mark_connected`).
 
 An address on a management-only port does not ask for a cable. It says how the device is reached, not that a lead in
 that port goes somewhere NetBox should know: management networks are often left out of NetBox on purpose, and the
-line "how do you reach it" has just put that address there. Describe the port ("to the out-of-band switch") and the
-game asks where it goes.
+line "how is it managed" has just put that address there. The same holds for a switch with no management port and no
+VLAN interface: when you say it is managed locally and name the front-panel port that carries its management
+address, that port is not listed as uncabled because of that address. Describe the port ("to the out-of-band
+switch") and the game asks where it goes.
+
+## How a device is managed
+
+Not every device has an address to log in to. A cloud-managed access point or switch is looked after in its vendor's
+portal; an unmanaged switch is looked after by nobody. Some models can be either, by the owner's choice. So the game
+never asks "what is its management address" first. It asks **how the device is managed**:
+
+| Answer | What NetBox then holds | What the game expects |
+|---|---|---|
+| Locally: it has an address to log in to | `rw_mgmt_mode` = `local` on the device | a primary IP: asked next (one of its addresses, or a typed one and the interface that carries it) |
+| By a cloud or controller service | `rw_mgmt_mode` = `cloud`, and the service's name in `rw_mgmt_service` (free text; services already on record are offered as choices) | no address: the device is complete for management |
+| It is not managed at all (unmanaged, passive) | `rw_mgmt_mode` = `unmanaged` | no address: complete |
+
+* **Asked once per model, where that is true.** When NetBox has more than one device of the model, the game asks "are
+  they all managed that way?". "Yes" also writes the model's default (`rw_mgmt_default` on the device type), and no
+  other device of the model is asked again. "No, it differs from device to device" writes `varies` there, and each
+  device is asked for itself, without that question. A device's own value always wins over its model's default.
+* **What NetBox already says is not asked.** A device with a primary IP is locally managed: nothing is asked.
+* **A stack** is managed as one: its first member is asked.
+* **"I don't know yet"** parks the line. On the address of a locally managed device it still writes what you did know
+  (that it is managed locally); the address is asked for when you come back.
+* **Without the custom fields** (see "Custom fields the game uses") NetBox cannot hold the answer. The game then
+  remembers "cloud" and "not managed" for you alone, writes nothing, and counts the device as answered for you; the
+  quest log says once what is missing.
+* **Answers from before this rule.** "It has none: nobody logs in to it" from an earlier version is kept as "it is not
+  managed at all": it still counts as answered, and the line now offers to write it to the device.
+
+## A circuit's record
+
+Once a circuit is plugged in, two more lines ask about it. Where each fact lives in NetBox:
+
+| Fact | Where NetBox holds it | Why there |
+|---|---|---|
+| your address on the line | an IP address on the interface the circuit is cabled to (never made the primary IP); its prefix | NetBox's own model |
+| whose line it is | the circuit's provider (already on record with the circuit) | NetBox's own model |
+| the network of theirs it lands on | a provider network, and the circuit's far end (side Z) terminated on it | NetBox's own model for "a circuit ends in the provider's cloud". Not asked when both ends of the circuit are at your own sites |
+| the account | a provider account, set as the circuit's provider account | NetBox's own model; one account serves many circuits |
+| who to call | contacts, assigned to the provider (for all of its circuits) or to the circuit, with a contact role: support or NOC, account manager, billing | NetBox's own contacts; the roles are NetBox's contact roles, found by a word of their name ("support", "noc", "account", "billing", ...) |
+| install date, commit rate | the circuit's own `install_date` and `commit_rate` (asked in Mbps, stored in kbps as NetBox does) | NetBox's own fields |
+| monthly charge (MRC), one-off charge (NRC), currency | custom fields `rw_mrc`, `rw_nrc` (decimal) and `rw_currency` (three letters) on the circuit | NetBox has no field for a charge. On the circuit, because the charge is per circuit; a decimal, so no float rounding; the currency beside it, because a number without one is not an amount |
+
+* **Each fact is "if known".** "I don't know yet" on one fact (or a field left blank) leaves the others to be written.
+  The line then waits at that question, with a checklist ("Find a bill or the contract of Northlight Telecom..."), and
+  the chain says so: "3 of 3: administrative (not known yet: the monthly charge)".
+* **"None, on purpose"** is an answer per fact: no account number, nobody to call, no charge of its own.
+* **Filled in, never written over.** A fact NetBox already holds is not asked for, and a change that would replace a
+  value somebody recorded meanwhile is refused.
+* **Your figures stay yours.** An account number, a charge and a contact's details go from your keyboard to NetBox and
+  nowhere else: the proxy keeps them in memory until you press Apply, never in the game's own store and never in a
+  log, and never puts them in a URL. (If the proxy restarts before you apply, that question is asked again.) The
+  practice island takes no typed figure at all: its questions offer only what the island's made-up bill says.
+* **What NetBox cannot hold is not asked.** Without the cost fields the charges are not part of the record. Without a
+  contact role for support, the account manager or billing, the line says which roles to add before you look up a
+  phone number.
+
+## Chains
+
+Quest lines about one subject form a chain: a short series of stages that takes you from knowing nothing about it to
+a complete record.
+
+| Stage | What it settles |
+|---|---|
+| 1 physical | what is plugged into what: the device, the port, the cable, the circuit's end |
+| 2 logical | the addresses on it, and how the device is managed |
+| 3 administrative | whose it is and what stands on paper: the provider's network, the account, who to call, the install date and commit rate, the charges; for a rack, the labels that match its kit to the paperwork |
+
+| Chain | Physical | Logical | Administrative |
+|---|---|---|---|
+| a site's way out | `site_no_way_out`, `circuit_unterminated` | `circuit_handoff` | `circuit_record` |
+| a site's link to the other sites | `sites_not_linked`, `circuit_unterminated` | `circuit_handoff` | `circuit_record` (for a circuit between two of your sites, held with the site at its A end) |
+| the link between two rooms | `locations_not_linked` | (a cable in your own building has no carrier and no bill: one stage) | |
+| a device | `device_unconnected`, `switch_no_uplink`, `interface_no_cable` | `device_unreachable`, `router_no_address` | |
+| a rack | `rack_devices_unpositioned`, `room_layout`, `device_no_power` | | `rack_audit` |
+
+The other lines (`site_island`, `provider_unused`, `address_no_prefix`, `shelf_audit`, `platform_survey`,
+`site_record`) belong to no chain and are offered as before.
+
+* **Derived from NetBox, never stored.** A stage NetBox already satisfies is shown as done and never asked: a switch
+  whose management address is on record starts its chain at "physical", with "logical" ticked.
+* **A later stage unlocks** when every earlier one is done in NetBox, or was answered "none, on purpose". A stage
+  parked with "I don't know yet" keeps the next one locked. (A line you had already begun stays in your log.)
+* **Where you are** is said everywhere: on the quest ("2 of 3: logical"), in the quest log (each chain with its
+  stages: in NetBox, answered, in play, comes later, not known yet), on the marker, and by the quest giver when a
+  later stage comes up ("Next in "The way out of Mill Lane": 2 of 3: logical."). The log also says what NetBox will
+  hold when the chain is complete.
+* **The closing summary.** When the last stage is confirmed, the game reads the whole record back from NetBox and
+  says it in one sentence (see the example at the top). The summary is always what NetBox holds, never what you typed.
+* **Order and pacing.** A site's lines are offered most valuable first, as before: the way out and the links, and the
+  stages that continue them, before devices, before racks. At most three lines are on offer at a site, so at most three
+  chains are in play there; the others are counted in the log. A stage is one line of two to five minutes.
+* **Not known is not a fault.** Facts of a circuit's record that you answered "I don't know yet" stay listed as open
+  questions, in the chain and in the quest log, and the line waits for them. They do **not** count against the site's
+  completeness: a site can reach 100 % and its Confusion can appear while "what does the line cost" is still open.
+  (A fact nobody has been asked about yet does count: the game wants every question put once.) This is per player,
+  like "that is how it is".
 
 At most three such gaps are listed per device and 50 per site in the gap list; the rest are counted (`unlisted`) and
 still count against the site's completeness. The quest line of a device covers all of its ports, listed or not, so a
@@ -193,8 +302,10 @@ no cable at all is the finding `device_unconnected` instead.
   a field task with a short checklist of what to look for on site. It stays in the quest log, costs nothing, does
   not stop other quests, and asks the same question again when you come back.
 * **"That is how it is."** Every kind of line has this answer (a switch that stands alone on purpose, a separate
-  network, a site with no line out, a device nobody logs in to, a port not in use, kit that carries no label, a rack
-  that is on no floor plan), except a router's address: a router routes on some address, and that is found out.
+  network, a site with no line out, a port not in use, kit that carries no label, a rack that is on no floor plan, a
+  circuit with no account number), except two. A router's address: a router routes on some address, and that is
+  found out. And how a device is managed: "it is not managed at all" is a fact about the device, so it is recorded
+  on the device rather than only remembered.
   Nothing is written; the game stops asking, and your completeness counts every check of that line as answered. It
   pays no XP. If the line later gains something it never covered (a new device in the rack), it is asked about that.
 * **"Change my last answer."** The preview takes back one answer at a time; the earlier ones stay. "Answer again from
@@ -212,8 +323,9 @@ times). Parked lines wait beside them.
 ## What is written, and who may write
 
 A ready line proposes a change set of ordinary change ops: `connect_cable`, `create_circuit`,
-`create_circuit_termination`, `assign_ip`, `create_prefix`, `update_fields`, `place_device`, `move_rack`
-(`contracts/api.md`). The game previews it against NetBox, and writes it only when you press Apply.
+`create_circuit_termination`, `assign_ip`, `create_prefix`, `update_fields`, `place_device`, `move_rack`, and for
+chains `set_management`, `record_circuit`, `create_provider_account`, `create_provider_network`, `create_contact`,
+`assign_contact` (`contracts/api.md`). The game previews it against NetBox, and writes it only when you press Apply.
 
 * **Dry run is the default.** Unless the proxy runs with `WRITE_ENABLED=1`, nothing is written. The line is marked
   "practised", says so, and pays no XP.
@@ -245,7 +357,9 @@ line's checks and they pass. What that means, per kind:
 | a device's or a switch's uplink | a cable on the device; for a switch, a path to another network device or a circuit |
 | a circuit that ends nowhere, a provider with nothing | an end of the circuit with a cable; a circuit of that provider |
 | a router's address | an address on one of its interfaces |
-| how to reach the kit | a primary IP on each device (or your "it has none") |
+| how a device is managed | a primary IP on it, or `rw_mgmt_mode` saying a cloud or controller service manages it or that it is not managed |
+| the address on a circuit | an address on the interface the circuit is cabled to |
+| a circuit's record | each fact you were asked for: a far end on a provider network, a provider account, a contact assignment, the install date, the commit rate, the charges |
 | what powers a rack | a cable on a power port of each device |
 | stray addresses | a prefix that holds each address |
 | a port in use with no cable | a cable on that port, or `mark_connected` |
@@ -280,11 +394,16 @@ something it never covered (a new device with no serial in a rack you audited) i
 ## XP, tools and potions
 
 * XP comes only from what NetBox confirms: `line XP x share of one pass confirmed x repeat factor`.
-  Line XP is 120 for connectivity, 50 for identity, 30 for layout (and 50 for confirming a subnet, which is one
-  answer and no walk). A long line is played a few objects at a time (four), and one such pass is worth the line's
+  Line XP is 120 for connectivity, 50 for identity, 30 for layout (and 50 for confirming a subnet, 60 for a circuit's
+  address and 40 for how one device is managed, which are an answer or two and no walk). A long line is played a few objects at a time (four), and one such pass is worth the line's
   XP: an audit of three labels of which NetBox confirms one pays a third, and recording how to reach four of a
   hundred devices pays the same as four of four. The same kind of fix at the same site pays 100 %, 80 %, 60 %, then
   40 %: no grinding.
+* **A whole record pays more than its parts.** When a check leaves NetBox showing every stage of a chain, the chain
+  pays a bonus on top of its stages: 250 XP for a way out or a link between sites, 150 for a device, 100 for a rack,
+  by the share of the chain's stages you had confirmed yourself (at least two: one stage is a loose stage, and a
+  chain NetBox showed complete all along pays nobody), once per player, with the same repeat rule per site. A fact
+  you answered "none" or "I don't know yet" is no part of a verified record: the bonus waits for NetBox to hold it.
 * Practice and dry runs pay nothing. Nothing is ever taken away: no penalties, no streaks, no timers.
 * **Cable tracer**: yours after the first connectivity line NetBox confirms. Inside a building, tracing a cable
   waits for it, but only while you can earn it: your changes would be written (not a dry-run proxy, not a read-only
@@ -296,7 +415,9 @@ something it never covered (a new device with no serial in a rack you audited) i
 
 ## Site completeness and the site's Confusion
 
-Every rule counts a check for each object it looked at. A site's completeness is checks passed out of checks made.
+Every rule counts a check for each object it looked at. A site's completeness is checks passed out of checks made
+(for you, also those you answered "that is how it is", and the facts of a circuit's record you answered "I don't know
+yet": see "Chains").
 At 100 % a site that has devices has its "Confusion" ready (a site with nothing in it has nothing to guard): a marker
 by the building on the overworld and a line in the quest log.
 It is optional and only acknowledged in this version; the fight comes later.
@@ -304,7 +425,26 @@ It is optional and only acknowledged in this version; the fight comes later.
 ## The practice island
 
 A made-up site ("Practice Island": three switches, an internet provider, two rooms with a rack each, nothing
-connected) that the proxy serves itself. Ilatea offers it in her first line ("Let me practise first"); it is also
+connected) that the proxy serves itself. Its way out is one whole short chain: the port the line plugs into, the
+address on it, then the provider's network, the account, who to call and what it costs, read off the island's made-up
+bill. One of its switches has no management address on record, so the island also asks how a device is managed. Ilatea offers it in her first line ("Let me practise first"); it is also
 reached from the menu at any time, or by the airfield pad. Nothing on
 it is read from or written to NetBox: your practice changes are kept in the game's own store, and the island can be
 reset from the quest log. It has a first quest of every kind, and both tools on loan. It pays no XP.
+
+## Custom fields the game uses
+
+NetBox's own models hold almost everything. For the rest the game uses custom fields, all in the group `rackwalker`,
+created once by `devnetbox/seed.py --fields-only` (which also adds the three contact roles Support / NOC, Account
+manager and Billing if NetBox has none by those slugs):
+
+| Custom field | Type | On | Holds |
+|---|---|---|---|
+| `rw_mgmt_mode` | selection: `local`, `cloud`, `unmanaged` | device | how the device is managed |
+| `rw_mgmt_service` | text | device, device type | the cloud or controller service that manages it |
+| `rw_mgmt_default` | selection: `local`, `cloud`, `unmanaged`, `varies` | device type | the default for every device of the model; `varies` = each is asked |
+| `rw_mrc`, `rw_nrc` | decimal, not negative | circuit | the monthly recurring and the one-off charge |
+| `rw_currency` | text, three capital letters | circuit | the currency of both charges |
+
+A NetBox without them still plays: the quest log says once what is missing, the game asks nothing NetBox could not
+hold, and never counts it as missing.

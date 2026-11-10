@@ -111,7 +111,7 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await expect(page.locator('#quest-waiting .q')).toContainText('waiting for you (field task)');
   await expect(page.locator('#quest-open .q[data-status=offered]').first()).toBeVisible();
   await expect(page.locator('#quest-rewards')).toContainText('Level 1 · 0 / 250 XP');
-  await expect(page.locator('#quest-sites [data-site="1"]')).toContainText('North Depot: 78%');
+  await expect(page.locator('#quest-sites [data-site="1"]')).toContainText('North Depot: 80%');
   // said up front, not after the last answer: on this proxy nothing would be written
   await expect(page.locator('#quest-write-note')).toHaveText('This proxy serves canned fixture data: nothing is written. Lines you finish count as practice: no XP.');
   await page.screenshot({ path: `${SHOTS}/quest-log.png` });
@@ -298,21 +298,22 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
   await shell(page, 's.saveSettings({ ...s.settings, reduce_motion: true })');
   // Put the island's wiring in order through the routes, so the errands come up.
   const play = async (kinds: string[]) => {
-    for (let n = 0; n < 12; n++) {
+    for (let n = 0; n < 20; n++) {
       const b = await api(page, '/api/game/quests?scope=practice');
       let line = b.quests.find((x: any) => kinds.includes(x.kind) && ['offered', 'active'].includes(x.status));
       if (!line) return;
       for (let i = 0; i < 10 && line.status !== 'ready'; i++) {
         const s = line.step;
-        const a = s.input === 'choice' ? { choice: (s.choices.find((c: any) => ['candidate', 'confirm', 'skip'].includes(c.kind)) ?? s.choices.find((c: any) => c.id === 'new')).id }
-          : s.input === 'text' ? { text: 'EXF-1' }
-          : { values: Object.fromEntries(s.fields.map((f: any, k: number) => [f.id, f.type === 'select' ? f.options[0].id : f.type === 'number' ? 5 : `PI-${k}`])) };
+        const a = s.input === 'choice' ? { choice: (s.choices.find((c: any) => ['candidate', 'confirm', 'skip'].includes(c.kind)) ?? s.choices.find((c: any) => c.id === 'new' || c.id === 'typed')).id }
+          : s.input === 'text' ? { text: s.id === 'addr' ? '203.0.113.2/30' : 'EXF-1' }
+          : { values: Object.fromEntries(s.fields.map((f: any, k: number) => [f.id, f.type === 'select' ? f.options[0].id : f.type === 'number' ? 5 : f.id === 'install_date' ? '2025-01-15' : `PI-${k}`])) };
         line = await api(page, '/api/game/quests/answer', { scope: 'practice', quest_id: line.id, step: s.id, ...a });
       }
       await api(page, '/api/game/quests/apply', { scope: 'practice', quest_id: line.id });
     }
   };
-  await play(['site_no_way_out', 'locations_not_linked', 'site_island', 'device_unconnected']);
+  // (the way out as a whole chain: the cable, the address on it, the circuit's record; then how the loft switch is managed)
+  await play(['site_no_way_out', 'locations_not_linked', 'site_island', 'device_unconnected', 'circuit_handoff', 'circuit_record', 'device_unreachable']);
   await shell(page, 'return s.quests.refresh()');
 
   // The audit of rack PI-Q1: one errand for the labels of one rack, never one field at a time.
@@ -401,4 +402,138 @@ test('the practice island is offered at the very start, in Ilatea\'s first line'
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-practice');
   const hut = await page.evaluate((id) => window.__game!.shell.map!.doorOf(id)!, ISLAND);
   expect((await game(page)).pos).toEqual({ x: hut.x, y: hut.y + 2 });
+});
+
+test('a chain: the island\'s way out from the cable to the bill, "I don\'t know yet" on the cost, and the closing summary', async ({ page }) => {
+  await signIn(page, 31);
+  const CHAIN = 'chain:way_out:site:9000001';
+  const chain = () => page.locator(`#quest-chains .chain[data-chain="${CHAIN}"]`);
+  // The quest log shows the chains in play: where each stands, stage by stage, and what the record will hold.
+  await page.click('#quest-next');
+  await expect(chain()).toContainText('The way out of Practice Island · 1 of 3: physical');
+  await expect(chain().locator('li')).toHaveText(['1 physical: ▶ in play', '2 logical: · comes later', '3 administrative: · comes later']);
+  await expect(chain()).toContainText('When it is complete, NetBox holds the port the line plugs into, the circuit, your address on it');
+  await expect(page.locator('#quest-open .q', { hasText: 'The way out of Practice Island' }).locator('.in-chain')).toHaveText('Chain: The way out of Practice Island · 1 of 3: physical');
+  await chain().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+  await page.screenshot({ path: `${SHOTS}/chain-overview.png` });
+
+  // Stage 1, physical: what is plugged into what.
+  await page.locator('#quest-open .q', { hasText: 'The way out of Practice Island' }).locator('button', { hasText: 'Start' }).click();
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('Which device at Practice Island does the line to the outside plug into?');
+  await typed(page);
+  await page.screenshot({ path: `${SHOTS}/chain-stage-physical.png` });
+  await choose(page, 'sw-quay-1');
+  await choose(page, 'Example Fibre');
+  await page.fill('#quest-text', 'EXF-20417');
+  await page.keyboard.press('Enter');
+  await choose(page, 'Internet');
+  await choose(page, 'Te1/1/2');
+  await choose(page, 'Single-mode fibre');
+  await page.click('#quest-apply');
+  // the reward says where that leaves the chain, instead of a percentage that would only dip
+  await expect(page.locator('#quest-reward')).toContainText('Next in the chain "The way out of Practice Island": 2 of 3: logical.');
+  await expect(page.locator('#quest-reward-chain')).toHaveText('The way out of Practice Island · 2 of 3: logical');
+  await page.click('#quest-reward-ok');
+  await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-practice-connectivity');
+  await page.keyboard.press('Escape');
+
+  // Stage 2, logical: the address on the port the circuit plugs into. The marker says the stage.
+  await expect(page.locator('#quest-next')).toContainText('Next:');
+  await page.click('#quest-next');
+  await expect(chain().locator('li')).toHaveText(['1 physical: ✓ in NetBox', '2 logical: ▶ in play', '3 administrative: · comes later']);
+  await expect(chain().locator('.summary')).toHaveText('Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre.');
+  await page.locator('#quest-open .q', { hasText: 'The address on EXF-20417' }).locator('button', { hasText: 'Start' }).click();
+  await expect.poll(async () => (await game(page)).dialogue?.text).toContain('Does that port carry an address of yours on Example Fibre\'s line?');
+  await typed(page);
+  await expect(page.locator('#quest-next')).toContainText('Next: The address on EXF-20417 (2 of 3: logical)');
+  await page.screenshot({ path: `${SHOTS}/chain-stage-logical.png` });
+  await choose(page, 'Yes: I will type it');
+  await page.fill('#quest-text', '203.0.113.2/30');
+  await page.keyboard.press('Enter');
+  await choose(page, 'Yes: record 203.0.113.0/30');
+  await expect(page.locator('#quest-changes li')).toHaveText(['sw-quay-1: 203.0.113.2/30 on Te1/1/2.', 'New prefix 203.0.113.0/30.']);
+  await page.click('#quest-apply');
+  await expect(page.locator('#quest-reward-chain')).toHaveText('The way out of Practice Island · 3 of 3: administrative');
+  await page.click('#quest-reward-ok');
+
+  // Stage 3, administrative: whose network, the account, who to call, the terms, the cost. On the island every figure
+  // comes off a made-up bill: nothing of the player's own is typed here.
+  await page.click('#quest-next');
+  await page.locator('#quest-open .q', { hasText: 'The record of EXF-20417' }).locator('button', { hasText: 'Start' }).click();
+  await expect.poll(async () => (await game(page)).dialogue?.text).toContain('Which network of theirs does its far end land on?');
+  await typed(page);
+  expect((await game(page)).dialogue!.choices).toEqual(['Example Fibre Internet', 'A network of theirs not in NetBox yet', 'None to record: it is just their line', "I don't know yet"]);
+  await page.screenshot({ path: `${SHOTS}/chain-stage-administrative.png` });
+  await choose(page, 'Example Fibre Internet');
+  await choose(page, 'An account not in NetBox yet');
+  await choose(page, 'The bill says PI-ACC-0042');
+  await choose(page, 'For everything from Example Fibre');
+  await choose(page, 'The bill says Example Fibre NOC');
+  await expect(page.locator('#quest-step')).toContainText('What does the contract for circuit EXF-20417 say? Leave blank what you do not know.');
+  await page.fill('#quest-field-0', '2025-01-15');
+  await page.fill('#quest-field-1', '500');
+  await page.click('#quest-step-send');
+  // the cost is not known yet: said, and the rest is still written
+  await expect.poll(async () => (await game(page)).dialogue?.text).toContain('What does circuit EXF-20417 cost?');
+  await choose(page, "I don't know yet");
+  await expect(page.locator('#quest-changes li').last()).toHaveText('Circuit EXF-20417: account PI-ACC-0042, installed 2025-01-15, commit rate 500 Mbps.');
+  await page.click('#quest-apply');
+  await expect(page.locator('#quest-reward')).toContainText('stays open at 3 of 3: administrative (not known yet: the monthly charge and the one-off charge).');
+  await page.click('#quest-reward-ok');
+  // the chain is honestly open: the stage is "not known yet", and the open questions are listed
+  await page.click('#quest-next');
+  await expect(chain().locator('li')).toHaveText(['1 physical: ✓ in NetBox', '2 logical: ✓ in NetBox', '3 administrative: ? not known yet']);
+  await expect(chain().locator('.open-questions')).toHaveText('Open questions: the monthly charge, the one-off charge.');
+  await chain().evaluate((e) => e.scrollIntoView({ block: 'start' }));
+  await page.screenshot({ path: `${SHOTS}/chain-cost-not-known.png` });
+  // later the bill turns up: the line picks up at that question
+  await page.locator('#quest-waiting .q', { hasText: 'The record of EXF-20417' }).locator('button', { hasText: 'I know more now' }).click();
+  await expect.poll(async () => (await game(page)).dialogue?.text).toContain('What does circuit EXF-20417 cost?');
+  await choose(page, 'The bill says 45.00 EUR a month, 120.00 EUR once');
+  await expect(page.locator('#quest-changes li')).toHaveText(['Circuit EXF-20417: 45.00 EUR a month, 120.00 EUR once.']);
+  await page.click('#quest-apply');
+  // the closing summary: the whole record, read back from the island
+  await expect(page.locator('#quest-reward h2')).toHaveText('Practice complete');
+  await expect(page.locator('#quest-reward')).toContainText('That completes the chain "The way out of Practice Island". Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), '
+    + 'Example Fibre, network Example Fibre Internet, your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, 45.00 EUR a month, '
+    + '120.00 EUR once, installed 2025-01-15, 500 Mbps committed.');
+  await expect(page.locator('#quest-reward-chain')).toHaveAttribute('data-status', 'complete');
+  await page.screenshot({ path: `${SHOTS}/chain-summary.png` });
+  await page.click('#quest-reward-ok');
+});
+
+test('how a device is managed is asked before any address: a cloud-managed switch needs none', async ({ page }) => {
+  await signIn(page, 32);
+  // the loft switch has to be plugged into something first: how it is managed is the second stage of its chain
+  const loft = 'q:device_unreachable:device:9000003';
+  let b = await api(page, '/api/game/quests?scope=practice');
+  expect(b.quests.map((q: any) => q.kind)).not.toContain('device_unreachable');
+  for (const [step, choice] of [['peer', 'device:9000002'], ['local_port', 'interface:9000078'], ['peer_port', 'interface:9000052'], ['cable_type', 'cat6']])
+    await api(page, '/api/game/quests/answer', { scope: 'practice', quest_id: 'q:device_unconnected:device:9000003', step, choice });
+  expect((await api(page, '/api/game/quests/apply', { scope: 'practice', quest_id: 'q:device_unconnected:device:9000003' })).complete).toBe(true);
+  await shell(page, 'return s.quests.refresh()');
+  await page.click('#quest-next');
+  const card = page.locator('#quest-open .q', { hasText: 'How sw-loft-1 is managed' });
+  await expect(card.locator('.in-chain')).toHaveText('Chain: sw-loft-1: from its ports to its login · 2 of 2: logical');
+  await card.locator('button', { hasText: 'Start' }).click();
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('How is sw-loft-1 (EX-A2400) managed?');
+  await typed(page);
+  expect((await game(page)).dialogue!.choices).toEqual(['Locally: it has an address to log in to', 'By a cloud or controller service', 'It is not managed at all (unmanaged, passive)', "I don't know yet"]);
+  await page.screenshot({ path: `${SHOTS}/management-mode.png` });
+  await choose(page, 'By a cloud or controller service');
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('Which service manages sw-loft-1?');
+  await choose(page, 'A service not listed');
+  await page.fill('#quest-text', 'Example Cloud Portal');
+  await page.keyboard.press('Enter');
+  // the model has three devices: is that true of all of them? Here it is not.
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('NetBox has 3 EX-A2400 devices. Are they all managed that way?');
+  await choose(page, 'No: it differs from device to device');
+  await expect(page.locator('#quest-changes li')).toHaveText(['sw-loft-1: managed by a cloud or controller service (Example Cloud Portal). The EX-A2400 model is marked as varying from device to device.']);
+  await page.click('#quest-apply');
+  // no address was asked for, and the island now counts the switch as complete for management
+  await expect(page.locator('#quest-reward h2')).toHaveText('Practice complete');
+  await expect(page.locator('#quest-reward')).toContainText('That completes the chain "sw-loft-1: from its ports to its login". sw-loft-1: Te1/1/2 -> sw-quay-2 Te1/1/2; managed by Example Cloud Portal (no local address).');
+  await page.click('#quest-reward-ok');
+  b = await api(page, '/api/game/quests?scope=practice');
+  expect(b.quests.find((q: any) => q.id === loft).status).toBe('done');
 });

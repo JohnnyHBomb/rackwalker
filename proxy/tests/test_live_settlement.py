@@ -165,7 +165,7 @@ def test_a_stack_member_raises_no_finding_of_its_own_live(player, yard, nbx):
     kinds = {(f["kind"], f["id"]) for f in _board(player, site)["findings"]}
     # two separate switches: the second one, with only a server on it, is cut off, has no uplink and no address
     assert {("site_island", f"site_island:device:{member}"), ("switch_no_uplink", f"switch_no_uplink:device:{member}"),
-            ("device_unreachable", f"device_unreachable:site:{site}")} <= kinds
+            ("device_unreachable", f"device_unreachable:device:{member}")} <= kinds
     vc = _post(nbx, "dcim/virtual-chassis/", {"name": "sy-stack"})
     for name, pos in (("sy-sw1", 1), ("sy-sw1b", 2)):
         assert nbx.patch(f"dcim/devices/{devs[name]['id']}/", json={"virtual_chassis": vc["id"], "vc_position": pos}).status_code == 200

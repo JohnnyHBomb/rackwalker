@@ -1,10 +1,10 @@
-# RackWalker HTTP API between web/ and proxy/. Contract 2.3.0.
+# RackWalker HTTP API between web/ and proxy/. Contract 2.4.0.
 # Bodies are defined once in scene.schema.json ($defs); this file only wires paths to them.
 # Prose, rules and the update_fields whitelist: api.md. Examples: ../fixtures/ (index.json maps request -> file).
 openapi: 3.1.0
 info:
   title: RackWalker proxy API
-  version: 2.3.0
+  version: 2.4.0
   license: {name: Apache-2.0, identifier: Apache-2.0}
 servers:
   - url: http://localhost:8710
@@ -209,7 +209,7 @@ paths:
         default: {$ref: "#/components/responses/Error"}
   /api/game/quests:
     get:
-      summary: The quest log (2.3.0). Open quest lines at a site (or the estate), each site's progress and boss marker, and the player's rewards.
+      summary: The quest log (2.3.0; chains 2.4.0). Open quest lines at a site (or the estate), the chains in play, each site's progress and boss marker, and the player's rewards.
       security: [{session: []}]
       parameters:
         - {name: scope, in: query, schema: {$ref: "scene.schema.json#/$defs/QuestScope"}}

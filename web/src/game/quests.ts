@@ -722,9 +722,11 @@ export class Quests {
       p.append(el('h3', 'Chains'));
       const box = el('div');
       box.id = 'quest-chains';
-      // those in play, then those waiting on a fact, then the complete ones; a long estate shows the first few
-      const order = { open: 0, open_questions: 1, complete: 2 } as const;
-      const shown = [...chains].sort((a, b) => order[a.status] - order[b.status]).slice(0, 8);
+      // those waiting on a fact the player may now know, then those in play (the proxy lists at most a few per site),
+      // then the last few complete ones
+      const order = { open_questions: 0, open: 1, complete: 2 } as const;
+      const sorted = [...chains].sort((a, b) => order[a.status] - order[b.status]);
+      const shown = [...sorted.filter((c) => c.status !== 'complete'), ...sorted.filter((c) => c.status === 'complete').slice(0, 6)];
       for (const c of shown) box.append(chainCard(c));
       const more = chains.length - shown.length + (this.boards.netbox?.chains_queued ?? 0);
       if (more > 0) box.append(el('p', `${more} more chain${more === 1 ? '' : 's'} come into play as these are completed.`, 'hint'));

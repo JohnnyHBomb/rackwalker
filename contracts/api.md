@@ -1,4 +1,4 @@
-# HTTP API (contract 2.3.0)
+# HTTP API (contract 2.4.0)
 
 The browser talks only to the proxy. The proxy talks to NetBox with its token; the token never reaches the
 browser, a response body, or a log line. Routes are in `openapi.yaml`; bodies are `$defs` in
@@ -169,12 +169,42 @@ like the others, and each write carries the changelog message.
 | `assign_ip` | `{kind: "device", id}` | `address` (with mask), `interface_id`, optional `primary` (default true) | the interface is not on that device; the address is not valid or has no mask; the same host address already exists elsewhere (`conflict`). An address already on that interface is reused |
 | `create_prefix` | `{kind: "prefix", id: null}` | `prefix` (host bits zero) | not a network; that prefix exists (`conflict`) |
 
+## Change ops added in 2.4.0
+
+What a chain's logical and administrative stages end in. Each write carries the changelog message. None of them writes
+over a value NetBox already holds.
+
+| Op | Target | Fields | Refused when |
+|---|---|---|---|
+| `set_management` | `{kind: "device", id}` | `mode` (`local`, `cloud`, `unmanaged`), optional `service` (text; only with `cloud`), optional `model_default` (the three modes or `varies`; written to the device's device type, before the device) | the device does not exist; NetBox lacks the custom field `rw_mgmt_mode` (or `rw_mgmt_default` for `model_default`); `if_unmodified_since` is older than the device |
+| `record_circuit` | `{kind: "circuit", id}` | at least one of `provider_account_id` (id or `@ref`), `install_date` (`YYYY-MM-DD`), `commit_rate` (kbps), `mrc`, `nrc` (`Money`), `currency` (`^[A-Z]{3}$`) | the circuit does not exist; the account belongs to another provider; a charge has no currency (in the op or on the circuit); NetBox lacks the cost fields; the circuit already holds another value for a named field (`conflict`: it is not overwritten) |
+| `create_provider_account` | `{kind: "provider_account", id: null}` | `provider_id`, `account`, optional `name` | the provider does not exist; it already has that account (`conflict`; the message does not repeat the number) |
+| `create_provider_network` | `{kind: "provider_network", id: null}` | `provider_id`, `name` | the provider does not exist; it already has a network of that name (`conflict`) |
+| `create_contact` | `{kind: "contact", id: null}` | `name`, optional `phone`, `email` | the email is not an email address |
+| `assign_contact` | `{kind: "provider" or "circuit", id}` | `contact_id` (id or `@ref`), `role_id` | the target, the contact or the role does not exist; that contact already has that role there (`conflict`) |
+
+`create_circuit_termination` (2.3.0) takes `provider_network_id` (id or `@ref`) instead of `site_id`: the end is on a
+network of the circuit's own provider. Exactly one of the two fields is given.
+
 Ids above 9,000,000 belong to the practice island, which is not in NetBox: both change routes refuse them with 400
 `bad_request` (`details.reason` `practice_island`).
 
-## Quests (2.3.0)
+## Quests (2.3.0; chains 2.4.0)
 
 `docs/quests.md` describes the rules for a NetBox admin; this section fixes what the routes do.
+
+* **Chains (2.4.0).** `QuestBoard.chains` lists the chains in play: those of the lines on offer or waiting (so at most
+  a few per site), those waiting on a fact the player does not know yet (`status` `open_questions`), and those the
+  player completed; other chains with something open are counted in `chains_queued`. A chain is derived from the
+  estate on every read and is never stored. A line that belongs to a later stage of a chain is not offered while an
+  earlier stage is `open`, `not_known` or `locked` (a line the player has already begun stays listed). `Quest.chain`
+  names the line's chain and stage; `QuestVerdict.chain` is the chain after the check, with `summary` read from the
+  estate that was read back, and `chain_xp` the part of `xp_awarded` that is the bonus for a chain NetBox now shows
+  complete. `QuestBoard.setup` says in words which custom fields or contact roles this NetBox lacks.
+* **Private answers (2.4.0).** A typed answer to the steps `account_no`, `contact` and `cost` of a `circuit_record`
+  line is kept in the proxy's memory until the line is applied, never in the game store; "I don't know yet" on them is
+  stored like any answer. After a proxy restart such a question is asked again. On the practice island these steps
+  are choices from a made-up bill and take no typed value.
 
 * **The estate.** The quest routes analyse one bounded read of NetBox (slim field selections, capped lists), kept for
   `RACKWALKER_ESTATE_TTL` seconds (default 60) and dropped by any write made through the proxy. In fixture mode the

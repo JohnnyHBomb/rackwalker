@@ -15,7 +15,9 @@ Status: early development. What works today: the game shell (sign in as your Net
 derived from your sites' GPS, with one building per site in its theme, walk through a door into that site's isometric room and back out, Ilatea's first
 lines, autosave) and **quests**: the game reads your whole NetBox, works out what it cannot answer yet ("how does this
 site reach the internet?"), and a quest giver at each site asks you what you know, with your own device names as the
-choices. A quest ends in one change you preview first, and is complete only when NetBox confirms it
+choices. Quests about one subject form a chain (what is plugged into what, then its addresses and how it is managed,
+then whose it is, who to call and what it costs) that ends in a whole record read back from NetBox. A quest ends in one
+change you preview first, and is complete only when NetBox confirms it
 ([`docs/quests.md`](docs/quests.md) says exactly what the game looks for and why). All of it sits on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
 rooms, racks, devices, cables and cable traces) in four original art themes plus a plain debug theme, with
 drag-and-drop edits written back to NetBox after a diff preview.
@@ -47,9 +49,9 @@ token never reaches the browser, a response body or a log line.
 | Path | What |
 |---|---|
 | `docs/quests.md` | For NetBox admins: what the quest scanner reads, every finding and gap it reports, the questions it asks, what it writes and who may write |
-| `contracts/` | Contract 2.3.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
+| `contracts/` | Contract 2.4.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
 | `web/` | The game in the browser: TypeScript + Vite + PixiJS 8, Vitest and Playwright; npm with a pinned `package-lock.json` |
-| `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in, the game store (SQLite), and quests (`estate.py` reads the estate, `findings.py` the rules, `quests.py` the questions, `questroutes.py` the log, checks and rewards, `perms.py` the player's own NetBox permissions, `practice.py` the practice island); pytest; pinned `requirements.lock` |
+| `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in, the game store (SQLite), and quests (`estate.py` reads the estate, `findings.py` the rules, `quests.py` the questions, `chains.py` the chains, `questroutes.py` the log, checks and rewards, `perms.py` the player's own NetBox permissions, `practice.py` the practice island); pytest; pinned `requirements.lock` |
 | `fixtures/` | Canned responses for every route, rendered from the synthetic seed model; the web side can run on them alone |
 | `devnetbox/` | Throwaway NetBox v4.7.4 stacks (netbox-docker 5.1.1) in Docker, with an idempotent synthetic seed |
 | `docs/` | Art briefs and screenshots |
@@ -90,7 +92,7 @@ several stacks can run side by side.
 | `make dev` / `make dev-fixtures` | proxy + vite against the NetBox in `.env`, or against `fixtures/` |
 | `make netbox-up` / `seed` / `reset` / `down` / `destroy` / `status` / `check-fixtures` | manage a dev NetBox stack (`NB_PROJECT`, `NB_PORT`) |
 | `make netbox-env` | write `.env` with the stack's URL and the proxy user's **read-only** token and `WRITE_ENABLED=0`; `WRITE=1 FORCE=1` writes the proxy user's write token and `WRITE_ENABLED=1` instead. The admin token never goes to the proxy |
-| `make test-live` | proxy contract tests against the dev NetBox (fresh seed): fixture parity, errors, an apply round trip checked in NetBox's changelog, then put back; and the quests on a made-up unconnected site (three switches, a provider, two rooms): played to cables NetBox itself traces, refused for a player without the NetBox permission, nothing written by the practice island; and on a second made-up site: the seed read equals the fixture estate, a switch stack, an address in a VRF, a device that went away, a serial recorded meanwhile, a read-only token and a deleted token. `RACKWALKER_RECORD=1` also re-records `proxy/tests/recorded/` (the offline replay data `make test` uses) |
+| `make test-live` | proxy contract tests against the dev NetBox (fresh seed): fixture parity, errors, an apply round trip checked in NetBox's changelog, then put back; and the quests on a made-up unconnected site (three switches, a provider, two rooms): played to cables NetBox itself traces and its way out played as a whole chain (circuit, address, provider network, account, contact, charges; one "I don't know yet" on the cost), refused for a player without the NetBox permission, nothing written by the practice island; and on a second made-up site: the seed read equals the fixture estate, a switch stack, an address in a VRF, a device that went away, a serial recorded meanwhile, a read-only token and a deleted token. `RACKWALKER_RECORD=1` also re-records `proxy/tests/recorded/` (the offline replay data `make test` uses) |
 | `make e2e-live` (with `make dev` running) | headless chromium on the live stack: all 3 sites on the world view, double-click down to a device, every `/api` answer from NetBox; with `NB_URL` and `NB_ADMIN_TOKEN` of a write-enabled stack also the live write round trip, and with `NB_ADMIN_TOKEN` (or `NB_PLAYER_TOKEN`) the game: sign in as that NetBox user, every door in and out, reload; on a write-enabled stack also one quest written for real (a cable NetBox confirms, XP, the changelog naming the player; removed again). Screenshots to `docs/screenshots/` |
 
 The live write round trip of `make e2e-live` needs a write-enabled proxy and the stack's admin token (used only by

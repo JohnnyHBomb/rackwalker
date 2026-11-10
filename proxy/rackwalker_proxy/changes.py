@@ -904,7 +904,9 @@ async def write_net(client: nb.NetBox, p: Planned, real: dict[Key, int], message
         body: dict[str, Any] = {k: w[k] for k in ("install_date", "commit_rate") if k in w}
         if "provider_account_id" in w:
             body["provider_account"] = rid("provider_account", w["provider_account_id"])
-        cf = {name: w[k] for k, name in COST_FIELDS.items() if k in w}
+        # A decimal custom field takes a JSON number (NetBox 4.7.4 answers a string with a server error); two decimal
+        # places survive the trip through a float, and the amount is read back from NetBox for the summary.
+        cf = {name: (w[k] if k == "currency" else float(Decimal(w[k]))) for k, name in COST_FIELDS.items() if k in w}
         if cf:
             body["custom_fields"] = cf
         return await client.request("PATCH", f"circuits/circuits/{p.key[1]}/", json={**body, "changelog_message": message})  # type: ignore[index]

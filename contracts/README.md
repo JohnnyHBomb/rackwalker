@@ -1,4 +1,4 @@
-# Contracts (version 2.3.0)
+# Contracts (version 2.4.0)
 
 These files are the interface between the two halves of RackWalker: the Python proxy (`proxy/`) and the browser
 game (`web/`). Each side builds and tests against them on its own, so a change here is deliberate and versioned
@@ -48,10 +48,13 @@ Quest           id, kind, rank, title, purpose, outcome, status, step: QuestStep
 QuestStep       id, prompt, input (choice|text|form), choices[ QuestChoice {id, label, kind} ], fields[ QuestField ], hint, error
 QuestAnswer     scope, quest_id, step, choice? | text? | values?          (request)
 QuestVerdict    quest, mode (real|dry_run|practice), verified, complete, xp_awarded, potions_awarded, message, can_now,
-                unlocked[ ToolId ], trace, result: ChangeResult|null, rewards
+                unlocked[ ToolId ], trace, result: ChangeResult|null, rewards, chain: Chain|null, chain_xp
+Chain           id, kind (way_out|site_link|room_link|device|rack), site_id, title, holds, status (open|open_questions|complete),
+                position, total, label, stages[ ChainStage {stage, title, status, quest_ids[], missing[]} ], summary|null,
+                open_questions[]                                   (2.4.0; also QuestBoard.chains[], Quest.chain: QuestChainRef|null)
 ```
 
-Quest bodies (2.3.0) are made by the proxy from NetBox (or from the practice island, which is made up and lives in the
+Quest bodies (2.3.0; chains 2.4.0) are made by the proxy from NetBox (or from the practice island, which is made up and lives in the
 game store); rules in `api.md` "Quests", and for a NetBox admin in `docs/quests.md`.
 
 Game bodies (2.1.0) are the game's own state, kept by the proxy in SQLite and never written into NetBox; rules in
@@ -94,7 +97,7 @@ Rules that both sides rely on:
    are `#rrggbb`.
 5. **Time** is RFC 3339 with an offset. `last_updated` on Site/Location/Rack/Device feeds the optimistic lock
    `if_unmodified_since` on change ops.
-6. **Supported NetBox**: 4.7.x for contract 2.3.0 (`/api/health` reports `netbox.supported`). The proxy
+6. **Supported NetBox**: 4.7.x for contract 2.4.0 (`/api/health` reports `netbox.supported`). The proxy
    authenticates with a v2 token (`Authorization: Bearer nbt_<key>.<token>`, NetBox >= 4.5); a legacy v1 token
    (deprecated in 4.6, removed in 5.0) is still sent as `Token <hex>`.
 7. **Trace normalisation**: NetBox's `/trace/` segments become `hops` in order. Crossing a circuit is a hop with
@@ -109,6 +112,29 @@ Rules that both sides rely on:
 | 2.1.0 | 2026-11-08 | Additive: the game shell. Seven `/api/game/*` routes (sign-in as a NetBox user, sign-out, game state, save slots, settings, flags), their `$defs` (`GameSession`, `SignInRequest`, `Player`, `GameState`, `GameSettings`, `KeyBindings`, `SaveData`, `SaveSlot`, `Flags`, `FlagsPatch`, ...), error codes `unauthorized` (401) and `forbidden` (403), fixtures `game-*.json`, `players.json`, `error-unauthorized.json`. Scene and change bodies are unchanged apart from `contract_version`. Rules (`api.md`): with `WRITE_ENABLED=1` the change routes need a signed-in player and the session's CSRF header, and the changelog message names the player (`rackwalker (<username>): <reason>`); the session cookie's path is `/api`; stored game rows are checked on read. |
 | 2.2.0 | 2026-11-09 | Additive, for the overworld: `Site.country` (ISO 3166-1 alpha-2 or null; custom field `iso_country`, else the site's region code or country name, else its address's last line). `KeyBindings` gains `zoom_in`, `zoom_out`, `search`, `rotate`, `trace`, `unrack`, `undo` so every key inside a building is remappable (`cancel` defaults to Escape and Backspace); the new actions are optional, so 2.1.0-shaped settings stay valid, and the proxy fills a missing one with its default on read and write. Rules (`api.md`): the proxy rechecks a signed-in player's NetBox user (exists, active) before every write and on reads every 60 s (`RACKWALKER_SESSION_RECHECK`); a deleted or deactivated user gets 401 with `details.reason` (on every later request from that browser too); a proxy token NetBox refuses for the lookup keeps sessions and refuses writes with 502 `netbox_error`, `details.reason` `proxy_cannot_view_users`. Fixtures regenerated; the seed sets `iso_country` = `GB` on its three sites. |
 | 2.3.0 | 2026-11-09 | Additive, for quests. **Change ops**: `connect_cable`, `create_circuit`, `create_circuit_termination`, `assign_ip`, `create_prefix` join `ChangeOp` (`OpResult.op` and `OpResult.target.kind` grow with them); `update_fields` takes `facility` and `country` on a site and `platform_id` on a device. **Routes**: `GET /api/quests/gaps/{site_id}` (the gap scanner, paged) and seven game routes: `GET /api/game/quests`, `POST /api/game/quests/answer`, `/preview`, `/apply`, `/verify`, `POST /api/game/practice/reset`, `POST /api/game/boss/ack`. **`$defs`**: `GapList`, `Gap`, `Finding`, `Completeness`, `QuestBoard`, `Quest`, `QuestStep`, `QuestChoice`, `QuestField`, `QuestTarget`, `QuestAnswer`, `QuestRef`, `QuestVerdict`, `Rewards`, `SiteProgress`, `BossAck` and their parts. **Health**: `HealthNetbox.permission_check` (`ok`, `cannot_view_users`, `cannot_view_permissions`, `unknown`). **Rules** (`api.md`): `POST /api/changes/apply` and a quest's apply are refused (403 `forbidden`, `details.reason` `player_lacks_permission`) unless the signed-in player's own NetBox object permissions cover the change; the practice island's ids (above 9,000,000) are served by the proxy as made-up scenes and refused by the change routes. Dialogue scripts gain the speaker `giver`. The game store moves to schema 2 (quest log, reward ledger, practice changes, boss acknowledgements); a version 1 file is migrated in place and keeps its saves. Fixtures: `quest-*.json`, `boss-ack-request.json`, `estate.json` (what the scanner analyses in fixture mode); `health.json` gains `permission_check`. The proxy's NetBox user needs more view permissions and `add` on what a quest may create (`devnetbox/proxy_tokens.py`). **Before release, same version**: a session carries its NetBox token's write flag and expiry (403 `read_only_token`; 401 `token_gone`, `token_disabled`, `token_expired`), the proxy's NetBox user also needs view on `users.token`, and the game store moves to schema 3 (`paid`: each check pays once; session columns `can_write`, `token_id`); the settlement rules ("gone is not done"), per-device `interface_no_cable` lines, the `named` choice and `not_applicable` on forms are in `api.md` "Quests". No body changed shape. |
+| 2.4.0 | 2026-11-10 | Additive, for quest chains. **Bodies**: `Chain`, `ChainStage`, `QuestChainRef`; `QuestBoard` gains `chains`, `chains_queued` and `setup`; `Quest` gains `chain`; `QuestVerdict` gains `chain` and `chain_xp`. **Change ops**: `set_management`, `record_circuit`, `create_provider_account`, `create_provider_network`, `create_contact`, `assign_contact` join `ChangeOp` (`OpResult.op` and `OpResult.target.kind` grow with them); `create_circuit_termination` takes `provider_network_id` instead of `site_id` (exactly one of the two). **Quest lines**: `device_unreachable` is one line per device (`q:device_unreachable:device:<id>`, was one per site) and asks how the device is managed first; new kinds `circuit_handoff` and `circuit_record`. **NetBox**: custom fields `rw_mgmt_mode`, `rw_mgmt_service`, `rw_mgmt_default`, `rw_mrc`, `rw_nrc`, `rw_currency` and three contact roles (see "Custom fields for quests"); the proxy's NetBox user needs view on provider accounts, provider networks, contacts, contact roles and contact assignments, and for writes change on circuits and device types and add on provider accounts, provider networks, contacts and contact assignments. **Game store**: schema version 4 (rows of the per-site management line become one row per device, with their answers). No route is added or removed. |
+
+## Custom fields for quests (2.4.0)
+
+Created by the same one-shot script as the layout fields (`devnetbox/seed.py --fields-only`, group `rackwalker`), for
+facts NetBox has no field of its own for. `docs/quests.md` says why each lives where it does.
+
+| Custom field | Type | On | Used by |
+|---|---|---|---|
+| `rw_mgmt_mode` | selection (choice set `rw-mgmt-mode`: `local`, `cloud`, `unmanaged`) | Device | `set_management.mode`; the scanner expects a primary IP only from a locally managed device |
+| `rw_mgmt_service` | text | Device, DeviceType | `set_management.service` (the cloud or controller service) |
+| `rw_mgmt_default` | selection (choice set `rw-mgmt-default`: the three above and `varies`) | DeviceType | `set_management.model_default`: the default for every device of the model |
+| `rw_mrc`, `rw_nrc` | decimal (min 0) | Circuit | `record_circuit.mrc`, `.nrc` (`Money`: decimal text, two places) |
+| `rw_currency` | text (`^[A-Z]{3}$`) | Circuit | `record_circuit.currency` |
+
+Everything else of a circuit's record uses NetBox's own models (checked against a live 4.7.4): `circuits.ProviderAccount`
+(`provider`, `account`) set as `Circuit.provider_account`; `circuits.ProviderNetwork` as the `termination` of the
+circuit's far end (`termination_type` `circuits.providernetwork`); `Circuit.install_date` and `Circuit.commit_rate`
+(kbps); `tenancy.Contact` and `tenancy.ContactAssignment` (`object_type` `circuits.provider` or `circuits.circuit`,
+`role` a `tenancy.ContactRole`). The script also creates the contact roles `support`, `account-manager` and `billing`.
+A NetBox without these fields or roles still plays: `QuestBoard.setup` says what is missing, and nothing that NetBox
+could not hold is asked for or counted. Account numbers, charges and contact details are never written to the game
+store or to a log, and are never part of a URL the proxy requests.
 
 ## NetBox 4.7 notes
 

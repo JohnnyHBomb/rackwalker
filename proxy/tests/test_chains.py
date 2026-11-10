@@ -589,7 +589,7 @@ def test_the_example_estate_plays_the_way_out_from_nothing_to_the_complete_recor
     assert (v["complete"], v["chain"]["status"], v["chain"]["label"]) == (True, "complete", "3 of 3: complete")
     # the whole record pays above its stages, once: every stage was this player's
     assert v["chain_xp"] == chains.CHAIN_XP["way_out"] and v["xp_awarded"] == v["chain_xp"] + 48
-    assert circ["custom_fields"] == {"rw_mrc": "241.37", "rw_nrc": "505.50", "rw_currency": "GBP"}
+    assert circ["custom_fields"] == {"rw_mrc": 241.37, "rw_nrc": 505.5, "rw_currency": "GBP"}   # numbers: what a decimal field takes
     summary = ("Mill Lane: ml-sw1 Te1/1/1 -> circuit NLT-7001 (Internet), Northlight Telecom, network Northlight Internet, your address 203.0.113.2/30, "
                "account 44-1021, Support / NOC: Northlight NOC 0800 000 0000, 241.37 GBP a month, 505.50 GBP once, installed 2024-03-01, 100 Mbps committed.")
     assert v["chain"]["summary"] == summary and v["message"].endswith(f'That completes the chain "The way out of Mill Lane". {summary}')

@@ -39,7 +39,10 @@
     "description": "",
     "comments": "",
     "tags": [],
-    "custom_fields": {}
+    "custom_fields": {
+      "rw_mgmt_mode": null,
+      "rw_mgmt_service": null
+    }
   },
   "interfaces": [
     {

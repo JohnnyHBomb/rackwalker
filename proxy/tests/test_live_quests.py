@@ -75,9 +75,24 @@ def harbour(nbx):
         nbx.delete(f"circuits/circuits/{c['id']}/")
     for ip in nbx.get("ipam/ip-addresses/", params=[("device_id", i) for i in dev_ids] + [("limit", 100)]).json()["results"]:
         nbx.delete(f"ipam/ip-addresses/{ip['id']}/")
+    # what the chain's later stages created: the hand-off prefix, the provider's account and network, the contact
+    for c in nbx.get("tenancy/contacts/", params={"name": CONTACT[0]}).json()["results"]:
+        for a in nbx.get("tenancy/contact-assignments/", params={"contact_id": c["id"]}).json()["results"]:
+            nbx.delete(f"tenancy/contact-assignments/{a['id']}/")
+    for path, params in (("ipam/prefixes/", {"prefix": HANDOFF_PREFIX}), ("circuits/provider-accounts/", {"provider_id": provider["id"]}),
+                         ("circuits/provider-networks/", {"provider_id": provider["id"]}), ("tenancy/contacts/", {"name": CONTACT[0]})):
+        for row in nbx.get(path, params=params).json()["results"]:
+            assert nbx.delete(f"{path}{row['id']}/").status_code == 204, (path, row)
+    # the model's default the management line wrote goes back to "nothing on record"
+    assert nbx.patch(f"dcim/device-types/{dtype['id']}/", json={"custom_fields": {"rw_mgmt_default": None}}).status_code == 200
     for path, oid in reversed(made):
         r = nbx.delete(f"{path}{oid}/")
         assert r.status_code in (204, 404), (path, r.text)
+
+
+# made-up figures for the circuit's record (the phone number is from a range reserved for fiction)
+HANDOFF, HANDOFF_PREFIX = "198.18.1.2/30", "198.18.1.0/30"
+ACCOUNT, CONTACT = "SYN-ACC-7001", ("Example Fibre NOC", "+44 1632 960555")
 
 
 def _client(tmp, token: str, write: bool = True, estate_ttl: float = 0) -> TestClient:
@@ -145,10 +160,14 @@ def test_the_unconnected_estate_is_found_and_ordered_live(admin, harbour):
     b = _board(admin, site)
     kinds = [f["kind"] for f in b["findings"]]
     assert kinds == ["site_no_way_out", "sites_not_linked", "locations_not_linked", "device_unconnected", "device_unconnected",
-                     "device_unconnected", "device_unreachable", "site_record"]
+                     "device_unconnected", "device_unreachable", "device_unreachable", "device_unreachable", "site_record"]
     # at most a few lines are open at one site, the most valuable first; the rest wait
     assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "sites_not_linked", "locations_not_linked"]
-    assert b["queued"] == 5 and all(q["status"] == "offered" for q in b["quests"])
+    assert b["queued"] == 7 and all(q["status"] == "offered" for q in b["quests"])
+    # the lines on offer are the first stage of three chains; nothing of a later stage is asked yet
+    assert [(c["kind"], c["label"]) for c in b["chains"] if c["site_id"] == site] == [
+        ("way_out", "1 of 3: physical"), ("site_link", "1 of 1: physical"), ("room_link", "1 of 1: physical")]
+    assert b["setup"] == [] and b["quests"][0]["chain"]["label"] == "1 of 3: physical"
     assert b["quests"][0]["purpose"] == "Nobody can tell from NetBox how Harbour Office reaches the outside world. Let's find out."
     assert b["quests"][2]["purpose"] == ("Loft and Quay Room at Harbour Office have no link between them. If that link fails, nobody knows "
                                          "which cable to check. Let's record it.")
@@ -180,7 +199,9 @@ def test_the_way_out_line_ends_in_a_trace_netbox_confirms_live(admin, harbour, n
     assert (v["mode"], v["verified"], v["complete"], v["quest"]["status"]) == ("real", True, True, "done")
     assert v["xp_awarded"] == 120 and v["unlocked"] == ["cable_tracer"]
     assert v["can_now"] == "You can now see in NetBox where the line to the outside comes into Harbour Office, and trace it."
-    assert v["message"].startswith("NetBox confirms it. Harbour Office is now ") and v["message"].endswith(" % complete.")
+    # the circuit that is now plugged in brings the next stage of the chain
+    assert v["message"] == 'NetBox confirms it. Next in the chain "The way out of Harbour Office": 2 of 3: logical.'
+    assert v["chain"]["summary"] == "Harbour Office: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre."
     assert v["trace"] == "NetBox's cable trace from sw-quay-1 Te1/1/2 reaches circuit EXF-20417 (side A) in 1 hop."
     # NetBox itself: the circuit exists, ends at the site, and the switch port traces to it
     circuit = _first(nbx, "circuits/circuits/", cid="EXF-20417")
@@ -220,7 +241,7 @@ def test_a_repeated_kind_of_fix_pays_less_and_the_site_fills_up_live(admin, harb
     # sw-quay-2 and sw-loft-1 are linked now and sw-quay-1 has the circuit: no device is unconnected any more, but
     # nothing joins sw-quay-1 (and with it the way out) to the other two
     offered = {q["kind"]: q for q in b["quests"] if q["status"] == "offered"}
-    assert list(offered) == ["sites_not_linked", "site_island", "device_unreachable"]
+    assert list(offered) == ["sites_not_linked", "site_island", "circuit_handoff"]
     quest = _answer(admin, offered["site_island"], {"peer": "sw-loft-1", "local_port": "Te1/1/1", "peer_port": "Te1/1/2", "cable_type": "Multimode"})
     assert quest["said"][0]["question"] == "What does sw-quay-1 connect to in the rest of Harbour Office?"
     v = admin.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": quest["id"]}).json()
@@ -231,7 +252,9 @@ def test_a_repeated_kind_of_fix_pays_less_and_the_site_fills_up_live(admin, harb
     assert gone["status"] == "dismissed"
     after = _board(admin, site)
     assert next(s for s in after["sites"] if s["site_id"] == site)["completeness"]["open"] == open_before - 1
-    assert sorted(q["status"] for q in after["quests"]) == ["dismissed", "done", "done", "done", "offered", "offered"]
+    assert sorted(q["status"] for q in after["quests"]) == ["dismissed", "done", "done", "done", "offered", "offered", "offered"]
+    # every switch is now plugged into something: how each is managed (the logical stage of its chain) has unlocked
+    assert [q["kind"] for q in after["quests"] if q["status"] == "offered"] == ["circuit_handoff", "device_unreachable", "site_record"]
     assert after["rewards"]["xp"] == 360 and after["rewards"]["completed"] == 3 and after["rewards"]["tools"] == ["cable_tracer"]
 
 
@@ -248,40 +271,136 @@ def _player(nbx, name: str, perms: list[dict]) -> tuple[int, str]:
     return uid, t["token"] if t["token"].startswith("nbt_") else f"nbt_{t['key']}.{t['token']}"
 
 
-def test_an_errand_is_confirmed_part_by_part_and_a_device_nobody_logs_in_to_is_an_answer_live(admin, harbour, nbx):
+def _line(cl, quest_id: str) -> dict:
+    """A line as it stands, whether or not the quest log has it on offer just now."""
+    r = cl.post("/api/game/quests/answer", json={"scope": "netbox", "quest_id": quest_id, "step": "back"})
+    assert r.status_code == 200, r.text
+    return r.json()
+
+
+def _apply(cl, quest_id: str) -> dict:
+    r = cl.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": quest_id})
+    assert r.status_code == 200, r.text
+    schema_validator("QuestVerdict").validate(r.json())
+    return r.json()
+
+
+def test_how_each_device_is_managed_is_asked_before_any_address_and_written_to_netbox_live(admin, harbour, nbx):
     site = harbour["site"]["id"]
+    ids = [harbour["devs"][n]["id"] for n in ("sw-quay-1", "sw-quay-2", "sw-loft-1")]
 
     def still_open() -> tuple[int, int]:
         """(open checks as this player's quest log counts them, open checks as the scanner reads them from NetBox)."""
         mine = next(s for s in _board(admin, site)["sites"] if s["site_id"] == site)["completeness"]["open"]
         return mine, admin.get(f"/api/quests/gaps/{site}").json()["completeness"]["open"]
     assert still_open()[0] == still_open()[1] - 1          # "no link to the other sites, on purpose" was said earlier
-    quest = next(q for q in _board(admin, site)["quests"] if q["kind"] == "device_unreachable")
-    assert quest["purpose"].startswith("NetBox does not say how to reach sw-quay-1, sw-quay-2 and sw-loft-1 to manage them.")
-    ids = [harbour["devs"][n]["id"] for n in ("sw-quay-1", "sw-quay-2", "sw-loft-1")]
-    quest = _answer(admin, quest, {f"ip_{ids[0]}": "An address not in NetBox yet", f"addr_{ids[0]}": "192.0.2.61/24", f"port_{ids[0]}": "Gi1/0/1",
-                                   f"ip_{ids[1]}": "It has none", f"ip_{ids[2]}": "I don't know yet"})
-    assert quest["status"] == "ready" and [o["op"] for o in quest["proposal"]["ops"]] == ["assign_ip"]
-    v = admin.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": quest["id"]}).json()
-    schema_validator("QuestVerdict").validate(v)
-    # one of three is confirmed and paid as a third; the one with no address counts as answered and pays nothing
-    assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"]) == ("real", True, False, 40)
-    assert v["message"] == "NetBox confirms 1 of 3; the rest of this line stays open."
-    assert v["quest"]["progress"] == {"total": 3, "verified": 1} and v["quest"]["status"] == "parked"   # sw-loft-1: "I don't know yet"
-    assert _first(nbx, "dcim/devices/", id=ids[0])["primary_ip4"]["address"] == "192.0.2.61/24"
-    b = _board(admin, site)
+    quest = _line(admin, f"q:device_unreachable:device:{ids[0]}")
+    assert quest["purpose"].startswith("NetBox does not say how sw-quay-1 is managed, or how to reach it.")
+    assert quest["step"]["prompt"] == "How is sw-quay-1 (EX-A2400) managed?" and quest["chain"]["label"] == "2 of 2: logical"
+    # locally managed, with no management port of its own in use: the player names the front-panel port
+    quest = _answer(admin, quest, {f"mode_{ids[0]}": "Locally", f"model_{ids[0]}": "No: it differs", f"ip_{ids[0]}": "An address not in NetBox yet",
+                                   f"addr_{ids[0]}": "192.0.2.61/24", f"port_{ids[0]}": "Gi1/0/1"})
+    assert quest["status"] == "ready" and [o["op"] for o in quest["proposal"]["ops"]] == ["set_management", "assign_ip"]
+    v = _apply(admin, quest["id"])
+    assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"]) == ("real", True, True, 40)
+    dev = _first(nbx, "dcim/devices/", id=ids[0])
+    assert dev["primary_ip4"]["address"] == "192.0.2.61/24" and dev["custom_fields"]["rw_mgmt_mode"]["value"] == "local"
+    assert _first(nbx, "dcim/device-types/", slug="ex-a2400")["custom_fields"]["rw_mgmt_default"]["value"] == "varies"
+    # Gi1/0/1 carries an address and has no cable, yet is not listed as an uncabled port: it is the management address
+    gaps = admin.get(f"/api/quests/gaps/{site}", params={"limit": 500}).json()["items"]
+    assert not [g for g in gaps if g["field"] == "cable"]
+    # a cloud-managed switch has no address to give: the service is recorded, and NetBox itself now says it is complete
+    quest = _line(admin, f"q:device_unreachable:device:{ids[1]}")
+    quest = _answer(admin, quest, {f"mode_{ids[1]}": "By a cloud", f"service_{ids[1]}": "A service not listed", f"service_name_{ids[1]}": "Example Cloud Portal"})
+    assert quest["status"] == "ready" and quest["changes"] == ["sw-quay-2: managed by a cloud or controller service (Example Cloud Portal)."]
+    v = _apply(admin, quest["id"])
+    assert (v["verified"], v["complete"], v["xp_awarded"]) == (True, True, 32)          # the same kind of fix a second time at this site
+    cf = _first(nbx, "dcim/devices/", id=ids[1])["custom_fields"]
+    assert (cf["rw_mgmt_mode"]["value"], cf["rw_mgmt_service"]) == ("cloud", "Example Cloud Portal")
     gaps = [g["id"] for g in admin.get(f"/api/quests/gaps/{site}", params={"limit": 500}).json()["items"] if g["field"] == "primary_ip"]
-    assert gaps == [f"device:{i}:primary_ip" for i in sorted(ids[1:])]         # NetBox: two devices still have no primary IP
-    assert still_open()[0] == still_open()[1] - 2                                 # for this player, one of them is answered
-    # the line goes on with the device still unknown, and only with it
-    again = next(q for q in b["quests"] if q["id"] == quest["id"])
-    assert again["step"]["prompt"] == "How do you reach sw-loft-1 to manage it?"
-    # checking NetBox again changes nothing and pays nothing
-    v2 = admin.post("/api/game/quests/verify", json={"scope": "netbox", "quest_id": quest["id"]}).json()
-    assert (v2["xp_awarded"], v2["complete"], v2["quest"]["step"]["prompt"]) == (0, False, "How do you reach sw-loft-1 to manage it?")
-    done = _answer(admin, {**again, "status": "active"}, {f"ip_{ids[2]}": "It has none"})
-    assert done["status"] == "dismissed"
-    assert still_open()[0] == still_open()[1] - 3
+    assert gaps == [f"device:{ids[2]}:primary_ip"]                                # only the third switch is still unknown
+    assert still_open()[0] == still_open()[1] - 1                                 # what NetBox holds needs no per-player answer
+    # "I don't know yet" parks the third one; it costs nothing
+    quest = _answer(admin, _line(admin, f"q:device_unreachable:device:{ids[2]}"), {f"mode_{ids[2]}": "I don't know yet"})
+    assert quest["status"] == "parked" and quest["checklist"][0].startswith("Ask whoever looks after sw-loft-1 how they manage it")
+
+
+def _say(cl, quest_id: str, *answers: tuple[str, dict]) -> dict:
+    for step, body in answers:
+        r = cl.post("/api/game/quests/answer", json={"scope": "netbox", "quest_id": quest_id, "step": step, **body})
+        assert r.status_code == 200, r.text
+        schema_validator("Quest").validate(r.json())
+    return r.json()
+
+
+def test_the_way_out_is_played_as_a_whole_chain_to_the_complete_record_live(admin, harbour, nbx):
+    site = harbour["site"]["id"]
+    circuit = _first(nbx, "circuits/circuits/", cid="EXF-20417")
+    hand, rec = f"q:circuit_handoff:circuit:{circuit['id']}", f"q:circuit_record:circuit:{circuit['id']}"
+    chain = next(c for c in _board(admin, site)["chains"] if c["kind"] == "way_out")
+    assert chain["label"] == "2 of 3: logical" and [s["status"] for s in chain["stages"]] == ["done", "open", "locked"]
+    # ---- logical: the address on the port the circuit plugs into, and its prefix
+    q = _say(admin, hand, ("has", {"choice": "typed"}), ("addr", {"text": HANDOFF}), ("prefix", {"choice": "yes"}))
+    assert q["status"] == "ready" and q["changes"] == [f"sw-quay-1: {HANDOFF} on Te1/1/2.", f"New prefix {HANDOFF_PREFIX}."]
+    v = _apply(admin, hand)
+    assert (v["verified"], v["complete"], v["xp_awarded"], v["chain"]["label"]) == (True, True, 60, "3 of 3: administrative")
+    port = _first(nbx, "dcim/interfaces/", device_id=harbour["devs"]["sw-quay-1"]["id"], name="Te1/1/2")
+    assert [ip["address"] for ip in nbx.get("ipam/ip-addresses/", params={"interface_id": port["id"]}).json()["results"]] == [HANDOFF]
+    assert _first(nbx, "dcim/devices/", id=harbour["devs"]["sw-quay-1"]["id"])["primary_ip4"]["address"] == "192.0.2.61/24"   # not replaced
+    # ---- administrative: NetBox's own models, each fact "if known"; the cost is not known yet
+    first = _line(admin, rec)
+    assert first["chain"]["label"] == "3 of 3: administrative" and first["step"]["id"] == "network"
+    q = _say(admin, rec, ("network", {"choice": "new"}), ("network_name", {"text": "Example Fibre Internet"}),
+             ("account", {"choice": "new"}), ("account_no", {"text": ACCOUNT}), ("contact_for", {"choice": "provider"}),
+             ("contact", {"values": {"contact:support:name": CONTACT[0], "contact:support:phone": CONTACT[1]}}),
+             ("terms", {"values": {"install_date": "2025-06-02", "commit_rate": 200}}), ("cost", {"values": {}}))
+    assert q["status"] == "ready"
+    assert [o["op"] for o in q["proposal"]["ops"]] == ["create_provider_network", "create_circuit_termination", "create_provider_account",
+                                                       "create_contact", "assign_contact", "record_circuit"]
+    pre = admin.post("/api/game/quests/preview", json={"scope": "netbox", "quest_id": rec})
+    assert pre.status_code == 200 and [o["status"] for o in pre.json()["ops"]] == ["ok"] * 6, pre.text
+    v = _apply(admin, rec)
+    assert (v["mode"], v["verified"], v["complete"], v["quest"]["status"], v["chain_xp"]) == ("real", True, False, "parked", 0)
+    assert v["chain"]["status"] == "open_questions"
+    assert v["chain"]["label"] == "3 of 3: administrative (not known yet: the monthly charge and the one-off charge)"
+    assert v["quest"]["step"]["id"] == "cost" and v["quest"]["checklist"]
+    # NetBox itself holds every fact where its own model has a place for it
+    live = _first(nbx, "circuits/circuits/", id=circuit["id"])
+    account = _first(nbx, "circuits/provider-accounts/", provider_id=harbour["provider"]["id"])
+    assert (live["provider_account"]["id"], account["account"], live["install_date"], live["commit_rate"]) == (account["id"], ACCOUNT, "2025-06-02", 200000)
+    network = _first(nbx, "circuits/provider-networks/", provider_id=harbour["provider"]["id"])
+    z = _first(nbx, "circuits/circuit-terminations/", circuit_id=circuit["id"], term_side="Z")
+    assert (network["name"], z["termination_type"], z["termination_id"]) == ("Example Fibre Internet", "circuits.providernetwork", network["id"])
+    contact = _first(nbx, "tenancy/contacts/", name=CONTACT[0])
+    assigned = _first(nbx, "tenancy/contact-assignments/", contact_id=contact["id"])
+    assert (contact["phone"], assigned["object_type"], assigned["object_id"], assigned["role"]["slug"]) == (
+        CONTACT[1], "circuits.provider", harbour["provider"]["id"], "support")
+    assert (live["custom_fields"]["rw_mrc"], live["custom_fields"]["rw_nrc"]) == (None, None)
+    # the changelog names the player on the circuit's record as on a cable
+    change = _first(nbx, "core/object-changes/", changed_object_type="circuits.circuit", changed_object_id=circuit["id"])
+    assert change["message"] == f"rackwalker ({admin.player}): quest: The record of EXF-20417"
+    # ---- "cost not known" leaves the chain honestly open and does not count against the site
+    b = _board(admin, site)
+    chain = next(c for c in b["chains"] if c["kind"] == "way_out")
+    assert chain["open_questions"] == ["the monthly charge", "the one-off charge"] and chain["stages"][2]["status"] == "not_known"
+    mine = next(s for s in b["sites"] if s["site_id"] == site)["completeness"]["open"]
+    scanned = admin.get(f"/api/quests/gaps/{site}").json()["completeness"]["open"]
+    assert mine == scanned - 1 - 2                         # "no link, on purpose" from before, and the two charges not known yet
+    # ---- the bill turns up: the charges go to the custom fields, and the whole record is read back from NetBox
+    q = _say(admin, rec, ("cost", {"values": {"mrc": 245.5, "nrc": 0, "currency": "gbp"}}))
+    assert q["status"] == "ready" and q["changes"] == ["Circuit EXF-20417: 245.50 GBP a month, 0.00 GBP once."]
+    v = _apply(admin, rec)
+    assert (v["verified"], v["complete"], v["chain"]["status"], v["chain"]["label"]) == (True, True, "complete", "3 of 3: complete")
+    assert v["chain_xp"] == 250 and v["xp_awarded"] > v["chain_xp"]            # every stage of the chain was this player's
+    cf = _first(nbx, "circuits/circuits/", id=circuit["id"])["custom_fields"]
+    assert (float(cf["rw_mrc"]), float(cf["rw_nrc"]), cf["rw_currency"]) == (245.5, 0.0, "GBP")
+    assert v["chain"]["summary"] == (
+        f"Harbour Office: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre, network Example Fibre Internet, your address {HANDOFF}, "
+        f"account {ACCOUNT}, Support / NOC: {CONTACT[0]} {CONTACT[1]}, 245.50 GBP a month, 0.00 GBP once, installed 2025-06-02, 200 Mbps committed.")
+    assert v["message"].endswith(v["chain"]["summary"])
+    # nothing of those figures was kept by the game: its store holds the line, not the numbers
+    disk = b"".join(p.read_bytes() for p in admin.app.state.settings.state_dir.rglob("*") if p.is_file())
+    assert disk and not [x for x in (ACCOUNT, CONTACT[1], "245.5") if x.encode() in disk]
 
 
 def test_the_kept_estate_matches_a_whole_new_read_of_netbox_live(admin, harbour, monkeypatch):

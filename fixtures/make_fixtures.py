@@ -203,7 +203,10 @@ class World:
                          "rack_id": self.rack_id[d.rack] if d.rack else None, "position": d.position, "face": d.face, "role": d.role,
                          "role_name": sm.ROLES[d.role][0], "status": d.status, "serial": d.serial, "asset_tag": None, "platform": None,
                          "primary_ip": d.ip, "u_height": float(sm.DEVICE_TYPES[d.dtype].u_height), "model": sm.DEVICE_TYPES[d.dtype].model,
-                         "manufacturer": sm.DEVICE_TYPES[d.dtype].manufacturer, "vc_id": None, "last_updated": None} for d in m.devices],
+                         "manufacturer": sm.DEVICE_TYPES[d.dtype].manufacturer, "vc_id": None, "type_id": self.dt_id[d.dtype],
+                         # nothing is on record about how a device is managed: one with a primary IP is locally managed
+                         "mgmt_mode": None, "mgmt_service": None, "mgmt_default": None, "mgmt_default_service": None,
+                         "last_updated": None} for d in m.devices],
             "ports": sorted(ports, key=lambda p: (p["kind"], p["id"])),
             "cables": [{"id": c["id"], "type": c["spec"].type, "label": c["spec"].label, "status": c["spec"].status,
                         "a": [key(c["a"])], "b": [key(c["b"])]} for c in self.cables],
@@ -289,7 +292,7 @@ def render() -> dict[str, object]:
         out[f"device-{did}.json"] = {
             "meta": META, "device": w.device(dev),
             "info": {"serial": dev.serial, "asset_tag": None, "platform": None, "description": "", "comments": "",
-                     "tags": [], "custom_fields": {}},  # the seed tags nothing (live 4.7.4)
+                     "tags": [], "custom_fields": {"rw_mgmt_mode": None, "rw_mgmt_service": None}},  # the seed tags nothing (live 4.7.4)
             "interfaces": [w.interface(p) for p in ports],
             "cables": [w.cable(w.cables[p["cable"] - 1]) for p in ports if p["cable"]]}
 
