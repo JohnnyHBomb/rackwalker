@@ -120,7 +120,8 @@ Semantics:
   alone is enough (`local`). A dry-run proxy previews for anyone, as before. The write itself still uses the proxy's
   NetBox token, so NetBox records the proxy's user as the author; the changelog message names the player (below).
   **The player's own NetBox permissions must cover the write (2.3.0).** Before `POST /api/changes/apply` writes, the
-  proxy reads the signed-in player's NetBox object permissions with its own token (`GET /api/users/users/<id>/`,
+  proxy reads the signed-in player's NetBox object permissions from NetBox with its own token (for every write; only
+  the quest log uses an answer up to 30 seconds old) (`GET /api/users/users/<id>/`,
   `GET /api/users/users/?id=<id>&is_superuser=true`, `GET /api/users/permissions/?user_id=<id>&enabled=true` and the
   same with `group_id` for each of the user's groups) and needs, for every op, an enabled permission without
   constraints that names the object type and the action: `change` on the target's type for `update_fields`,
@@ -204,8 +205,9 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   `text`, or `values` (form field id to value; blank or absent means not known). An answer to any other step
   changes nothing and returns the line as it stands; `step: "restart"` clears the line's answers and
   `step: "back"` takes back one answer (the question a parked line waits at, else the last one answered). Choice kinds:
-  `candidate` (an object of the estate), `other` (not listed, or a typed value follows), `unknown` ("I don't know
-  yet"), `not_applicable`, `confirm`, `skip`. A typed value or a form value that does not fit comes back as the same
+  `candidate` (an object of the estate), `other` (not listed, or a typed value follows: the id `named` asks for the
+  name of any other object of that kind in NetBox, in the step `<step>_name`), `unknown` ("I don't know yet"),
+  `not_applicable` (also on a form step: `choice: "none"` closes the line with nothing written), `confirm`, `skip`. A typed value or a form value that does not fit comes back as the same
   step with `error`.
 * **`POST /api/game/quests/preview`** previews the proposal exactly as `/api/changes/preview` would. Never writes.
 * **`POST /api/game/quests/apply`**: on the practice island the proposal changes the player's island (game store
@@ -215,20 +217,37 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   and by a check that confirms nothing; when part of an errand is confirmed, only the answers about that part go.
   After a write the proxy reads the sites the change reached again (not the whole estate) and analyses the estate
   again: `verified` and `complete` come from that read, never from the request. `trace` quotes NetBox's own
-  `/trace/` from the first interface the proposal cabled.
+  `/trace/` from the first interface the proposal cabled. One apply runs at a time per player. A change to an
+  existing site, rack or device carries `if_unmodified_since` (the object's `last_updated` when the question was
+  asked), so a value recorded in NetBox meanwhile is never written over. When NetBox takes nothing of the change,
+  the answer is `mode: "real"`, `verified: false`, no XP, `result.applied: false`, and `message` gives NetBox's
+  reason; the kept estate is dropped.
+* **Settlement.** A check of a line is *confirmed* only when the fresh analysis makes that check and it passes. A
+  check the analysis no longer makes (the object was deleted, is no longer live, or moved) confirms nothing; while a
+  list is incomplete such a check counts as still open. A line left with no open check and nothing confirmed is
+  closed as "no longer applies": its row is deleted, the verdict's quest has status `dismissed`, `verified` and
+  `complete` are false and nothing is paid. What was confirmed stays counted when it is undone later (`lapsed`); a
+  `done` line is never reopened by `/verify`. Each check pays once per player (store table `paid`), whichever line
+  confirms it and however many requests arrive at once; the row is read, paid and saved in one store transaction.
+* **Line ids.** A quest id is `q:` + its finding's id. `interface_no_cable` is per device
+  (`q:interface_no_cable:device:<id>`, checks `interface:<id>:cable` for each of its ports). A finding about a group
+  (`site_island`, `address_no_prefix`) is named after its first member and has one check per member; when the first
+  member goes, a begun line of that player is moved to the finding's new id (same kind, a shared open check).
 * **`POST /api/game/quests/verify`** does the read and the settlement without a write (scope `netbox` only): the
   line's own site is read again, at most every 5 seconds. A spot check is refused (400): it is answered by the
   player. A spot-check id is also refused by `/answer` (409 `conflict`) at a site that still has something open.
-* **Rewards.** XP per settlement: the line's rank XP (120, 50, 30) times the share of the line's checks newly
-  confirmed, times 1, 0.8, 0.6 or 0.4 for the first, second, third and later XP award of that quest kind at that
+* **Rewards.** XP per settlement: the line's XP (120, 50 or 30 by rank; 50 for `address_no_prefix`) times the share
+  newly confirmed of one pass (checks newly confirmed / min(checks the line stands for, 4), at most 1), times 1, 0.8,
+  0.6 or 0.4 for the first, second, third and later XP award of that quest kind at that
   site. Only `mode: "real"` pays. A potion with each new level (250 XP). `label_maker` with the first completed
   identity line, `cable_tracer` with the first completed connectivity line. A line that was done and whose checks
   are open again in NetBox is `lapsed`: nothing is reopened or taken away; `Rewards.lapsed` counts them. A finished
   errand that gains an object it never covered (a new device with no serial in an audited rack) is offered again
   for that object. A check the player answered with "it has none" (a device nobody logs in to) counts as answered
   in that player's completeness and pays nothing.
-* **Site boss.** `SiteProgress.boss_ready` is true when the site has no open check (dismissed findings count as
-  answered for that player). `POST /api/game/boss/ack` records that the player has seen it (409 `conflict` when the
+* **Site boss.** `SiteProgress.boss_ready` is true when the site has devices and no open check (every check of a
+  dismissed line, and every "it has none" answer, counts as answered for that player; a parked or practised line
+  does not). `POST /api/game/boss/ack` records that the player has seen it (409 `conflict` when the
   site is not ready).
 * **Practice island.** Site id 9,000,001 and the ids of its rooms, racks, devices and ports are made up by the
   proxy. `scope: "practice"` plays on it; `GET /api/scene/site|rack/...`, `/api/device/...` and `/api/trace/...`
@@ -262,8 +281,16 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   with that token (NetBox >= 4.3), takes the user's `id`, `username` and name, and forgets the token. It is never
   stored, logged or used again; every NetBox read and write still uses the proxy's own token. Why a token rather
   than a password: no password ever reaches the game; NetBox has no side-effect-free password check over the API
-  (token provisioning creates a token); and it works the same for local, LDAP and SSO users. A read-only token is
-  enough. NetBox answering 401/403 -> `unauthorized`.
+  (token provisioning creates a token); and it works the same for local, LDAP and SSO users. NetBox answering
+  401/403 -> `unauthorized`.
+* **What the token may do carries over (2.3.0).** In the same sign-in the proxy asks NetBox, with the player's token,
+  for that token's own record (`GET /api/users/tokens/?key=<the public key part of a v2 token>`; every user may list
+  their own tokens) and keeps on the session its NetBox id (not a secret), whether it may write (`write_enabled` and
+  `enabled`) and when it expires. A session started with a read-only token plays in dry-run: `POST /api/changes/apply`
+  answers 403 `forbidden` with `details.reason` `read_only_token`, a quest's apply is a dry run, and the quest log's
+  `can_write` is false with `write_blocked` saying why. A session never outlives its token's `expires`. A token whose
+  record NetBox does not show (a legacy v1 token: looking it up would put the secret in a URL) is taken as read-only.
+  Sessions from before this rule may not write until the player signs in again.
 * **Session.** A random cookie `rackwalker_session` (HttpOnly, SameSite=Strict, Path=/api, 7 days;
   `RACKWALKER_COOKIE_SECURE=1` adds Secure behind https). Path `/api` so the change routes see it too (writes need a
   player). Only its SHA-256 is stored, with the player id and a CSRF token. Sign-out deletes it, and signing in again
@@ -272,7 +299,11 @@ migrations only); a file from a newer RackWalker is refused, never rewritten.
   active (`GET /api/users/users/<id>/`, `is_active`): before every write (game writes and NetBox change writes), and on
   reads when the last good answer is older than `RACKWALKER_SESSION_RECHECK` seconds (default 60). A user NetBox no
   longer has (404) or has deactivated loses every session at once: the request answers 401 `unauthorized` with
-  `details.reason` `gone` or `inactive` (`GET /api/game/session` answers signed out and clears the cookie). If NetBox
+  `details.reason` `gone` or `inactive` (`GET /api/game/session` answers signed out and clears the cookie). At the
+  same moments the session's token is looked up again by its id with the proxy's token (`GET /api/users/tokens/<id>/`;
+  the proxy's NetBox user needs view on `users.token`): a token that was deleted, disabled or has expired ends that
+  session (401 with `details.reason` `token_gone`, `token_disabled` or `token_expired`), and a changed write flag or
+  expiry is taken over. When the proxy may not view tokens, the facts from sign-in stand. If NetBox
   cannot answer, reads go on and writes answer 502 `netbox_unreachable` until NetBox answers again; sign-out never needs
   NetBox. The proxy's NetBox user needs view permission on users (`devnetbox/proxy_tokens.py` grants it): when NetBox
   refuses the lookup to the proxy's token (401 or 403), sessions are kept, reads go on and writes answer 502

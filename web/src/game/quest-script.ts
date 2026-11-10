@@ -4,8 +4,11 @@
 //
 // A bubble holds one line of at most 160 characters and at most four choices, so:
 //   * a longer prompt is split at sentence ends into several lines (the last one carries the choices);
-//   * more than four choices are paged: candidates two or three to a page with "More choices", and "I don't know yet"
-//     on every page, so it is always one key away;
+//   * more than four choices are paged, two or three to a page with "More choices", and "I don't know yet" on every
+//     page, so it is always one key away. The likeliest candidates come first; the answers that end the search ("none,
+//     on purpose", "another one that is in NetBox", "not in NetBox yet") come on the next page, before the rest of the
+//     candidates, so "that is how it is" is never four pages deep;
+//   * text from NetBox (a device or site name) is never read as a `{key:...}` token of the script format;
 //   * a choice label longer than 48 characters is cut with an ellipsis (the proxy already keeps them short).
 // Picking a choice sets the flag `quest.pick` to the choice's id and ends the script; the shell reads it from the run's
 // effects and never stores it.
@@ -15,11 +18,17 @@ import { MAX_CHOICES, MAX_TEXT, loadScript, type Choice, type DialogueNode, type
 export const PICK = 'quest.pick';
 const clip = (s: string, n: number) => (s.length <= n ? s : `${s.slice(0, n - 1).trimEnd()}…`);
 
+/**
+ * Text that came from the proxy (and so from NetBox names) as plain words: a `{key:` in it is not a key token. 
+ * word joiner (U+2060, no width) after the brace keeps it looking the same and stops the script format from reading it.
+ */
+export const plain = (text: string): string => text.replace(/\{(?=key:)/g, '{\u2060');
+
 /** A text as lines of at most MAX_TEXT characters, split at sentence ends, then at spaces. */
 export function lines(text: string): string[] {
   const out: string[] = [];
   let cur = '';
-  for (const s of text.trim().split(/(?<=[.!?])\s+/)) {
+  for (const s of plain(text).trim().split(/(?<=[.!?])\s+/)) {
     let part = s;
     while (part.length > MAX_TEXT) {
       const cut = part.lastIndexOf(' ', MAX_TEXT - 1);
@@ -54,10 +63,14 @@ function say(prefix: string, text: string, last: (text: string) => DialogueNode)
 /** The question of one step as a script. Only for steps with `input: 'choice'`. */
 export function stepScript(step: QuestStep): Script {
   const unknown = step.choices.find((c) => c.kind === 'unknown');
-  const rest = step.choices.filter((c) => c.kind !== 'unknown');
+  const all = step.choices.filter((c) => c.kind !== 'unknown');
   // One page when everything fits; else every page also carries "More choices" (the last: "Back to the first choices").
   const room = MAX_CHOICES - (unknown ? 1 : 0);
-  const per = rest.length <= room ? room : room - 1;
+  const per = all.length <= room ? room : room - 1;
+  // When paged: the first page of candidates, then "that is how it is" and the other ways out, then the other candidates.
+  const picks = all.filter((c) => c.kind === 'candidate' || c.kind === 'confirm' || c.kind === 'skip');
+  const ways = [...all.filter((c) => c.kind === 'not_applicable'), ...all.filter((c) => c.kind === 'other')];
+  const rest = all.length <= room ? all : [...picks.slice(0, per), ...ways, ...picks.slice(per)];
   const pages: QuestChoice[][] = [];
   for (let i = 0; i < rest.length; i += per) pages.push(rest.slice(i, i + per));
   if (!pages.length) pages.push([]);

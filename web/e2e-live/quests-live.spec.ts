@@ -43,11 +43,12 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
   const core = (await nb<{ results: Port[] }>('/api/dcim/interfaces/?device=nd-rtr1&name=ge-0/0/0')).results[0]!;
   expect(core.cable, 'fresh seed: nd-rtr1 ge-0/0/0 has no cable (make netbox-reset)').toBeNull();
   let cableId: number | null = null;
-  // The player: a NetBox user of their own, whose only write permission is to add cables.
+  // The player: a NetBox user of their own, whose only write permission is to add cables, signed in with a token
+  // that may write (a read-only token would play in dry-run).
   const name = `quest-walker-${Date.now() % 100000}`;
   const user = await nb<{ id: number }>('/api/users/users/', { method: 'POST', body: JSON.stringify({ username: name, password: `Rw-${crypto.randomUUID()}`, is_active: true }) });
   const perm = await nb<{ id: number }>('/api/users/permissions/', { method: 'POST', body: JSON.stringify({ name: `${name} cables`, enabled: true, users: [user.id], object_types: ['dcim.cable'], actions: ['add'] }) });
-  const made = await nb<{ key: string; token: string }>('/api/users/tokens/', { method: 'POST', body: JSON.stringify({ user: user.id, version: 2, write_enabled: false, description: 'quest e2e' }) });
+  const made = await nb<{ key: string; token: string }>('/api/users/tokens/', { method: 'POST', body: JSON.stringify({ user: user.id, version: 2, write_enabled: true, description: 'quest e2e' }) });
   const playerToken = made.token.startsWith('nbt_') ? made.token : `nbt_${made.key}.${made.token}`;
   try {
     await boot(page);

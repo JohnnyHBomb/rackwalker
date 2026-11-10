@@ -107,8 +107,9 @@ make e2e-live
 
 Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixtures`.
 
-* **Sign in as your NetBox user.** Paste one of your NetBox API tokens (a read-only one is enough; NetBox: your user
-  menu, API Tokens). The proxy asks NetBox once who owns it and forgets it; your session is an HttpOnly cookie. In
+* **Sign in as your NetBox user.** Paste one of your NetBox API tokens (NetBox: your user menu, API Tokens). A
+  read-only token is enough to play: it plays in dry-run, and nothing is written to NetBox for it. To write, use a
+  write-enabled v2 token of your own; what you may change is still your own NetBox permissions. The proxy asks NetBox once who owns it and forgets it; your session is an HttpOnly cookie. In
   the dev stack, `devnetbox/nb.sh env admin` prints a token of the `admin` user; with `make dev-fixtures` use a
   synthetic token from `fixtures/players.json`. `RACKWALKER_LOCAL_PLAYER=1` skips sign-in for a NetBox only you use
   (off by default).

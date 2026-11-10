@@ -3,7 +3,8 @@
 import { describe, expect, it } from 'vitest';
 import type { Quest, QuestBoard, QuestStep } from '../src/contracts/scene.gen';
 import { DialogueRun, MAX_CHOICES, MAX_TEXT, validateScript } from '../src/game/dialogue';
-import { PICK, lineScript, lines, offerScript, stepScript } from '../src/game/quest-script';
+import { PICK, lineScript, lines, offerScript, plain, stepScript } from '../src/game/quest-script';
+import { tracerLocked } from '../src/game/quests';
 import board from '../../fixtures/quest-board.json';
 import quest from '../../fixtures/quest.json';
 
@@ -99,8 +100,58 @@ describe('quest questions as dialogue scripts', () => {
     expect(first.choices!.map((c) => c.label)).toEqual(["Let's find out", 'Or: The link between Loft and Quay Room', 'Show me the quest log', 'Not now']);
     expect(first.choices![0]!.set![PICK]).toBe(b.quests[0]!.id);
     for (const q of b.quests) if (q.step?.input === 'choice') expect(validateScript(stepScript(q.step))).toEqual([]);
+    // the example line after its first answer: whose line it is (asked even with one provider on record)
     const q = quest as unknown as Quest;
-    expect(q.step!.input).toBe('text');
+    expect(q.step!.id).toBe('provider');
+    expect(validateScript(stepScript(q.step!))).toEqual([]);
+  });
+
+  it('a name from NetBox that looks like a key token is shown as it is and breaks no script', () => {
+    const st = step(1, true, 'What does sw-loft-{key:pwn} uplink to, and sw-{key:interact}-1?');
+    const s = stepScript(st);
+    expect(validateScript(s)).toEqual([]);
+    const run = new DialogueRun(s, { interact: 'Enter' });
+    // nothing is swapped for a key name, nothing is lost; the brace is followed by a character of no width
+    expect(run.text.replace(/\u2060/g, '')).toBe('What does sw-loft-{key:pwn} uplink to, and sw-{key:interact}-1?');
+    const b = { ...(board as unknown as QuestBoard) };
+    b.quests = b.quests.map((x, i) => (i === 0 ? { ...x, purpose: 'Nobody can tell how Harbour {key:pwn} reaches the outside world.' } : x));
+    expect(validateScript(offerScript(b, 'Harbour {key:pwn}'))).toEqual([]);
+    expect(validateScript(lineScript('Good to know about {key:nothing}.'))).toEqual([]);
+    expect(plain('{key:x} {keys} {key')).toBe('{\u2060key:x} {keys} {key');
+  });
+
+  it('the answers that end the search come right after the first candidates, not pages deep', () => {
+    const many: QuestStep = { ...step(6), choices: [
+      ...step(6, false).choices,
+      { id: 'named', label: 'Another device that is in NetBox', kind: 'other' },
+      { id: 'other', label: 'A device that is not in NetBox yet', kind: 'other' },
+      { id: 'none', label: 'Nothing: it stands alone, on purpose', kind: 'not_applicable' },
+      { id: 'unknown', label: "I don't know yet", kind: 'unknown' },
+    ] };
+    const s = stepScript(many);
+    expect(validateScript(s)).toEqual([]);
+    expect(s.nodes.page0!.choices!.map((c) => c.label)).toEqual(['sw-1 (switch)', 'sw-2 (switch)', 'More choices', "I don't know yet"]);
+    expect(s.nodes.page1!.choices!.map((c) => c.label)).toEqual(['Nothing: it stands alone, on purpose', 'Another device that is in NetBox', 'More choices', "I don't know yet"]);
+    expect(s.nodes.page2!.choices!.map((c) => c.label)).toEqual(['A device that is not in NetBox yet', 'sw-3 (switch)', 'More choices', "I don't know yet"]);
+    expect(reachable(s).ids).toEqual(many.choices.map((c) => c.id).sort());
+    // when everything fits one bubble, the order is the proxy's own
+    const few: QuestStep = { ...step(1), choices: [step(1).choices[0]!, { id: 'none', label: 'None, on purpose', kind: 'not_applicable' }, { id: 'other', label: 'Not listed', kind: 'other' }, step(1).choices[1]!] };
+    expect(stepScript(few).nodes.page0!.choices!.map((c) => c.label)).toEqual(['sw-1 (switch)', 'None, on purpose', 'Not listed', "I don't know yet"]);
+  });
+
+  it('tracing waits for the cable tracer only while the tool can be earned', () => {
+    const b = board as unknown as QuestBoard;
+    const connectivity = b.findings.some((f) => f.rank === 'connectivity');
+    expect(connectivity).toBe(true);
+    const earnable: QuestBoard = { ...b, can_write: true, write_blocked: null, rewards: { ...b.rewards, tools: [] } };   // (the island lends its tools)
+    expect(tracerLocked(earnable)).toBe(true);
+    expect(tracerLocked({ ...earnable, rewards: { ...b.rewards, tools: ['cable_tracer'] } })).toBe(false);
+    // a dry-run proxy, a read-only token, a missing permission: the tool cannot be earned, so nothing is locked
+    expect(tracerLocked({ ...earnable, can_write: false, write_blocked: 'The proxy runs in dry-run mode.' })).toBe(false);
+    expect(tracerLocked({ ...earnable, write_blocked: 'Your NetBox user may not add cables.' })).toBe(false);
+    // a tidy estate has no connectivity line to earn it with
+    expect(tracerLocked({ ...earnable, findings: b.findings.filter((f) => f.rank !== 'connectivity') })).toBe(false);
+    expect(tracerLocked(null)).toBe(false);
   });
 
   it('a site with nothing open gets a short honest line, and its Confusion is named when it is ready', () => {

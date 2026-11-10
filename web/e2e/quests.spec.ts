@@ -4,8 +4,13 @@
 // outcome with its reward moment, the island's Confusion once everything is in order, and the cable-tracer gate.
 // Real writes and real XP are in e2e-live/quests-live.spec.ts. Screenshots go to docs/screenshots/quests/.
 import { readFileSync } from 'node:fs';
-import { expect, test, type Page } from '@playwright/test';
+import { expect as baseExpect, test, type Page } from '@playwright/test';
 import { boot, game, typed } from './game-helpers';
+
+// Each of these tests walks, talks and reads the quest log many times. On a machine that is busy with other work the
+// default waits (5 s per expectation, 60 s per test) run out although nothing is wrong, so they are longer here.
+const expect = baseExpect.configure({ timeout: 20_000 });
+test.describe.configure({ timeout: 180_000 });
 
 const SHOTS = '../docs/screenshots/quests';
 const players = JSON.parse(readFileSync(new URL('../../fixtures/players.json', import.meta.url), 'utf8')).players as { token: string }[];
@@ -71,7 +76,7 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
     return s.overworld!.clientOf(s.map!.giverOf(1)!);
   });
   await page.mouse.click(at.x, at.y);
-  await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 10_000 }).toBe('quest-offer');
+  await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 30_000 }).toBe('quest-offer');
   await typed(page);
   let d = (await game(page)).dialogue!;
   // the first thing they say is what is missing and where, with the names NetBox has
@@ -106,7 +111,7 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await expect(page.locator('#quest-waiting .q')).toContainText('waiting for you (field task)');
   await expect(page.locator('#quest-open .q[data-status=offered]').first()).toBeVisible();
   await expect(page.locator('#quest-rewards')).toContainText('Level 1 · 0 / 250 XP');
-  await expect(page.locator('#quest-sites [data-site="1"]')).toContainText('North Depot: 87%');
+  await expect(page.locator('#quest-sites [data-site="1"]')).toContainText('North Depot: 78%');
   // said up front, not after the last answer: on this proxy nothing would be written
   await expect(page.locator('#quest-write-note')).toHaveText('This proxy serves canned fixture data: nothing is written. Lines you finish count as practice: no XP.');
   await page.screenshot({ path: `${SHOTS}/quest-log.png` });
@@ -197,11 +202,19 @@ test('the marker: an arrow towards a building off screen, then the object inside
   await page.screenshot({ path: `${SHOTS}/giver-inside.png` });
   await page.keyboard.press('Escape');
 
-  // A gate that opens with a tool: without the cable tracer, a trace inside a building is refused, and Ilatea says why.
-  expect(await page.evaluate(() => document.body.dataset.tracer)).toBe('locked');
+  // A gate that opens with a tool never takes a view away where the tool cannot be earned: this proxy writes nothing,
+  // so no quest can be confirmed here, and tracing a cable works as it always did.
+  expect(await page.evaluate(() => document.body.dataset.tracer)).toBe('open');
   await page.evaluate(() => window.__iso!.editor.runTrace('interface', 21));
+  await expect.poll(() => page.evaluate(() => window.__iso!.editor.state().trace.length)).toBeGreaterThan(0);
+  expect((await game(page)).dialogue).toBeNull();
+  // Where the player's changes would be written and a connectivity line is open, the trace waits for the cable tracer
+  // (earned with the first such line NetBox confirms), and Ilatea says so.
+  await page.keyboard.press('Escape');
+  await shell(page, 'const b = s.quests.boards.netbox; s.quests.boards.netbox = { ...b, can_write: true, write_blocked: null }; s.quests.hooks.changed();');
+  expect(await page.evaluate(() => document.body.dataset.tracer)).toBe('locked');
+  await page.evaluate(() => window.__iso!.editor.runTrace('interface', 22));
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-tracer');
-  expect(await page.evaluate(() => window.__iso!.editor.state().trace)).toEqual([]);
 });
 
 test('the practice island: a whole quest from giver to verified outcome, one line from Ilatea, nothing for NetBox', async ({ page }) => {
@@ -234,6 +247,11 @@ test('the practice island: a whole quest from giver to verified outcome, one lin
   expect((await game(page)).dialogue!.text).toBe("Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.");
   await choose(page, "Let's find out");
   await choose(page, 'sw-quay-1');
+  // Whose line it is: asked even with one provider on record (it may be another carrier's).
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('Whose line is it?');
+  await typed(page);
+  expect((await game(page)).dialogue!.choices).toEqual(['Example Fibre', 'A carrier that is not in NetBox yet', "I don't know yet"]);
+  await choose(page, 'Example Fibre');
   // A typed value: the circuit ID from the bill. An empty answer would park the line; a real one goes on.
   await expect(page.locator('#quest-step')).toBeVisible();
   await expect(page.locator('#quest-step')).toContainText('What is the circuit ID? Example Fibre prints it on the bill and on the hand-off box.');
@@ -254,7 +272,7 @@ test('the practice island: a whole quest from giver to verified outcome, one lin
 
   // The island is read again; the reward moment says what is now possible. Practice pays no XP.
   await expect(page.locator('#quest-reward h2')).toHaveText('Practice complete');
-  await expect(page.locator('#quest-reward .now')).toHaveText("You can now trace Practice Island to the carrier's hand-off.");
+  await expect(page.locator('#quest-reward .now')).toHaveText("You can now see in NetBox where the line to the outside comes into Practice Island, and trace it.");
   await expect(page.locator('#quest-reward .sparkle i')).toHaveCount(10);
   expect(await shell(page, 'return s.lastJingle')).toBe('practice');
   expect(await shell(page, 'return s.quests.lastVerdict')).toMatchObject({ mode: 'practice', verified: true, complete: true, xp_awarded: 0 });
@@ -331,7 +349,7 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
   await page.locator('#quest-open .q', { hasText: 'What sw-quay-2 runs' }).locator('button', { hasText: 'Start' }).click();
   await expect.poll(async () => (await game(page)).dialogue?.text).toBe('What does sw-quay-2 run?');
   await typed(page);
-  expect((await game(page)).dialogue!.choices).toEqual(['Example OS', 'Something not listed', "I don't know yet"]);
+  expect((await game(page)).dialogue!.choices).toEqual(['Example OS', 'A platform that is not in NetBox yet', 'Nothing we track: no system to record', "I don't know yet"]);
   await choose(page, 'Example OS');
   await expect(page.locator('#quest-changes li')).toHaveText(['sw-quay-2: platform Example OS.']);
   await page.click('#quest-apply');

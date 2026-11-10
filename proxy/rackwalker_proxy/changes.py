@@ -196,7 +196,8 @@ def rec_device(d: nb.Device, dtypes: dict[int, nb.DeviceType]) -> Rec:
         # planner-only facts (never shown in before/after, which list only touched fields)
         "_u_height": dt.u_height if dt else 1.0, "_full_depth": dt.is_full_depth if dt else True,
         "_child": bool(d.parent_device) or (dt is not None and dt.subdevice_role == "child"),
-        "_tenant_id": d.tenant.id if d.tenant else None, "_primary_ip": d.primary_ip.address if d.primary_ip else None})
+        "_tenant_id": d.tenant.id if d.tenant else None, "_primary_ip": d.primary_ip.address if d.primary_ip else None,
+        "_manufacturer_id": dt.manufacturer.id if dt else None})
 
 
 def rec_cable(cb: nb.Cable) -> Rec:
@@ -308,7 +309,8 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
         if op.op == "update_fields" and isinstance(f.get("platform_id"), int) and ("platform", f["platform_id"]) not in st.recs:
             row = await _one(client, "dcim/platforms", f["platform_id"])
             if row:
-                st.add(Rec("platform", row["id"], None, {"name": row["name"]}))
+                maker = row.get("manufacturer") or {}
+                st.add(Rec("platform", row["id"], None, {"name": row["name"], "manufacturer_id": maker.get("id"), "manufacturer": maker.get("name")}))
         if op.op == "connect_cable":
             for side in ("a", "b"):
                 kind, oid = f[f"{side}_kind"], f[f"{side}_id"]
@@ -574,6 +576,12 @@ class Planner:
             self.cable_length(rec, f)
         if p.kind == "device" and f.get("platform_id") is not None and ("platform", f["platform_id"]) not in self.st.recs:
             raise OpError("not_found", f"Platform {f['platform_id']} does not exist.", {"field": "platform_id", "id": f["platform_id"]})
+        if p.kind == "device" and f.get("platform_id") is not None:
+            # NetBox refuses a platform that is tied to another manufacturer: said in the preview, not after Apply
+            plat = self.st.recs[("platform", f["platform_id"])]
+            if plat.v.get("manufacturer_id") is not None and rec.v.get("_manufacturer_id") not in (None, plat.v["manufacturer_id"]):
+                raise OpError("validation_failed", f"Platform {plat.v['name']} is only for {plat.v.get('manufacturer') or 'another manufacturer'} "
+                              f"devices in NetBox; {rec.v['name'] or 'this device'} is of another make.", {"field": "platform_id"})
         p.key = rec.key
         self.change(p, rec, f, dict(f))
 

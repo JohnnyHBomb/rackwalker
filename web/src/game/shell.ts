@@ -17,7 +17,7 @@ import { actionOf, DEFAULT_SETTINGS, ISO_FIXED, ISO_FIXED_KEYS, ISO_KEYS, keysLa
 import { OverworldMap, type Dir, type Door, type Pos } from './overworld';
 import { OverworldView } from './overworld-view';
 import { buildingCard } from './world/card';
-import { PRACTICE_SITE, Quests, scopeOf } from './quests';
+import { PRACTICE_SITE, Quests, scopeOf, tracerLocked } from './quests';
 import type { QuestTarget, QuestVerdict } from '../contracts/scene.gen';
 import { capturingKey, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
 import emptyJson from './scripts/ilatea-empty.json';
@@ -411,7 +411,7 @@ export class GameShell {
     const target = q.tracked?.target;
     const giver = target ? map.giverOf(target.site_id) : null;
     ow.pointer = giver ? { x: giver.x, y: giver.y } : null;
-    document.body.dataset.tracer = q.rewards() && !q.hasTool('cable_tracer') ? 'locked' : 'open';
+    document.body.dataset.tracer = tracerLocked(q.boards.netbox) ? 'locked' : 'open';
   }
 
   /** "Point me there": inside the right building, open the level the object is on; else the overworld pointer leads to it. */
@@ -429,8 +429,10 @@ export class GameShell {
   }
 
   /**
-   * A gate that opens with a tool: inside a building, tracing a cable needs the cable tracer (earned with the first
-   * connectivity quest NetBox confirms). The plain viewer (?view=) has no game and traces as before.
+   * A gate that opens with a tool: inside a building, tracing a cable waits for the cable tracer (earned with the first
+   * connectivity quest NetBox confirms), but only while the player can earn it (quests.ts `tracerLocked`): on a dry-run
+   * proxy, without the NetBox permission, or on an estate with no connectivity finding, tracing is open as it always
+   * was. The plain viewer (?view=) has no game and traces as before.
    */
   mayTrace(): boolean {
     if (this.scene !== 'iso' || document.body.dataset.tracer !== 'locked') return true;

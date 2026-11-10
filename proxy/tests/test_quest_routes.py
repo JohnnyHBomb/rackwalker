@@ -308,6 +308,17 @@ def test_the_new_fields_follow_netbox_limits():
     assert upd("device", platform_id=2).status == "ok" and upd("device", platform_id=9).error.code == "not_found"
 
 
+def test_a_platform_tied_to_another_manufacturer_is_refused_in_the_preview_with_the_reason():
+    tied = changes.Rec("platform", 2, None, {"name": "Example OS", "manufacturer_id": 5, "manufacturer": "Example Networks"})
+    free = changes.Rec("platform", 3, None, {"name": "Any OS", "manufacturer_id": None, "manufacturer": None})
+    st = state(site(1), device(1, _manufacturer_id=6), device(2, _manufacturer_id=5), tied, free)
+    upd = lambda dev, pid: changes.plan(ops({"op": "update_fields", "target": {"kind": "device", "id": dev}, "fields": {"platform_id": pid}}), st)[0]  # noqa: E731
+    bad = upd(1, 2)
+    assert bad.status == "error" and bad.error.code == "validation_failed"
+    assert bad.error.message == "Platform Example OS is only for Example Networks devices in NetBox; d1 is of another make."
+    assert upd(2, 2).status == "ok" and upd(1, 3).status == "ok"
+
+
 # ---------------------------------------------------------------- the player's own NetBox permissions
 def netbox_with(users: dict, perm_rows: list[dict], refuse: str | None = None) -> NetBox:
     def handler(req: httpx.Request) -> httpx.Response:

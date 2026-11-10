@@ -55,6 +55,7 @@ body[data-scene=iso] #quest-giver{left:auto;right:112px}
 .quest-panel .rewards canvas,.quest-reward canvas{vertical-align:middle;margin-right:4px}
 .quest-panel label.f{display:block;margin:8px 0 2px;font-weight:bold}
 .quest-panel .hint{font-size:13px;color:#4a4436}
+.quest-panel input+.hint,.quest-panel select+.hint{margin-top:6px}
 .quest-panel input[type=text],.quest-panel input[type=number],.quest-panel select{width:100%;box-sizing:border-box}
 .quest-panel table.diff td{font-size:13px;vertical-align:top}
 .quest-panel .said{font-size:13px}
@@ -108,6 +109,16 @@ function btn(label: string, id: string, run: () => void): HTMLButtonElement {
   b.id = id;
   b.onclick = run;
   return b;
+}
+
+/**
+ * Whether tracing a cable inside a building waits for the cable tracer. Only while the tool can really be earned: the
+ * player's changes would be written (not a dry-run proxy, not a read-only token, no missing permission) and NetBox has
+ * a connectivity finding to work on. Everywhere else tracing stays open: a gate never takes a view away for good.
+ */
+export function tracerLocked(board: QuestBoard | null): boolean {
+  if (!board || board.rewards.tools.includes('cable_tracer')) return false;
+  return board.can_write && !board.write_blocked && board.findings.some((f) => f.rank === 'connectivity');
 }
 
 export class Quests {
@@ -213,7 +224,8 @@ export class Quests {
     if (siteId !== null) {
       const g = this.giver(siteId);
       const c = drawPortrait('giver', 2, g);
-      const n = this.openAt(siteId).length;
+      // every open line of the site, not only the few the giver offers at one time
+      const n = Math.max(this.openAt(siteId).filter((q) => q.kind !== 'spot_check').length, this.board(siteId)?.sites.find((s) => s.site_id === siteId)?.open_quests ?? 0);
       this.giverBtn.replaceChildren(c, el('span', n ? `${g.name}: ${n} thing${n === 1 ? '' : 's'} to find out` : `${g.name}: all in order`));
       this.giverBtn.title = `Talk to ${g.name}, this site's quest giver`;
     }
@@ -265,7 +277,14 @@ export class Quests {
     }
     const cast = this.giver(siteId);
     const name = board.sites.find((s) => s.site_id === siteId)?.name ?? 'this site';
-    const eff = await this.hooks.talk(offerScript(board, name), cast);
+    let offer: Script;
+    try {
+      offer = offerScript(board, name);
+    } catch (e) {
+      this.hooks.notice(`The quest giver cannot say what is open here: ${errText(e)}`);
+      return;
+    }
+    const eff = await this.hooks.talk(offer, cast);
     const picked = eff.set[PICK];
     if (picked === 'log') return this.openLog(siteId);
     const quest = board.quests.find((q) => q.id === picked);
@@ -434,8 +453,10 @@ export class Quests {
     row.append(
       btn(step.input === 'text' ? 'Answer' : 'Preview what I filled in', 'quest-step-send', send),
       btn("I don't know yet", 'quest-step-unknown', () => ((out = step.input === 'text' ? { choice: 'unknown' } : { values: {} }), close())),
-      btn('Close', 'quest-step-close', close),
     );
+    // "that is how it is, on purpose": closes the line with nothing written (a rack whose kit carries no labels)
+    step.choices.filter((c) => c.kind === 'not_applicable').forEach((c, n) => row.append(btn(c.label, `quest-step-none${n || ''}`, () => ((out = { choice: c.id }), close()))));
+    row.append(btn('Close', 'quest-step-close', close));
     p.append(row);
     p.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' && (e.target as HTMLElement).tagName === 'INPUT') (e.preventDefault(), send());
@@ -501,7 +522,12 @@ export class Quests {
       if (o.error) body.append(el('div', o.error.message, 'error'));
       else if (o.status === 'skipped') body.textContent = 'not run';
       else if (o.status === 'no_change') body.textContent = 'already so in NetBox';
-      else for (const d of o.diff) body.append(el('div', `${d.field}: ${show(d.before)} → ${show(d.after)}`));
+      else {
+        // the list above says it in names; NetBox's own numbers for the same thing (provider_id, a_id) are left out
+        const shown = o.diff.filter((d) => !(q.changes.length && INTERNAL.test(d.field)));
+        for (const d of shown) body.append(el('div', `${d.field.replace(/_/g, ' ')}: ${show(d.before)} → ${show(d.after)}`));
+        if (!shown.length) body.textContent = o.status === 'ok' ? 'as listed above' : o.status;
+      }
       tr.append(what, body);
       table.append(tr);
     }
@@ -552,7 +578,9 @@ export class Quests {
     box.dataset.verified = String(v.verified);
     const real = v.mode === 'real';
     // a dry run on real data wrote nothing, so it is never "complete"; the practice island's own check can be
-    box.append(el('h2', real ? (v.complete ? 'NetBox confirms it' : v.verified ? 'Partly confirmed' : 'Not confirmed yet')
+    const notWritten = real && !!v.result && !v.result.applied;
+    box.append(el('h2', real ? (v.quest.status === 'dismissed' ? 'Line closed' : notWritten ? 'Not written' : v.complete ? (v.verified ? 'NetBox confirms it' : 'Still counted')
+      : v.verified ? 'Partly confirmed' : 'Not confirmed yet')
       : v.mode === 'practice' && v.complete ? 'Practice complete' : 'Practice run'));
     box.append(el('p', v.message));
     if (v.can_now) box.append(el('p', v.can_now, 'now'));
@@ -716,6 +744,9 @@ export class Quests {
     this.hooks.changed();
   }
 }
+
+/** Diff fields that are NetBox ids or reference plumbing, said in names by the proxy's list of changes. */
+const INTERNAL = /(^|_)id$|_kind$|^term_side$/;
 
 function show(v: unknown): string {
   return v === null || v === undefined || v === '' ? '(empty)' : String(v);

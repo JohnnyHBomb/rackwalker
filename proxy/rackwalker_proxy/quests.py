@@ -273,7 +273,7 @@ def peer_items(e: Estate, dev: dict[str, Any], among: list[int] | None = None, c
     pool = [d for d in pool if d["id"] != dev["id"] and (linked_too or not comp.same(d["id"], dev["id"])) and e.free_ports(d["id"])]
     to_switch = e.is_switch(dev) or not e.is_network(dev)
     if linked_too:
-        pool.sort(key=lambda d: (d["rack_id"] != dev["rack_id"], d["location_id"] != dev["location_id"], not e.is_switch(d),
+        pool.sort(key=lambda d: (d["rack_id"] != dev["rack_id"], d["location_id"] != dev["location_id"], not is_router(d),
                                  natural(d["name"] or ""), d["id"]))
     else:
         pool.sort(key=lambda d: (d["site_id"] != dev["site_id"], d["location_id"] != dev["location_id"],
@@ -855,10 +855,12 @@ def flow_port(ctx: Ctx) -> list[dict[str, Any]]:
     every = [e.ports[("interface", i)] for i in data["interface_ids"] if ("interface", i) in e.ports]
     many = len(every) > 1
 
-    def said_of(p: dict[str, Any]) -> str:
-        return f" (described as {p['description'].strip()[:40]!r})" if p["description"].strip() else " (it has an address)"
+    def said_of(p: dict[str, Any], also_address: bool = False) -> str:
+        if p["description"].strip():
+            return f" (described as {p['description'].strip()[:40]!r})"
+        return " (it has an address)" if also_address else ""
     if many:
-        listing = "; ".join(f"{p['name']}{said_of(p)}" for p in every[:4]) + (f"; and {len(every) - 4} more" if len(every) > 4 else "")
+        listing = "; ".join(f"{p['name']}{said_of(p, True)}" for p in every[:4]) + (f"; and {len(every) - 4} more" if len(every) > 4 else "")
         ctx.choice("what", clip(f"{len(every)} ports of {name} are in use by NetBox's record, with no cable: {listing}. What are they?", 400),
                    [choice("each", "Leads I can follow: go through them"),
                     na("Desk and wall-outlet leads: not kept in NetBox")],
