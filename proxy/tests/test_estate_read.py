@@ -540,15 +540,15 @@ def test_every_netbox_field_the_scanner_uses_lands_in_the_estate_where_it_belong
     assert e.circuits == {4: {"id": 4, "cid": "C-1", "provider_id": 2, "type": "Internet", "status": "active", "account_id": None,
                               "install_date": None, "commit_rate": None, "mrc": None, "nrc": None, "currency": None, "last_updated": None}}
     # a circuit end names a site only when it ends at a site; at a provider network it names the network
-    assert e.cterms == {5: {"id": 5, "circuit_id": 4, "side": "A", "site_id": 1, "network_id": None, "cable_id": 2},
-                        6: {"id": 6, "circuit_id": 4, "side": "Z", "site_id": None, "network_id": 1, "cable_id": None}}
+    assert e.cterms == {5: {"id": 5, "circuit_id": 4, "side": "A", "site_id": 1, "location_id": None, "network_id": None, "cable_id": 2},
+                        6: {"id": 6, "circuit_id": 4, "side": "Z", "site_id": None, "location_id": None, "network_id": 1, "cable_id": None}}
     # an address counts as on an interface only when it is assigned to a device interface
     assert e.ips[50] == {"id": 50, "address": "10.0.0.1/24", "vrf_id": 7, "vrf": "tenant-a", "interface_id": 12}
     assert e.ips[51]["interface_id"] is None and e.ips[52]["interface_id"] is None and e.ips[1]["vrf_id"] is None
     assert e.prefixes == {1: {"id": 1, "prefix": "192.0.2.0/24", "vrf_id": None}, 9: {"id": 9, "prefix": "10.0.0.0/24", "vrf_id": 7}}
     # the front port leads to its rear port: a cable on the one and a cable on the other are one path
     comp = e.components()
-    assert comp._find(("p", "front_port", 81)) == comp._find(("p", "rear_port", 91))
+    assert comp._find(("p", "front_port", 81)) == comp._find(("r", 91, 1))   # a front port is one strand of its rear port
     # the slim selections name every field read above
     assert fake.lists("dcim/front-ports")[0]["fields"] == "id,name,device,cable,rear_ports,description"
     assert fake.lists("circuits/circuit-terminations")[0]["fields"] == "id,circuit,term_side,termination_type,termination_id,cable"

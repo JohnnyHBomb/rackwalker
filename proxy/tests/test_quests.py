@@ -122,7 +122,8 @@ def play(e: Estate, line: dict, prefer: dict[str, str] | None = None, tools=froz
             answers[step["id"]] = {"text": TEXT.get(step["id"], "192.0.2.77/24")}
         else:
             answers[step["id"]] = {"values": {f["id"]: (f["options"][0]["id"] if f["type"] == "select" else 3 + i if f["type"] == "number"
-                                                        else FORM.get(f["id"].rsplit(":", 1)[-1], f"V{i}")) for i, f in enumerate(step["fields"])}}
+                                                        else FORM.get(f["id"].rsplit(":", 1)[-1], f"V{i}")) for i, f in enumerate(step["fields"])
+                                              if not f["id"].endswith(":none")}}   # this player knows every contact: none is "none"
     raise AssertionError("the line never came to an end")
 
 

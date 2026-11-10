@@ -13,11 +13,13 @@ hits its cap is named in `Estate.truncated`, and a list NetBox refuses to the pr
 `Estate.unreadable`. Rules that would need a truncated or unreadable list say nothing (the game never reports
 something as missing only because it could not look).
 
-The connectivity graph (`Estate.components`) joins: every interface of a device to that device, unless the device is
-an end host (a server, a wireless access point: traffic ends there, so two switches that share only a dual-homed server
-are not linked); the members of a virtual chassis (a switch stack) to each other; a patch panel's front port to the
-rear port it maps to; the two ends of a cable; the terminations of a circuit. Power ports, outlets and feeds are a
-separate graph (`powered`).
+The connectivity graph (`Estate.components`) joins: every interface of a network device to that device (any other
+device is an end: a server, a wireless access point, a box whose role says nothing. Traffic ends there, so two switches
+that share only a dual-homed server are not linked); the members of a virtual chassis (a switch stack) to each other; a
+patch panel's front port to the position of the rear port it maps to (the strands of a trunk are separate wires); the
+two ends of a cable; the terminations of a circuit, and a provider network to every circuit that ends on it (sites that
+hang off one carrier network are joined through it). A decommissioned circuit joins nothing. Power ports, outlets and
+feeds are a separate graph (`powered`).
 
 What a device is comes from its role's name and slug, word by word (`NETWORK_WORDS`, `END_WORDS`, ...). A role the
 words do not know ("ToR", "Kit") still counts as a network device when the device has `MANY_PORTS` or more physical
@@ -60,6 +62,13 @@ MANY_PORTS = 8
 # say `varies`: the model can be either, so each device is asked).
 MGMT_MODES = ("local", "cloud", "unmanaged")
 MGMT_DEFAULTS = (*MGMT_MODES, "varies")
+# A circuit in one of these states carries nothing: it is no way out, joins nothing and is asked nothing about.
+DEAD_CIRCUIT = ("decommissioned",)
+# At most this many list reads of one estate read are under way at NetBox at a time. NetBox holds a database
+# connection per request it is working on; twenty-odd lists asked for at once can use up a small database's connections.
+READ_CONCURRENCY = 4
+# The ids of what the practice island's quests create sit above this, like the island's own ids: never an id NetBox uses.
+PRACTICE_BASE = 9_000_000
 # Custom fields of the game that an estate read looks for, and the list whose rows carry them.
 GAME_FIELDS = {"devices": ("rw_mgmt_mode", "rw_mgmt_service"), "circuits": ("rw_mrc", "rw_nrc", "rw_currency")}
 
@@ -240,13 +249,29 @@ class Estate:
         return list(self._devices_by_site().get(site_id, []))
 
     def device_ports(self, device_id: int, kinds: tuple[str, ...] = DATA_PORTS) -> list[dict[str, Any]]:
-        return sorted((p for p in self._ports_by_device().get(device_id, []) if p["kind"] in kinds),
-                      key=lambda p: (kinds.index(p["kind"]), natural(p["name"]), p["id"]))
+        """A device's ports of these kinds in natural order. Kept per device: a question may look at every device."""
+        memo = self._memo.setdefault("device_ports", {})
+        got = memo.get((device_id, kinds))
+        if got is None:
+            got = memo[(device_id, kinds)] = sorted((p for p in self._ports_by_device().get(device_id, []) if p["kind"] in kinds),
+                                                    key=lambda p: (kinds.index(p["kind"]), natural(p["name"]), p["id"]))
+        return list(got)
 
     def free_ports(self, device_id: int) -> list[dict[str, Any]]:
         """Physical interfaces of a device with no cable, likeliest uplink first: non-management, then by name."""
-        ports = [p for p in self.device_ports(device_id, ("interface",)) if p["cable_id"] is None and is_physical(p) and p["enabled"]]
-        return sorted(ports, key=lambda p: (p["mgmt_only"], natural(p["name"]), p["id"]))
+        memo = self._memo.setdefault("free_ports", {})
+        got = memo.get(device_id)
+        if got is None:
+            ports = [p for p in self.device_ports(device_id, ("interface",)) if p["cable_id"] is None and is_physical(p) and p["enabled"]]
+            got = memo[device_id] = sorted(ports, key=lambda p: (p["mgmt_only"], natural(p["name"]), p["id"]))
+        return list(got)
+
+    def has_free_port(self, device_id: int) -> bool:
+        memo = self._memo.setdefault("has_free", {})
+        if device_id not in memo:
+            memo[device_id] = any(p["kind"] == "interface" and p["cable_id"] is None and p["enabled"] and is_physical(p)
+                                  for p in self._ports_by_device().get(device_id, []))
+        return memo[device_id]
 
     def device_name(self, device_id: int) -> str:
         d = self.devices.get(device_id)
@@ -314,15 +339,91 @@ class Estate:
             return None
         return next((ip["interface_id"] for ip in self.device_ips(dev["id"]) if ip["address"] == dev["primary_ip"]), None)
 
+    def live_circuit(self, circuit_id: int) -> bool:
+        c = self.circuits.get(circuit_id)
+        return c is not None and c.get("status") not in DEAD_CIRCUIT
+
+    def _far(self, port: dict[str, Any]) -> PortKey | None:
+        """The other end of the cable in a port (the first end that is not this port)."""
+        cable = self.cables.get(port["cable_id"] or 0)
+        me = (port["kind"], port["id"])
+        return next((tuple(k) for k in (list(cable["a"]) + list(cable["b"])) if tuple(k) != me), None) if cable else None  # type: ignore[misc]
+
+    def _front_of(self, rear_id: int, position: int) -> dict[str, Any] | None:
+        idx = self._memo.get("fronts")
+        if idx is None:
+            idx = self._memo["fronts"] = {m: p for p in self.ports.values() if p["kind"] == "front_port" for m in rear_map(p)}
+        return idx.get((rear_id, position))
+
+    def through(self, key: PortKey) -> tuple[str, dict[str, Any] | None]:
+        """Where a lead that is plugged into `key` ends up when patch panels are followed (front port, the strand of the
+        rear port it maps to, the trunk, the front port at the far panel, and so on):
+            ("interface", port)  an interface of a device
+            ("open", port)       a panel port with no cable in it: the path stops there, and a cable can go on from it
+            ("stuck", port)      it cannot be followed (no mapping, a trunk of several strands plugged into one port)"""
+        port = self.ports.get(key)
+        for _ in range(32):
+            if port is None:
+                return "stuck", None
+            if port["kind"] == "interface":
+                return "interface", port
+            if port["kind"] == "front_port":
+                maps = rear_map(port)
+                rear = self.ports.get(("rear_port", maps[0][0])) if maps else None
+                if rear is None:
+                    return "stuck", port
+                lane = maps[0][1]
+                if rear["cable_id"] is None:
+                    return ("open", rear) if rear.get("positions", 1) == 1 else ("stuck", rear)
+                far = self.ports.get(self._far(rear) or ("", 0))
+                if far is None:
+                    return "stuck", rear
+                if far["kind"] != "rear_port":
+                    if rear.get("positions", 1) != 1:
+                        return "stuck", rear
+                    port = far
+                    continue
+                front = self._front_of(far["id"], lane)
+            elif port["kind"] == "rear_port":
+                front = self._front_of(port["id"], 1) if port.get("positions", 1) == 1 else None
+            else:
+                return "stuck", port
+            if front is None:
+                return "stuck", port
+            if front["cable_id"] is None:
+                return "open", front
+            port = self.ports.get(self._far(front) or ("", 0))
+        return "stuck", None
+
     def circuit_handoff(self, circuit_id: int) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None:
-        """Where a circuit plugs in: (termination, port, device) of its first end, by side, that is cabled to a port."""
-        for t in sorted((t for t in self.cterms.values() if t["circuit_id"] == circuit_id and t["cable_id"] is not None), key=lambda t: t["side"] or ""):
+        """Where a circuit plugs in: (termination, port, device) of its first end, by side, that is cabled to a port.
+        The port is the interface of the device the line reaches, through any patch panels on the way (a demarc panel,
+        then a lead to the router); when the panels lead to no device, it is the panel port the circuit is cabled to."""
+        memo = self._memo.setdefault("handoff", {})
+        if circuit_id not in memo:
+            memo[circuit_id] = self._circuit_handoff(circuit_id)
+        return memo[circuit_id]
+
+    def _circuit_handoff(self, circuit_id: int) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None:
+        for t in sorted((t for t in self._cterms_of(circuit_id) if t["cable_id"] is not None), key=lambda t: t["side"] or ""):
             cable = self.cables.get(t["cable_id"])
             for key in (list(cable["a"]) + list(cable["b"])) if cable else []:
                 port = self.ports.get(tuple(key))  # type: ignore[arg-type]
                 if port is not None and port["device_id"] in self.devices:
+                    how, end = self.through(tuple(key))  # type: ignore[arg-type]
+                    if how == "interface" and end is not None and end["device_id"] in self.devices:
+                        return t, end, self.devices[end["device_id"]]
                     return t, port, self.devices[port["device_id"]]
         return None
+
+    def _cterms_of(self, circuit_id: int) -> list[dict[str, Any]]:
+        idx = self._memo.get("cterms")
+        if idx is None:
+            idx = {}
+            for _, t in sorted(self.cterms.items()):
+                idx.setdefault(t["circuit_id"], []).append(t)
+            self._memo["cterms"] = idx
+        return idx.get(circuit_id, [])
 
     def contacts_of(self, circuit_id: int) -> list[dict[str, Any]]:
         """Contact assignments that speak for a circuit: its own, then its provider's. Each with `contact`, `role`."""
@@ -330,10 +431,16 @@ class Estate:
         if c is None:
             return []
         keys = [("circuits.circuit", circuit_id), ("circuits.provider", c["provider_id"])]
+        idx = self._memo.get("assigned")
+        if idx is None:
+            idx = {}
+            for _, a in sorted(self.assignments.items()):
+                idx.setdefault((a["object_type"], a["object_id"]), []).append(a)
+            self._memo["assigned"] = idx
         out = []
         for key in keys:
-            for _, a in sorted(self.assignments.items()):
-                if (a["object_type"], a["object_id"]) == key and a["contact_id"] in self.contacts:
+            for a in idx.get(key, []):
+                if a["contact_id"] in self.contacts:
                     out.append({**a, "contact": self.contacts[a["contact_id"]], "role": self.contact_roles.get(a["role_id"] or 0, {}).get("name")})
         return out
 
@@ -341,7 +448,7 @@ class Estate:
     def next_id(self, table: str) -> int:
         rows = self.ports if table == "ports" else getattr(self, table)
         ids = [k[1] if isinstance(k, tuple) else k for k in rows]
-        return max(ids, default=0) + 1
+        return max(max(ids, default=0), PRACTICE_BASE if self.synthetic else 0) + 1
 
 
 def _tuples(row: dict[str, Any]) -> dict[str, Any]:
@@ -351,6 +458,13 @@ def _tuples(row: dict[str, Any]) -> dict[str, Any]:
         if k in out and isinstance(out[k], list):
             out[k] = [tuple(x) for x in out[k]]
     return out
+
+
+def rear_map(front: dict[str, Any]) -> list[tuple[int, int]]:
+    """The (rear port id, position) pairs a front port maps to. Data from before positions were read has the rear ports only."""
+    if front.get("rear") is not None:
+        return [(int(r), int(n)) for r, n in front["rear"]]
+    return [(r, 1) for r in front.get("rear_ids") or []]
 
 
 def natural(name: str) -> tuple[Any, ...]:
@@ -366,7 +480,9 @@ class Components:
         self.e = e
         self.parent: dict[Any, Any] = {}
         self._lists: tuple[dict[Any, list[int]], dict[Any, list[int]]] | None = None
-        self.end_hosts = {did for did, d in e.devices.items() if is_end_host(d) and not e.is_network(d)}
+        # Only a network device passes traffic on. A server, an access point, or a box whose role says nothing and that
+        # has no row of ports (a database, an appliance, a console server) is an end, however many leads it has.
+        self.end_hosts = {did for did, d in e.devices.items() if not e.is_network(d) and not is_passive(d)}
         for did, d in e.devices.items():
             self._find(("d", did))
             if d.get("vc_id") is not None:
@@ -375,15 +491,31 @@ class Components:
             if p["kind"] == "interface":
                 continue
             if p["kind"] == "front_port":
-                for rear in p.get("rear_ids") or []:
-                    self._union(("p", "front_port", p["id"]), ("p", "rear_port", rear))
+                for rear, lane in rear_map(p):
+                    self._union(("p", "front_port", p["id"]), ("r", rear, lane))
         for c in e.cables.values():
-            ends = [self.node(k) for k in list(c["a"]) + list(c["b"])]
-            ends = [n for n in ends if n is not None]
-            for n in ends[1:]:
-                self._union(ends[0], n)
+            # Each end as its wires: one for an interface, a front port or a circuit's end; one per position for a
+            # rear port (a trunk). A trunk joins position to position; where a trunk of several strands meets a
+            # single wire, nothing says which strand it is, so nothing is joined.
+            ends = [w for w in (self.wires(tuple(k)) for k in list(c["a"]) + list(c["b"])) if w]  # type: ignore[arg-type]
+            width = max((len(w) for w in ends), default=0)
+            for lane in range(width):
+                same = [w[lane] for w in ends if len(w) == width]
+                for n in same[1:]:
+                    self._union(same[0], n)
         for t in e.cterms.values():
+            if not e.live_circuit(t["circuit_id"]):
+                continue
             self._union(("c", t["circuit_id"]), ("t", t["id"]))
+            if t.get("network_id") is not None:
+                self._union(("c", t["circuit_id"]), ("n", t["network_id"]))   # sites on one carrier network are joined by it
+
+    def wires(self, key: PortKey) -> list[Any]:
+        if key[0] == "rear_port":
+            p = self.e.ports.get(key)
+            return [("r", key[1], lane) for lane in range(1, (p.get("positions", 1) if p else 1) + 1)]
+        n = self.node(key)
+        return [n] if n is not None else []
 
     def node(self, key: PortKey) -> Any:
         kind, oid = key
@@ -393,8 +525,10 @@ class Components:
                 return None
             # a port of an end host is an end, not a way through: its other ports are not reached by it
             return ("i", oid) if p["device_id"] in self.end_hosts else ("d", p["device_id"])
-        if kind in ("front_port", "rear_port"):
+        if kind == "front_port":
             return ("p", kind, oid)
+        if kind == "rear_port":
+            return ("r", oid, 1)
         if kind == "circuit_termination":
             return ("t", oid)
         return None  # power: not part of the data graph
@@ -512,7 +646,7 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
     port_fields = {
         "interface": ("dcim/interfaces", "id,name,device,type,enabled,mgmt_only,cable,description,mark_connected"),
         "front_port": ("dcim/front-ports", "id,name,device,cable,rear_ports,description"),
-        "rear_port": ("dcim/rear-ports", "id,name,device,cable,description"),
+        "rear_port": ("dcim/rear-ports", "id,name,device,cable,description,positions"),
         "power_port": ("dcim/power-ports", "id,name,device,cable,description"),
         "power_outlet": ("dcim/power-outlets", "id,name,device,cable,description"),
     }
@@ -537,14 +671,19 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         "prefixes": ("ipam/prefixes", "id,prefix,vrf", CAPS["prefixes"]),
     }
     names = [n for n in jobs if not (site_ids is not None and n == "ips")]
-    got = await asyncio.gather(*(_rows(client, e, n, *jobs[n], where(n)) for n in names),
-                               *(_rows(client, e, "ports", p, f, CAPS["ports"], here) for p, f in port_fields.values()))
+    slots = asyncio.Semaphore(READ_CONCURRENCY)
+
+    async def rows(*args: Any) -> list[dict[str, Any]]:
+        async with slots:
+            return await _rows(client, e, *args)
+    got = await asyncio.gather(*(rows(n, *jobs[n], where(n)) for n in names),
+                               *(rows("ports", p, f, CAPS["ports"], here) for p, f in port_fields.values()))
     raw = dict(zip(names, got[:len(names)]))
     raw_ports = dict(zip(port_fields, got[len(names):]))
     if site_ids is not None:
         ids = [d["id"] for d in raw["devices"]]
         path, fields, cap = jobs["ips"]
-        parts = await asyncio.gather(*(_rows(client, e, "ips", path, fields, cap, tuple(("device_id", i) for i in ids[n:n + IP_CHUNK]))
+        parts = await asyncio.gather(*(rows("ips", path, fields, cap, tuple(("device_id", i) for i in ids[n:n + IP_CHUNK]))
                                        for n in range(0, len(ids), IP_CHUNK)))
         raw["ips"] = [row for part in parts for row in part]
 
@@ -597,7 +736,11 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
                 "kind": kind, "id": p["id"], "device_id": did, "name": p["name"], "type": _val(p.get("type")),
                 "enabled": p.get("enabled", True), "mgmt_only": bool(p.get("mgmt_only", False)), "cable_id": _id(p.get("cable")),
                 "description": p.get("description") or "", "mark_connected": bool(p.get("mark_connected", False)),
-                "rear_ids": [m["rear_port"] for m in p.get("rear_ports") or [] if isinstance(m, dict) and isinstance(m.get("rear_port"), int)]}
+                "rear_ids": [m["rear_port"] for m in p.get("rear_ports") or [] if isinstance(m, dict) and isinstance(m.get("rear_port"), int)],
+                # a front port is one strand of the rear port it maps to: (rear port, position on it)
+                "rear": [(m["rear_port"], m.get("rear_port_position") or 1) for m in p.get("rear_ports") or []
+                         if isinstance(m, dict) and isinstance(m.get("rear_port"), int)],
+                "positions": p.get("positions") or 1}
     for c in raw["cables"]:
         def ends(side: str) -> list[PortKey]:
             out = []
@@ -619,8 +762,11 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
                                "commit_rate": c.get("commit_rate"), "mrc": _money(_cf(c, "rw_mrc")), "nrc": _money(_cf(c, "rw_nrc")),
                                "currency": _cf(c, "rw_currency") or None, "last_updated": c.get("last_updated")}
     for t in raw["cterms"]:
+        where_type, where_id = t.get("termination_type"), t.get("termination_id")
+        # an end recorded on a room is at that room's site (when only some sites were read, the room may be unseen)
+        at_site = where_id if where_type == "dcim.site" else e.locations.get(where_id or 0, {}).get("site_id") if where_type == "dcim.location" else None
         e.cterms[t["id"]] = {"id": t["id"], "circuit_id": _id(t.get("circuit")), "side": t.get("term_side"),
-                             "site_id": t.get("termination_id") if t.get("termination_type") == "dcim.site" else None,
+                             "site_id": at_site, "location_id": where_id if where_type == "dcim.location" else None,
                              "network_id": t.get("termination_id") if t.get("termination_type") == "circuits.providernetwork" else None,
                              "cable_id": _id(t.get("cable"))}
     for r in raw["accounts"]:
@@ -668,6 +814,9 @@ def splice(base: Estate, part: Estate, site_ids: list[int]) -> Estate:
         setattr(e, t, dict(getattr(part, t)))
     for t in ("locations", "racks", "devices"):
         setattr(e, t, {i: r for i, r in getattr(base, t).items() if r["site_id"] not in here} | getattr(part, t))
+    for t in e.cterms.values():
+        if t.get("location_id") is not None and t["site_id"] is None:   # an end on a room of a site that was not read again
+            t["site_id"] = e.locations.get(t["location_id"], {}).get("site_id")
     old_devices = {i for i, d in base.devices.items() if d["site_id"] in here}
     old_ports = {k for k, p in base.ports.items() if p["device_id"] in old_devices}
     e.ports = {k: p for k, p in base.ports.items() if k not in old_ports} | part.ports
@@ -718,11 +867,16 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
             return refs[v[1:]][1]
         return int(v)
 
+    named: set[str] = set()
     for i, op in enumerate(ops):
         name, f, target = op["op"], dict(op.get("fields") or {}), op["target"]
         res = {"index": i, "op": name, "client_ref": op.get("client_ref"), "target": dict(target), "status": "ok",
                "before": None, "after": None, "diff": [], "error": None}
         try:
+            if op.get("client_ref"):
+                if op["client_ref"] in named:
+                    raise SimError(f"client_ref {op['client_ref']!r} is used by an earlier op.")
+                named.add(op["client_ref"])
             if name == "update_fields":
                 table = {"device": e.devices, "site": e.sites, "rack": e.racks}.get(target["kind"])
                 row = table.get(target["id"]) if table is not None else None

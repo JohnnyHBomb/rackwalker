@@ -338,6 +338,17 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             await writer(request)  # a write-enabled proxy shows NetBox's state for writes only to a signed-in player
         cs = changeset(body)
         refuse_island(body)
+        # A plan for a circuit's record answers with what NetBox holds (an account that exists, a contact's name, a
+        # charge already on record). In every mode it is planned only for a signed-in player whose own NetBox user may
+        # view those objects: the proxy's token never shows a figure NetBox itself would refuse.
+        figures = perms.view_needs_of(body["ops"])
+        if figures and not s.fixtures_dir:
+            await writer(request)
+            uid, _ = await run_in_threadpool(app.state.change_identity, request)
+            allowed = await app.state.may_write(uid)
+            lacking = allowed.missing(figures) if allowed is not None else []
+            if lacking:
+                raise perms.view_refusal(lacking)
         if s.fixtures_dir:
             return fixture("POST", "/api/changes/preview")
         planned = await changes.preview(need_client(), cs)

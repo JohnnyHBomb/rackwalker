@@ -69,7 +69,7 @@
         "title": "addresses, and how it is managed",
         "status": "open",
         "quest_ids": [
-          "q:circuit_handoff:circuit:1"
+          "q:circuit_handoff:circuit:9000001"
         ],
         "missing": [
           "The address on EXF-20417"
@@ -80,7 +80,7 @@
         "title": "whose it is, who to call, what it costs",
         "status": "locked",
         "quest_ids": [
-          "q:circuit_record:circuit:1"
+          "q:circuit_record:circuit:9000001"
         ],
         "missing": [
           "the provider's network",
@@ -120,7 +120,7 @@
         "client_ref": "circuit",
         "target": {
           "kind": "circuit",
-          "id": 1
+          "id": 9000001
         },
         "status": "ok",
         "before": null,
@@ -154,7 +154,7 @@
         "client_ref": "handoff",
         "target": {
           "kind": "circuit_termination",
-          "id": 1
+          "id": 9000001
         },
         "status": "ok",
         "before": null,
@@ -188,7 +188,7 @@
         "client_ref": null,
         "target": {
           "kind": "cable",
-          "id": 1
+          "id": 9000001
         },
         "status": "ok",
         "before": null,

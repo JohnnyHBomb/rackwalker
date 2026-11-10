@@ -17,13 +17,14 @@ its quest lines: each stage is a list of the scanner's checks (findings.py) and 
 
     done       every check of the stage passes in NetBox: shown as done, never asked
     answered   what is still open was answered "none, on purpose"
-    not_known  what is still open was answered "I don't know yet" (only facts of a circuit's record can be): the chain
-               stays honestly open at that stage, and the open facts are listed as open questions
+    not_known  what is still open was answered "I don't know yet": the chain stays honestly open at that stage, and what
+               is not known is listed as open questions
     open       the stage in play
-    locked     an earlier stage comes first: its lines are not offered yet
+    locked     an earlier stage that nobody has answered yet comes first: its lines are not offered yet
 
-A later stage unlocks when every earlier one is done or answered. docs/quests.md "Chains" describes this for a NetBox
-admin.
+A later stage unlocks when every earlier one is done or answered, also when the answer was "I don't know yet": that is a
+full answer and stops nothing (an admin who holds the bill can record it before anyone has walked to the rack).
+docs/quests.md "Chains" describes this for a NetBox admin.
 """
 from __future__ import annotations
 
@@ -103,15 +104,32 @@ def _build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str
     plugged: dict[int, list[int]] = {}
     between: set[int] = set()
     for cid in sorted(e.circuits):
+        if not e.live_circuit(cid):
+            continue
         hand = e.circuit_handoff(cid)
-        if hand is not None and hand[2]["site_id"] in e.sites:
+        if hand is not None and hand[1]["kind"] == "interface" and hand[2]["site_id"] in e.sites:
             plugged.setdefault(hand[2]["site_id"], []).append(cid)
-        if len({t["site_id"] for t in e.cterms.values() if t["circuit_id"] == cid and t["site_id"] in e.sites}) > 1:
+        if len({t["site_id"] for t in e._cterms_of(cid) if t["site_id"] in e.sites}) > 1:
             between.add(cid)
+    # circuits that are not plugged into a device at a site yet: an end with no cable, or a line that stops at a panel
     loose: dict[int, list[int]] = {}
     for t in e.cterms.values():
-        if t["site_id"] in e.sites and t["cable_id"] is None:
+        if t["site_id"] in e.sites and t["cable_id"] is None and e.live_circuit(t["circuit_id"]):
             loose.setdefault(t["site_id"], []).append(t["circuit_id"])
+    for f in a.findings:
+        if f["kind"] == "circuit_unterminated" and f["data"].get("panel_id") is not None:
+            loose.setdefault(f["site_id"], []).append(f["data"]["circuit_id"])
+    ports_of: dict[int, list[str]] = {}
+    for site_id, checks in a.checks.items():
+        for c in checks:
+            if c.startswith("interface:") and c.endswith(":cable"):
+                port = e.ports.get(("interface", int(c.split(":")[1])))
+                if port is not None:
+                    ports_of.setdefault(port["device_id"], []).append(c)
+    racked: dict[int, list[int]] = {}
+    for d in e.devices.values():
+        if d["rack_id"] is not None:
+            racked.setdefault(d["rack_id"], []).append(d["id"])
 
     def circuit_stages(site_id: int, circuits: list[int]) -> dict[str, list[str]]:
         return {"logical": [c for i in circuits for c in made(site_id, f"circuit_handoff:circuit:{i}")],
@@ -121,14 +139,15 @@ def _build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str
         site = e.sites[site_id]["name"]
         here = plugged.get(site_id, [])
         out_circuits = [c for c in here if c not in between]
+        open_ends = sorted(set(loose.get(site_id, [])))
         physical = made(site_id, f"site_no_way_out:site:{site_id}") + \
-            [c for i in sorted(set(loose.get(site_id, []))) if i not in between for c in made(site_id, f"circuit_unterminated:circuit:{i}")]
+            [c for i in open_ends if i not in between for c in made(site_id, f"circuit_unterminated:circuit:{i}")]
         if physical or out_circuits:
             chain("way_out", ("site", site_id), site_id, f"The way out of {site}", {"physical": physical, **circuit_stages(site_id, out_circuits)},
                   always=STAGES)
         link_circuits = [c for c in here if c in between]
         physical = made(site_id, f"sites_not_linked:site:{site_id}") + \
-            [c for i in sorted(set(loose.get(site_id, []))) if i in between for c in made(site_id, f"circuit_unterminated:circuit:{i}")]
+            [c for i in open_ends if i in between for c in made(site_id, f"circuit_unterminated:circuit:{i}")]
         if physical or link_circuits:
             chain("site_link", ("site", site_id), site_id, f"{site} and the other sites",
                   {"physical": physical, **circuit_stages(site_id, link_circuits)})
@@ -138,15 +157,14 @@ def _build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str
                 chain("room_link", ("location", loc), site_id, f"The link from {e.locations.get(loc, {}).get('name', 'a room')}", {"physical": [cid]})
         for d in e.site_devices(site_id):
             did = d["id"]
-            ports = [c for c in a.checks.get(site_id, {}) if c.startswith("interface:") and c.endswith(":cable")
-                     and e.ports.get(("interface", int(c.split(":")[1])), {}).get("device_id") == did] if d["status"] in LIVE else []
+            ports = [c for c in ports_of.get(did, []) if c in a.checks.get(site_id, {})] if d["status"] in LIVE else []
             chain("device", ("device", did), site_id, f"{nm(d)}: from its ports to its login", {
                 "physical": made(site_id, f"device_unconnected:device:{did}", f"switch_no_uplink:device:{did}") + ports,
                 "logical": made(site_id, f"router_no_address:device:{did}", f"device:{did}:primary_ip")})
         for rid, rack in sorted(e.racks.items()):
             if rack["site_id"] != site_id:
                 continue
-            inside = [d["id"] for d in e.site_devices(site_id) if d["rack_id"] == rid]
+            inside = sorted(i for i in racked.get(rid, []) if e.devices[i]["site_id"] == site_id)
             chain("rack", ("rack", rid), site_id, f"Rack {rack['name']}", {
                 "physical": made(site_id, f"rack:{rid}:location", f"rack:{rid}:iso", f"rack_devices_unpositioned:rack:{rid}",
                                  *(f"device:{i}:power" for i in inside)),
@@ -173,10 +191,12 @@ def of_checks(chains: list[dict[str, Any]], checks: list[str]) -> dict[str, Any]
 
 def view(e: Estate, a: Analysis, chain: dict[str, Any], resolved: set[str] | frozenset[str] = frozenset(),
          deferred: set[str] | frozenset[str] = frozenset(), titles: dict[str, str] | None = None, told: bool = True,
-         pays: bool = True) -> dict[str, Any]:
+         pays: bool = True, hidden: frozenset[str] = frozenset()) -> dict[str, Any]:
     """Where a player stands in a chain: each stage's status, the position ("2 of 3: logical"), what is still missing,
     and the record so far in one sentence. `resolved` are checks the player answered "none, on purpose"; `deferred` are
-    facts answered "I don't know yet". `pays` is false where nothing is paid (the practice island, a dry run, a player who may not write): no bonus is shown."""
+    those answered "I don't know yet" (facts of a circuit's record, and the checks of a line parked on that answer).
+    `pays` is false where nothing is paid (the practice island, a dry run, a player who may not write): no bonus is
+    shown. `hidden`: what the player's own NetBox user may not view; the summary leaves those figures out."""
     site_id = chain["site_id"]
     stages: list[dict[str, Any]] = []
     blocked = False
@@ -195,28 +215,30 @@ def view(e: Estate, a: Analysis, chain: dict[str, Any], resolved: set[str] | fro
             status = "not_known"
         else:
             status = "open"
-        if status in ("open", "not_known", "locked"):
-            blocked = True
+        if status in ("open", "locked"):
+            blocked = True   # "I don't know yet" is a full answer: it leaves the stage open and locks nothing after it
         stages.append({"stage": s["stage"], "title": s["title"], "status": status, "quest_ids": list(s["line_ids"]),
                        "missing": _missing(left, s, titles or {}), "_left": left})
     # a stage with no checks that nothing blocks has nothing in it (the way out goes through another site's circuit)
     stages = [s for s, raw in zip(stages, chain["stages"]) if raw["checks"] or s["status"] == "locked"]
     total = len(stages)
-    current = next((i for i, s in enumerate(stages) if s["status"] in ("open", "not_known")), None)
+    # where the player is: the first stage in play, else the first one that waits on something not known yet
+    current = next((i for i, s in enumerate(stages) if s["status"] == "open"), None)
+    if current is None:
+        current = next((i for i, s in enumerate(stages) if s["status"] == "not_known"), None)
     not_known = [m for s in stages if s["status"] == "not_known" for m in s["missing"]]
     if current is None:
         status, position = "complete", total
         label = f"{total} of {total}: complete"
     else:
         position = current + 1
-        waiting = stages[current]["status"] == "not_known"
-        status = "open_questions" if waiting else "open"
-        label = f"{position} of {total}: {stages[current]['stage']}" + (f" (not known yet: {some(not_known)})" if waiting else "")
+        status = "open_questions" if stages[current]["status"] == "not_known" else "open"
+        label = f"{position} of {total}: {stages[current]['stage']}" + (f" (not known yet: {some(not_known)})" if not_known else "")
     for s in stages:
         s.pop("_left")
     return {"id": chain["id"], "kind": chain["kind"], "site_id": site_id, "title": chain["title"],
             "holds": holds(chain["kind"], [s["stage"] for s in stages]), "status": status,
-            "position": position, "total": total, "label": label, "stages": stages, "summary": summary(e, chain) if told else None,
+            "position": position, "total": total, "label": label, "stages": stages, "summary": summary(e, chain, hidden) if told else None,
             "open_questions": not_known, "bonus_xp": CHAIN_XP.get(chain["kind"], 0) if total > 1 and pays else 0}
 
 
@@ -239,11 +261,13 @@ def _missing(left: list[str], stage: dict[str, Any], titles: dict[str, str]) -> 
 
 
 # ---------------------------------------------------------------- the record in one sentence, read from the estate
-def circuit_summary(e: Estate, circuit_id: int) -> str | None:
-    """One circuit's record as NetBox holds it: where it plugs in, whose it is, the account, who to call, the cost."""
+def circuit_summary(e: Estate, circuit_id: int, hidden: frozenset[str] = frozenset()) -> str | None:
+    """One circuit's record as NetBox holds it: where it plugs in, whose it is, the account, who to call, the cost.
+    The proxy reads NetBox with its own token, so a figure is said only to a player whose own NetBox user may view it:
+    with "accounts", "contacts" or "costs" in `hidden`, the sentence says that NetBox holds it, and not what it is."""
     hand = e.circuit_handoff(circuit_id)
     c = e.circuits.get(circuit_id)
-    if hand is None or c is None:
+    if hand is None or c is None or hand[1]["kind"] != "interface":
         return None
     _, port, dev = hand
     prov = e.providers.get(c["provider_id"] or 0, {}).get("name")
@@ -259,15 +283,19 @@ def circuit_summary(e: Estate, circuit_id: int) -> str | None:
         bits.append(f"your address {ips[0]}")
     acct = e.accounts.get(c.get("account_id") or 0)
     if acct:
-        bits.append(f"account {acct['account']}")
+        bits.append("an account on record" if "accounts" in hidden else f"account {acct['account']}")
     seen: set[int] = set()
     for a in e.contacts_of(circuit_id)[:3]:
         if a["contact_id"] in seen:
             continue
         seen.add(a["contact_id"])
         how = a["contact"]["phone"] or a["contact"]["email"]
-        bits.append(f"{a['role'] or 'contact'}: {a['contact']['name']}" + (f" {how}" if how else ""))
+        bits.append(f"{a['role'] or 'contact'}: " + ("a contact on record" if "contacts" in hidden else a["contact"]["name"] + (f" {how}" if how else "")))
     cur = c.get("currency") or ""
+    if "costs" in hidden:
+        if any(c.get(k) is not None for k in ("mrc", "nrc")) or c.get("install_date") or c.get("commit_rate") is not None:
+            bits.append("its charges and terms on record")
+        return ", ".join(bits)
     if c.get("mrc") is not None:
         bits.append(f"{c['mrc']} {cur} a month".replace("  ", " "))
     if c.get("nrc") is not None:
@@ -296,7 +324,7 @@ def _cable_words(e: Estate, port: dict[str, Any]) -> str | None:
     return None
 
 
-def summary(e: Estate, chain: dict[str, Any]) -> str | None:
+def summary(e: Estate, chain: dict[str, Any], hidden: frozenset[str] = frozenset()) -> str | None:
     """The record of a chain's subject as the estate holds it now, in one plain sentence; None while it holds nothing
     of it. Read from the estate (NetBox, read again after a write), never from what the player typed."""
     kind, oid, site_id = chain["kind"], chain["object"]["id"], chain["site_id"]
@@ -304,12 +332,12 @@ def summary(e: Estate, chain: dict[str, Any]) -> str | None:
     if kind in ("way_out", "site_link"):
         rows = []
         for cid in sorted(e.circuits):
-            hand = e.circuit_handoff(cid)
+            hand = e.circuit_handoff(cid) if e.live_circuit(cid) else None
             if hand is None or hand[2]["site_id"] != site_id:
                 continue
-            sites = {t["site_id"] for t in e.cterms.values() if t["circuit_id"] == cid and t["site_id"] in e.sites}
+            sites = {t["site_id"] for t in e._cterms_of(cid) if t["site_id"] in e.sites}
             if (len(sites) > 1) == (kind == "site_link"):
-                rows.append(circuit_summary(e, cid))
+                rows.append(circuit_summary(e, cid, hidden))
         rows = [r for r in rows if r]
         return f"{site}: " + "; ".join(rows) + "." if rows else None
     if kind == "device":
@@ -333,8 +361,10 @@ def summary(e: Estate, chain: dict[str, Any]) -> str | None:
         bits = []
         if room:
             bits.append(f"in {room}" + (f", floor tile {rack['iso_x']},{rack['iso_y']}" if rack.get("iso_x") is not None and rack.get("iso_y") is not None else ""))
-        if inside:
-            bits.append(f"{sum(1 for d in inside if d['position'] is not None)} of {len(inside)} devices in a unit")
+        # kit that takes up no unit (a zero-U power strip at the side) is not "a device in a unit"
+        mounted = [d for d in inside if d["u_height"] > 0]
+        if mounted:
+            bits.append(f"{sum(1 for d in mounted if d['position'] is not None)} of {len(mounted)} devices in a unit")
             kit = [d for d in inside if not is_passive(d)]
             if kit:
                 bits.append(f"{sum(1 for d in kit if d['serial'])} of {len(kit)} serial numbers")

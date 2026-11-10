@@ -175,7 +175,10 @@ def test_a_boss_that_is_not_ready_cannot_be_acknowledged(cl):
 def test_on_real_data_a_dry_run_completion_is_marked_practice_and_pays_nothing(cl):
     b = board(cl, "netbox", site_id=1)
     assert (b["can_write"], b["write_blocked"]) == (False, "This proxy serves canned fixture data: nothing is written.")
-    q = b["quests"][0]
+    # the seed's two circuits are private lines between its sites: nothing says how a site reaches the outside world,
+    # so that comes first; the line played here is the next one
+    assert b["quests"][0]["kind"] == "site_no_way_out" and b["quests"][0]["title"] == "The way out of North Depot"
+    q = b["quests"][1]
     assert q["kind"] == "interface_no_cable" and q["title"] == "The other end of nd-rtr1 ge-0/0/0"
     assert q["purpose"] == ("nd-rtr1 ge-0/0/0 has an address but no cable. A port in use with no far end on record cannot be traced. "
                             "Let's find its far end.")
@@ -455,9 +458,10 @@ def test_a_site_offers_different_kinds_of_line_before_a_second_of_one_kind(cl):
     # most valuable first, one of each kind; never more than three
     assert [x["id"] for x in offer(mixed)] == ["interface_no_cable:1", "device_no_power:1", "site_record:1"]
     assert [x["id"] for x in offer(mixed[:3])] == ["interface_no_cable:1", "interface_no_cable:2", "device_no_power:1"]
-    # the seed's North Depot has two addressed ports with no cable and four unpowered racks: it offers one of each
+    # the seed's North Depot has no way out on record, two addressed ports with no cable and four unpowered racks: it
+    # offers one of each
     b = board(cl, "netbox", site_id=1)
-    assert [q["kind"] for q in b["quests"]] == ["interface_no_cable", "device_no_power", "address_no_prefix"]
+    assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "interface_no_cable", "device_no_power"]
     assert b["next_quest_id"] == b["quests"][0]["id"] and b["queued"] == len(b["findings"]) - 3
 
 

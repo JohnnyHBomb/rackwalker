@@ -48,6 +48,24 @@ NEEDS: dict[str, list[tuple[str, str]]] = {
 UPDATE_TYPE = {"site": "dcim.site", "location": "dcim.location", "rack": "dcim.rack", "device": "dcim.device", "cable": "dcim.cable",
                "interface": "dcim.interface"}
 TTL = 30.0
+# Change ops whose plan answers with figures of a circuit's record, and what a player must be able to view in NetBox
+# to be shown that plan.
+VIEW_NEEDS: dict[str, list[tuple[str, str]]] = {
+    "record_circuit": [("circuits.circuit", "view")],
+    "create_provider_account": [("circuits.provideraccount", "view")],
+    "create_contact": [("tenancy.contact", "view")],
+    "assign_contact": [("tenancy.contact", "view")],
+}
+
+
+def view_needs_of(ops: list[dict[str, Any]]) -> list[tuple[str, str]]:
+    """Every (object type, "view") the plan of these ops would show figures of, each once."""
+    out: list[tuple[str, str]] = []
+    for op in ops:
+        for n in VIEW_NEEDS.get(op.get("op"), []) if isinstance(op, dict) else []:
+            if n not in out:
+                out.append(n)
+    return out
 
 
 def needs_of(ops: list[dict[str, Any]]) -> list[tuple[str, str]]:
@@ -140,6 +158,13 @@ def refusal(missing: list[dict[str, Any]]) -> ApiError:
     """The 403 a player gets for a change their own NetBox permissions do not cover."""
     text = why_not(missing)
     return ApiError("forbidden", NOT_WRITTEN + text[0].lower() + text[1:], {"reason": "player_lacks_permission", "missing": missing})
+
+
+def view_refusal(missing: list[dict[str, Any]]) -> ApiError:
+    """The 403 for a plan that would show what the player's own NetBox user may not view."""
+    words = ", ".join(m["object_type"] for m in missing)
+    return ApiError("forbidden", f"Your NetBox user may not view {words}, so the game does not plan that change for you: it never shows "
+                    "what NetBox itself would not show you.", {"reason": "player_lacks_permission", "missing": missing})
 
 
 # Every (object type, action) a quest line may need for its change, with the words the quest log uses for it.

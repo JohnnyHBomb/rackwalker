@@ -80,7 +80,9 @@ def test_a_later_stage_unlocks_when_the_earlier_one_is_verified_answered_or_on_p
     v = views(e)[cid]
     assert v["label"] == "2 of 3: logical" and [s["status"] for s in v["stages"]] == ["done", "open", "locked"]
     assert v["stages"][1]["missing"] == ["The address on EXF-1"] and v["summary"] == "Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-1 (Internet), Example Fibre."
-    hand, facts = "circuit_handoff:circuit:1", [f"circuit:1:{f}" for f in findings.CIRCUIT_FACTS]
+    new = max(e.circuits)   # what the island's quests create has an id above the island's own, never one NetBox uses
+    assert new > 9_000_000
+    hand, facts = f"circuit_handoff:circuit:{new}", [f"circuit:{new}:{f}" for f in findings.CIRCUIT_FACTS]
     # "no address there, on purpose" answers the logical stage: the administrative one unlocks
     v = views(e, resolved={hand})[cid]
     assert v["label"] == "3 of 3: administrative" and [s["status"] for s in v["stages"]] == ["done", "answered", "open"]
@@ -163,7 +165,8 @@ def test_the_management_question_comes_before_any_address_and_a_cloud_managed_de
     answers = {f"mode_{ap2}": {"choice": "cloud"}}
     step = quests.evaluate(e, other, answers)["step"]
     assert [c["label"] for c in step["choices"]][:2] == ["Example Cloud Portal", "A service not listed: I will type its name"]
-    answers[f"service_{ap2}"] = {"choice": "service:Example Cloud Portal"}
+    answers[f"service_{ap2}"] = {"choice": step["choices"][0]["id"]}
+    assert len(step["choices"][0]["id"]) <= 64
     st = quests.evaluate(e, other, answers)
     assert st["proposal"]["ops"][0]["fields"] == {"mode": "cloud", "service": "Example Cloud Portal"}
 
@@ -246,8 +249,10 @@ def test_each_fact_of_a_circuits_record_has_its_home_in_netbox():
     cid = next(iter(e.circuits))
     assert list(recorded(e, cid)) == list(findings.CIRCUIT_FACTS) and not any(recorded(e, cid).values())
     line = one(e, "circuit_record")
+    # the sentence names every fact that is missing: none is hidden behind "and 7 more"
     assert line["purpose"].startswith("Circuit C-OK from Carrier is plugged in at Mill, but NetBox does not hold the provider's network it lands on, "
-                                      "the account with the provider and 7 more.")
+                                      "the account with the provider, who to call when it is down, who the account manager is, who sends the bill, "
+                                      "the install date, the commit rate, the monthly charge or the one-off charge. When the line is down,")
     answers = {"network": {"choice": "new"}, "network_name": {"text": "Carrier Internet"},
                "account": {"choice": "new"}, "account_no": {"text": "SYN-44-1021"},
                "contact_for": {"choice": "provider"},
@@ -340,6 +345,10 @@ def test_real_names_are_the_choices_and_what_netbox_cannot_hold_is_not_asked_for
     assert [c["label"] for c in step["choices"]][:2] == ["SYN-0008 (head office)", "An account not in NetBox yet"]
     answers = {"network": {"choice": "network:5"}, "account": {"choice": "account:8"}, "contact_for": {"choice": "circuit"},
                "contact": {"values": {"contact:support:name": "carrier noc"}}, "terms": {"choice": "none"}, "cost": {"choice": "none"}}
+    # a name NetBox already has is never taken over in silence: the player is asked whether that contact is the one
+    st = quests.evaluate(e, line, answers)
+    assert st["step"]["id"] == "contact_is_3" and st["step"]["prompt"] == "NetBox already has a contact called Carrier NOC. Is that who you mean?"
+    answers["contact_is_3"] = {"choice": "yes"}
     st = quests.evaluate(e, line, answers)
     # a contact NetBox already has is assigned, not created a second time; this one only to the circuit
     assert [(o["op"], o["target"], o["fields"]) for o in st["proposal"]["ops"]][1:] == [
@@ -372,7 +381,7 @@ def test_real_names_are_the_choices_and_what_netbox_cannot_hold_is_not_asked_for
     assert list(recorded(bare, cid)) == ["network", "account", "contact_billing", "install_date", "commit_rate"]
     step = quests.evaluate(bare, one(bare, "circuit_record"), {"network": {"choice": "none"}, "account": {"choice": "none"},
                                                                "contact_for": {"choice": "provider"}})["step"]
-    assert [f["id"] for f in step["fields"]] == ["contact:billing:name", "contact:billing:phone", "contact:billing:email"]
+    assert [f["id"] for f in step["fields"]] == ["contact:billing:name", "contact:billing:phone", "contact:billing:email", "contact:billing:none"]
 
 
 def test_the_hand_off_address_and_its_prefix():
@@ -473,7 +482,7 @@ def test_a_circuit_end_is_at_a_site_or_on_a_network_of_its_own_provider():
 
 
 # ---------------------------------------------------------------- the example estate against a NetBox that takes the writes
-ALL = [{"id": 1, "enabled": True, "constraints": None, "actions": ["add", "change"], "object_types": sorted({t for needs in [
+ALL = [{"id": 1, "enabled": True, "constraints": None, "actions": ["view", "add", "change"], "object_types": sorted({t for needs in [
     *questroutes.perms.NEEDS.values(), [("dcim.devicetype", "change"), ("dcim.site", "change")]] for t, _ in needs})}]
 CF_DEVICE = {"rw_mgmt_mode": None, "rw_mgmt_service": None}
 CF_CIRCUIT = {"rw_mrc": None, "rw_nrc": None, "rw_currency": None}
@@ -624,7 +633,7 @@ def test_the_example_estate_plays_the_way_out_from_nothing_to_the_complete_recor
     assert v["message"] == (f'NetBox confirms 6 of 9; the rest of this line stays open. The chain "The way out of Mill Lane" stays open at '
                             f'3 of 3: administrative ({not_known}).')
     # the line waits at the first blank; it does not ask for the blanks a second time before it counts them as not known
-    assert v["quest"]["step"]["id"] == "contact" and [f["id"] for f in v["quest"]["step"]["fields"]][::3] == ["contact:account:name", "contact:billing:name"]
+    assert v["quest"]["step"]["id"] == "contact" and [f["id"] for f in v["quest"]["step"]["fields"]][::4] == ["contact:account:name", "contact:billing:name"]
     assert v["quest"]["note"] == "Not known yet for circuit NLT-7001: the account manager, the billing contact and the monthly charge. The line waits here; nothing is lost."
     # NetBox's own models hold it
     circ = box.data["circuits/circuits"][0]
@@ -647,6 +656,7 @@ def test_the_example_estate_plays_the_way_out_from_nothing_to_the_complete_recor
     # ---- later the bill turns up: the same desk is the account manager too (one contact, a second role), and billing is new
     q = say(cl, RECORD, ("contact", {"values": {"contact:account:name": "northlight noc", "contact:billing:name": "Northlight Billing",
                                                 "contact:billing:email": "bills@northlight.example"}}),
+            ("contact_is_1", {"choice": "yes"}),   # asked: "NetBox already has a contact called Northlight NOC ... Is that who you mean?"
             ("cost", {"values": {"mrc": 241.37}}))
     assert q["status"] == "ready" and q["changes"][-1] == "Circuit NLT-7001: 241.37 GBP a month."
     assert not [s for s in SECRETS if s.encode() in stored(tmp_path)]
@@ -755,9 +765,9 @@ def test_the_island_teaches_one_whole_chain_with_a_made_up_bill(tmp_path):
            ("circuit_id", {"text": "EXF-20417"}), ("circuit_type", {"choice": "type:9000001"}), ("local_port", {"choice": "interface:9000026"}),
            ("cable_type", {"choice": "smf"}))
     assert apply(f"q:site_no_way_out:site:{ISLAND}")["chain"]["label"] == "2 of 3: logical"
-    answer("q:circuit_handoff:circuit:1", ("has", {"choice": "typed"}), ("addr", {"text": "203.0.113.2/30"}), ("prefix", {"choice": "yes"}))
-    assert apply("q:circuit_handoff:circuit:1")["chain"]["label"] == "3 of 3: administrative"
-    rec = "q:circuit_record:circuit:1"
+    answer("q:circuit_handoff:circuit:9000001", ("has", {"choice": "typed"}), ("addr", {"text": "203.0.113.2/30"}), ("prefix", {"choice": "yes"}))
+    assert apply("q:circuit_handoff:circuit:9000001")["chain"]["label"] == "3 of 3: administrative"
+    rec = "q:circuit_record:circuit:9000001"
     q = answer(rec, ("network", {"choice": "network:9000001"}), ("account", {"choice": "new"}))
     # on the island no figure is typed: the made-up bill is the only answer on offer besides "I don't know yet"
     assert q["step"]["input"] == "choice" and [c["label"] for c in q["step"]["choices"]] == ["The bill says PI-ACC-0042", "I don't know yet"]
@@ -765,7 +775,12 @@ def test_the_island_teaches_one_whole_chain_with_a_made_up_bill(tmp_path):
     assert q["step"]["prompt"] == ("Who are they? The bill names Example Fibre NOC (support), Example Fibre Accounts (account manager) and "
                                    "Example Fibre Billing (billing). (Practice: the island's made-up bill is the only paper here.)")
     assert [c["label"] for c in q["step"]["choices"]] == ["Those the bill names", "I don't know yet"]
-    q = answer(rec, ("contact", {"choice": "sample"}), ("terms", {"values": {"install_date": "2025-01-15", "commit_rate": 500}}))
+    q = answer(rec, ("contact", {"choice": "sample"}))
+    # the contract's date and speed are on the bill too: the island never asks a player to make a figure up
+    assert q["step"]["id"] == "terms" and q["step"]["input"] == "choice" and q["step"]["fields"] == []
+    assert q["step"]["prompt"].startswith("What does the contract for circuit EXF-20417 say? The island's bill says: installed 2024-03-01 and 100 Mbps committed.")
+    assert [c["label"] for c in q["step"]["choices"]] == ["What the bill says", "Nothing more to record: leave it", "I don't know yet"]
+    q = answer(rec, ("terms", {"choice": "sample"}))
     # XTS is the currency code kept for testing: the island's bill means no real money
     assert [c["label"] for c in q["step"]["choices"]] == ["The bill says 45.00 XTS a month, 120.00 XTS once", "No charge of its own to record",
                                                           "I don't know yet"]
@@ -790,7 +805,7 @@ def test_the_island_teaches_one_whole_chain_with_a_made_up_bill(tmp_path):
     assert v["chain"]["summary"] == ("Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre, network Example Fibre Internet, "
                                      "your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, "
                                      "Account manager: Example Fibre Accounts accounts@fibre.example, Billing: Example Fibre Billing billing@fibre.example, "
-                                     "45.00 XTS a month, 120.00 XTS once, installed 2025-01-15, 500 Mbps committed.")
+                                     "45.00 XTS a month, 120.00 XTS once, installed 2024-03-01, 100 Mbps committed.")
     assert cl.get("/api/game/quests", params={"scope": "practice"}).json()["all_in_order"]
 
 

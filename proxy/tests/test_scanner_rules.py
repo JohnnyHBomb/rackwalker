@@ -528,13 +528,19 @@ def two_towns() -> tuple[Build, int, int, int, int]:
 
 def test_a_circuit_with_its_end_at_another_site_is_not_offered_as_an_uplink_but_is_as_the_link_between_sites():
     b, wharf, barn, lb, c = two_towns()
+    b.e.circuits[c].update(cid="NL-WAN-HW-7", type="Ethernet private line")
     uplink = next(x for x in quests.lines(b.e, findings.analyse(b.e)) if x["id"] == f"q:device_unconnected:device:{lb}")
     assert not [x for x in labels(quests.evaluate(b.e, uplink, {})["step"]) if x.startswith("circuit")]
     between = next(x for x in quests.lines(b.e, findings.analyse(b.e)) if x["id"] == f"q:sites_not_linked:site:{barn}")
     step = quests.evaluate(b.e, between, {})["step"]
     assert step["prompt"] == "What does lb-sw1 connect to on the way to your other sites?"
     # the circuit comes first and says where its other end is; devices of other sites carry their site's name
-    assert labels(step)[:2] == ["circuit NL-INET-HW-7 to Heron Wharf (Northlight)", "rtr1 (router, Heron Wharf)"]
+    assert labels(step)[:2] == ["circuit NL-WAN-HW-7 to Heron Wharf (Northlight)", "rtr1 (router, Heron Wharf)"]
+    # the other site's internet line is no candidate for the link between the sites, whatever ends it still lacks
+    b.e.circuits[c].update(cid="NL-INET-HW-7", type="Internet")
+    b.e.touch()
+    between = next(x for x in quests.lines(b.e, findings.analyse(b.e)) if x["id"] == f"q:sites_not_linked:site:{barn}")
+    assert labels(quests.evaluate(b.e, between, {})["step"])[0] == "rtr1 (router, Heron Wharf)"
     # at the site where its end is on record, it is that site's own line: one question, not two lines for one fact
     here = [f["kind"] for f in findings.analyse(b.e).findings if f["site_id"] == wharf]
     assert "circuit_unterminated" in here and "site_no_way_out" not in here
