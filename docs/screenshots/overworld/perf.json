@@ -3,13 +3,13 @@
  "cpu_throttle": 4,
  "frames": 301,
  "frame_p50": 16.7,
- "frame_p95": 17.5,
- "frame_max": 19,
+ "frame_p95": 17.3,
+ "frame_max": 18.3,
  "draw_p50": 2.4,
  "draw_p95": 2.9,
- "draw_max": 3.4,
+ "draw_max": 6.3,
  "layout_shift": 0,
  "trace_frames": 1160,
- "trace_gap_p95": 16.73,
+ "trace_gap_p95": 16.71,
  "trace_long": 0
 }

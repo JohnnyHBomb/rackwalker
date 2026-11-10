@@ -427,6 +427,9 @@ describe('quest givers', () => {
       expect(m.walkable(to.x, to.y)).toBe(true);
       expect(m.nearGiver(to)).toBe(g);
       expect(m.besideGiver(to, g)).toEqual(to);
+      // never the tile below the giver while another one can be reached: the player would be drawn over them
+      const others = [[-1, 0], [1, 0], [0, -1]].some(([dx, dy]) => m.walkable(g.x + dx!, g.y + dy!) && !m.doorAt(g.x + dx!, g.y + dy!) && m.path(r.arrive, { x: g.x + dx!, y: g.y + dy! }).length > 0);
+      if (others) expect(to.y, `giver of site ${g.siteId}`).toBeLessThanOrEqual(g.y);
     }
     expect(m.nearGiver({ x: 0, y: 0 })).toBeNull();
   });

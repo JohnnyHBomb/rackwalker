@@ -997,13 +997,19 @@ export class WorldMap {
   /** The free tile next to a quest giver that is the shortest walk from `from` (`from` itself when already next to them). */
   besideGiver(from: Pos, g: Giver): Pos | null {
     if (Math.abs(from.x - g.x) + Math.abs(from.y - g.y) === 1) return from;
+    // Beside or above the giver when there is a way: a player on the tile below is drawn in front of the giver and
+    // hides them while they talk. The tile below is taken only when no other one can be reached.
     let best: Pos[] | null = null;
+    let below: Pos[] | null = null;
     for (const s of Object.values(STEP)) {
       const n = { x: g.x + s.x, y: g.y + s.y };
       if (!this.walkable(n.x, n.y) || this.doorAt(n.x, n.y)) continue;
       const p = this.path(from, n);
-      if (p.length && (!best || p.length < best.length)) best = p;
+      if (!p.length) continue;
+      if (s.y > 0) below = p;
+      else if (!best || p.length < best.length) best = p;
     }
+    best ??= below;
     return best ? best[best.length - 1]! : null;
   }
   nearGuide(p: Pos): boolean {

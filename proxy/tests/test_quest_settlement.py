@@ -371,6 +371,8 @@ def test_a_real_write_is_read_back_from_netbox_names_the_player_and_then_pays(tm
     cl, box, app = start(tmp_path, monkeypatch, data)
     answer_to_ready(cl)
     reads = len(box.lists("dcim/devices"))
+    # a quest's own write is always read back, however lately the site was read on a player's request
+    monkeypatch.setattr(questroutes, "FRESH_SITE_S", 3600.0)
     v = post(cl, "apply", SW3)
     assert [(m, p) for m, p, _ in box.writes] == [("POST", "dcim/cables")]
     assert box.writes[0][2]["changelog_message"] == "rackwalker (walker): quest: What sw3 plugs into"
