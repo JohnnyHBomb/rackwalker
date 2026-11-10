@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rackwalker.invalid/contracts/scene.schema.json",
   "title": "RackWalker scene contract",
-  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.3.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.",
-  "$comment": "contract_version=2.3.0",
+  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.4.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.",
+  "$comment": "contract_version=2.4.0",
   "$defs": {
     "Id": {
       "type": "integer",
@@ -122,7 +122,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "generated_at": {
           "$ref": "#/$defs/Timestamp"
@@ -959,7 +959,7 @@
         },
         "contract_version": {
           "type": "string",
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "write_enabled": {
           "type": "boolean",
@@ -991,7 +991,7 @@
             },
             "supported": {
               "type": "boolean",
-              "description": "Version is in the supported range (4.7.x for contract 2.3.0)."
+              "description": "Version is in the supported range (4.7.x for contract 2.4.0)."
             },
             "permission_check": {
               "type": "string",
@@ -1591,6 +1591,24 @@
         },
         {
           "$ref": "#/$defs/CreatePrefixOp"
+        },
+        {
+          "$ref": "#/$defs/SetManagementOp"
+        },
+        {
+          "$ref": "#/$defs/RecordCircuitOp"
+        },
+        {
+          "$ref": "#/$defs/CreateProviderAccountOp"
+        },
+        {
+          "$ref": "#/$defs/CreateProviderNetworkOp"
+        },
+        {
+          "$ref": "#/$defs/CreateContactOp"
+        },
+        {
+          "$ref": "#/$defs/AssignContactOp"
         }
       ]
     },
@@ -1664,7 +1682,13 @@
             "create_circuit",
             "create_circuit_termination",
             "assign_ip",
-            "create_prefix"
+            "create_prefix",
+            "set_management",
+            "record_circuit",
+            "create_provider_account",
+            "create_provider_network",
+            "create_contact",
+            "assign_contact"
           ]
         },
         "client_ref": {
@@ -1692,7 +1716,11 @@
                 "interface",
                 "circuit",
                 "circuit_termination",
-                "prefix"
+                "prefix",
+                "provider",
+                "provider_account",
+                "provider_network",
+                "contact"
               ]
             },
             "id": {
@@ -2193,7 +2221,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "player": {
           "$ref": "#/$defs/Player"
@@ -2424,7 +2452,7 @@
     },
     "CreateCircuitTerminationOp": {
       "type": "object",
-      "description": "A new end of a circuit at a site (2.3.0). The side must be free.",
+      "description": "A new end of a circuit (2.3.0): at a site, or (2.4.0) on a network of the circuit's provider. Exactly one of site_id and provider_network_id. The side must be free.",
       "additionalProperties": false,
       "required": [
         "op",
@@ -2457,8 +2485,7 @@
           "additionalProperties": false,
           "required": [
             "circuit_id",
-            "term_side",
-            "site_id"
+            "term_side"
           ],
           "properties": {
             "circuit_id": {
@@ -2473,9 +2500,24 @@
             },
             "site_id": {
               "$ref": "#/$defs/Id"
+            },
+            "provider_network_id": {
+              "$ref": "#/$defs/IdOrRef"
             }
           },
-          "title": "CreateCircuitTerminationFields"
+          "title": "CreateCircuitTerminationFields",
+          "oneOf": [
+            {
+              "required": [
+                "site_id"
+              ]
+            },
+            {
+              "required": [
+                "provider_network_id"
+              ]
+            }
+          ]
         },
         "client_ref": {
           "$ref": "#/$defs/OpCommon/properties/client_ref"
@@ -2770,7 +2812,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "site_id": {
           "$ref": "#/$defs/Id"
@@ -3060,7 +3102,8 @@
         "minutes",
         "progress",
         "lapsed",
-        "updated_at"
+        "updated_at",
+        "chain"
       ],
       "properties": {
         "id": {
@@ -3185,6 +3228,17 @@
         },
         "updated_at": {
           "$ref": "#/$defs/NullableTimestamp"
+        },
+        "chain": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/QuestChainRef"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The chain and stage this line belongs to (2.4.0); null for a line outside every chain."
         }
       },
       "description": "One quest line and where the player stands in it."
@@ -3308,12 +3362,15 @@
         "next_quest_id",
         "sites",
         "rewards",
-        "incomplete"
+        "incomplete",
+        "chains",
+        "chains_queued",
+        "setup"
       ],
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "scope": {
           "$ref": "#/$defs/QuestScope"
@@ -3377,6 +3434,25 @@
           "items": {
             "type": "string"
           }
+        },
+        "chains": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/Chain"
+          },
+          "description": "Chains in play at the site (or the estate): open ones, those waiting on a fact the player does not know yet, and those the player completed (2.4.0)."
+        },
+        "chains_queued": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Chains with something open that are not in play yet (at most a few are open per site)."
+        },
+        "setup": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What this NetBox lacks for the game to record everything (custom fields, contact roles), in words (2.4.0). Empty when nothing is lacking."
         }
       },
       "description": "The quest log: the lines open at a site (or the estate), the player's rewards, and each site's progress."
@@ -3459,7 +3535,9 @@
         "unlocked",
         "trace",
         "result",
-        "rewards"
+        "rewards",
+        "chain",
+        "chain_xp"
       ],
       "properties": {
         "quest": {
@@ -3522,6 +3600,22 @@
         },
         "rewards": {
           "$ref": "#/$defs/Rewards"
+        },
+        "chain": {
+          "oneOf": [
+            {
+              "$ref": "#/$defs/Chain"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "The line's chain as it stands after the check (2.4.0)."
+        },
+        "chain_xp": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "The bonus for a chain NetBox now shows complete, part of xp_awarded (2.4.0)."
         }
       },
       "description": "What applying or checking a quest line led to."
@@ -3539,6 +3633,568 @@
         },
         "site_id": {
           "$ref": "#/$defs/Id"
+        }
+      }
+    },
+    "MgmtMode": {
+      "type": "string",
+      "enum": [
+        "local",
+        "cloud",
+        "unmanaged"
+      ],
+      "description": "How a device is managed (2.4.0): locally (it has an address to log in to), by a cloud or controller service (no local address is expected), or not at all. NetBox custom field rw_mgmt_mode on the device."
+    },
+    "Money": {
+      "type": "string",
+      "pattern": "^[0-9]{1,12}(\\.[0-9]{1,2})?$",
+      "description": "An amount as decimal text, at most two decimals (2.4.0). Never a float."
+    },
+    "SetManagementOp": {
+      "type": "object",
+      "description": "Records how a device is managed (2.4.0): custom field rw_mgmt_mode, the service's name in rw_mgmt_service, and optionally the default of the device's model (rw_mgmt_default on its device type; `varies` = each device of the model is asked).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "set_management"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "SetManagementTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "mode"
+          ],
+          "properties": {
+            "mode": {
+              "$ref": "#/$defs/MgmtMode"
+            },
+            "service": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "maxLength": 100
+            },
+            "model_default": {
+              "type": "string",
+              "enum": [
+                "local",
+                "cloud",
+                "unmanaged",
+                "varies"
+              ]
+            }
+          },
+          "title": "SetManagementFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "RecordCircuitOp": {
+      "type": "object",
+      "description": "Fills in facts of a circuit's administrative record that NetBox does not hold yet (2.4.0): its provider account, install date, commit rate (kbps), and the charges (custom fields rw_mrc, rw_nrc, rw_currency). A fact NetBox already holds with another value is refused, never overwritten.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "record_circuit"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "circuit"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "RecordCircuitTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "provider_account_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "install_date": {
+              "type": "string",
+              "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$"
+            },
+            "commit_rate": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 2147483647,
+              "description": "kbps, as NetBox stores it."
+            },
+            "mrc": {
+              "$ref": "#/$defs/Money"
+            },
+            "nrc": {
+              "$ref": "#/$defs/Money"
+            },
+            "currency": {
+              "type": "string",
+              "pattern": "^[A-Z]{3}$",
+              "description": "ISO 4217 code of mrc and nrc."
+            }
+          },
+          "title": "RecordCircuitFields",
+          "minProperties": 1
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateProviderAccountOp": {
+      "type": "object",
+      "description": "A new account with an existing provider (2.4.0). The account number is unique per provider.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_provider_account"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "provider_account"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateProviderAccountTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider_id",
+            "account"
+          ],
+          "properties": {
+            "provider_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "account": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "name": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          "title": "CreateProviderAccountFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateProviderNetworkOp": {
+      "type": "object",
+      "description": "A new network of an existing provider (2.4.0), for the far end of a circuit.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_provider_network"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "provider_network"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateProviderNetworkTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "provider_id",
+            "name"
+          ],
+          "properties": {
+            "provider_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          "title": "CreateProviderNetworkFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateContactOp": {
+      "type": "object",
+      "description": "A new contact (2.4.0): a person, a team or a desk.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_contact"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "contact"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateContactTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "phone": {
+              "type": "string",
+              "maxLength": 50
+            },
+            "email": {
+              "type": "string",
+              "maxLength": 254
+            }
+          },
+          "title": "CreateContactFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "AssignContactOp": {
+      "type": "object",
+      "description": "Assigns a contact to the target provider or circuit in one of NetBox's contact roles (2.4.0).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "assign_contact"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "provider",
+                "circuit"
+              ]
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "AssignContactTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "contact_id",
+            "role_id"
+          ],
+          "properties": {
+            "contact_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "role_id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "AssignContactFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "ChainStageName": {
+      "type": "string",
+      "enum": [
+        "physical",
+        "logical",
+        "administrative"
+      ]
+    },
+    "ChainStage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "stage",
+        "title",
+        "status",
+        "quest_ids",
+        "missing"
+      ],
+      "properties": {
+        "stage": {
+          "$ref": "#/$defs/ChainStageName"
+        },
+        "title": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "done",
+            "answered",
+            "not_known",
+            "open",
+            "locked"
+          ],
+          "description": "done = NetBox shows it; answered = what is still open was answered \"none, on purpose\"; not_known = what is still open was answered \"I don't know yet\" (it stays an open question and does not count against completeness); open = the stage in play; locked = an earlier stage comes first."
+        },
+        "quest_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "The open quest lines that settle this stage."
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "What NetBox does not hold yet, in words."
+        }
+      }
+    },
+    "Chain": {
+      "type": "object",
+      "description": "A quest chain (2.4.0): the quest lines about one subject as a short series of stages, derived from NetBox. A stage NetBox already satisfies is done and never asked; a later stage unlocks when the earlier one is done or answered.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "site_id",
+        "title",
+        "holds",
+        "status",
+        "position",
+        "total",
+        "label",
+        "stages",
+        "summary",
+        "open_questions"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "way_out",
+            "site_link",
+            "room_link",
+            "device",
+            "rack"
+          ]
+        },
+        "site_id": {
+          "$ref": "#/$defs/Id"
+        },
+        "title": {
+          "type": "string"
+        },
+        "holds": {
+          "type": "string",
+          "description": "What the record will hold when the chain is complete."
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "open",
+            "open_questions",
+            "complete"
+          ],
+          "description": "open_questions = nothing left to ask except facts the player does not know yet."
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "label": {
+          "type": "string",
+          "description": "Where the player is, for example \"2 of 3: logical\" or \"3 of 3: administrative (not known yet: the monthly charge)\"."
+        },
+        "stages": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/ChainStage"
+          }
+        },
+        "summary": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "The record so far, read from NetBox (or the practice island), in one plain sentence; null while nothing of it is recorded."
+        },
+        "open_questions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "QuestChainRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "title",
+        "stage",
+        "position",
+        "total",
+        "label"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "stage": {
+          "$ref": "#/$defs/ChainStageName"
+        },
+        "position": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "label": {
+          "type": "string"
         }
       }
     }

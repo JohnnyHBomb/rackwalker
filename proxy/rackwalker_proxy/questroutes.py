@@ -27,7 +27,7 @@ from fastapi import Body, FastAPI, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
-from . import changes, findings, perms, practice, quests, schema
+from . import chains, changes, findings, perms, practice, quests, schema
 from . import contracts_gen as c
 from .errors import ApiError
 from .estate import Estate, left, read_estate, simulate, splice
@@ -38,6 +38,7 @@ log = logging.getLogger("rackwalker_proxy.quests")
 MAX_OPEN = 3      # lines offered at one site at a time (parked lines wait beside them)
 MAX_PARKED = 4
 MAX_DONE = 12     # finished lines kept in the log's answer
+MAX_CHAINS_SHOWN = 24   # chains listed in one quest log answer
 LEVEL_XP = 250
 REPEAT = (1.0, 0.8, 0.6, 0.4)
 TOOL_FOR_RANK = {"connectivity": "cable_tracer", "identity": "label_maker"}
@@ -129,6 +130,9 @@ class Standing:
         # a dismissed line settles every check it stood for (a line about twelve ports has twelve), not only its own id
         self.resolved = {cid for qid, r in rows.items() if r["status"] == "dismissed" for cid in [qid[2:], *r["checks"]]} | \
                         {cid for r in rows.values() for cid in quests.waived(r["snapshot"], r["answers"])}
+        # facts of a circuit's record answered "I don't know yet": open questions, which do not count against completeness
+        self.deferred = {cid for r in rows.values() if r["status"] not in ("done", "dismissed") for cid in quests.deferred(r["snapshot"], r["answers"])}
+        self.settled = self.resolved | self.deferred
 
     def closed(self, line: dict[str, Any]) -> bool:
         """Done or dismissed, with nothing new to ask. A closed line whose finding comes back is not reopened; one that
@@ -143,15 +147,44 @@ class Standing:
 
     def in_order(self, ls: list[dict[str, Any]], site_id: int) -> bool:
         """Nothing open at the site and nothing missing: the only state in which a spot check is offered."""
-        return not self.open_lines(ls, site_id) and self.a.completeness(site_id, self.resolved)["open"] == 0
+        return not self.open_lines(ls, site_id) and self.a.completeness(site_id, self.settled)["open"] == 0
+
+
+def setup_notes(e: Estate) -> list[str]:
+    """What this NetBox lacks for the game to record everything, in words: what cannot be recorded is not asked for."""
+    out = []
+    how = "The setup script (devnetbox/seed.py --fields-only) adds it."
+    if not e.has_field("rw_mgmt_mode"):
+        out.append(f"NetBox has no custom field rw_mgmt_mode on devices, so how a device is managed cannot be recorded there. {how}")
+    elif not e.has_field("rw_mgmt_default"):
+        out.append(f"NetBox has no custom field rw_mgmt_default on device types, so a model's default cannot be recorded. {how}")
+    if any(not e.has_field(f) for f in ("rw_mrc", "rw_nrc", "rw_currency")):
+        out.append(f"NetBox has no custom fields rw_mrc, rw_nrc and rw_currency on circuits, so what a circuit costs is not asked for. {how}")
+    if e.circuits and e.can_see("contact_roles") and not quests.contact_roles(e):
+        out.append("NetBox has no contact role for support, the account manager or billing, so who to call cannot be recorded yet. "
+                   "Add them under Organization > Contact Roles; the setup script does too.")
+    return out
 
 
 def finding_body(f: dict[str, Any]) -> dict[str, Any]:
     return {k: f[k] for k in ("id", "kind", "rank", "site_id", "title", "evidence")}
 
 
+def chain_ref(line_id: str, in_chain: dict[str, tuple[dict[str, Any], int]] | None, views: dict[str, dict[str, Any]] | None) -> dict[str, Any] | None:
+    """The chain and stage a line belongs to, as the quest log says it ("2 of 3: logical")."""
+    if not in_chain or line_id not in in_chain or views is None:
+        return None
+    chain, idx = in_chain[line_id]
+    v = views.get(chain["id"])
+    name = chain["stages"][idx]["stage"]
+    n = next((i for i, s in enumerate(v["stages"]) if s["stage"] == name), None) if v else None
+    if v is None or n is None:
+        return None
+    return {"id": v["id"], "title": v["title"], "stage": name, "position": n + 1, "total": v["total"], "label": f"{n + 1} of {v['total']}: {name}"}
+
+
 def quest_body(scope: str, line: dict[str, Any], row: dict[str, Any] | None, state: dict[str, Any] | None, status: str,
-               lapsed: bool = False, gate: Gate | None = None) -> dict[str, Any]:
+               lapsed: bool = False, gate: Gate | None = None, chain: dict[str, Any] | None = None) -> dict[str, Any]:
     step = state["step"] if state else None
     if step is not None:
         step = {**step, "fields": [{k: f.get(k) for k in ("id", "label", "type", "hint", "suggestion")} | {"options": f.get("options") or []}
@@ -164,7 +197,7 @@ def quest_body(scope: str, line: dict[str, Any], row: dict[str, Any] | None, sta
             "note": state["note"] if state else None, "said": state["said"] if state else [], "target": state["target"] if state else None,
             "finding": finding_body(line["finding"]), "xp": line["xp"], "minutes": line["minutes"],
             "progress": {"total": total, "verified": len(row["verified"]) if row else 0}, "lapsed": lapsed,
-            "updated_at": row["updated_at"] if row else None}
+            "updated_at": row["updated_at"] if row else None, "chain": chain}
 
 
 def snapshot(line: dict[str, Any]) -> dict[str, Any]:
@@ -182,6 +215,25 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
     cached: dict[str, Any] = {"at": 0.0, "estate": None, "sites": {}, "drops": 0}
     reading = asyncio.Lock()   # one read of NetBox at a time: requests that arrive meanwhile use its result
     applying: dict[int, asyncio.Lock] = {}   # per player: one quest apply at a time (two tabs never write one line twice)
+    # What a player typed for a figure of their own (an account number, a charge, a contact's details) waits here, in
+    # memory, until it is written to NetBox: it is never put in the game's store. After a restart of the proxy the
+    # question is simply asked again.
+    vault: dict[tuple[int, str, str], dict[str, Any]] = {}
+
+    def answers_of(uid: int, scope: str, row: dict[str, Any] | None, quest_id: str) -> dict[str, Any]:
+        return {**(row["answers"] if row else {}), **vault.get((uid, scope, quest_id), {})}
+
+    def keep(uid: int, scope: str, quest_id: str, answers: dict[str, Any]) -> dict[str, Any]:
+        """The part of a line's answers that goes to the store; a typed figure goes to `vault` instead. ("I don't know
+        yet" on such a question is no figure: it is stored, so the line still knows after a restart.) On the practice
+        island these questions take no typed value at all."""
+        private = {k: v for k, v in answers.items() if scope == "netbox" and quests.private_step(k) and isinstance(v, dict)
+                   and (v.get("text") or v.get("values"))}
+        if private:
+            vault[(uid, scope, quest_id)] = private
+        else:
+            vault.pop((uid, scope, quest_id), None)
+        return {k: v for k, v in answers.items() if k not in private}
 
     def drop_estate() -> None:
         cached.update(estate=None, sites={}, drops=cached["drops"] + 1)
@@ -330,7 +382,17 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         by_id = {line["id"]: line for line in ls}
         acks = st.boss_acks(uid, scope)
         stand = Standing(a, rows)
-        dismissed = stand.resolved
+        dismissed = stand.settled
+        all_chains = chains.build(e, a, ls)
+        in_chain = chains.stage_of(all_chains)
+        titles = {line["id"]: line["title"] for line in ls}
+        views = {ch["id"]: chains.view(e, a, ch, stand.resolved, stand.deferred, titles, told=False) for ch in all_chains}
+        chains_at: dict[int, list[dict[str, Any]]] = {}
+        for ch in all_chains:
+            chains_at.setdefault(ch["site_id"], []).append(ch)
+        mine = {cid for r in rows.values() for cid in r["verified"]} | stand.resolved
+        shown_chains: list[str] = []
+        chains_queued = 0
         # something the player completed that NetBox no longer shows: counted, never reopened
         lapsed_ids = {qid for qid, r in rows.items() if r["status"] == "done" and
                       ((qid in by_id and stand.closed(by_id[qid]) and quests.open_checks(a, by_id[qid]))
@@ -345,7 +407,29 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         for sid in sorted(e.sites):
             open_lines = stand.open_lines(ls, sid)
             waiting = [line for line in open_lines if rows.get(line["id"], {}).get("status") in ("parked", "practised")]
-            fresh = [line for line in open_lines if line not in waiting]
+            # Chains: the first few with something to do are in play, and only the stage each has reached is asked
+            # about. A chain that waits on the player alone (a field task, a fact not known yet) takes no place.
+            open_ids = {line["id"] for line in open_lines}
+            playable: set[str] = set()
+            slots = 0
+            for ch in chains_at.get(sid, []):
+                v = views[ch["id"]]
+                if v["status"] == "complete":
+                    if site_id in (None, sid) and any(cid in mine for st_ in ch["stages"] for cid in st_["checks"]):
+                        shown_chains.append(ch["id"])
+                    continue
+                current = set(v["stages"][v["position"] - 1]["quest_ids"]) & open_ids
+                live = [q for q in current if rows.get(q, {}).get("status") not in ("parked", "practised")]
+                if live and v["status"] == "open":
+                    if slots >= chains.MAX_CHAINS:
+                        chains_queued += 1 if site_id in (None, sid) else 0
+                        continue
+                    slots += 1
+                playable |= current
+                if site_id in (None, sid):
+                    shown_chains.append(ch["id"])
+            fresh = [line for line in open_lines if line not in waiting
+                     and (line["id"] not in in_chain or line["id"] in playable or line["id"] in rows)]
             comp = a.completeness(sid, dismissed)
             if partial:
                 comp = {**comp, "percent": min(comp["percent"], 99)}   # never 100 % on a picture that is not whole
@@ -362,11 +446,11 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 queued += max(0, len(open_lines) - len(shown))
                 for line in shown:
                     row = rows.get(line["id"])
-                    state = quests.evaluate(e, line, row["answers"] if row else {}, tools)
+                    state = quests.evaluate(e, line, answers_of(uid, scope, row, line["id"]), tools)
                     status = "offered" if row is None else {"asking": "active"}.get(state["status"], state["status"])
                     if row is not None and row["status"] == "practised" and state["status"] == "ready":
                         status = "practised"
-                    out_quests.append(quest_body(scope, line, row, state, status, gate=gate))
+                    out_quests.append(quest_body(scope, line, row, state, status, gate=gate, chain=chain_ref(line["id"], in_chain, views)))
             if fresh and fresh[0] in ls and (best is None or ls.index(fresh[0]) < best[0]):
                 best = (ls.index(fresh[0]), fresh[0]["id"])
             # a site's Confusion appears over kit that is in order: a site with nothing in it has nothing to guard
@@ -424,7 +508,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 "findings": [finding_body(f) for f in a.findings if site_id in (None, f["site_id"])][:50], "quests": out_quests,
                 "queued": queued, "next_quest_id": best[1] if best else None, "sites": sites_out,
                 "rewards": rewards_body(raw, real_rows, practice_rows, len(lapsed_ids) if scope == "netbox" else 0, loan=scope == "practice"),
-                "incomplete": partial}
+                "incomplete": partial,
+                "chains": [chains.view(e, a, ch, stand.resolved, stand.deferred, titles) for ch in all_chains if ch["id"] in set(shown_chains[:MAX_CHAINS_SHOWN])],
+                "chains_queued": chains_queued + max(0, len(shown_chains) - MAX_CHAINS_SHOWN), "setup": setup_notes(e) if scope == "netbox" else []}
 
     async def gate_of(scope: str, uid: int | None, request: Request | None = None, fresh: bool = False) -> Gate:
         """Whether a change would really be written for this player: the proxy's mode first, then the token they signed
@@ -498,14 +584,14 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
 
         def work() -> dict[str, Any]:
             line, row, _, tools = find_line(e, scope, uid, b["quest_id"])
-            answers = dict(row["answers"]) if row else {}
+            answers = answers_of(uid, scope, row, b["quest_id"])
             if b["step"] == "restart":
                 answers = {}
             elif b["step"] == "back":
                 # one answer back: the question a parked line waits at, else the last one answered
                 now = quests.evaluate(e, line, answers, tools)
                 if row is None:
-                    return quest_body(scope, line, None, now, "offered", gate=gate)   # nothing answered: nothing to take back
+                    return quest_body(scope, line, None, now, "offered", gate=gate, chain=line_chain(uid, scope, e, line))   # nothing answered: nothing to take back
                 last = now["step"]["id"] if now["status"] == "parked" and now["step"] else (now["answered"] or [None])[-1]
                 answers.pop(last, None)
             else:
@@ -514,17 +600,37 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     # not the question the line is waiting at (a stale page): show where the line really stands
                     current = quests.evaluate(e, line, answers, tools)
                     status = {"asking": "active"}.get(current["status"], current["status"])
-                    return quest_body(scope, line, row, current, status if row else "offered", gate=gate)
+                    return quest_body(scope, line, row, current, status if row else "offered", gate=gate, chain=line_chain(uid, scope, e, line))
                 answers[b["step"]] = {k: b[k] for k in ("choice", "text", "values") if k in b}
             state = quests.evaluate(e, line, answers, tools)
             status = {"asking": "active", "confirmed": "done"}.get(state["status"], state["status"])
-            saved = save_row(uid, scope, line, row, status, answers)
-            return quest_body(scope, line, saved, state, status, gate=gate)
+            saved = save_row(uid, scope, line, row, status, keep(uid, scope, line["id"], answers))
+            return quest_body(scope, line, saved, state, status, gate=gate, chain=line_chain(uid, scope, e, line))
         return _no_store(await run_in_threadpool(work))
+
+    def chain_view(uid: int, scope: str, e: Estate, line: dict[str, Any], checks: list[str] | None = None) -> dict[str, Any] | None:
+        """The chain of a line as it stands for this player on this estate (also when the line's finding is gone)."""
+        a = findings.analyse(e)
+        ls = quests.lines(e, a)
+        all_chains = chains.build(e, a, ls)
+        found = chains.stage_of(all_chains).get(line["id"])
+        ch = found[0] if found else chains.of_checks(all_chains, checks or (quests.check_ids(line) if line["finding"].get("data") else []))
+        if ch is None:
+            return None
+        stand = Standing(a, store().quests(uid, scope))
+        return chains.view(e, a, ch, stand.resolved, stand.deferred, {x["id"]: x["title"] for x in ls})
+
+    def line_chain(uid: int, scope: str, e: Estate, line: dict[str, Any]) -> dict[str, Any] | None:
+        v = chain_view(uid, scope, e, line)
+        stage = next((s for s in v["stages"] if line["id"] in s["quest_ids"]), None) if v else None
+        if v is None or stage is None:
+            return None
+        n = v["stages"].index(stage) + 1
+        return {"id": v["id"], "title": v["title"], "stage": stage["stage"], "position": n, "total": v["total"], "label": f"{n} of {v['total']}: {stage['stage']}"}
 
     def ready_line(e: Estate, scope: str, uid: int, quest_id: str) -> tuple[dict[str, Any], dict[str, Any] | None, dict[str, Any]]:
         line, row, _, tools = find_line(e, scope, uid, quest_id)
-        state = quests.evaluate(e, line, row["answers"] if row else {}, tools)
+        state = quests.evaluate(e, line, answers_of(uid, scope, row, quest_id), tools)
         if state["status"] != "ready":
             raise ApiError("conflict", "That quest has no change ready yet: a question is still open.", {"status": state["status"]})
         return line, row, state
@@ -568,6 +674,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             before = list(row["verified"]) if row else []
             waived = set(quests.waived(line, said))   # "there is none, on purpose": answered, never paid
             state = {cid: a.check(cid, line["site_id"]) for cid in base}
+            if line["kind"] == "device_unreachable":
+                # how a device is managed is written to NetBox where NetBox can hold it: what NetBox then shows is confirmed
+                waived = {cid for cid in waived if state.get(cid) is not True}
             now = [cid for cid in base if state[cid] is True and cid not in waived]
             newly = [cid for cid in now if cid not in before]
             # what is counted stays counted; an open check is one NetBox shows as open (or one it could not look at)
@@ -595,6 +704,26 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     if complete and tool and tool not in raw["tools"]:
                         st.add_reward(uid, line["id"], "tool", 1, "tool", item=tool)
                         unlocked.append(tool)
+            # The whole record: when this check leaves NetBox showing every stage of the line's chain, the chain pays
+            # a bonus above its stages, once per player, by the share of its stages this player had confirmed (at
+            # least two: one stage is a loose stage). A chain NetBox showed complete all along pays nobody.
+            chain_xp = 0
+            if real and newly:
+                ch = chains.of_checks(chains.build(after, a, quests.lines(after, a)), base)
+                bonus = chains.CHAIN_XP.get(ch["kind"], 0) if ch else 0
+                if ch and bonus and chains.verified(a, ch):
+                    mine = st.paid(uid)
+                    played = sum(1 for x in ch["stages"] if any(cid in mine for cid in x["checks"]))
+                    stages = sum(1 for x in ch["stages"] if x["checks"])
+                    if played >= 2 and st.mark_paid(uid, [ch["id"]]):
+                        raw = st.rewards(uid)
+                        signature = f"chain:{ch['kind']}:{ch['site_id']}"
+                        chain_xp = round(bonus * played / stages * REPEAT[min(raw["repeats"].get(signature, 0), len(REPEAT) - 1)])
+                        st.add_reward(uid, line["id"], "xp", chain_xp, signature)
+                        if 1 + raw["xp"] // LEVEL_XP < 1 + (raw["xp"] + chain_xp) // LEVEL_XP:
+                            potions += 1
+                            st.add_reward(uid, line["id"], "potion", 1, "level")
+                        xp += chain_xp
             wrote = real or scope == "practice"
             if moot:
                 st.delete_quest(uid, scope, line["id"])
@@ -614,21 +743,21 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 saved = save_row(uid, scope, line, row, status, answers, verified=verified if wrote else before)
         undone = [cid for cid in before if state.get(cid) is False]
         return {"saved": saved, "complete": complete, "newly": newly, "xp": xp, "potions": potions, "unlocked": unlocked, "open": sorted(still),
-                "moot": moot, "undone": undone, "was_done": row is not None and row["status"] == "done"}
+                "moot": moot, "undone": undone, "was_done": row is not None and row["status"] == "done", "chain_xp": chain_xp}
 
     def standing_still(uid: int, scope: str, line: dict[str, Any]) -> dict[str, Any]:
         """A settlement that changes nothing: the line stays exactly where it stood (a write NetBox did not take)."""
         row = store().quests(uid, scope).get(line["id"])
         saved = row if row is not None else save_row(uid, scope, line, None, "active", {})
         return {"saved": saved, "complete": False, "newly": [], "xp": 0, "potions": 0, "unlocked": [], "open": [], "moot": False,
-                "undone": [], "was_done": False}
+                "undone": [], "was_done": False, "chain_xp": 0}
 
     def verdict(uid: int, scope: str, line: dict[str, Any], s: dict[str, Any], mode: str, verified: bool, message: str,
                 result: dict[str, Any] | None, trace: str | None, e: Estate, gate: Gate | None = None) -> dict[str, Any]:
         st = store()
         if s["complete"] and verified and line["site_id"] in e.sites:
             # the small step, and where it leaves the site
-            comp = findings.analyse(e).completeness(line["site_id"], Standing(findings.analyse(e), st.quests(uid, scope)).resolved)
+            comp = findings.analyse(e).completeness(line["site_id"], Standing(findings.analyse(e), st.quests(uid, scope)).settled)
             message += f" {e.sites[line['site_id']]['name']} is now {comp['percent']} % complete."
         rows = st.quests(uid, "netbox")
         prows = st.quests(uid, "practice")
@@ -639,11 +768,21 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             fresh = next((x for x in quests.lines(e, findings.analyse(e)) if x["id"] == line["id"]), None)
             if fresh is not None:
                 tools = frozenset(["label_maker", "cable_tracer"] if scope == "practice" else st.rewards(uid)["tools"])
-                shown, state = fresh, quests.evaluate(e, fresh, s["saved"]["answers"], tools)
+                shown, state = fresh, quests.evaluate(e, fresh, answers_of(uid, scope, s["saved"], line["id"]), tools)
         status = s["saved"]["status"]
         if status == "active" and state is not None:
             status = {"asking": "active"}.get(state["status"], state["status"])   # as the quest log would show it
-        return {"quest": quest_body(scope, shown, s["saved"], state, status, gate=gate), "mode": mode, "verified": verified,
+        # the line's chain, as the estate stands now: where the player is, and the record so far read back from NetBox
+        ch = chain_view(uid, scope, e, shown, s["saved"]["checks"])
+        if ch is not None and (verified or mode == "practice") and (s["newly"] or s["complete"]):
+            if ch["status"] == "complete" and ch["total"] > 1:
+                message += f" That completes the chain \"{ch['title']}\"." + (f" {ch['summary']}" if ch["summary"] else "")
+            elif ch["status"] == "open_questions":
+                message += f" The chain \"{ch['title']}\" stays open at {ch['label']}."
+            elif ch["total"] > 1:
+                message += f" Next in the chain \"{ch['title']}\": {ch['label']}."
+        return {"quest": quest_body(scope, shown, s["saved"], state, status, gate=gate, chain=line_chain(uid, scope, e, shown)), "chain": ch,
+                "chain_xp": s["chain_xp"], "mode": mode, "verified": verified,
                 "complete": s["complete"], "xp_awarded": s["xp"], "potions_awarded": s["potions"], "message": message,
                 "can_now": line["outcome"] if s["complete"] and verified and not s["was_done"] else None, "unlocked": s["unlocked"],
                 "trace": trace, "result": result,
@@ -731,6 +870,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 reader.clear()
         result = res.model_dump(mode="json", exclude_unset=True)
         wrote_some = any(o["status"] == "ok" for o in result["ops"])
+        if res.applied:
+            vault.pop((uid, scope, line["id"]), None)   # what was typed is in NetBox now: the proxy forgets it
         if not res.applied and not wrote_some:
             # NetBox took nothing (the object changed or went since the question was asked, or NetBox refused the
             # value): nothing is confirmed and nothing is paid. The estate is read again before the next question, so

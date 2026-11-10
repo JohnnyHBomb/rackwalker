@@ -33,10 +33,10 @@ RANKS = ("connectivity", "identity", "layout")
 LIVE = ("active", "staged")
 # Order of finding kinds inside one rank: the most valuable unknown first.
 KIND_ORDER = ["site_no_way_out", "sites_not_linked", "locations_not_linked", "site_island", "switch_no_uplink",
-              "circuit_unterminated", "provider_unused", "device_unconnected", "router_no_address", "interface_no_cable",
-              "device_no_power", "device_unreachable", "address_no_prefix", "rack_audit", "shelf_audit", "platform_survey",
-              "site_record", "rack_devices_unpositioned", "room_layout"]
-KIND_RANK = {**{k: "connectivity" for k in KIND_ORDER[:13]}, "rack_audit": "identity", "shelf_audit": "identity",
+              "circuit_unterminated", "provider_unused", "circuit_handoff", "circuit_record", "device_unconnected", "router_no_address",
+              "interface_no_cable", "device_no_power", "device_unreachable", "address_no_prefix", "rack_audit", "shelf_audit",
+              "platform_survey", "site_record", "rack_devices_unpositioned", "room_layout"]
+KIND_RANK = {**{k: "connectivity" for k in KIND_ORDER[:15]}, "rack_audit": "identity", "shelf_audit": "identity",
              "platform_survey": "identity", "site_record": "identity", "rack_devices_unpositioned": "layout", "room_layout": "layout"}
 # At most this many devices of one model are covered by one platform line.
 MAX_SURVEY = 20
@@ -86,14 +86,44 @@ class Analysis:
         return {"percent": percent, "total": total, "open": total - passed}
 
 
-def expects_cable(port: dict[str, Any], has_address: bool) -> bool:
+def expects_cable(port: dict[str, Any], has_address: bool, carries_management: bool = False) -> bool:
     """A port NetBox already says is in use: enabled, physical, and carrying a description or an address. An address
-    on a management-only port does not count: it says how the device is reached, not that a lead in that port goes
-    anywhere NetBox should know (management networks are often left out of NetBox on purpose), and the line "how do you
-    reach it" has just put that address there. A management port someone described is still expected to have a cable."""
+    on a management-only port does not count, and neither does the management address (the primary IP) of a device
+    recorded as locally managed, on whatever port carries it (`carries_management`): it says how the device is reached,
+    not that a lead in that port goes anywhere NetBox should know (management networks are often left out of NetBox on
+    purpose), and the line "how is it managed" has just put that address there. A port someone described is still
+    expected to have a cable."""
     if not (port["enabled"] and is_physical(port)):
         return False
-    return bool(port["description"].strip()) or (has_address and not port["mgmt_only"])
+    return bool(port["description"].strip()) or (has_address and not port["mgmt_only"] and not carries_management)
+
+
+# The facts of a circuit's administrative record, in the order they are asked for. Each is one check
+# (`circuit:<id>:<fact>`); none of them is known to everybody, so "I don't know yet" on one leaves the rest writable.
+CIRCUIT_FACTS = ("network", "account", "contacts", "install_date", "commit_rate", "mrc", "nrc")
+FACT_WORDS = {"network": "the provider's network it lands on", "account": "the account with the provider", "contacts": "who to call",
+              "install_date": "the install date", "commit_rate": "the commit rate", "mrc": "the monthly charge", "nrc": "the one-off charge"}
+
+
+def circuit_facts(e: Estate, circuit_id: int) -> dict[str, bool]:
+    """Which facts of a circuit's administrative record NetBox holds. A fact NetBox cannot hold (the custom field for
+    it was never created; both ends of the circuit are at sites, so no provider network is its far end) is left out."""
+    c = e.circuits[circuit_id]
+    terms = [t for t in e.cterms.values() if t["circuit_id"] == circuit_id]
+    out: dict[str, bool] = {}
+    on_network = any(t.get("network_id") is not None for t in terms)
+    if on_network or len(terms) < 2:
+        out["network"] = on_network
+    if e.can_see("accounts"):
+        out["account"] = c.get("account_id") is not None
+    if e.can_see("contacts", "contact_roles", "assignments"):
+        out["contacts"] = bool(e.contacts_of(circuit_id))
+    out["install_date"] = bool(c.get("install_date"))
+    out["commit_rate"] = c.get("commit_rate") is not None
+    for fact in ("mrc", "nrc"):
+        if e.has_field(f"rw_{fact}") and e.has_field("rw_currency"):
+            out[fact] = c.get(fact) is not None
+    return out
 
 
 def _sort_key(f: dict[str, Any]) -> tuple[Any, ...]:
@@ -300,8 +330,10 @@ def _analyse(e: Estate) -> Analysis:
                     continue
                 on_device = 0
                 open_ports: list[dict[str, Any]] = []
+                # the port the player named as carrying management, on a device recorded as locally managed
+                carrier = e.primary_interface(d) if d.get("mgmt_mode") == "local" else None
                 for p in e.device_ports(d["id"], ("interface",)):
-                    if not expects_cable(p, bool(iface_ips.get(p["id"]))):
+                    if not expects_cable(p, bool(iface_ips.get(p["id"])), p["id"] == carrier):
                         continue
                     if p["cable_id"] is not None or p["mark_connected"]:
                         a.checks[site_id][f"interface:{p['id']}:cable"] = True
@@ -341,23 +373,26 @@ def _analyse(e: Estate) -> Analysis:
                             f"{_cap(nm(d))} routes traffic, but no interface of it has an address in NetBox.", [dref(d)], device_id=d["id"])
                         continue
                     passed("router_no_address", ("device", d["id"]), site_id)
-                if len(stack(d)) > 1 and (stack(d)[0] != d["id"] or any(e.devices[i]["primary_ip"] for i in stack(d))):
-                    continue   # a stack is managed at one address: asked of its first member, and only when no member has one
-                if d["primary_ip"] is None:
-                    a.gaps.append({"id": f"device:{d['id']}:primary_ip", "kind": "device", "object_id": d["id"], "field": "primary_ip",
-                                   "site_id": site_id, "rank": "connectivity", "device_id": d["id"],
-                                   "label": f"{_cap(nm(d))} has no management address (primary IP)."})
-                    a.checks[site_id][f"device:{d['id']}:primary_ip"] = False
-                else:
-                    a.checks[site_id][f"device:{d['id']}:primary_ip"] = True
-            unreachable = [g for g in a.gaps if g["site_id"] == site_id and g["field"] == "primary_ip"]
-            if unreachable:
-                ids = [g["object_id"] for g in unreachable]
-                names = [e.device_name(i) for i in ids]
-                a.findings.append({"id": f"device_unreachable:site:{site_id}", "kind": "device_unreachable", "rank": "connectivity",
-                                   "site_id": site_id, "evidence": [ref("device", i, e.device_name(i)) for i in ids],
-                                   "title": f"NetBox does not say how to reach {_some(names)} to manage {'it' if len(ids) == 1 else 'them'}.",
-                                   "data": {"device_ids": ids}})
+                if len(stack(d)) > 1 and (stack(d)[0] != d["id"] or any(e.mgmt_mode(e.devices[i]) for i in stack(d))):
+                    continue   # a stack is managed as one: asked of its first member, and only when no member says how
+                # One check per device: NetBox says how it is managed. A locally managed device needs its management
+                # address (primary IP); one that a cloud or controller service manages, or that is not managed at all,
+                # has no address to record and is complete as it is. With nothing on record, that is the question.
+                mode = e.mgmt_mode(d)
+                gid = f"device:{d['id']}:primary_ip"
+                if mode in ("cloud", "unmanaged") or d["primary_ip"] is not None:
+                    a.checks[site_id][gid] = True
+                    continue
+                a.checks[site_id][gid] = False
+                label = (f"{_cap(nm(d))} is managed locally, but has no management address (primary IP)." if mode == "local" else
+                         f"{_cap(nm(d))} has no management address (primary IP), and NetBox does not say how it is managed.")
+                a.gaps.append({"id": gid, "kind": "device", "object_id": d["id"], "field": "primary_ip", "site_id": site_id,
+                               "rank": "connectivity", "device_id": d["id"], "label": label})
+                a.findings.append({"id": f"device_unreachable:device:{d['id']}", "kind": "device_unreachable", "rank": "connectivity",
+                                   "site_id": site_id, "evidence": [dref(d)],
+                                   "title": (f"{_cap(nm(d))} is managed locally, but NetBox has no address to log in to it." if mode == "local"
+                                             else f"NetBox does not say how {nm(d)} is managed, or how to reach it."),
+                                   "data": {"device_id": d["id"], "gap_ids": [gid], "mode": mode}})
             if e.can_see("prefixes"):
                 # NetBox keeps one address table per VRF (and the global one): a prefix holds an address only in its own
                 nets: dict[Any, list[Any]] = defaultdict(list)
@@ -519,6 +554,39 @@ def _analyse(e: Estate) -> Analysis:
             add("circuit_unterminated", ("circuit", cid), site_id,
                 f"Circuit {c['cid']} from {prov} is on record, but NetBox does not say which device it plugs into.",
                 [ref("circuit", cid, c["cid"])], circuit_id=cid, provider_id=c["provider_id"])
+        # ---- a circuit that is plugged in: the address on your side of it (logical), then its record (administrative)
+        for cid, c in sorted(e.circuits.items()):
+            hand = e.circuit_handoff(cid)
+            if hand is None:
+                continue
+            term, port, dev = hand
+            site_id = dev["site_id"]
+            if site_id not in e.sites:
+                continue
+            prov = e.providers.get(c["provider_id"] or 0, {}).get("name", "its provider")
+            cref = ref("circuit", cid, c["cid"])
+            where = f"{nm(dev)} {port['name']}"
+            if port["kind"] == "interface" and e.can_see("ips"):
+                if iface_ips.get(port["id"]):
+                    passed("circuit_handoff", ("circuit", cid), site_id)
+                else:
+                    add("circuit_handoff", ("circuit", cid), site_id,
+                        f"Circuit {c['cid']} from {prov} plugs into {where}, but NetBox has no address on that port.",
+                        [cref, dref(dev)], circuit_id=cid, device_id=dev["id"], interface_id=port["id"], provider_id=c["provider_id"])
+            facts = circuit_facts(e, cid)
+            if facts:
+                gap_ids = [f"circuit:{cid}:{fact}" for fact in facts]
+                for fact, ok in facts.items():
+                    a.checks[site_id][f"circuit:{cid}:{fact}"] = ok
+                missing = [fact for fact, ok in facts.items() if not ok]
+                if missing:
+                    a.findings.append({
+                        "id": f"circuit_record:circuit:{cid}", "kind": "circuit_record", "rank": "connectivity", "site_id": site_id,
+                        "title": f"Circuit {c['cid']} from {prov} is plugged in at {e.sites[site_id]['name']}, but NetBox does not hold "
+                                 f"{_some([FACT_WORDS[m] for m in missing], 'or')}.",
+                        "evidence": [cref, ref("provider", c["provider_id"] or 0, prov)],
+                        "data": {"circuit_id": cid, "provider_id": c["provider_id"], "device_id": dev["id"], "facts": list(facts),
+                                 "missing": missing, "gap_ids": gap_ids}})
         for pid, p in sorted(e.providers.items()):
             if any(c["provider_id"] == pid for c in e.circuits.values()):
                 passed("provider_unused", ("provider", pid), home)

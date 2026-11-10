@@ -22,7 +22,7 @@ import seed_model as sm  # noqa: E402
 
 NB = "http://netbox.example.invalid"
 TS = "2026-11-07T09:00:00Z"
-META = {"contract_version": "2.3.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
+META = {"contract_version": "2.4.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
 
 PASS_THROUGH = {"front_port", "rear_port"}
 # PortKind enum order (contracts/scene.schema.json): DeviceDetail.interfaces is ordered by kind in this order.
@@ -187,6 +187,12 @@ class World:
                 # devnetbox/seed.py puts each primary address on the device type's management-ish interface
                 name = {"ex-c9000": "mgmt0", "ex-a2400": "mgmt0", "ex-r400": "ge-0/0/0", "ex-f200": "port8", "ex-s2": "eth0"}[d.dtype]
                 ips.append({"id": n, "address": d.ip, "vrf_id": None, "vrf": None, "interface_id": self.ports[("interface", d.name, name)]["id"]})
+        for c in m.circuits:
+            if c.a_address:
+                n += 1
+                _, owner, port = next(x.a for x in m.cables if x.b == ("circuit_termination", c.cid, "A"))
+                ips.append({"id": n, "address": c.a_address, "vrf_id": None, "vrf": None, "interface_id": self.ports[("interface", owner, port)]["id"]})
+        name, phone, email = sm.CARRIER_CONTACT
         return {
             "sites": [{"id": self.site_id[s.slug], "name": s.name, "slug": s.slug, "status": "active", "latitude": s.lat, "longitude": s.lon,
                        "facility": None, "country": s.country, "last_updated": None} for s in m.sites],
@@ -201,13 +207,21 @@ class World:
             "ports": sorted(ports, key=lambda p: (p["kind"], p["id"])),
             "cables": [{"id": c["id"], "type": c["spec"].type, "label": c["spec"].label, "status": c["spec"].status,
                         "a": [key(c["a"])], "b": [key(c["b"])]} for c in self.cables],
-            "circuits": [{"id": self.circ_id[c.cid], "cid": c.cid, "provider_id": 1, "type": c.type, "status": c.status} for c in m.circuits],
+            "circuits": [{"id": self.circ_id[c.cid], "cid": c.cid, "provider_id": 1, "type": c.type, "status": c.status, "account_id": 1,
+                          "install_date": c.install_date or None, "commit_rate": 1000000, "mrc": f"{c.mrc:.2f}", "nrc": f"{c.nrc:.2f}",
+                          "currency": sm.CURRENCY, "last_updated": None} for c in m.circuits],
             "providers": [{"id": 1, "name": m.circuits[0].provider}] if m.circuits else [],
             "circuit_types": [{"id": 1, "name": m.circuits[0].type}] if m.circuits else [],
             "cterms": [{"id": t["id"], "circuit_id": self.circ_id[t["cid"]], "side": t["side"], "site_id": self.site_id[t["site"]],
-                        "cable_id": t["cable"]} for t in self.cterm.values()],
+                        "network_id": None, "cable_id": t["cable"]} for t in self.cterm.values()],
             "feeds": [], "platforms": [], "ips": ips,
-            "prefixes": [],  # the seed creates addresses but no prefixes, as devnetbox/seed.py does
+            # devnetbox/seed.py creates one prefix (the carrier's hand-off range) and none for the devices' own addresses
+            "prefixes": [{"id": 1, "prefix": sm.CARRIER_PREFIX, "vrf_id": None}],
+            "accounts": [{"id": 1, "provider_id": 1, "account": sm.CARRIER_ACCOUNT, "name": "Example Carrier account"}], "networks": [],
+            "contacts": [{"id": 1, "name": name, "phone": phone, "email": email}],
+            "contact_roles": [{"id": i, "name": n_, "slug": s_} for i, (n_, s_) in enumerate(sm.CONTACT_ROLES, 1)],
+            "assignments": [{"id": 1, "object_type": "circuits.provider", "object_id": 1, "contact_id": 1, "role_id": 1}],
+            "no_fields": [],
             "truncated": [], "unreadable": [], "synthetic": False}
 
     @staticmethod
@@ -222,7 +236,7 @@ def render() -> dict[str, object]:
     m = sm.build()
     w = World(m)
     out: dict[str, object] = {}
-    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.3.0", "write_enabled": False,
+    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.4.0", "write_enabled": False,
                           "netbox": {"url": "http://netbox.example.invalid", "reachable": True, "version": "4.7.4", "supported": True,
                                      "permission_check": "unknown"}}
     sites = []
@@ -328,7 +342,7 @@ def render() -> dict[str, object]:
                   {"field": "face", "before": srv.face, "after": None}], "error": None},
         {"index": 4, "op": "update_fields", "client_ref": None, "target": {"kind": "device", "id": detail_ids[0]}, "status": "error",
          "before": None, "after": None, "diff": [],
-         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.3.0.",
+         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.4.0.",
                    "details": {"field": "primary_ip",
                                "allowed": ["name", "status", "serial", "asset_tag", "description", "comments", "platform_id"]}}},
         {"index": 5, "op": "move_rack", "client_ref": None, "target": {"kind": "rack", "id": "@newrack"}, "status": "ok",

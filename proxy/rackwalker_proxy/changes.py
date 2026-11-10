@@ -53,7 +53,14 @@ ENDPOINT = {"site": "dcim/sites", "location": "dcim/locations", "rack": "dcim/ra
             "cable": "dcim/cables", "interface": "dcim/interfaces"}
 CUSTOM = {"iso_x", "iso_y", "iso_w", "iso_h", "iso_facing", "iso_theme"}
 # Ops added in contract 2.3.0 (what a quest line ends in): each creates one NetBox object, or assigns an address.
-NET_OPS = ("connect_cable", "create_circuit", "create_circuit_termination", "assign_ip", "create_prefix")
+NET_OPS = ("connect_cable", "create_circuit", "create_circuit_termination", "assign_ip", "create_prefix",
+           # 2.4.0: how a device is managed, and a circuit's administrative record
+           "set_management", "record_circuit", "create_provider_account", "create_provider_network", "create_contact", "assign_contact")
+# Ops of NET_OPS that change an existing object: they create nothing, so no later op can refer to their result.
+NET_UPDATES = ("assign_ip", "set_management", "record_circuit", "assign_contact")
+# The custom fields the 2.4.0 ops write (created by devnetbox/seed.py --fields-only).
+MGMT_FIELDS = ("rw_mgmt_mode", "rw_mgmt_service")
+COST_FIELDS = {"mrc": "rw_mrc", "nrc": "rw_nrc", "currency": "rw_currency"}
 # A cable end's contract kind -> NetBox content type.
 END_TYPE = {"interface": "dcim.interface", "front_port": "dcim.frontport", "rear_port": "dcim.rearport", "power_port": "dcim.powerport",
             "power_outlet": "dcim.poweroutlet", "circuit_termination": "circuits.circuittermination"}
@@ -197,7 +204,11 @@ def rec_device(d: nb.Device, dtypes: dict[int, nb.DeviceType]) -> Rec:
         "_u_height": dt.u_height if dt else 1.0, "_full_depth": dt.is_full_depth if dt else True,
         "_child": bool(d.parent_device) or (dt is not None and dt.subdevice_role == "child"),
         "_tenant_id": d.tenant.id if d.tenant else None, "_primary_ip": d.primary_ip.address if d.primary_ip else None,
-        "_manufacturer_id": dt.manufacturer.id if dt else None})
+        "_manufacturer_id": dt.manufacturer.id if dt else None,
+        "_mgmt_mode": d.cf("rw_mgmt_mode"), "_mgmt_service": d.cf("rw_mgmt_service") or None,
+        "_has_mgmt": all(f in d.custom_fields for f in MGMT_FIELDS), "_type_id": d.device_type.id, "_model": dt.model if dt else None,
+        "_mgmt_default": nb._unwrap(dt.custom_fields.get("rw_mgmt_default")) if dt else None,
+        "_has_default": dt is not None and "rw_mgmt_default" in dt.custom_fields})
 
 
 def rec_cable(cb: nb.Cable) -> Rec:
@@ -222,7 +233,7 @@ def _ids(ops: list[Any]) -> dict[str, set[int]]:
     want: dict[str, set[int]] = {k: set() for k in ENDPOINT}
 
     def add(kind: str, v: Any) -> None:
-        if isinstance(v, int) and not isinstance(v, bool):
+        if isinstance(v, int) and not isinstance(v, bool) and kind in want:
             want[kind].add(v)
 
     for op in ops:
@@ -327,11 +338,58 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
                     st.add(Rec(kind, oid, None, {"name": row["name"]}))
             for row in await client.list_raw("circuits/circuits", {"cid": f["cid"], "provider_id": f["provider_id"]}):
                 st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": f["provider_id"]}))
+        if op.op in ("create_provider_account", "create_provider_network") and ("provider", f["provider_id"]) not in st.recs:
+            row = await _one(client, "circuits/providers", f["provider_id"])
+            if row:
+                st.add(Rec("provider", row["id"], None, {"name": row["name"]}))
+        if op.op == "create_provider_account":
+            for row in await client.list_raw("circuits/provider-accounts", {"provider_id": f["provider_id"], "account": f["account"]}):
+                st.add(Rec("provider_account", row["id"], None, {"provider_id": f["provider_id"], "account": row["account"]}))
+        if op.op == "create_provider_network":
+            for row in await client.list_raw("circuits/provider-networks", {"provider_id": f["provider_id"], "name": f["name"]}):
+                st.add(Rec("provider_network", row["id"], None, {"provider_id": f["provider_id"], "name": row["name"]}))
+        if op.op == "create_circuit_termination" and isinstance(f.get("provider_network_id"), int):
+            row = await _one(client, "circuits/provider-networks", f["provider_network_id"])
+            if row:
+                st.add(Rec("provider_network", row["id"], None, {"provider_id": (row.get("provider") or {}).get("id"), "name": row["name"]}))
+        if op.op == "record_circuit":
+            tid = op.target.id.root if hasattr(op.target.id, "root") else op.target.id
+            row = await _one(client, "circuits/circuits", tid)
+            if row:
+                cf = row.get("custom_fields") or {}
+                st.add(Rec("circuit", row["id"], row.get("last_updated"), {
+                    "cid": row["cid"], "provider_id": (row.get("provider") or {}).get("id"),
+                    "provider_account_id": (row.get("provider_account") or {}).get("id"), "install_date": row.get("install_date"),
+                    "commit_rate": row.get("commit_rate"), "mrc": _money(cf.get("rw_mrc")), "nrc": _money(cf.get("rw_nrc")),
+                    "currency": cf.get("rw_currency") or None, "_has_cost": all(v in cf for v in COST_FIELDS.values())}))
+            if isinstance(f.get("provider_account_id"), int):
+                acct = await _one(client, "circuits/provider-accounts", f["provider_account_id"])
+                if acct:
+                    st.add(Rec("provider_account", acct["id"], None, {"provider_id": (acct.get("provider") or {}).get("id"), "account": acct["account"]}))
+        if op.op == "assign_contact":
+            tid = op.target.id.root if hasattr(op.target.id, "root") else op.target.id
+            kind = op.target.kind
+            if (kind, tid) not in st.recs:
+                row = await _one(client, "circuits/providers" if kind == "provider" else "circuits/circuits", tid)
+                if row:
+                    st.add(Rec(kind, row["id"], None, {"name": row.get("name") or row.get("cid"), "cid": row.get("cid"),
+                                                      "provider_id": (row.get("provider") or {}).get("id")}))
+            role = await _one(client, "tenancy/contact-roles", f["role_id"])
+            if role:
+                st.add(Rec("contact_role", role["id"], None, {"name": role["name"]}))
+            if isinstance(f["contact_id"], int):
+                contact = await _one(client, "tenancy/contacts", f["contact_id"])
+                if contact:
+                    st.add(Rec("contact", contact["id"], None, {"name": contact["name"]}))
+                for row in await client.list_raw("tenancy/contact-assignments", {"object_type": f"circuits.{kind}", "object_id": tid,
+                                                                                  "contact_id": f["contact_id"], "role_id": f["role_id"]}):
+                    st.add(Rec("contact_assignment", row["id"], None, {"object": (kind, tid), "contact_id": f["contact_id"], "role_id": f["role_id"]}))
         if op.op == "create_circuit_termination":
             if isinstance(f["circuit_id"], int):
                 row = await _one(client, "circuits/circuits", f["circuit_id"])
                 if row:
-                    st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": (row.get("provider") or {}).get("id")}))
+                    if ("circuit", row["id"]) not in st.recs:   # a fuller record of it (record_circuit) is kept
+                        st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": (row.get("provider") or {}).get("id")}))
                     for term in await client.list_raw("circuits/circuit-terminations", {"circuit_id": row["id"]}):
                         st.add(Rec("circuit_termination", term["id"], None, {"circuit_id": row["id"], "term_side": term["term_side"]}))
         if op.op == "assign_ip":
@@ -348,6 +406,16 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
 
 
 # ---------------------------------------------------------------- plan (pure)
+def _money(v: Any) -> str | None:
+    """An amount NetBox gave back (a decimal custom field) as decimal text with two places."""
+    if v is None or v == "":
+        return None
+    try:
+        return f"{Decimal(str(v)):.2f}"
+    except ArithmeticError:
+        return None
+
+
 def _ts(s: str) -> datetime:
     return datetime.fromisoformat(s.replace("Z", "+00:00"))
 
@@ -633,14 +701,122 @@ class Planner:
 
     def create_circuit_termination(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
         circuit = self.resolve("circuit", f["circuit_id"], "circuit_id")
-        if ("site", f["site_id"]) not in self.st.recs:
+        network = None
+        if f.get("provider_network_id") is not None:
+            network = self.resolve("provider_network", f["provider_network_id"], "provider_network_id")
+            if network.v.get("provider_id") != circuit.v.get("provider_id"):
+                raise OpError("validation_failed", f"Network {network.v['name']} is not a network of the provider of circuit {circuit.v['cid']}.",
+                              {"field": "provider_network_id"})
+        elif ("site", f["site_id"]) not in self.st.recs:
             raise OpError("not_found", f"Site {f['site_id']} does not exist.", {"field": "site_id", "kind": "site", "id": f["site_id"]})
         for term in self.st.of("circuit_termination"):
             if term.v.get("circuit_id") == circuit.id and term.v.get("term_side") == f["term_side"]:
                 raise OpError("conflict", f"Side {f['term_side']} of circuit {circuit.v['cid']} already has a termination.", {"field": "term_side"})
         self._new(p, op, "circuit_termination", {"circuit_id": circuit.id, "term_side": f["term_side"], "cable": None,
                                                  "name": f["term_side"], "device": f"circuit {circuit.v['cid']}"}, dict(f))
-        p.write = {**f, "circuit_id": circuit.id}
+        p.write = {**f, "circuit_id": circuit.id, **({"provider_network_id": network.id} if network is not None else {})}
+
+    # -- ops added in 2.4.0 --
+    def set_management(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        dev = self.resolve("device", p.target_id)
+        self.lock(dev, op.if_unmodified_since)
+        if not dev.v.get("_has_mgmt"):
+            raise OpError("validation_failed", "This NetBox has no custom field rw_mgmt_mode on devices yet, so it cannot hold how a device "
+                          "is managed. The setup script (devnetbox/seed.py --fields-only) adds it.", {"field": "mode"})
+        if "model_default" in f and not dev.v.get("_has_default"):
+            raise OpError("validation_failed", "This NetBox has no custom field rw_mgmt_default on device types yet. The setup script "
+                          "(devnetbox/seed.py --fields-only) adds it.", {"field": "model_default"})
+        if f.get("service") and f["mode"] != "cloud":
+            raise OpError("validation_failed", "A managing service is recorded only for a device that a cloud or controller service manages.",
+                          {"field": "service"})
+        p.key = dev.key
+        before = {"mode": dev.v.get("_mgmt_mode"), "service": dev.v.get("_mgmt_service"), "model_default": dev.v.get("_mgmt_default")}
+        p.before = {k: before[k] for k in f}
+        p.after = dict(f)
+        p.write = {**f, "type_id": dev.v.get("_type_id")}
+        dev.v.update(_mgmt_mode=f["mode"], **({"_mgmt_service": f["service"]} if "service" in f else {}),
+                     **({"_mgmt_default": f["model_default"]} if "model_default" in f else {}))
+        if p.before == p.after:
+            p.status = "no_change"
+
+    def record_circuit(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        circuit = self.resolve("circuit", p.target_id)
+        if "install_date" not in circuit.v:
+            raise OpError("not_found", f"Circuit {p.target_id} does not exist.", {"kind": "circuit", "id": p.target_id})
+        write = dict(f)
+        if "provider_account_id" in f:
+            account = self.resolve("provider_account", f["provider_account_id"], "provider_account_id")
+            if account.v.get("provider_id") != circuit.v.get("provider_id"):
+                raise OpError("validation_failed", f"That account is not an account with the provider of circuit {circuit.v['cid']}.",
+                              {"field": "provider_account_id"})
+            write["provider_account_id"] = account.id
+        if "install_date" in f:
+            try:
+                datetime.fromisoformat(f["install_date"])
+            except ValueError:
+                raise OpError("validation_failed", f"{f['install_date']!r} is not a date (year-month-day).", {"field": "install_date"}) from None
+        if any(k in f for k in COST_FIELDS):
+            if not circuit.v.get("_has_cost"):
+                raise OpError("validation_failed", "This NetBox has no custom fields rw_mrc, rw_nrc and rw_currency on circuits yet, so it "
+                              "cannot hold what a circuit costs. The setup script (devnetbox/seed.py --fields-only) adds them.", {"field": "mrc"})
+            if ("mrc" in f or "nrc" in f) and not (f.get("currency") or circuit.v.get("currency")):
+                raise OpError("validation_failed", "A charge needs its currency (three letters, for example GBP).", {"field": "currency"})
+        for k in ("mrc", "nrc"):
+            if k in write:
+                write[k] = _money(write[k])
+        # a fact NetBox already holds is not this op's to change: someone recorded it, and it is theirs
+        for k, v in write.items():
+            have = circuit.v.get(k)
+            if have not in (None, "") and have != v:
+                raise OpError("conflict", f"Circuit {circuit.v['cid']} already has a value for {k.replace('_id', '').replace('_', ' ')} in NetBox; "
+                              "change it in NetBox itself if it is wrong.", {"field": k})
+        p.key = circuit.key
+        p.before = {k: circuit.v.get(k) for k in f}
+        p.after = {k: write[k] for k in f}
+        p.write = write
+        circuit.v.update(write)
+        if p.before == p.after:
+            p.status = "no_change"
+
+    def create_provider_account(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        if ("provider", f["provider_id"]) not in self.st.recs:
+            raise OpError("not_found", f"Provider {f['provider_id']} does not exist.", {"field": "provider_id", "id": f["provider_id"]})
+        for acct in self.st.of("provider_account"):
+            if acct.v.get("provider_id") == f["provider_id"] and acct.v.get("account") == f["account"]:
+                raise OpError("conflict", "That provider already has an account with this number in NetBox.", {"field": "account"})
+        self._new(p, op, "provider_account", {"provider_id": f["provider_id"], "account": f["account"]}, dict(f))
+
+    def create_provider_network(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        if ("provider", f["provider_id"]) not in self.st.recs:
+            raise OpError("not_found", f"Provider {f['provider_id']} does not exist.", {"field": "provider_id", "id": f["provider_id"]})
+        for net in self.st.of("provider_network"):
+            if net.v.get("provider_id") == f["provider_id"] and str(net.v.get("name", "")).lower() == f["name"].lower():
+                raise OpError("conflict", f"That provider already has a network called {f['name']} in NetBox.", {"field": "name"})
+        self._new(p, op, "provider_network", {"provider_id": f["provider_id"], "name": f["name"]}, dict(f))
+
+    def create_contact(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        import re
+
+        if f.get("email") and not re.fullmatch(r"[^@\s]+@[^@\s]+\.[^@\s]+", f["email"]):
+            raise OpError("validation_failed", "That is not an email address.", {"field": "email"})
+        self._new(p, op, "contact", {"name": f["name"]}, dict(f))
+
+    def assign_contact(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
+        target = self.st.recs.get((p.kind, p.target_id))
+        if target is None:
+            raise OpError("not_found", f"{p.kind.capitalize()} {p.target_id} does not exist.", {"kind": p.kind, "id": p.target_id})
+        contact = self.resolve("contact", f["contact_id"], "contact_id")
+        role = self.st.recs.get(("contact_role", f["role_id"]))
+        if role is None:
+            raise OpError("not_found", f"Contact role {f['role_id']} does not exist.", {"field": "role_id", "id": f["role_id"]})
+        for a in self.st.of("contact_assignment"):
+            if a.v["object"] == (p.kind, p.target_id) and a.v["contact_id"] == contact.id and a.v["role_id"] == role.id:
+                raise OpError("conflict", f"{contact.v['name']} already is the {role.v['name']} contact there.", {"field": "contact_id"})
+        self.st.add(Rec("contact_assignment", f"#{p.index}", None, {"object": (p.kind, p.target_id), "contact_id": contact.id, "role_id": role.id}))
+        p.key = target.key
+        p.before = None
+        p.after = dict(f)
+        p.write = {"contact_id": contact.id, "role_id": role.id}
 
     def assign_ip(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
         import ipaddress
@@ -707,9 +883,40 @@ async def write_net(client: nb.NetBox, p: Planned, real: dict[Key, int], message
         return await client.request("POST", "circuits/circuits/", json={"cid": w["cid"], "provider": w["provider_id"], "type": w["type_id"],
                                                                         "status": "active", "changelog_message": message})
     if p.op == "create_circuit_termination":
+        at = ({"termination_type": "circuits.providernetwork", "termination_id": rid("provider_network", w["provider_network_id"])}
+              if w.get("provider_network_id") is not None else {"termination_type": "dcim.site", "termination_id": w["site_id"]})
         return await client.request("POST", "circuits/circuit-terminations/", json={
-            "circuit": rid("circuit", w["circuit_id"]), "term_side": w["term_side"], "termination_type": "dcim.site",
-            "termination_id": w["site_id"], "changelog_message": message})
+            "circuit": rid("circuit", w["circuit_id"]), "term_side": w["term_side"], **at, "changelog_message": message})
+    if p.op == "set_management":
+        cf = {"rw_mgmt_mode": w["mode"], **({"rw_mgmt_service": w["service"] or None} if "service" in w else {})}
+        if "model_default" in w and w.get("type_id") is not None:
+            # the model's default first: if NetBox refuses it, the device has not been touched
+            type_cf = {"rw_mgmt_default": w["model_default"],
+                       **({"rw_mgmt_service": w["service"]} if w["model_default"] == "cloud" and w.get("service") else {})}
+            await client.request("PATCH", f"dcim/device-types/{w['type_id']}/", json={"custom_fields": type_cf, "changelog_message": message})
+        return await client.request("PATCH", f"dcim/devices/{p.key[1]}/", json={"custom_fields": cf, "changelog_message": message})  # type: ignore[index]
+    if p.op == "record_circuit":
+        body: dict[str, Any] = {k: w[k] for k in ("install_date", "commit_rate") if k in w}
+        if "provider_account_id" in w:
+            body["provider_account"] = rid("provider_account", w["provider_account_id"])
+        cf = {name: w[k] for k, name in COST_FIELDS.items() if k in w}
+        if cf:
+            body["custom_fields"] = cf
+        return await client.request("PATCH", f"circuits/circuits/{p.key[1]}/", json={**body, "changelog_message": message})  # type: ignore[index]
+    if p.op == "create_provider_account":
+        return await client.request("POST", "circuits/provider-accounts/", json={
+            "provider": w["provider_id"], "account": w["account"], **({"name": w["name"]} if w.get("name") else {}), "changelog_message": message})
+    if p.op == "create_provider_network":
+        return await client.request("POST", "circuits/provider-networks/", json={"provider": w["provider_id"], "name": w["name"],
+                                                                                 "changelog_message": message})
+    if p.op == "create_contact":
+        return await client.request("POST", "tenancy/contacts/", json={"name": w["name"], **{k: w[k] for k in ("phone", "email") if w.get(k)},
+                                                                       "changelog_message": message})
+    if p.op == "assign_contact":
+        await client.request("POST", "tenancy/contact-assignments/", json={
+            "object_type": f"circuits.{p.key[0]}", "object_id": p.key[1], "contact": rid("contact", w["contact_id"]),  # type: ignore[index]
+            "role": w["role_id"], "changelog_message": message})
+        return {"id": p.key[1]}  # type: ignore[index]
     if p.op == "assign_ip":
         ip_id = w["ip_id"]
         if ip_id is None:
@@ -804,11 +1011,11 @@ async def apply(client: nb.NetBox, cs: c.ChangeSet, write_enabled: bool, player:
                 continue
             if p.op in NET_OPS:
                 obj = await write_net(client, p, real, message)
-                if p.op != "assign_ip":
+                if p.op not in NET_UPDATES:
                     real[p.key] = obj["id"]  # type: ignore[index]
                 written.append(p.index)
                 ids[p.index] = obj["id"]
-                p.after = {f: (real.get(("circuit_termination", v), real.get(("circuit", v), v)) if isinstance(v, str) and v.startswith("@") else v)
+                p.after = {f: (next((i for (_, ref), i in real.items() if ref == v), v) if isinstance(v, str) and v.startswith("@") else v)
                            for f, v in (p.after or {}).items()}
                 log.info("apply: op %d %s %s ok", p.index, p.op, obj["id"])
                 continue

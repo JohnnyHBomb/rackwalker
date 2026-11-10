@@ -6,7 +6,7 @@ existing objects are patched back to the model's values. Running it twice leaves
 
     NETBOX_URL=http://localhost:8100 NETBOX_TOKEN=... python devnetbox/seed.py            # seed
     NETBOX_URL=... NETBOX_TOKEN=... python devnetbox/seed.py --counts                     # status + counts only
-    NETBOX_URL=... NETBOX_TOKEN=... python devnetbox/seed.py --fields-only                # custom fields only
+    NETBOX_URL=... NETBOX_TOKEN=... python devnetbox/seed.py --fields-only                # custom fields and contact roles only
 
 Only plain `requests`. Synthetic data only: refuse to run against anything but a dev stack (see _guard).
 NETBOX_TOKEN is a v2 token (nbt_<key>.<token>, sent as Bearer); a bare v1 token is sent as `Token`.
@@ -38,6 +38,11 @@ CHOICE_SETS = {
     "iso-facing": [["N", "North (-y)"], ["E", "East (+x)"], ["S", "South (+y)"], ["W", "West (-x)"]],
     "iso-theme": [["debug", "Debug"], ["industrial-robotic", "Industrial / robotic"], ["farm", "Farm"],
                   ["business", "Business"], ["pagodas-nature", "Pagodas and nature"]],
+    # how a device is managed (docs/quests.md "How a device is managed")
+    "rw-mgmt-mode": [["local", "Locally (it has an address to log in to)"], ["cloud", "By a cloud or controller service"],
+                     ["unmanaged", "Not managed"]],
+    "rw-mgmt-default": [["local", "Locally (it has an address to log in to)"], ["cloud", "By a cloud or controller service"],
+                        ["unmanaged", "Not managed"], ["varies", "Varies from device to device"]],
 }
 CUSTOM_FIELDS = [
     # name, type, object types, extra
@@ -50,7 +55,17 @@ CUSTOM_FIELDS = [
     ("iso_country", "text", ["dcim.site"], {"label": "Country (ISO 3166-1 alpha-2)", "validation_regex": "^[A-Z]{2}$"}),
     ("iso_latitude", "decimal", ["dcim.location", "dcim.rack"], {"label": "Latitude"}),
     ("iso_longitude", "decimal", ["dcim.location", "dcim.rack"], {"label": "Longitude"}),
+    # how a device is managed: on the device, with an optional default for every device of a model on its device type
+    ("rw_mgmt_mode", "select", ["dcim.device"], {"label": "Managed", "choice_set": "rw-mgmt-mode"}),
+    ("rw_mgmt_service", "text", ["dcim.device", "dcim.devicetype"], {"label": "Managed by (cloud or controller service)"}),
+    ("rw_mgmt_default", "select", ["dcim.devicetype"], {"label": "Managed (default for this model)", "choice_set": "rw-mgmt-default"}),
+    # what a circuit costs: NetBox has no field of its own for it
+    ("rw_mrc", "decimal", ["circuits.circuit"], {"label": "Monthly recurring charge (MRC)", "validation_minimum": 0}),
+    ("rw_nrc", "decimal", ["circuits.circuit"], {"label": "One-off charge (NRC)", "validation_minimum": 0}),
+    ("rw_currency", "text", ["circuits.circuit"], {"label": "Currency of the charges (ISO 4217)", "validation_regex": "^[A-Z]{3}$"}),
 ]
+# Contact roles a circuit's record uses (NetBox has none out of the box). Created with the custom fields.
+CONTACT_ROLES = list(sm.CONTACT_ROLES)
 CF_GROUP = "rackwalker"
 
 
@@ -152,10 +167,13 @@ def seed_fields(nb: NB) -> None:
                                {"name": name, "extra_choices": choices, "order_alphabetically": False})["id"]
     for i, (name, typ, objs, extra) in enumerate(CUSTOM_FIELDS):
         payload = {"name": name, "type": typ, "object_types": objs, "group_name": CF_GROUP, "required": False,
-                   "weight": 100 + i, "description": "RackWalker layout (see contracts/README.md)", **extra}
+                   "weight": 100 + i, "description": ("RackWalker quests (see docs/quests.md)" if name.startswith("rw_") else
+                                                      "RackWalker layout (see contracts/README.md)"), **extra}
         if "choice_set" in payload:
             payload["choice_set"] = sets[payload["choice_set"]]
         nb.ensure("extras/custom-fields", {"name": name}, payload)
+    for name, role_slug in CONTACT_ROLES:
+        nb.ensure("tenancy/contact-roles", {"slug": role_slug}, {"name": name, "slug": role_slug})
 
 
 def seed_data(nb: NB, m: sm.Model) -> None:
@@ -220,9 +238,21 @@ def seed_data(nb: NB, m: sm.Model) -> None:
     prov = nb.ensure("circuits/providers", {"slug": "example-carrier"}, {"name": "Example Carrier", "slug": "example-carrier"})["id"]
     ctype = nb.ensure("circuits/circuit-types", {"slug": "ethernet-wan"}, {"name": "Ethernet WAN", "slug": "ethernet-wan"})["id"]
     term_id = {}
+    # the circuits' paper side: one account with the carrier, its support desk, and what each circuit costs
+    account = nb.ensure("circuits/provider-accounts", {"provider_id": prov, "account": sm.CARRIER_ACCOUNT},
+                        {"provider": prov, "account": sm.CARRIER_ACCOUNT, "name": "Example Carrier account"})["id"]
+    name, phone, email = sm.CARRIER_CONTACT
+    contact = nb.ensure("tenancy/contacts", {"name": name}, {"name": name, "phone": phone, "email": email})["id"]
+    support = nb.list("tenancy/contact-roles", slug="support")[0]["id"]
+    if not nb.list("tenancy/contact-assignments", object_type="circuits.provider", object_id=prov, contact_id=contact):
+        nb.created += 1
+        nb.req("POST", "tenancy/contact-assignments/", data=json.dumps({"object_type": "circuits.provider", "object_id": prov,
+                                                                         "contact": contact, "role": support}))
     for c in m.circuits:
         cid = nb.ensure("circuits/circuits", {"cid": c.cid}, {"cid": c.cid, "provider": prov, "type": ctype, "status": c.status,
-                                                             "commit_rate": 1000000})["id"]
+                                                             "commit_rate": 1000000, "provider_account": account,
+                                                             "install_date": c.install_date or None,
+                                                             "custom_fields": {"rw_mrc": c.mrc, "rw_nrc": c.nrc, "rw_currency": sm.CURRENCY}})["id"]
         for side, site in (("A", c.a_site), ("Z", c.z_site)):
             term_id[(c.cid, side)] = nb.ensure("circuits/circuit-terminations", {"circuit_id": cid, "term_side": side}, {
                 "circuit": cid, "term_side": side, "termination_type": "dcim.site", "termination_id": site_id[site],
@@ -248,6 +278,16 @@ def seed_data(nb: NB, m: sm.Model) -> None:
             payload.update(length=c.length, length_unit="m")
         nb.req("POST", "dcim/cables/", data=json.dumps(payload))
         nb.created += 1
+    # The address on each circuit's A end and the prefix that holds them. Created last, so every id made before stays
+    # what it was on a stack seeded once from empty.
+    for c in m.circuits:
+        if not c.a_address:
+            continue
+        _, owner, port = next(x.a for x in m.cables if x.b == ("circuit_termination", c.cid, "A"))
+        iface = nb.list("dcim/interfaces", device_id=dev_id[owner], name=port)[0]
+        nb.ensure("ipam/ip-addresses", {"address": c.a_address}, {
+            "address": c.a_address, "status": "active", "assigned_object_type": "dcim.interface", "assigned_object_id": iface["id"]})
+    nb.ensure("ipam/prefixes", {"prefix": sm.CARRIER_PREFIX}, {"prefix": sm.CARRIER_PREFIX, "status": "active"})
 
 
 def counts(nb: NB) -> dict:

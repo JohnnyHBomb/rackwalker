@@ -498,6 +498,11 @@ class GameStore:
                     fresh.append(cid)
         return fresh
 
+    def paid(self, user_id: int) -> set[str]:
+        """Every check (and chain) this player has been paid for."""
+        with self._tx() as db:
+            return {r["check_id"] for r in db.execute("SELECT check_id FROM paid WHERE user_id=?", (user_id,))}
+
     def clear_quests(self, user_id: int, scope: str) -> None:
         with self._tx() as db:
             db.execute("DELETE FROM quest WHERE user_id=? AND scope=?", (user_id, scope))

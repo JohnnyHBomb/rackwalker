@@ -38,6 +38,12 @@ NEEDS: dict[str, list[tuple[str, str]]] = {
     "create_circuit_termination": [("circuits.circuittermination", "add")],
     "assign_ip": [("ipam.ipaddress", "add"), ("dcim.device", "change")],
     "create_prefix": [("ipam.prefix", "add")],
+    "set_management": [("dcim.device", "change")],
+    "record_circuit": [("circuits.circuit", "change")],
+    "create_provider_account": [("circuits.provideraccount", "add")],
+    "create_provider_network": [("circuits.providernetwork", "add")],
+    "create_contact": [("tenancy.contact", "add")],
+    "assign_contact": [("tenancy.contactassignment", "add")],
 }
 UPDATE_TYPE = {"site": "dcim.site", "location": "dcim.location", "rack": "dcim.rack", "device": "dcim.device", "cable": "dcim.cable",
                "interface": "dcim.interface"}
@@ -49,6 +55,8 @@ def needs_of(ops: list[dict[str, Any]]) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     for op in ops:
         need = [(UPDATE_TYPE[op["target"]["kind"]], "change")] if op["op"] == "update_fields" else NEEDS.get(op["op"], [("unknown", "change")])
+        if op["op"] == "set_management" and "model_default" in (op.get("fields") or {}):
+            need = need + [("dcim.devicetype", "change")]   # the model's default lives on the device type
         for n in need:
             if n not in out:
                 out.append(n)
@@ -138,7 +146,10 @@ def refusal(missing: list[dict[str, Any]]) -> ApiError:
 QUEST_WORDS = {("dcim.cable", "add"): "add cables", ("circuits.circuit", "add"): "add circuits",
                ("circuits.circuittermination", "add"): "add circuit ends", ("ipam.ipaddress", "add"): "add addresses",
                ("ipam.prefix", "add"): "add prefixes", ("dcim.device", "change"): "change devices", ("dcim.rack", "change"): "change racks",
-               ("dcim.site", "change"): "change sites"}
+               ("dcim.site", "change"): "change sites", ("circuits.circuit", "change"): "change circuits",
+               ("circuits.provideraccount", "add"): "add provider accounts", ("circuits.providernetwork", "add"): "add provider networks",
+               ("tenancy.contact", "add"): "add contacts", ("tenancy.contactassignment", "add"): "assign contacts",
+               ("dcim.devicetype", "change"): "change device types"}
 QUEST_NEEDS = list(QUEST_WORDS)
 
 

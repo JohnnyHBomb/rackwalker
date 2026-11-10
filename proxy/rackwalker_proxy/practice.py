@@ -3,7 +3,9 @@ touching NetBox. Nothing here is read from or written to NetBox, ever; a player'
 kept in the game store and replayed on top of `island()`.
 
 The island is the smallest estate that shows the whole idea: three switches, an internet provider, two rooms with a
-rack each, and nothing recorded between any of them. Its ids sit far above anything a real NetBox hands out.
+rack each, and nothing recorded between any of them. Its way out is one whole short chain: the port the line plugs
+into, the address on it, then the provider's network, the account, who to call and what it costs (read off the island's
+made-up bill). One switch has no management address on record, so the island also asks how a device is managed. Its ids sit far above anything a real NetBox hands out.
 """
 from __future__ import annotations
 
@@ -13,6 +15,9 @@ from .estate import Estate, simulate
 
 PRACTICE_SITE_ID = 9_000_001
 SITE_NAME = "Practice Island"
+# The island's made-up bill. On the island nobody types an account number, a contact or a charge: the questions about
+# them offer only what this bill says, so nothing of a player's own is ever kept with their practice changes.
+BILL = {"account": "PI-ACC-0042", "contact": "Example Fibre NOC", "phone": "+00 555 0100", "mrc": "45.00", "nrc": "120.00", "currency": "EUR"}
 
 
 def example_estate(base: int = 9_000_000, site_name: str = SITE_NAME, complete: bool = False) -> Estate:
@@ -32,6 +37,10 @@ def example_estate(base: int = 9_000_000, site_name: str = SITE_NAME, complete: 
     e.platforms[base + 1] = {"id": base + 1, "name": "Example OS"}
     e.providers[base + 1] = {"id": base + 1, "name": "Example Fibre"}
     e.circuit_types[base + 1] = {"id": base + 1, "name": "Internet"}
+    # what a circuit's record needs from NetBox before it can be written: a network of the provider, and contact roles
+    e.networks[base + 1] = {"id": base + 1, "provider_id": base + 1, "name": "Example Fibre Internet"}
+    for n, (name, slug) in enumerate((("Support / NOC", "support"), ("Account manager", "account-manager"), ("Billing", "billing")), 1):
+        e.contact_roles[base + n] = {"id": base + n, "name": name, "slug": slug}
     specs = [("sw-quay-1", quay, q1, 10.0, "SYN-PI-0001", "PI-0001", "Example OS"),
              ("sw-quay-2", quay, q1, 8.0, "" if not complete else "SYN-PI-0002", None if not complete else "PI-0002", "Example OS" if complete else None),
              ("sw-loft-1", loft, l1, None if not complete else 10.0, "SYN-PI-0003", "PI-0003", "Example OS")]
@@ -40,8 +49,11 @@ def example_estate(base: int = 9_000_000, site_name: str = SITE_NAME, complete: 
         did = base + n
         e.devices[did] = {"id": did, "name": name, "site_id": site, "location_id": loc, "rack_id": rack, "position": pos,
                           "face": "front" if pos is not None else None, "role": "switch", "role_name": "Switch", "status": "active",
-                          "serial": serial, "asset_tag": tag, "platform": platform, "primary_ip": f"192.0.2.{10 + n}/24",
-                          "u_height": 1.0, "model": "EX-A2400", "manufacturer": "Example Networks"}
+                          "serial": serial, "asset_tag": tag, "platform": platform,
+                          # the loft switch has an address, but NetBox does not say it is how the switch is managed
+                          "primary_ip": f"192.0.2.{10 + n}/24" if complete or name != "sw-loft-1" else None,
+                          "u_height": 1.0, "model": "EX-A2400", "manufacturer": "Example Networks", "type_id": base + 1,
+                          "mgmt_mode": None, "mgmt_service": None, "mgmt_default": None, "mgmt_default_service": None}
         for i in range(1, 27):
             port_id += 1
             pname = f"Gi1/0/{i}" if i <= 24 else f"Te1/1/{i - 24}"

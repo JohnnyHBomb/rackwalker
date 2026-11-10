@@ -149,6 +149,7 @@ class DeviceType(NbModel):
     u_height: float
     is_full_depth: bool
     subdevice_role: Choice = None
+    custom_fields: dict[str, Any] = Field(default_factory=dict)
 
 
 class Device(NbObject):

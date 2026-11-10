@@ -19551,14 +19551,28 @@
       "cid": "EXC-1001",
       "provider_id": 1,
       "type": "Ethernet WAN",
-      "status": "active"
+      "status": "active",
+      "account_id": 1,
+      "install_date": "2025-03-03",
+      "commit_rate": 1000000,
+      "mrc": "310.00",
+      "nrc": "950.00",
+      "currency": "GBP",
+      "last_updated": null
     },
     {
       "id": 2,
       "cid": "EXC-1002",
       "provider_id": 1,
       "type": "Ethernet WAN",
-      "status": "active"
+      "status": "active",
+      "account_id": 1,
+      "install_date": "2025-03-17",
+      "commit_rate": 1000000,
+      "mrc": "310.00",
+      "nrc": "950.00",
+      "currency": "GBP",
+      "last_updated": null
     }
   ],
   "providers": [
@@ -19579,6 +19593,7 @@
       "circuit_id": 1,
       "side": "A",
       "site_id": 1,
+      "network_id": null,
       "cable_id": 78
     },
     {
@@ -19586,6 +19601,7 @@
       "circuit_id": 1,
       "side": "Z",
       "site_id": 2,
+      "network_id": null,
       "cable_id": 79
     },
     {
@@ -19593,6 +19609,7 @@
       "circuit_id": 2,
       "side": "A",
       "site_id": 1,
+      "network_id": null,
       "cable_id": 80
     },
     {
@@ -19600,6 +19617,7 @@
       "circuit_id": 2,
       "side": "Z",
       "site_id": 3,
+      "network_id": null,
       "cable_id": 81
     }
   ],
@@ -19843,9 +19861,73 @@
       "vrf_id": null,
       "vrf": null,
       "interface_id": 420
+    },
+    {
+      "id": 35,
+      "address": "198.18.0.1/30",
+      "vrf_id": null,
+      "vrf": null,
+      "interface_id": 30
+    },
+    {
+      "id": 36,
+      "address": "198.18.0.5/30",
+      "vrf_id": null,
+      "vrf": null,
+      "interface_id": 31
     }
   ],
-  "prefixes": [],
+  "prefixes": [
+    {
+      "id": 1,
+      "prefix": "198.18.0.0/29",
+      "vrf_id": null
+    }
+  ],
+  "accounts": [
+    {
+      "id": 1,
+      "provider_id": 1,
+      "account": "SYN-ACC-1001",
+      "name": "Example Carrier account"
+    }
+  ],
+  "networks": [],
+  "contacts": [
+    {
+      "id": 1,
+      "name": "Example Carrier NOC",
+      "phone": "+44 1632 960001",
+      "email": "noc@example.net"
+    }
+  ],
+  "contact_roles": [
+    {
+      "id": 1,
+      "name": "Support / NOC",
+      "slug": "support"
+    },
+    {
+      "id": 2,
+      "name": "Account manager",
+      "slug": "account-manager"
+    },
+    {
+      "id": 3,
+      "name": "Billing",
+      "slug": "billing"
+    }
+  ],
+  "assignments": [
+    {
+      "id": 1,
+      "object_type": "circuits.provider",
+      "object_id": 1,
+      "contact_id": 1,
+      "role_id": 1
+    }
+  ],
+  "no_fields": [],
   "truncated": [],
   "unreadable": [],
   "synthetic": false

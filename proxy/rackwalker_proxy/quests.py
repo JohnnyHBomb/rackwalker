@@ -37,7 +37,8 @@ from .findings import _some as some
 
 XP = {"connectivity": 120, "identity": 50, "layout": 30}
 # Kinds worth less than their rank: confirming a subnet is one answer, not a walk to the rack.
-KIND_XP = {"address_no_prefix": 50}
+# How one device is managed is one or two answers; a circuit's hand-off address is one typed value.
+KIND_XP = {"address_no_prefix": 50, "device_unreachable": 40, "circuit_handoff": 60}
 MINUTES = {"connectivity": 4, "identity": 5, "layout": 3}
 MAX_CANDIDATES = 6
 MAX_PORTS = 6
@@ -72,6 +73,8 @@ class Ctx:
         self.skipped: list[str] = []               # checklist lines for bundle items the player did not know
         self.answered: list[str] = []              # ids of the steps answered so far, in the order they were asked
         self.waived: list[str] = []                # checks the player answered with "there is none, on purpose"
+        self.deferred: list[str] = []              # facts the player does not know yet, in a line that goes on without them
+        self.waiting_at: dict[str, Any] | None = None   # the first question answered "I don't know yet" in such a line
 
     def at(self, device_id: int | None = None, rack_id: int | None = None, site_id: int | None = None) -> None:
         e = self.e
@@ -91,9 +94,10 @@ class Ctx:
                 "error": self.error}
 
     def choice(self, sid: str, prompt: str, choices: list[dict[str, str]], checklist: list[str], unknown: bool = True,
-               soft: bool = False) -> str:
+               soft: bool = False, part: bool = False) -> str:
         """The id of the picked choice. "I don't know yet" parks the line here (or, with `soft`, returns "unknown" so
-        a bundle can go on to its next item)."""
+        a bundle can go on to its next item). With `part`, "none, on purpose" settles this part of the line only and
+        is returned as "none"; without it, it closes the whole line."""
         all_choices = choices + ([UNKNOWN] if unknown else [])
         step = self._step(sid, prompt, "choice", all_choices)
         ans = self.answers.get(sid)
@@ -105,20 +109,31 @@ class Ctx:
             if soft:
                 self.answered.append(sid)
                 self.skipped.extend(checklist)
+                self.waiting_at = self.waiting_at or step
                 return "unknown"
             raise Stop("parked", step, checklist)
         self.answered.append(sid)
         if found["kind"] == "not_applicable":
+            if part:
+                self.said.append({"step": sid, "question": prompt, "answer": found["label"]})
+                return "none"
             raise Stop("dismissed", None, note=found["label"])
         self.said.append({"step": sid, "question": prompt, "answer": found["label"]})
         return found["id"]
 
-    def text(self, sid: str, prompt: str, check: Any, hint: str, checklist: list[str]) -> Any:
-        """A typed value, passed through `check(text) -> (value, error)`. An empty answer parks the line."""
+    def text(self, sid: str, prompt: str, check: Any, hint: str, checklist: list[str], soft: bool = False) -> Any:
+        """A typed value, passed through `check(text) -> (value, error)`. An empty answer parks the line (with `soft`:
+        returns None, and the line goes on without it)."""
         ans = self.answers.get(sid)
         raw = ans.get("text") if isinstance(ans, dict) else None
         if isinstance(ans, dict) and ans.get("choice") == "unknown":
-            raise Stop("parked", self._step(sid, prompt, "text", [UNKNOWN], hint=hint), checklist)
+            step = self._step(sid, prompt, "text", [UNKNOWN], hint=hint)
+            if soft:
+                self.answered.append(sid)
+                self.skipped.extend(checklist)
+                self.waiting_at = self.waiting_at or step
+                return None
+            raise Stop("parked", step, checklist)
         if isinstance(raw, str) and raw.strip():
             value, err = check(raw.strip())
             if err is None:
@@ -129,9 +144,10 @@ class Ctx:
         raise Stop("asking", self._step(sid, prompt, "text", [UNKNOWN], hint=hint))
 
     def form(self, sid: str, prompt: str, fields: list[dict[str, Any]], checklist: list[str], hint: str | None = None,
-             na: str | None = None) -> dict[str, Any]:
+             na: str | None = None, soft: bool = False) -> dict[str, Any] | None:
         """The filled-in fields of a form (blank ones left out). A form with nothing filled in parks the line; `na` is
-        the label of the answer "there is nothing to fill in, on purpose", which closes the line."""
+        the label of the answer "there is nothing to fill in, on purpose", which closes the line. With `soft` the form
+        is one part of a line that goes on: nothing filled in returns {} and "on purpose" returns None."""
         extra = ([choice("none", na, "not_applicable")] if na else []) + [UNKNOWN]
         step = self._step(sid, prompt, "form", extra, fields, hint)
         ans = self.answers.get(sid)
@@ -139,6 +155,9 @@ class Ctx:
             raise Stop("asking", step)
         if na and ans.get("choice") == "none":
             self.answered.append(sid)
+            if soft:
+                self.said.append({"step": sid, "question": prompt, "answer": na})
+                return None
             raise Stop("dismissed", None, note=na)
         values = ans.get("values") if isinstance(ans.get("values"), dict) else {}
         ids = {f["id"]: f for f in fields}
@@ -157,6 +176,11 @@ class Ctx:
             self.error = " ".join(errors)[:300]
             raise Stop("asking", self._step(sid, prompt, "form", extra, fields, hint))
         if not out:
+            if soft:
+                self.answered.append(sid)
+                self.skipped.extend(checklist)
+                self.waiting_at = self.waiting_at or step
+                return {}
             raise Stop("parked", step, checklist)
         self.answered.append(sid)
         self.said.append({"step": sid, "question": prompt, "answer": f"{len(out)} of {len(fields)} filled in"})
@@ -210,7 +234,7 @@ def match_name(text: str, items: list[Item], noun: str) -> tuple[Any, str | None
 
 def pick(ctx: Ctx, sid: str, prompt: str, items: list[Item], checklist: list[str], extra: list[dict[str, str]] | None = None,
          noun: str = "device", soft: bool = False, unknown: bool = True, wider: list[Item] | None = None,
-         limit: int | None = None) -> str:
+         limit: int | None = None, part: bool = False) -> str:
     """One of `items`, which may be many: the likeliest few are shown as choices; when there are more (or `wider`
     names further objects that fit), "another one that is in NetBox" asks for its name. Nothing that exists in NetBox is
     out of reach because a list was short."""
@@ -221,12 +245,13 @@ def pick(ctx: Ctx, sid: str, prompt: str, items: list[Item], checklist: list[str
     choices = [choice(i, label) for i, label, _ in short]
     if len(rest) > len(short):
         choices.append(choice("named", f"Another {noun} that is in NetBox", "other"))
-    picked = ctx.choice(sid, prompt, choices + (extra or []), checklist, unknown=unknown, soft=soft)
+    picked = ctx.choice(sid, prompt, choices + (extra or []), checklist, unknown=unknown, soft=soft, part=part)
     if picked != "named":
         return picked
     more = [it for it in rest if it not in short]
-    return ctx.text(sid + "_name", f"Type its name, or the start of it ({len(rest)} {noun}s in NetBox fit here).",
-                    lambda t: match_name(t, rest, noun), f"for example {more[0][2] if more else rest[0][2]}", checklist)
+    named = ctx.text(sid + "_name", f"Type its name, or the start of it ({len(rest)} {noun}s in NetBox fit here).",
+                     lambda t: match_name(t, rest, noun), f"for example {more[0][2] if more else rest[0][2]}", checklist, soft=soft)
+    return "unknown" if named is None else named
 
 
 def _dev_label(e: Estate, d: dict[str, Any], site: bool = False) -> str:
@@ -527,67 +552,353 @@ def flow_way_out(ctx: Ctx) -> list[dict[str, Any]]:
     return ops + [cable_op(local, end, ask_cable_type(ctx))]
 
 
-def flow_address(ctx: Ctx) -> list[dict[str, Any]]:
-    """How to reach a device: one of the addresses it already has, or one the player types, on an interface they pick."""
-    e, f = ctx.e, ctx.line["finding"]
-    ctx.waived = waived(ctx.line, ctx.answers)   # devices nobody logs in to: said once, not asked again
-    every = [i for i in (f["data"].get("device_ids") or [f["data"]["device_id"]]) if i in e.devices]
-    bundle = f["kind"] == "device_unreachable"
-    ops: list[dict[str, Any]] = []
-    asked = 0
-    for did in every:
-        if f"device:{did}:primary_ip" in ctx.waived:
-            ctx.answered.append(f"ip_{did}")
-            continue
-        if asked >= MAX_BUNDLE:
-            break
-        asked += 1
-        dev = e.devices[did]
-        name = nm(dev)
-        if ctx.target is None:
-            ctx.at(device_id=did)
-        have = e.device_ips(did)
-        checklist = [f"Ask whoever looks after {name} which address they use to log in to it.",
-                     "Or read it from the device: its management interface, or the label on the front."]
-        # a device nobody logs in to can be said; a router's address is not something to wave away
-        none = [na("It has none: nobody logs in to it")] if bundle else []
-        # with one device left to ask about, "I don't know yet" parks the line at this question
-        soft = bundle and len([i for i in every if f"device:{i}:primary_ip" not in ctx.waived]) > 1
-        picked = pick(ctx, f"ip_{did}", f"How do you reach {name} to manage it?" if bundle else f"Which address does {name} route on?",
-                      [(f"ip:{ip['id']}", ip["address"], ip["address"]) for ip in have], checklist,
-                      [choice("typed", "An address not in NetBox yet", "other")] + none, noun="address", soft=soft, limit=MAX_PORTS)
-        if picked == "unknown":
-            continue
-        if picked != "typed":
-            ip = e.ips[int(picked.split(":")[1])]
-            ops.append({"op": "assign_ip", "target": {"kind": "device", "id": did},
-                        "fields": {"address": ip["address"], "interface_id": ip["interface_id"], "primary": True}})
-            continue
+MODE_WORDS = {"local": "Locally: it has an address to log in to", "cloud": "By a cloud or controller service",
+              "unmanaged": "It is not managed at all (unmanaged, passive)"}
 
-        def check(t: str) -> tuple[Any, str | None]:
-            try:
-                i = ipaddress.ip_interface(t)
-            except ValueError:
-                return None, "Type an address with its mask, for example 192.0.2.10/24."
-            if "/" not in t:
-                return None, "Add the mask, for example /24: NetBox stores an address with its subnet size."
-            return str(i), None
-        addr = ctx.text(f"addr_{did}", f"What is the address of {name}, with its mask?", check, "for example 192.0.2.10/24", checklist)
-        # where a management address lives, likeliest first: a management port, a VLAN or loopback interface (they take
-        # no cable), then the physical ports; every interface of the device can be named
-        ports = sorted(e.device_ports(did, ("interface",)), key=lambda p: (not p["mgmt_only"], is_physical(p), natural(p["name"]), p["id"]))
-        port = pick(ctx, f"port_{did}", f"Which interface of {name} carries {addr}?", [(f"interface:{p['id']}", p["name"], p["name"]) for p in ports],
-                    checklist + ["On a switch it is usually a VLAN interface (Vlan1, Vlan10) or the management port, not a front-panel port."],
-                    noun="interface", soft=soft, limit=MAX_PORTS)
-        if port == "unknown":
-            continue
-        ops.append({"op": "assign_ip", "target": {"kind": "device", "id": did},
-                    "fields": {"address": addr, "interface_id": int(port.split(":")[1]), "primary": True}})
-    if not ops:
-        if ctx.waived and not ctx.skipped:
-            raise Stop("dismissed", None, note="None of these devices is managed over the network.")
-        raise Stop("parked", None, ctx.skipped)
+
+def address_check(t: str) -> tuple[Any, str | None]:
+    try:
+        i = ipaddress.ip_interface(t)
+    except ValueError:
+        return None, "Type an address with its mask, for example 192.0.2.10/24."
+    if "/" not in t:
+        return None, "Add the mask, for example /24: NetBox stores an address with its subnet size."
+    return str(i), None
+
+
+def flow_address(ctx: Ctx) -> list[dict[str, Any]]:
+    """How one device is managed, and (only if it is managed locally) the address to log in to it.
+
+    The first question is never "what is its address": a device a cloud or controller service manages, or one nobody
+    manages at all, has none, and a model that can be either is asked device by device. The answer is recorded on the
+    device (custom field `rw_mgmt_mode`, with `rw_mgmt_service` for the service's name) and, when the player says it
+    holds for every device of the model, as the model's default (`rw_mgmt_default` on the device type). A router's
+    address is asked for directly: a router routes on some address."""
+    e, f = ctx.e, ctx.line["finding"]
+    did = f["data"]["device_id"]
+    dev = e.devices[did]
+    name = nm(dev)
+    ctx.at(device_id=did)
+    ctx.waived = waived(ctx.line, ctx.answers)
+    router = f["kind"] == "router_no_address"
+    ops: list[dict[str, Any]] = []
+    look = [f"Ask whoever looks after {name} how they manage it: by logging in to it, or in a cloud or controller service.",
+            "A cloud-managed device usually has no login page of its own; the vendor's app or portal shows it instead."]
+    if not router and e.mgmt_mode(dev) is None:
+        model = dev.get("model")
+        mode = ctx.choice(f"mode_{did}", f"How is {name}{f' ({model})' if model else ''} managed?",
+                          [choice(m, label) for m, label in MODE_WORDS.items()], look)
+        fields: dict[str, Any] = {"mode": mode}
+        if mode == "cloud":
+            known = sorted({s for d in e.devices.values() for s in [e.mgmt_service(d)] if s}, key=str.lower)
+            picked = pick(ctx, f"service_{did}", f"Which service manages {name}?", [(f"service:{s}", s, s) for s in known],
+                          ["The vendor's app or portal that shows the device carries the service's name."],
+                          [choice("typed", "A service not listed: I will type its name", "other")], noun="service", soft=True)
+            if picked == "typed":
+                def check_service(t: str) -> tuple[Any, str | None]:
+                    return (t, None) if len(t) <= 100 else (None, "At most 100 characters.")
+                typed = ctx.text(f"service_name_{did}", "What is the service called?", check_service, "for example the vendor's cloud portal",
+                                 ["The vendor's app or portal carries the service's name."], soft=True)
+                if typed:
+                    fields["service"] = typed
+            elif picked != "unknown":
+                fields["service"] = picked.split(":", 1)[1]
+        same = [d for d in e.devices.values() if d.get("type_id") is not None and d.get("type_id") == dev.get("type_id") and d["id"] != did]
+        if same and dev.get("mgmt_default") is None and e.has_field("rw_mgmt_default"):
+            # asked once per model: a model that is always managed one way is then never asked about again
+            every = ctx.choice(f"model_{did}", f"NetBox has {len(same) + 1} {model} devices. Are they all managed that way?",
+                               [choice("all", f"Yes: every {clip(model or 'device', 24)} is"), choice("varies", "No: it differs from device to device")],
+                               ["Ask whoever set them up whether some were set up differently."], soft=True)
+            if every != "unknown":
+                fields["model_default"] = mode if every == "all" else "varies"
+        if e.has_field("rw_mgmt_mode"):
+            ops.append({"op": "set_management", "target": {"kind": "device", "id": did}, "fields": fields})
+        if mode != "local":
+            if not ops:
+                # NetBox cannot hold the answer yet: the game remembers it, and counts the device as answered
+                raise Stop("dismissed", None, note=f"{name} has no local address to record. NetBox cannot hold how it is managed until "
+                           "the custom field rw_mgmt_mode exists (the setup script adds it); the game remembers your answer.")
+            return ops
+    have = e.device_ips(did)
+    checklist = [f"Ask whoever looks after {name} which address they use to log in to it.",
+                 "Or read it from the device: its management interface, or the label on the front."]
+    soft = bool(ops)   # the management mode is worth writing on its own: the address can follow
+    picked = pick(ctx, f"ip_{did}", f"Which address does {name} route on?" if router else f"Which address do you log in to {name} on?",
+                  [(f"ip:{ip['id']}", ip["address"], ip["address"]) for ip in have], checklist,
+                  [choice("typed", "An address not in NetBox yet", "other")], noun="address", soft=soft, limit=MAX_PORTS)
+    if picked == "unknown":
+        return ops
+    if picked != "typed":
+        ip = e.ips[int(picked.split(":")[1])]
+        return ops + [{"op": "assign_ip", "target": {"kind": "device", "id": did},
+                       "fields": {"address": ip["address"], "interface_id": ip["interface_id"], "primary": True}}]
+    addr = ctx.text(f"addr_{did}", f"What is the address of {name}, with its mask?", address_check, "for example 192.0.2.10/24", checklist, soft=soft)
+    if addr is None:
+        return ops
+    # where a management address lives, likeliest first: a management port, a VLAN or loopback interface (they take
+    # no cable), then the physical ports; every interface of the device can be named. A front-panel port that carries
+    # the management address is not then asked for a cable because of that address.
+    ports = sorted(e.device_ports(did, ("interface",)), key=lambda p: (not p["mgmt_only"], is_physical(p), natural(p["name"]), p["id"]))
+    port = pick(ctx, f"port_{did}", f"Which interface of {name} carries {addr}?", [(f"interface:{p['id']}", p["name"], p["name"]) for p in ports],
+                checklist + ["On a switch it is usually a VLAN interface (Vlan1, Vlan10) or the management port, not a front-panel port."],
+                noun="interface", soft=soft, limit=MAX_PORTS)
+    if port == "unknown":
+        return ops
+    return ops + [{"op": "assign_ip", "target": {"kind": "device", "id": did},
+                   "fields": {"address": addr, "interface_id": int(port.split(":")[1]), "primary": True}}]
+
+
+def flow_handoff(ctx: Ctx) -> list[dict[str, Any]]:
+    """The logical side of a circuit that is plugged in: the address on the player's side of it, and its subnet."""
+    e, f = ctx.e, ctx.line["finding"]
+    data = f["data"]
+    circ = e.circuits[data["circuit_id"]]
+    dev = e.devices[data["device_id"]]
+    port = e.ports[("interface", data["interface_id"])]
+    prov = e.providers.get(circ["provider_id"] or 0, {}).get("name", "the provider")
+    where = f"{nm(dev)} {port['name']}"
+    ctx.at(device_id=dev["id"])
+    checklist = [f"Read the hand-over sheet or the order mail of {prov}: it names the address on your side of circuit {circ['cid']}.",
+                 f"Or log in to {nm(dev)} and read the address on {port['name']}."]
+    ctx.choice("has", f"Circuit {circ['cid']} plugs into {where}. Does that port carry an address of yours on {prov}'s line?",
+               [choice("typed", "Yes: I will type it", "other"), na("No address there (bridged, or their router holds it)")], checklist)
+    addr = ctx.text("addr", f"What is the address on {where}, with its mask?", address_check, "for example 203.0.113.2/30", checklist)
+    ops = [{"op": "assign_ip", "target": {"kind": "device", "id": dev["id"]},
+            "fields": {"address": addr, "interface_id": port["id"], "primary": False}}]
+    iface = ipaddress.ip_interface(addr)
+    held = any(iface.ip in n for n in (ipaddress.ip_network(p["prefix"], strict=False) for p in e.prefixes.values() if p.get("vrf_id") is None)
+               if n.version == iface.version)
+    if not held and iface.network.prefixlen != iface.max_prefixlen and e.can_see("prefixes"):
+        net = str(iface.network)
+        if ctx.choice("prefix", f"{addr} lies in no prefix NetBox has. Its mask says the subnet is {net}. Record that prefix too?",
+                      [choice("yes", f"Yes: record {net}", "confirm"), choice("skip", "No: leave the prefix out", "skip")], [], unknown=False) == "yes":
+            ops.append({"op": "create_prefix", "target": {"kind": "prefix", "id": None}, "fields": {"prefix": net}})
     return ops
+
+
+# The contact roles a circuit's record asks for, and the words that find them among NetBox's own contact roles.
+CONTACT_ROLES = (("support", "Support or NOC (who to call when it is down)", ("support", "noc", "operations", "technical", "fault")),
+                 ("account", "Account manager", ("account", "sales", "commercial")),
+                 ("billing", "Billing", ("billing", "finance", "invoice", "payable")))
+# The questions of a circuit's record, the facts each settles, and which of them hold the player's own figures: what
+# is typed there is kept in the proxy's memory until it is written to NetBox, never in the game's store.
+RECORD_STEPS = {"network": ("network",), "network_name": ("network",), "account": ("account",), "account_no": ("account",),
+                "contact_for": ("contacts",), "contact": ("contacts",), "terms": ("install_date", "commit_rate"), "cost": ("mrc", "nrc")}
+PRIVATE_STEPS = ("account_no", "contact", "cost")
+
+
+def contact_roles(e: Estate) -> dict[str, dict[str, Any]]:
+    """NetBox's own contact roles that stand for support, the account manager and billing (by a word of their name or
+    slug; "billing" is looked for before "account", so "Accounts payable" is billing)."""
+    out: dict[str, dict[str, Any]] = {}
+    for key, _, words in sorted(CONTACT_ROLES, key=lambda r: r[0] != "billing"):
+        taken = {r["id"] for r in out.values()}
+        hit = next((r for _, r in sorted(e.contact_roles.items()) if r["id"] not in taken
+                    and any(w in f"{r['name']} {r.get('slug') or ''}".lower() for w in words)), None)
+        if hit is not None:
+            out[key] = hit
+    return out
+
+
+def flow_record(ctx: Ctx) -> list[dict[str, Any]]:
+    """The administrative record of a circuit that is plugged in: whose network its far end lands on, the account, who
+    to call, when it was installed and at what rate, and what it costs. Every fact is "if known": "I don't know yet" on
+    one of them leaves the others to be written, and the line then waits at that question. NetBox's own models hold the
+    facts (provider network, provider account, contacts with roles, the circuit's install date and commit rate);
+    the charges, which NetBox has no field for, go to the custom fields rw_mrc, rw_nrc and rw_currency."""
+    from .findings import circuit_facts
+    from .practice import BILL
+
+    e, f = ctx.e, ctx.line["finding"]
+    cid = f["data"]["circuit_id"]
+    circ = e.circuits[cid]
+    pid = circ["provider_id"]
+    prov = e.providers.get(pid or 0, {}).get("name", "the provider")
+    label = circ["cid"]
+    ctx.at(device_id=f["data"].get("device_id"))
+    ctx.waived = waived(ctx.line, ctx.answers)
+    open_ = [fact for fact, ok in circuit_facts(e, cid).items() if not ok and f"circuit:{cid}:{fact}" not in ctx.waived]
+    ops: list[dict[str, Any]] = []
+    rec: dict[str, Any] = {}
+    bill = [f"Find a bill or the contract of {prov} for circuit {label}; whoever pays it has one."]
+
+    def later(*facts: str) -> None:
+        ctx.deferred += [f"circuit:{cid}:{x}" for x in facts if x in open_]
+
+    if "network" in open_:
+        nets = [(f"network:{n['id']}", n["name"], n["name"]) for _, n in sorted(e.networks.items()) if n["provider_id"] == pid]
+        picked = pick(ctx, "network", f"Circuit {label} is {prov}'s line. Which network of theirs does its far end land on?", nets,
+                      [f"The order or the service description of {prov} names the service (their internet service, an MPLS or a wave network)."],
+                      [choice("new", "A network of theirs not in NetBox yet", "other"), na("None to record: it is just their line")],
+                      noun="provider network", soft=True, part=True)
+        target: Any = None
+        if picked == "new":
+            taken = {n["name"].lower() for n in e.networks.values() if n["provider_id"] == pid}
+
+            def check_net(t: str) -> tuple[Any, str | None]:
+                if len(t) > 100:
+                    return None, "At most 100 characters."
+                return (t, None) if t.lower() not in taken else (None, f"{prov} already has a network {t} in NetBox: change your last answer and pick it.")
+            typed = ctx.text("network_name", f"What does {prov} call that network or service?", check_net, "as the order names it",
+                             [f"The order of {prov} names the service."], soft=True)
+            if typed is None:
+                later("network")
+            else:
+                ops.append({"op": "create_provider_network", "target": {"kind": "provider_network", "id": None}, "client_ref": "network",
+                            "fields": {"provider_id": pid, "name": typed}})
+                target = "@network"
+        elif picked == "unknown":
+            later("network")
+        elif picked != "none":
+            target = int(picked.split(":")[1])
+        if target is not None:
+            sides = {t["side"] for t in e.cterms.values() if t["circuit_id"] == cid}
+            ops.append({"op": "create_circuit_termination", "target": {"kind": "circuit_termination", "id": None},
+                        "fields": {"circuit_id": cid, "term_side": "Z" if "Z" not in sides else "A", "provider_network_id": target}})
+    if "account" in open_:
+        accts = [(f"account:{a['id']}", f"{a['account']}{' (' + a['name'] + ')' if a['name'] else ''}", a["account"])
+                 for _, a in sorted(e.accounts.items()) if a["provider_id"] == pid]
+        picked = pick(ctx, "account", f"Which account with {prov} is circuit {label} billed to?", accts, bill + ["The account number is printed at the top of the bill."],
+                      [choice("new", "An account not in NetBox yet", "other"), na("None: there is no account number")], noun="account", soft=True, part=True)
+        if picked == "new":
+            taken_no = {a["account"].lower() for a in e.accounts.values() if a["provider_id"] == pid}
+
+            def check_account(t: str) -> tuple[Any, str | None]:
+                if len(t) > 100:
+                    return None, "An account number has at most 100 characters."
+                return (t, None) if t.lower() not in taken_no else (None, "That account is in NetBox: change your last answer and pick it.")
+            number = sample(ctx, "account_no", f"What is the account number with {prov}?", BILL["account"]) if e.synthetic else \
+                ctx.text("account_no", f"What is the account number with {prov}? It goes to NetBox only; the game does not keep it.", check_account,
+                         "as printed on the bill", bill, soft=True)
+            if number is None:
+                later("account")
+            else:
+                ops.append({"op": "create_provider_account", "target": {"kind": "provider_account", "id": None}, "client_ref": "account",
+                            "fields": {"provider_id": pid, "account": number}})
+                rec["provider_account_id"] = "@account"
+        elif picked == "unknown":
+            later("account")
+        elif picked != "none":
+            rec["provider_account_id"] = int(picked.split(":")[1])
+    if "contacts" in open_:
+        roles = contact_roles(e)
+        if not roles:
+            # said before the player looks a number up for nothing: a contact is recorded with a role
+            ctx.skipped.append("NetBox has no contact role for support, the account manager or billing yet: add them under Organization > "
+                               "Contact Roles (the setup script does), then come back to record who to call.")
+            later("contacts")
+        else:
+            whose = ctx.choice("contact_for", f"Who do you call about circuit {label}? First: are the contacts you have good for everything from {prov}, or only for this circuit?",
+                               [choice("provider", f"For everything from {clip(prov, 24)}"), choice("circuit", f"Only for circuit {clip(label, 24)}"),
+                                na("Nobody: there is no contact to record")], bill + ["The support number is often on the hand-off box as well."], soft=True, part=True)
+            if whose == "unknown":
+                later("contacts")
+            elif whose != "none":
+                target_obj = {"kind": whose, "id": pid if whose == "provider" else cid}
+                if e.synthetic:
+                    got = sample(ctx, "contact", "Who is the support contact?", f"{BILL['contact']} ({BILL['phone']})")
+                    values: dict[str, Any] | None = {} if got is None else {"contact:support:name": BILL["contact"], "contact:support:phone": BILL["phone"]}
+                    if "support" not in roles:
+                        values = {}
+                else:
+                    fields = []
+                    for key, words, _ in CONTACT_ROLES:
+                        if key in roles:
+                            fields += [{"id": f"contact:{key}:name", "label": f"{words}: name", "type": "text", "max_length": 100, "hint": "a person, a team or a desk", "suggestion": None, "options": []},
+                                       {"id": f"contact:{key}:phone", "label": f"{words}: phone", "type": "text", "max_length": 50, "hint": None, "suggestion": None, "options": []},
+                                       {"id": f"contact:{key}:email", "label": f"{words}: email", "type": "text", "max_length": 254, "pattern": r"[^@\s]+@[^@\s]+\.[^@\s]+",
+                                        "pattern_hint": "an email address", "hint": None, "suggestion": None, "options": []}]
+                    values = ctx.form("contact", f"Who are they? Fill in what you know of {prov}'s contacts; leave the rest blank. It goes to NetBox only; the game does not keep it.",
+                                      fields, bill, soft=True)
+                per: dict[str, dict[str, str]] = {}
+                for fid, v in (values or {}).items():
+                    _, key, fld = fid.split(":")
+                    per.setdefault(key, {})[fld] = v
+                if any("name" not in p for p in per.values()):
+                    ctx.error = "A contact needs a name (a person, a team or a desk) besides its phone or email."
+                    raise Stop("asking", ctx._step("contact", "Who are they? Fill in what you know; leave the rest blank.", "form", [UNKNOWN], fields))
+                if not per:
+                    later("contacts")
+                by_name = {c["name"].lower(): c for _, c in sorted(e.contacts.items(), reverse=True)}
+                for key, p in sorted(per.items()):
+                    known = by_name.get(p["name"].lower())
+                    contact: Any = known["id"] if known else f"@contact_{key}"
+                    if known is None:
+                        ops.append({"op": "create_contact", "target": {"kind": "contact", "id": None}, "client_ref": f"contact_{key}",
+                                    "fields": {"name": p["name"], **{k: p[k] for k in ("phone", "email") if k in p}}})
+                    ops.append({"op": "assign_contact", "target": target_obj, "fields": {"contact_id": contact, "role_id": roles[key]["id"]}})
+    terms = [x for x in ("install_date", "commit_rate") if x in open_]
+    if terms:
+        fields = []
+        if "install_date" in terms:
+            fields.append({"id": "install_date", "label": "Install date (when the circuit was handed over)", "type": "text", "max_length": 10,
+                           "pattern": r"\d{4}-\d{2}-\d{2}", "pattern_hint": "year-month-day, for example 2024-03-01", "hint": "as YYYY-MM-DD", "suggestion": None, "options": []})
+        if "commit_rate" in terms:
+            fields.append({"id": "commit_rate", "label": "Commit rate in Mbps (the speed you pay for)", "type": "number", "min": 0, "max": 1_000_000,
+                           "hint": "for example 100; NetBox stores it in kbps", "suggestion": None, "options": []})
+        values = ctx.form("terms", f"What does the contract for circuit {label} say? Leave blank what you do not know.", fields,
+                          bill + ["The order confirmation carries the hand-over date and the committed speed."], na="Nothing more to record: leave it", soft=True)
+        if values is not None:
+            if "install_date" in values:
+                try:
+                    import datetime
+
+                    datetime.date.fromisoformat(values["install_date"])
+                except ValueError:
+                    ctx.error = "Install date: that is not a date of the calendar (year-month-day)."
+                    raise Stop("asking", ctx._step("terms", f"What does the contract for circuit {label} say? Leave blank what you do not know.", "form", [UNKNOWN], fields)) from None
+                rec["install_date"] = values["install_date"]
+            if "commit_rate" in values:
+                rec["commit_rate"] = int(round(float(values["commit_rate"]) * 1000))
+            later(*[x for x in terms if x not in values])
+    cost = [x for x in ("mrc", "nrc") if x in open_]
+    if cost:
+        cost_bill = bill + ["The monthly charge (MRC) is on every bill; the one-off charge (NRC) is on the first bill or the order."]
+        prompt = f"What does circuit {label} cost? Leave blank what you do not know. It goes to NetBox only; the game does not keep it."
+        fields = [{"id": x, "label": words, "type": "number", "min": 0, "max": 1_000_000_000, "hint": hint, "suggestion": None, "options": []}
+                  for x, words, hint in (("mrc", "Monthly recurring charge (MRC)", "what you pay each month, without tax"),
+                                         ("nrc", "One-off charge (NRC)", "what you paid once, for the install")) if x in cost]
+        fields.append({"id": "currency", "label": "Currency (three letters)", "type": "text", "max_length": 3, "pattern": "[A-Za-z]{3}",
+                       "pattern_hint": "three letters, for example GBP or EUR", "hint": circ.get("currency") or "for example GBP", "suggestion": None, "options": []})
+        if e.synthetic:
+            words = ", ".join(f"{BILL[x]} {BILL['currency']} {'a month' if x == 'mrc' else 'once'}" for x in cost)
+            got = sample(ctx, "cost", f"What does circuit {label} cost?", words, na="No charge of its own to record")
+            values = None if got == "none" else {} if got is None else {**{x: BILL[x] for x in cost}, "currency": BILL["currency"]}
+        else:
+            values = ctx.form("cost", prompt, fields, cost_bill, na="No charge of its own to record", soft=True)
+        if values is not None:
+            amounts = {x: values[x] for x in cost if x in values}
+            currency = str(values.get("currency") or circ.get("currency") or "").upper()
+            if amounts and not currency:
+                ctx.error = "Currency: a charge needs its currency (three letters, for example GBP)."
+                raise Stop("asking", ctx._step("cost", prompt, "form", [UNKNOWN], fields))
+            for x, v in amounts.items():
+                rec[x] = f"{float(v):.2f}"
+            if amounts:
+                rec["currency"] = currency
+            later(*[x for x in cost if x not in amounts])
+    if rec:
+        ops.append({"op": "record_circuit", "target": {"kind": "circuit", "id": cid}, "fields": rec})
+    if not ops:
+        if ctx.deferred or ctx.skipped:
+            raise Stop("parked", ctx.waiting_at, ctx.skipped, note=f"Not known yet for circuit {label}: {some([FACT_SHORT[c.rsplit(':', 1)[1]] for c in ctx.deferred])}. "
+                       "The line waits here; nothing is lost.")
+        raise Stop("dismissed", None, note=f"There is nothing more to record for circuit {label}.")
+    return ops
+
+
+FACT_SHORT = {"network": "the provider's network", "account": "the account", "contacts": "who to call", "install_date": "the install date",
+              "commit_rate": "the commit rate", "mrc": "the monthly charge", "nrc": "the one-off charge"}
+
+
+def sample(ctx: Ctx, sid: str, prompt: str, value: str, na: str | None = None) -> str | None:
+    """On the practice island nothing of the player's own is typed for a figure: the island's made-up bill is the only
+    answer on offer (so no real account number or charge is ever kept with the practice changes). Returns the value,
+    None for "I don't know yet", or "none"."""
+    extra = [choice("none", na, "not_applicable")] if na else []
+    picked = ctx.choice(sid, f"{prompt} (Practice: the island's made-up bill is the only paper here.)",
+                        [choice("sample", f"As on the bill: {value}", "confirm")] + extra, ["Look at the island's made-up bill."], soft=True, part=True)
+    return None if picked == "unknown" else "none" if picked == "none" else value
 
 
 def flow_power(ctx: Ctx) -> list[dict[str, Any]]:
@@ -911,7 +1222,7 @@ FLOWS = {
     "sites_not_linked": flow_link, "site_no_way_out": flow_way_out, "circuit_unterminated": flow_way_out, "provider_unused": flow_way_out,
     "router_no_address": flow_address, "device_unreachable": flow_address, "device_no_power": flow_power, "address_no_prefix": flow_prefix,
     "rack_audit": flow_audit, "shelf_audit": flow_audit, "platform_survey": flow_platform, "site_record": flow_site, "rack_devices_unpositioned": flow_units,
-    "room_layout": flow_layout, "interface_no_cable": flow_port,
+    "room_layout": flow_layout, "interface_no_cable": flow_port, "circuit_handoff": flow_handoff, "circuit_record": flow_record,
 }
 
 # Per finding kind: the quest's title, why it matters (said after the finding's own sentence, which names the objects),
@@ -930,8 +1241,12 @@ WORDS: dict[str, tuple[str, str, str]] = {
     "device_unconnected": ("What {subject} plugs into", "If it drops off the network, nobody can tell which port to check. Let's record its uplink.",
                            "You can now trace {subject} to what it plugs into."),
     "router_no_address": ("An address for {subject}", "Let's record one.", "You can now look up how to reach {subject}."),
-    "device_unreachable": ("How to reach the kit at {site}", "When something breaks, the first question is how to log in. Let's record that.",
-                           "You can now look up the management address of {names}."),
+    "device_unreachable": ("How {subject} is managed", "When something breaks, the first question is how to get at it. Let's record that.",
+                           "You can now look up in NetBox how {subject} is managed, and where to log in if it has an address."),
+    "circuit_handoff": ("The address on {subject}", "Without it nobody can tell which subnet is the carrier's. Let's record your side of the line.",
+                        "You can now look up the address on your side of circuit {subject}, and its subnet."),
+    "circuit_record": ("The record of {subject}", "When the line is down, that is what you need first. Let's record what you know.",
+                       "You can now look up, in NetBox, who to call about circuit {subject} and what you quote when you do."),
     "device_no_power": ("What powers {where}", "If a power strip trips, nobody can tell what goes dark with it. Let's record the power feeds.",
                         "You can now see what loses power when a strip in {where} trips."),
     "address_no_prefix": ("A home for {subject}", "Addresses with no prefix cannot be planned around. Let's record their subnet.",
@@ -983,10 +1298,10 @@ def subject_of(e: Estate, f: dict[str, Any]) -> str:
         return d["model"]
     if "rack_id" in d and d["rack_id"] in e.racks:
         return e.racks[d["rack_id"]]["name"]
-    if "device_id" in d:
-        return e.device_name(d["device_id"])
     if "circuit_id" in d and d["circuit_id"] in e.circuits:
         return e.circuits[d["circuit_id"]]["cid"]
+    if "device_id" in d:
+        return e.device_name(d["device_id"])
     if "provider_id" in d and d["provider_id"] in e.providers:
         return e.providers[d["provider_id"]]["name"]
     return f["evidence"][0]["name"] if f["evidence"] else ""
@@ -1046,13 +1361,56 @@ def describe(e: Estate, ops: list[dict[str, Any]]) -> list[str]:
         elif name == "create_circuit_termination":
             circ = refs.get(f["circuit_id"]) if isinstance(f["circuit_id"], str) else f"circuit {e.circuits[f['circuit_id']]['cid']}"
             refs["@" + op.get("client_ref", "")] = f"{circ} (side {f['term_side']})"
-            out.append(f"{circ[0].upper() + circ[1:]} gets its {f['term_side']} end at {e.sites[f['site_id']]['name']}.")
+            if f.get("provider_network_id") is not None:
+                net = f["provider_network_id"]
+                at = refs.get(net, "the new provider network") if isinstance(net, str) else f"network {e.networks.get(net, {}).get('name', net)}"
+                out.append(f"{circ[0].upper() + circ[1:]} gets its {f['term_side']} end on {at}.")
+            else:
+                out.append(f"{circ[0].upper() + circ[1:]} gets its {f['term_side']} end at {e.sites[f['site_id']]['name']}.")
         elif name == "assign_ip":
             port = e.ports.get(("interface", f["interface_id"]))
             out.append(f"{e.device_name(target['id'])}: {f['address']} on {port['name'] if port else 'its interface'}"
                        + (", as its management address (primary IP)." if f.get("primary", True) else "."))
         elif name == "create_prefix":
             out.append(f"New prefix {f['prefix']}.")
+        elif name == "set_management":
+            how = {"local": "managed locally", "cloud": "managed by a cloud or controller service", "unmanaged": "not managed"}[f["mode"]]
+            dev = e.devices.get(target["id"], {})
+            model = dev.get("model") or "its model"
+            tail = {None: "", "varies": f" The {model} model is marked as varying from device to device."}.get(
+                f.get("model_default"), f" Every {model} is marked as {how} by default.")
+            out.append(f"{e.device_name(target['id'])}: {how}{' (' + f['service'] + ')' if f.get('service') else ''}.{tail}")
+        elif name == "create_provider_network":
+            refs["@" + op.get("client_ref", "")] = f"network {f['name']}"
+            out.append(f"New provider network {f['name']} of {e.providers.get(f['provider_id'], {}).get('name', 'the provider')}.")
+        elif name == "create_provider_account":
+            refs["@" + op.get("client_ref", "")] = f"account {f['account']}"
+            out.append(f"New account {f['account']} with {e.providers.get(f['provider_id'], {}).get('name', 'the provider')}.")
+        elif name == "create_contact":
+            refs["@" + op.get("client_ref", "")] = f["name"]
+            out.append(f"New contact {f['name']}" + "".join(f", {f[k]}" for k in ("phone", "email") if f.get(k)) + ".")
+        elif name == "assign_contact":
+            who = refs.get(f["contact_id"], "the new contact") if isinstance(f["contact_id"], str) else e.contacts.get(f["contact_id"], {}).get("name", "the contact")
+            role = e.contact_roles.get(f["role_id"], {}).get("name", "contact")
+            what = (e.providers.get(target["id"], {}).get("name", "the provider") if target["kind"] == "provider"
+                    else f"circuit {e.circuits.get(target['id'], {}).get('cid', target['id'])}")
+            out.append(f"{who} becomes the {role} contact for {what}.")
+        elif name == "record_circuit":
+            circ = e.circuits.get(target["id"], {})
+            bits = []
+            if "provider_account_id" in f:
+                acct = f["provider_account_id"]
+                bits.append(refs.get(acct, "the new account") if isinstance(acct, str) else f"account {e.accounts.get(acct, {}).get('account', acct)}")
+            if "install_date" in f:
+                bits.append(f"installed {f['install_date']}")
+            if "commit_rate" in f:
+                bits.append(f"commit rate {f['commit_rate'] / 1000:g} Mbps")
+            cur = f.get("currency") or circ.get("currency") or ""
+            if "mrc" in f:
+                bits.append(f"{f['mrc']} {cur} a month".replace("  ", " "))
+            if "nrc" in f:
+                bits.append(f"{f['nrc']} {cur} once".replace("  ", " "))
+            out.append(f"Circuit {circ.get('cid', target['id'])}: {', '.join(bits)}.")
         elif name == "place_device":
             out.append(f"{e.device_name(target['id'])}: unit {f['position']:g} of rack {e.racks[f['rack_id']]['name']} ({f['face']}).")
         elif name == "move_rack":
@@ -1112,8 +1470,6 @@ def check_ids(line: dict[str, Any]) -> list[str]:
     d = line["finding"]["data"]
     if d.get("gap_ids") is not None:
         return list(d["gap_ids"])
-    if line["kind"] == "device_unreachable":
-        return [f"device:{i}:primary_ip" for i in d["device_ids"]]
     return [line["finding"]["id"]]
 
 
@@ -1128,11 +1484,11 @@ def evaluate(e: Estate, line: dict[str, Any], answers: dict[str, Any], tools: fr
         state = {**base, "status": s.status, "step": s.step, "checklist": s.checklist, "note": s.note}
     except KeyError:
         # the estate changed under the line (an object it named is gone): start the line again from its first question
-        return evaluate(e, line, {}, tools) if answers else {**base, "status": "parked", "said": [], "target": None, "answered": [], "waived": [],
+        return evaluate(e, line, {}, tools) if answers else {**base, "status": "parked", "said": [], "target": None, "answered": [], "waived": [], "deferred": [],
                                                            "checklist": ["This changed in NetBox while you were away; look again later."]}
     if ctx.target is None and line["site_id"] in e.sites:
         ctx.at(site_id=line["site_id"])
-    return {**state, "said": ctx.said, "target": ctx.target, "answered": ctx.answered, "waived": ctx.waived}
+    return {**state, "said": ctx.said, "target": ctx.target, "answered": ctx.answered, "waived": ctx.waived, "deferred": ctx.deferred}
 
 
 def stamp(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -1144,25 +1500,63 @@ def stamp(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for op in ops:
         target = op["target"]
         row = tables.get(target["kind"], {}).get(target["id"]) if isinstance(target.get("id"), int) else None
-        since = row.get("last_updated") if row and op["op"] in ("update_fields", "place_device", "move_rack", "assign_ip") else None
+        since = row.get("last_updated") if row and op["op"] in ("update_fields", "place_device", "move_rack", "assign_ip", "set_management") else None
         out.append({**op, "if_unmodified_since": since} if since else op)
     return out
 
 
 # Bundle lines whose items can each be answered "there is none, on purpose": the step that asks about one object
 # (`<prefix><object id>`) and the check that answer settles.
-WAIVE = {"device_unreachable": ("ip_", "device:{}:primary_ip"), "device_no_power": ("pdu_", "device:{}:power"),
-         "interface_no_cable": ("peer_", "interface:{}:cable")}
+WAIVE = {"device_no_power": ("pdu_", "device:{}:power"), "interface_no_cable": ("peer_", "interface:{}:cable")}
+
+
+def _circuit_of(line: dict[str, Any]) -> str:
+    return line["id"].rsplit(":", 1)[1]
 
 
 def waived(line: dict[str, Any], answers: dict[str, Any]) -> list[str]:
-    """Checks of a line the player answered with "there is none, on purpose" (a device nobody logs in to, a port not
-    in use): they are not asked again, count as answered in the site's completeness, and pay nothing."""
+    """Checks of a line the player answered with "there is none, on purpose" (a port not in use, a circuit with no
+    account number), or, for how a device is managed, with "a cloud service manages it" or "it is not managed": they
+    are not asked again and count as answered in the site's completeness. (How a device is managed is also written to
+    NetBox where NetBox can hold it; the check is then NetBox's own.)"""
+    if line["kind"] == "device_unreachable":
+        return [f"device:{k[5:]}:primary_ip" for k, v in sorted(answers.items(), key=lambda kv: natural(kv[0]))
+                if k.startswith("mode_") and k[5:].isdigit() and isinstance(v, dict) and v.get("choice") in ("cloud", "unmanaged")]
+    if line["kind"] == "circuit_record":
+        cid = _circuit_of(line)
+        return [f"circuit:{cid}:{fact}" for step, facts in RECORD_STEPS.items()
+                if isinstance(answers.get(step), dict) and answers[step].get("choice") == "none" for fact in facts]
     if line["kind"] not in WAIVE:
         return []
     prefix, check = WAIVE[line["kind"]]
     return [check.format(k[len(prefix):]) for k, v in sorted(answers.items(), key=lambda kv: natural(kv[0]))
             if k.startswith(prefix) and k[len(prefix):].isdigit() and isinstance(v, dict) and v.get("choice") == "none"]
+
+
+def deferred(line: dict[str, Any], answers: dict[str, Any]) -> list[str]:
+    """Facts of a circuit's record the player answered with "I don't know yet" (or left blank in its form). They stay
+    listed as open questions and the line waits for them, but they do not count against the site's completeness: not
+    knowing what a line costs is no fault in the record of what is plugged into what."""
+    if line["kind"] != "circuit_record":
+        return []
+    cid = _circuit_of(line)
+    out: list[str] = []
+    for step, facts in RECORD_STEPS.items():
+        ans = answers.get(step)
+        if not isinstance(ans, dict):
+            continue
+        if ans.get("choice") == "unknown":
+            out += facts
+        elif isinstance(ans.get("values"), dict):
+            blank = [f for f in facts if ans["values"].get(f) in (None, "")] if step in ("terms", "cost") else \
+                    list(facts) if not any(v not in (None, "") for v in ans["values"].values()) else []
+            out += blank
+    return [f"circuit:{cid}:{fact}" for fact in dict.fromkeys(out)]
+
+
+def private_step(step_id: str) -> bool:
+    """A question whose typed answer is the player's own figure (an account number, a charge, a contact's details)."""
+    return step_id in PRIVATE_STEPS
 
 
 def prune(answers: dict[str, Any], confirmed: list[str]) -> dict[str, Any]:

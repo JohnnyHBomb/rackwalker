@@ -1,12 +1,12 @@
 {
-  "contract_version": "2.3.0",
+  "contract_version": "2.4.0",
   "scope": "practice",
   "site_id": null,
   "write_enabled": false,
   "can_write": false,
   "write_blocked": "The practice island is made up: nothing you do here reaches NetBox.",
   "all_in_order": false,
-  "message": "10 things to find out at the practice island; the most useful one comes first.",
+  "message": "11 things to find out at the practice island; the most useful one comes first.",
   "findings": [
     {
       "id": "site_no_way_out:site:9000001",
@@ -85,6 +85,20 @@
       "rank": "connectivity",
       "site_id": 9000001,
       "title": "sw-loft-1 has 26 ports and nothing recorded on any of them.",
+      "evidence": [
+        {
+          "kind": "device",
+          "id": 9000003,
+          "name": "sw-loft-1"
+        }
+      ]
+    },
+    {
+      "id": "device_unreachable:device:9000003",
+      "kind": "device_unreachable",
+      "rank": "connectivity",
+      "site_id": 9000001,
+      "title": "NetBox does not say how sw-loft-1 is managed, or how to reach it.",
       "evidence": [
         {
           "kind": "device",
@@ -263,7 +277,15 @@
         "verified": 0
       },
       "lapsed": false,
-      "updated_at": null
+      "updated_at": null,
+      "chain": {
+        "id": "chain:way_out:site:9000001",
+        "title": "The way out of Practice Island",
+        "stage": "physical",
+        "position": 1,
+        "total": 3,
+        "label": "1 of 3: physical"
+      }
     },
     {
       "id": "q:locations_not_linked:location:9000002",
@@ -353,7 +375,15 @@
         "verified": 0
       },
       "lapsed": false,
-      "updated_at": null
+      "updated_at": null,
+      "chain": {
+        "id": "chain:room_link:location:9000002",
+        "title": "The link from Loft",
+        "stage": "physical",
+        "position": 1,
+        "total": 1,
+        "label": "1 of 1: physical"
+      }
     },
     {
       "id": "q:device_unconnected:device:9000001",
@@ -433,21 +463,29 @@
         "verified": 0
       },
       "lapsed": false,
-      "updated_at": null
+      "updated_at": null,
+      "chain": {
+        "id": "chain:device:device:9000001",
+        "title": "sw-quay-1: from its ports to its login",
+        "stage": "physical",
+        "position": 1,
+        "total": 2,
+        "label": "1 of 2: physical"
+      }
     }
   ],
-  "queued": 7,
+  "queued": 8,
   "next_quest_id": "q:site_no_way_out:site:9000001",
   "sites": [
     {
       "site_id": 9000001,
       "name": "Practice Island",
       "completeness": {
-        "percent": 60,
+        "percent": 56,
         "total": 30,
-        "open": 12
+        "open": 13
       },
-      "open_quests": 10,
+      "open_quests": 11,
       "boss_ready": false,
       "boss_acknowledged": false,
       "giver": {
@@ -468,5 +506,108 @@
     "practised": 0,
     "lapsed": 0
   },
-  "incomplete": []
+  "incomplete": [],
+  "chains": [
+    {
+      "id": "chain:way_out:site:9000001",
+      "kind": "way_out",
+      "site_id": 9000001,
+      "title": "The way out of Practice Island",
+      "holds": "the port the line plugs into, the circuit, your address on it, the carrier and their network, your account, who to call, and what it costs",
+      "status": "open",
+      "position": 1,
+      "total": 3,
+      "label": "1 of 3: physical",
+      "stages": [
+        {
+          "stage": "physical",
+          "title": "what is plugged into what",
+          "status": "open",
+          "quest_ids": [
+            "q:site_no_way_out:site:9000001"
+          ],
+          "missing": [
+            "The way out of Practice Island"
+          ]
+        },
+        {
+          "stage": "logical",
+          "title": "addresses, and how it is managed",
+          "status": "locked",
+          "quest_ids": [],
+          "missing": []
+        },
+        {
+          "stage": "administrative",
+          "title": "whose it is, who to call, what it costs",
+          "status": "locked",
+          "quest_ids": [],
+          "missing": []
+        }
+      ],
+      "summary": null,
+      "open_questions": []
+    },
+    {
+      "id": "chain:room_link:location:9000002",
+      "kind": "room_link",
+      "site_id": 9000001,
+      "title": "The link from Loft",
+      "holds": "the cable between the two rooms, and the port at each end",
+      "status": "open",
+      "position": 1,
+      "total": 1,
+      "label": "1 of 1: physical",
+      "stages": [
+        {
+          "stage": "physical",
+          "title": "what is plugged into what",
+          "status": "open",
+          "quest_ids": [
+            "q:locations_not_linked:location:9000002"
+          ],
+          "missing": [
+            "The link between Loft and Quay Room"
+          ]
+        }
+      ],
+      "summary": null,
+      "open_questions": []
+    },
+    {
+      "id": "chain:device:device:9000001",
+      "kind": "device",
+      "site_id": 9000001,
+      "title": "sw-quay-1: from its ports to its login",
+      "holds": "what the device is plugged into, how it is managed, and the address to log in to it if it has one",
+      "status": "open",
+      "position": 1,
+      "total": 2,
+      "label": "1 of 2: physical",
+      "stages": [
+        {
+          "stage": "physical",
+          "title": "what is plugged into what",
+          "status": "open",
+          "quest_ids": [
+            "q:device_unconnected:device:9000001"
+          ],
+          "missing": [
+            "What sw-quay-1 plugs into"
+          ]
+        },
+        {
+          "stage": "logical",
+          "title": "addresses, and how it is managed",
+          "status": "done",
+          "quest_ids": [],
+          "missing": []
+        }
+      ],
+      "summary": "sw-quay-1: managed locally at 192.0.2.11/24.",
+      "open_questions": []
+    }
+  ],
+  "chains_queued": 4,
+  "setup": []
 }

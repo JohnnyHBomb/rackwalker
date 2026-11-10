@@ -104,7 +104,7 @@ def test_the_estate_is_read_with_slim_field_selections_and_becomes_plain_data():
     assert e.cables[1]["a"] == [("interface", 11)] and e.ports[("interface", 21)]["cable_id"] == 1
     # every list asks NetBox only for the fields the scanner uses
     assert fake.lists("dcim/devices")[0]["fields"] == ("id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,"
-                                                      "virtual_chassis,last_updated")
+                                                      "virtual_chassis,custom_fields,last_updated")
     assert fake.lists("dcim/interfaces")[0]["fields"] == "id,name,device,type,enabled,mgmt_only,cable,description,mark_connected"
     # the estate survives a round trip through JSON (the fixture-mode estate is stored that way)
     again = estate.Estate.from_json(e.to_json())
@@ -390,7 +390,10 @@ def test_a_line_fixed_in_netbox_itself_is_confirmed_by_a_read_of_its_site(tmp_pa
         plug(data, link, 31, 12)
         v = cl.post("/api/game/quests/verify", json={"scope": "netbox", "quest_id": SW3}).json()
         assert (v["verified"], v["complete"], v["xp_awarded"], v["quest"]["status"]) == (True, True, 120, "done")
-        assert v["message"] == "NetBox confirms it. Mill is now 96 % complete." and v["can_now"] == "You can now trace sw3 to what it plugs into."
+        assert v["message"].startswith("NetBox confirms it. Mill is now 96 % complete.") and v["can_now"] == "You can now trace sw3 to what it plugs into."
+        # the device's chain is complete with that (NetBox already said how sw3 is managed); one stage played pays no chain bonus
+        assert (v["chain"]["status"], v["chain"]["label"], v["chain_xp"]) == ("complete", "2 of 2: complete", 0)
+        assert v["chain"]["summary"] == "sw3: eth1 -> sw1 eth2; managed locally at 192.0.2.3/24."
         again = cl.post("/api/game/quests/verify", json={"scope": "netbox", "quest_id": SW3}).json()
         assert (again["xp_awarded"], again["rewards"]["xp"]) == (0, 120)
 
@@ -398,12 +401,14 @@ def test_a_line_fixed_in_netbox_itself_is_confirmed_by_a_read_of_its_site(tmp_pa
 @pytest.mark.parametrize("permissions,can_write,board_says,line_says", [
     ([], False, "Your NetBox user may not change anything a quest writes", "Your NetBox user may not add dcim.cable."),
     ([{"id": 1, "enabled": True, "object_types": ["dcim.device"], "actions": ["change"], "constraints": None}], True,
-     "Your NetBox user may not add cables, add circuits, add circuit ends, add addresses, add prefixes, change racks or change sites. "
+     "Your NetBox user may not add cables, add circuits, add circuit ends, add addresses, add prefixes, change racks, change sites, "
+     "change circuits, add provider accounts, add provider networks, add contacts, assign contacts or change device types. "
      "Lines that need that run as practice, with no XP; ask a NetBox admin for the permission.", "Your NetBox user may not add dcim.cable."),
     ([{"id": 1, "enabled": False, "object_types": ["dcim.cable"], "actions": ["add"], "constraints": None}], False,
      "Your NetBox user may not change anything", "Your NetBox user may not add dcim.cable."),
     ([{"id": 1, "enabled": True, "object_types": ["dcim.cable"], "actions": ["add"], "constraints": None}], True,
-     "Your NetBox user may not add circuits, add circuit ends, add addresses, add prefixes, change devices, change racks or change sites.", None),
+     "Your NetBox user may not add circuits, add circuit ends, add addresses, add prefixes, change devices, change racks, change sites, "
+     "change circuits,", None),
 ])
 def test_the_quest_log_says_up_front_what_the_players_netbox_user_may_not_write(tmp_path, monkeypatch, permissions, can_write, board_says, line_says):
     fake = FakeNetBox(tiny())
@@ -532,10 +537,11 @@ def test_every_netbox_field_the_scanner_uses_lands_in_the_estate_where_it_belong
     assert e.ports[("rear_port", 91)]["description"] == "trunk" and e.ports[("rear_port", 91)]["rear_ids"] == []
     assert e.ports[("power_port", 71)]["cable_id"] == 9 and e.ports[("power_outlet", 72)]["device_id"] == 8 and e.powered(1) is True
     assert e.feeds == {3: {"id": 3, "name": "feed A", "rack_id": 1, "cable_id": None}}
-    assert e.circuits == {4: {"id": 4, "cid": "C-1", "provider_id": 2, "type": "Internet", "status": "active"}}
-    # a circuit end names a site only when it ends at a site (not at a provider network)
-    assert e.cterms == {5: {"id": 5, "circuit_id": 4, "side": "A", "site_id": 1, "cable_id": 2},
-                        6: {"id": 6, "circuit_id": 4, "side": "Z", "site_id": None, "cable_id": None}}
+    assert e.circuits == {4: {"id": 4, "cid": "C-1", "provider_id": 2, "type": "Internet", "status": "active", "account_id": None,
+                              "install_date": None, "commit_rate": None, "mrc": None, "nrc": None, "currency": None, "last_updated": None}}
+    # a circuit end names a site only when it ends at a site; at a provider network it names the network
+    assert e.cterms == {5: {"id": 5, "circuit_id": 4, "side": "A", "site_id": 1, "network_id": None, "cable_id": 2},
+                        6: {"id": 6, "circuit_id": 4, "side": "Z", "site_id": None, "network_id": 1, "cable_id": None}}
     # an address counts as on an interface only when it is assigned to a device interface
     assert e.ips[50] == {"id": 50, "address": "10.0.0.1/24", "vrf_id": 7, "vrf": "tenant-a", "interface_id": 12}
     assert e.ips[51]["interface_id"] is None and e.ips[52]["interface_id"] is None and e.ips[1]["vrf_id"] is None

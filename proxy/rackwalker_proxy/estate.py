@@ -56,6 +56,14 @@ END_WORDS = ("server", "host", "storage", "hypervisor", "compute", "workstation"
 MANY_PORTS = 8
 
 
+# How a device is managed (custom field rw_mgmt_mode on a device; rw_mgmt_default on its device type, which may also
+# say `varies`: the model can be either, so each device is asked).
+MGMT_MODES = ("local", "cloud", "unmanaged")
+MGMT_DEFAULTS = (*MGMT_MODES, "varies")
+# Custom fields of the game that an estate read looks for, and the list whose rows carry them.
+GAME_FIELDS = {"devices": ("rw_mgmt_mode", "rw_mgmt_service"), "circuits": ("rw_mrc", "rw_nrc", "rw_currency")}
+
+
 def port_key(s: str) -> PortKey:
     kind, _, oid = s.rpartition(":")
     return kind, int(oid)
@@ -128,6 +136,16 @@ class Estate:
     platforms: dict[int, dict[str, Any]] = field(default_factory=dict)
     ips: dict[int, dict[str, Any]] = field(default_factory=dict)
     prefixes: dict[int, dict[str, Any]] = field(default_factory=dict)
+    # the administrative record of a circuit: provider accounts and networks, contacts with their roles, and who is
+    # assigned to which provider or circuit
+    accounts: dict[int, dict[str, Any]] = field(default_factory=dict)
+    networks: dict[int, dict[str, Any]] = field(default_factory=dict)
+    contacts: dict[int, dict[str, Any]] = field(default_factory=dict)
+    contact_roles: dict[int, dict[str, Any]] = field(default_factory=dict)
+    assignments: dict[int, dict[str, Any]] = field(default_factory=dict)
+    # custom fields the game uses that this NetBox does not have (devnetbox/seed.py --fields-only adds them): what
+    # they would hold is not asked for, and never counted as missing
+    no_fields: list[str] = field(default_factory=list)
     truncated: list[str] = field(default_factory=list)
     unreadable: list[str] = field(default_factory=list)
     synthetic: bool = False
@@ -189,25 +207,25 @@ class Estate:
 
     # ---------------------------------------------------------------- (de)serialisation
     TABLES = ("sites", "locations", "racks", "devices", "cables", "circuits", "providers", "circuit_types", "cterms", "feeds",
-              "platforms", "ips", "prefixes")
+              "platforms", "ips", "prefixes", "accounts", "networks", "contacts", "contact_roles", "assignments")
 
     def to_json(self) -> dict[str, Any]:
         out: dict[str, Any] = {t: [getattr(self, t)[k] for k in sorted(getattr(self, t))] for t in self.TABLES}
         out["ports"] = [self.ports[k] for k in sorted(self.ports)]
-        out.update(truncated=self.truncated, unreadable=self.unreadable, synthetic=self.synthetic)
+        out.update(truncated=self.truncated, unreadable=self.unreadable, synthetic=self.synthetic, no_fields=self.no_fields)
         return out
 
     @classmethod
     def from_json(cls, data: dict[str, Any]) -> "Estate":
         e = cls(truncated=list(data.get("truncated", [])), unreadable=list(data.get("unreadable", [])),
-                synthetic=bool(data.get("synthetic", False)))
+                synthetic=bool(data.get("synthetic", False)), no_fields=list(data.get("no_fields", [])))
         for t in cls.TABLES:
             setattr(e, t, {row["id"]: _tuples(row) for row in data.get(t, [])})
         e.ports = {(p["kind"], p["id"]): _tuples(p) for p in data.get("ports", [])}
         return e
 
     def copy(self) -> "Estate":
-        e = Estate(truncated=list(self.truncated), unreadable=list(self.unreadable), synthetic=self.synthetic)
+        e = Estate(truncated=list(self.truncated), unreadable=list(self.unreadable), synthetic=self.synthetic, no_fields=list(self.no_fields))
         for t in self.TABLES:
             setattr(e, t, copy.deepcopy(getattr(self, t)))
         e.ports = copy.deepcopy(self.ports)
@@ -266,6 +284,55 @@ class Estate:
         by_iface = self._ips_by_interface()
         out = [ip for p in self._ports_by_device().get(device_id, []) if p["kind"] == "interface" for ip in by_iface.get(p["id"], [])]
         return sorted(out, key=lambda ip: ip["id"])
+
+    # ---------------------------------------------------------------- how a device is managed; a circuit's record
+    def has_field(self, name: str) -> bool:
+        return name not in self.no_fields
+
+    def mgmt_mode(self, dev: dict[str, Any]) -> str | None:
+        """How a device is managed, as far as NetBox says: `local` (it has an address to log in to), `cloud` (a cloud
+        or controller service manages it: no local address is expected) or `unmanaged`; None when NetBox does not say.
+        The device's own field wins; else the default of its model, unless that says the model varies; a device with
+        a primary IP and neither is locally managed (NetBox already says how to reach it)."""
+        own = dev.get("mgmt_mode")
+        if own in MGMT_MODES:
+            return own
+        default = dev.get("mgmt_default")
+        if default in MGMT_MODES:
+            return default
+        return "local" if dev.get("primary_ip") else None
+
+    def mgmt_service(self, dev: dict[str, Any]) -> str | None:
+        return dev.get("mgmt_service") or (dev.get("mgmt_default_service") if dev.get("mgmt_mode") is None else None) or None
+
+    def primary_interface(self, dev: dict[str, Any]) -> int | None:
+        """The interface that carries a device's primary IP (its management address), if NetBox has both."""
+        if not dev.get("primary_ip"):
+            return None
+        return next((ip["interface_id"] for ip in self.device_ips(dev["id"]) if ip["address"] == dev["primary_ip"]), None)
+
+    def circuit_handoff(self, circuit_id: int) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]] | None:
+        """Where a circuit plugs in: (termination, port, device) of its first end, by side, that is cabled to a port."""
+        for t in sorted((t for t in self.cterms.values() if t["circuit_id"] == circuit_id and t["cable_id"] is not None), key=lambda t: t["side"] or ""):
+            cable = self.cables.get(t["cable_id"])
+            for key in (list(cable["a"]) + list(cable["b"])) if cable else []:
+                port = self.ports.get(tuple(key))  # type: ignore[arg-type]
+                if port is not None and port["device_id"] in self.devices:
+                    return t, port, self.devices[port["device_id"]]
+        return None
+
+    def contacts_of(self, circuit_id: int) -> list[dict[str, Any]]:
+        """Contact assignments that speak for a circuit: its own, then its provider's. Each with `contact`, `role`."""
+        c = self.circuits.get(circuit_id)
+        if c is None:
+            return []
+        keys = [("circuits.circuit", circuit_id), ("circuits.provider", c["provider_id"])]
+        out = []
+        for key in keys:
+            for _, a in sorted(self.assignments.items()):
+                if (a["object_type"], a["object_id"]) == key and a["contact_id"] in self.contacts:
+                    out.append({**a, "contact": self.contacts[a["contact_id"]], "role": self.contact_roles.get(a["role_id"] or 0, {}).get("name")})
+        return out
 
     # ---------------------------------------------------------------- simulated writes (practice island)
     def next_id(self, table: str) -> int:
@@ -407,6 +474,19 @@ def _cf(row: dict[str, Any], name: str) -> Any:
     return _val((row.get("custom_fields") or {}).get(name))
 
 
+def _money(v: Any) -> str | None:
+    """An amount as NetBox gave it (a decimal custom field reads back as a number or a string), as plain text with two
+    decimals; never a float that is then rounded by arithmetic."""
+    if v is None or v == "":
+        return None
+    from decimal import Decimal, InvalidOperation
+
+    try:
+        return f"{Decimal(str(v)):.2f}"
+    except InvalidOperation:
+        return None
+
+
 # Lists NetBox can select by site (`site_id=`); every other list is small and is always read whole.
 BY_SITE = ("locations", "racks", "devices", "cables", "feeds", "ports")
 # Addresses have no site filter: for a few sites they are read by device, this many devices to a request.
@@ -422,6 +502,9 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
     here = tuple(("site_id", s) for s in site_ids or [])
 
     def where(name: str) -> tuple[tuple[str, Any], ...]:
+        if name == "assignments":
+            # only who speaks for a provider or a circuit: a large NetBox has contacts on every tenant and site
+            return (("object_type", "circuits.provider"), ("object_type", "circuits.circuit"))
         return here if name in BY_SITE else ()
     port_fields = {
         "interface": ("dcim/interfaces", "id,name,device,type,enabled,mgmt_only,cable,description,mark_connected"),
@@ -434,9 +517,14 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         "sites": ("dcim/sites", "id,name,slug,status,latitude,longitude,facility,region,physical_address,custom_fields,last_updated", CAPS["sites"]),
         "locations": ("dcim/locations", "id,name,site", CAPS["locations"]),
         "racks": ("dcim/racks", "id,name,site,location,u_height,custom_fields,last_updated", CAPS["racks"]),
-        "devices": ("dcim/devices", "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,virtual_chassis,last_updated", CAPS["devices"]),
+        "devices": ("dcim/devices", "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,virtual_chassis,custom_fields,last_updated", CAPS["devices"]),
         "cables": ("dcim/cables", "id,type,label,status,a_terminations,b_terminations", CAPS["cables"]),
-        "circuits": ("circuits/circuits", "id,cid,provider,type,status", CAPS["circuits"]),
+        "circuits": ("circuits/circuits", "id,cid,provider,provider_account,type,status,install_date,commit_rate,custom_fields,last_updated", CAPS["circuits"]),
+        "accounts": ("circuits/provider-accounts", "id,provider,account,name", CAPS["circuits"]),
+        "networks": ("circuits/provider-networks", "id,provider,name", CAPS["circuits"]),
+        "contacts": ("tenancy/contacts", "id,name,phone,email", CAPS["circuits"]),
+        "contact_roles": ("tenancy/contact-roles", "id,name,slug", CAPS["circuits"]),
+        "assignments": ("tenancy/contact-assignments", "id,object_type,object_id,contact,role", CAPS["circuits"]),
         "providers": ("circuits/providers", "id,name", CAPS["circuits"]),
         "circuit_types": ("circuits/circuit-types", "id,name", CAPS["circuits"]),
         "cterms": ("circuits/circuit-terminations", "id,circuit,term_side,termination_type,termination_id,cable", CAPS["circuits"]),
@@ -471,6 +559,15 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
                             "u_height": r.get("u_height") or 42, "iso_x": _cf(r, "iso_x"), "iso_y": _cf(r, "iso_y"),
                             "last_updated": r.get("last_updated")}
     dtypes = await client.device_types({_id(d.get("device_type")) for d in raw["devices"]} - {None})  # type: ignore[arg-type]
+    # A custom field NetBox does not have is absent from every row's `custom_fields`: with at least one row to look at,
+    # a missing name means the field was never created.
+    for name, fields in GAME_FIELDS.items():
+        if raw[name]:
+            have = raw[name][0].get("custom_fields") or {}
+            e.no_fields += [f for f in fields if f not in have]
+    if dtypes and "rw_mgmt_default" not in next(iter(dtypes.values())).custom_fields:
+        e.no_fields.append("rw_mgmt_default")
+    e.no_fields.sort()
     roles = await client.roles({_id(d.get("role")) for d in raw["devices"]} - {None})  # type: ignore[arg-type]
     for d in raw["devices"]:
         dt, role = dtypes.get(_id(d.get("device_type")) or 0), roles.get(_id(d.get("role")) or 0)
@@ -484,6 +581,9 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
             "primary_ip": ip.get("address") if isinstance(ip, dict) else None,
             "u_height": float(dt.u_height) if dt else 1.0, "model": dt.model if dt else None,
             "manufacturer": dt.manufacturer.name if dt else None, "vc_id": _id(d.get("virtual_chassis")),
+            "type_id": dt.id if dt else None, "mgmt_mode": _cf(d, "rw_mgmt_mode"), "mgmt_service": _cf(d, "rw_mgmt_service") or None,
+            "mgmt_default": _val(dt.custom_fields.get("rw_mgmt_default")) if dt else None,
+            "mgmt_default_service": (_val(dt.custom_fields.get("rw_mgmt_service")) or None) if dt else None,
             "last_updated": d.get("last_updated")}
     for kind, rows in raw_ports.items():
         for p in rows:
@@ -511,11 +611,26 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         e.circuit_types[t["id"]] = {"id": t["id"], "name": t["name"]}
     for c in raw["circuits"]:
         e.circuits[c["id"]] = {"id": c["id"], "cid": c["cid"], "provider_id": _id(c.get("provider")),
-                               "type": (c.get("type") or {}).get("name"), "status": _val(c.get("status"))}
+                               "type": (c.get("type") or {}).get("name"), "status": _val(c.get("status")),
+                               "account_id": _id(c.get("provider_account")), "install_date": c.get("install_date"),
+                               "commit_rate": c.get("commit_rate"), "mrc": _money(_cf(c, "rw_mrc")), "nrc": _money(_cf(c, "rw_nrc")),
+                               "currency": _cf(c, "rw_currency") or None, "last_updated": c.get("last_updated")}
     for t in raw["cterms"]:
         e.cterms[t["id"]] = {"id": t["id"], "circuit_id": _id(t.get("circuit")), "side": t.get("term_side"),
                              "site_id": t.get("termination_id") if t.get("termination_type") == "dcim.site" else None,
+                             "network_id": t.get("termination_id") if t.get("termination_type") == "circuits.providernetwork" else None,
                              "cable_id": _id(t.get("cable"))}
+    for r in raw["accounts"]:
+        e.accounts[r["id"]] = {"id": r["id"], "provider_id": _id(r.get("provider")), "account": r.get("account") or "", "name": r.get("name") or ""}
+    for r in raw["networks"]:
+        e.networks[r["id"]] = {"id": r["id"], "provider_id": _id(r.get("provider")), "name": r["name"]}
+    for r in raw["contacts"]:
+        e.contacts[r["id"]] = {"id": r["id"], "name": r["name"], "phone": r.get("phone") or "", "email": r.get("email") or ""}
+    for r in raw["contact_roles"]:
+        e.contact_roles[r["id"]] = {"id": r["id"], "name": r["name"], "slug": r.get("slug") or ""}
+    for r in raw["assignments"]:
+        e.assignments[r["id"]] = {"id": r["id"], "object_type": r.get("object_type"), "object_id": r.get("object_id"),
+                                  "contact_id": _id(r.get("contact")), "role_id": _id(r.get("role"))}
     for f in raw["feeds"]:
         e.feeds[f["id"]] = {"id": f["id"], "name": f["name"], "rack_id": _id(f.get("rack")), "cable_id": _id(f.get("cable"))}
     for p in raw["platforms"]:
@@ -542,7 +657,11 @@ def splice(base: Estate, part: Estate, site_ids: list[int]) -> Estate:
     `base` itself is not changed. A cable between one of the sites and another site is kept right at both ends."""
     here = set(site_ids)
     e = Estate(truncated=sorted(set(base.truncated) | set(part.truncated)), unreadable=sorted(set(base.unreadable) | set(part.unreadable)))
-    for t in ("sites", "circuits", "providers", "circuit_types", "cterms", "platforms", "prefixes"):
+    # which custom fields NetBox lacks is seen on a row: a part with no device or circuit in it keeps what was known
+    e.no_fields = sorted(set(part.no_fields) | {f for t, fs in GAME_FIELDS.items() if not getattr(part, t) for f in fs if f in base.no_fields}
+                         | ({"rw_mgmt_default"} & set(base.no_fields) if not part.devices else set()))
+    for t in ("sites", "circuits", "providers", "circuit_types", "cterms", "platforms", "prefixes", "accounts", "networks", "contacts",
+              "contact_roles", "assignments"):
         setattr(e, t, dict(getattr(part, t)))
     for t in ("locations", "racks", "devices"):
         setattr(e, t, {i: r for i, r in getattr(base, t).items() if r["site_id"] not in here} | getattr(part, t))
@@ -647,7 +766,8 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
                     raise SimError(f"Circuit {f['cid']} already exists for that provider.")
                 cid = e.next_id("circuits")
                 e.circuits[cid] = {"id": cid, "cid": f["cid"], "provider_id": f["provider_id"],
-                                   "type": e.circuit_types[f["type_id"]]["name"], "status": "active"}
+                                   "type": e.circuit_types[f["type_id"]]["name"], "status": "active", "account_id": None,
+                                   "install_date": None, "commit_rate": None, "mrc": None, "nrc": None, "currency": None}
                 res["target"]["id"] = cid
                 res["after"] = dict(f)
                 if op.get("client_ref"):
@@ -656,8 +776,14 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 circ = resolve(f["circuit_id"], "circuit")
                 if any(t["circuit_id"] == circ and t["side"] == f["term_side"] for t in e.cterms.values()):
                     raise SimError(f"Side {f['term_side']} of that circuit already has a termination.")
+                if (f.get("site_id") is None) == (f.get("provider_network_id") is None):
+                    raise SimError("A circuit end is at a site or on a provider network: name one of the two.")
                 tid = e.next_id("cterms")
-                e.cterms[tid] = {"id": tid, "circuit_id": circ, "side": f["term_side"], "site_id": f["site_id"], "cable_id": None}
+                net = resolve(f["provider_network_id"], "provider_network") if f.get("provider_network_id") is not None else None
+                if net is not None and net not in e.networks:
+                    raise SimError(f"Provider network {net} does not exist.")
+                e.cterms[tid] = {"id": tid, "circuit_id": circ, "side": f["term_side"], "site_id": f.get("site_id"), "network_id": net,
+                                 "cable_id": None}
                 res["target"]["id"] = tid
                 res["after"] = dict(f)
                 if op.get("client_ref"):
@@ -684,6 +810,79 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 e.prefixes[pid] = {"id": pid, "prefix": net, "vrf_id": None}
                 res["target"]["id"] = pid
                 res["after"] = {"prefix": net}
+            elif name == "set_management":
+                d = e.devices[target["id"]]
+                res["before"] = {"mode": d.get("mgmt_mode"), **({"service": d.get("mgmt_service")} if "service" in f else {}),
+                                 **({"model_default": d.get("mgmt_default")} if "model_default" in f else {})}
+                d["mgmt_mode"] = f["mode"]
+                if "service" in f:
+                    d["mgmt_service"] = f["service"] or None
+                if "model_default" in f:
+                    for other in e.devices.values():
+                        if other.get("type_id") == d.get("type_id") and (d.get("type_id") is not None or other is d):
+                            other["mgmt_default"] = f["model_default"]
+                            if f["model_default"] == "cloud" and f.get("service"):
+                                other["mgmt_default_service"] = f["service"]
+                res["after"] = dict(f)
+            elif name == "record_circuit":
+                circ = e.circuits.get(target["id"])
+                if circ is None:
+                    raise SimError(f"Circuit {target['id']} does not exist.")
+                write = dict(f)
+                if "provider_account_id" in write:
+                    acct = resolve(write.pop("provider_account_id"), "provider_account")
+                    if acct not in e.accounts or e.accounts[acct]["provider_id"] != circ["provider_id"]:
+                        raise SimError("That account is not an account with this circuit's provider.")
+                    write["account_id"] = acct
+                if ("mrc" in write or "nrc" in write) and not (write.get("currency") or circ.get("currency")):
+                    raise SimError("A charge needs its currency (three letters, for example GBP).")
+                for k in ("mrc", "nrc"):
+                    if write.get(k) is not None:
+                        write[k] = _money(write[k])
+                res["before"] = {k: circ.get("account_id" if k == "provider_account_id" else k) for k in f}
+                circ.update(write)
+                res["after"] = {k: circ.get("account_id" if k == "provider_account_id" else k) for k in f}
+            elif name == "create_provider_account":
+                if f["provider_id"] not in e.providers:
+                    raise SimError(f"Provider {f['provider_id']} does not exist.")
+                if any(a["provider_id"] == f["provider_id"] and a["account"] == f["account"] for a in e.accounts.values()):
+                    raise SimError("That provider already has an account with this number.")
+                aid = e.next_id("accounts")
+                e.accounts[aid] = {"id": aid, "provider_id": f["provider_id"], "account": f["account"], "name": f.get("name") or ""}
+                res["target"]["id"] = aid
+                res["after"] = dict(f)
+                if op.get("client_ref"):
+                    refs[op["client_ref"]] = ("provider_account", aid)
+            elif name == "create_provider_network":
+                if f["provider_id"] not in e.providers:
+                    raise SimError(f"Provider {f['provider_id']} does not exist.")
+                if any(n["provider_id"] == f["provider_id"] and n["name"].lower() == f["name"].lower() for n in e.networks.values()):
+                    raise SimError(f"That provider already has a network called {f['name']}.")
+                nid = e.next_id("networks")
+                e.networks[nid] = {"id": nid, "provider_id": f["provider_id"], "name": f["name"]}
+                res["target"]["id"] = nid
+                res["after"] = dict(f)
+                if op.get("client_ref"):
+                    refs[op["client_ref"]] = ("provider_network", nid)
+            elif name == "create_contact":
+                cid = e.next_id("contacts")
+                e.contacts[cid] = {"id": cid, "name": f["name"], "phone": f.get("phone") or "", "email": f.get("email") or ""}
+                res["target"]["id"] = cid
+                res["after"] = dict(f)
+                if op.get("client_ref"):
+                    refs[op["client_ref"]] = ("contact", cid)
+            elif name == "assign_contact":
+                contact = resolve(f["contact_id"], "contact")
+                table = {"provider": e.providers, "circuit": e.circuits}[target["kind"]]
+                if target["id"] not in table or contact not in e.contacts or f["role_id"] not in e.contact_roles:
+                    raise SimError("That contact, role, provider or circuit does not exist.")
+                otype = f"circuits.{target['kind']}"
+                if any((a["object_type"], a["object_id"], a["contact_id"], a["role_id"]) == (otype, target["id"], contact, f["role_id"])
+                       for a in e.assignments.values()):
+                    raise SimError("That contact already has this role there.")
+                aid = e.next_id("assignments")
+                e.assignments[aid] = {"id": aid, "object_type": otype, "object_id": target["id"], "contact_id": contact, "role_id": f["role_id"]}
+                res["after"] = {**f, "contact_id": contact}
             else:
                 raise SimError(f"Op {name} is not available on the practice island.")
             b = res["before"] or {}

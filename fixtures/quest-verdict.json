@@ -43,14 +43,66 @@
       "verified": 1
     },
     "lapsed": false,
-    "updated_at": "2026-11-07T09:00:00Z"
+    "updated_at": "2026-11-07T09:00:00Z",
+    "chain": null
   },
+  "chain": {
+    "id": "chain:way_out:site:9000001",
+    "kind": "way_out",
+    "site_id": 9000001,
+    "title": "The way out of Practice Island",
+    "holds": "the port the line plugs into, the circuit, your address on it, the carrier and their network, your account, who to call, and what it costs",
+    "status": "open",
+    "position": 2,
+    "total": 3,
+    "label": "2 of 3: logical",
+    "stages": [
+      {
+        "stage": "physical",
+        "title": "what is plugged into what",
+        "status": "done",
+        "quest_ids": [],
+        "missing": []
+      },
+      {
+        "stage": "logical",
+        "title": "addresses, and how it is managed",
+        "status": "open",
+        "quest_ids": [
+          "q:circuit_handoff:circuit:1"
+        ],
+        "missing": [
+          "The address on EXF-20417"
+        ]
+      },
+      {
+        "stage": "administrative",
+        "title": "whose it is, who to call, what it costs",
+        "status": "locked",
+        "quest_ids": [
+          "q:circuit_record:circuit:1"
+        ],
+        "missing": [
+          "the provider's network",
+          "the account",
+          "who to call",
+          "the install date",
+          "the commit rate",
+          "the monthly charge",
+          "the one-off charge"
+        ]
+      }
+    ],
+    "summary": "Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre.",
+    "open_questions": []
+  },
+  "chain_xp": 0,
   "mode": "practice",
   "verified": true,
   "complete": true,
   "xp_awarded": 0,
   "potions_awarded": 0,
-  "message": "The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it. Practice Island is now 70 % complete.",
+  "message": "The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it. Practice Island is now 54 % complete. Next in the chain \"The way out of Practice Island\": 2 of 3: logical.",
   "can_now": "You can now see in NetBox where the line to the outside comes into Practice Island, and trace it.",
   "unlocked": [],
   "trace": null,

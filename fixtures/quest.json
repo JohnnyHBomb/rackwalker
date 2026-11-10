@@ -77,5 +77,13 @@
     "verified": 0
   },
   "lapsed": false,
-  "updated_at": "2026-11-07T09:00:00Z"
+  "updated_at": "2026-11-07T09:00:00Z",
+  "chain": {
+    "id": "chain:way_out:site:9000001",
+    "title": "The way out of Practice Island",
+    "stage": "physical",
+    "position": 1,
+    "total": 3,
+    "label": "1 of 3: physical"
+  }
 }

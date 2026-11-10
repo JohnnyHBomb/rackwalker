@@ -123,6 +123,14 @@ class CableSpec:
     length: float | None = None
 
 
+# The circuits' paper side (made up; the phone number is from a range reserved for fiction).
+CARRIER_ACCOUNT = "SYN-ACC-1001"
+CARRIER_CONTACT = ("Example Carrier NOC", "+44 1632 960001", "noc@example.net")
+CARRIER_PREFIX = "198.18.0.0/29"
+CURRENCY = "GBP"
+CONTACT_ROLES = (("Support / NOC", "support"), ("Account manager", "account-manager"), ("Billing", "billing"))
+
+
 @dataclass
 class CircuitSpec:
     cid: str
@@ -131,6 +139,11 @@ class CircuitSpec:
     a_site: str
     z_site: str
     status: str = "active"
+    # the logical and administrative side, all made up: the address on the A end's port, and what the bill says
+    a_address: str = ""
+    install_date: str = ""
+    mrc: float = 0.0
+    nrc: float = 0.0
 
 
 @dataclass
@@ -248,8 +261,10 @@ def build() -> Model:
 
     # Inter-site: two carrier circuits from North Depot, one dark-fibre cable North <-> East.
     m.circuits = [
-        CircuitSpec("EXC-1001", "Example Carrier", "Ethernet WAN", "north-depot", "west-works"),
-        CircuitSpec("EXC-1002", "Example Carrier", "Ethernet WAN", "north-depot", "east-exchange"),
+        CircuitSpec("EXC-1001", "Example Carrier", "Ethernet WAN", "north-depot", "west-works", a_address="198.18.0.1/30",
+                    install_date="2025-03-03", mrc=310.0, nrc=950.0),
+        CircuitSpec("EXC-1002", "Example Carrier", "Ethernet WAN", "north-depot", "east-exchange", a_address="198.18.0.5/30",
+                    install_date="2025-03-17", mrc=310.0, nrc=950.0),
     ]
     cable(("interface", "nd-rtr1", "xe-0/1/0"), ("circuit_termination", "EXC-1001", "A"), DAC, color="ffeb3b")
     cable(("interface", "ww-rtr1", "xe-0/1/0"), ("circuit_termination", "EXC-1001", "Z"), DAC, color="ffeb3b")

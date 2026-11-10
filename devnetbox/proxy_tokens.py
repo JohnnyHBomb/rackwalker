@@ -38,10 +38,15 @@ VIEW = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.devicety
         # and before any write the proxy reads the player's own permissions (perms.py):
         "users.group", "users.objectpermission",
         # and it rechecks the token a player signed in with (still there, still write-enabled, not expired):
-        "users.token"]
-CHANGE = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.cable", "dcim.interface"]  # changes.ENDPOINT
-# what a quest line may create: a cable, a circuit and its end at a site, an address, a prefix (changes.NET_OPS)
-ADD = ["dcim.rack", "dcim.cable", "circuits.circuit", "circuits.circuittermination", "ipam.ipaddress", "ipam.prefix"]
+        "users.token",
+        # a circuit's administrative record (estate.py): the provider's accounts and networks, contacts and their roles
+        "circuits.provideraccount", "circuits.providernetwork", "tenancy.contact", "tenancy.contactrole", "tenancy.contactassignment"]
+# changes.ENDPOINT, and what the management and circuit-record ops change: a circuit, a device type's default
+CHANGE = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.cable", "dcim.interface", "circuits.circuit", "dcim.devicetype"]
+# what a quest line may create: a cable, a circuit and its end at a site, an address, a prefix, and for a circuit's
+# record a provider account, a provider network, a contact and its assignment (changes.NET_OPS)
+ADD = ["dcim.rack", "dcim.cable", "circuits.circuit", "circuits.circuittermination", "ipam.ipaddress", "ipam.prefix",
+       "circuits.provideraccount", "circuits.providernetwork", "tenancy.contact", "tenancy.contactassignment"]
 PERMS = [("rackwalker-proxy view", VIEW, ["view"]), ("rackwalker-proxy write", CHANGE, ["change"]),
          ("rackwalker-proxy add rack", ADD, ["add"])]
 
@@ -53,7 +58,7 @@ def main() -> None:
     url, admin, secrets = os.environ["NETBOX_URL"].rstrip("/"), os.environ["NETBOX_TOKEN"], Path(os.environ["SECRETS"])
     var = f"PROXY_{which.upper()}_TOKEN"
     stored = dict(re.findall(r"^(PROXY_R[OW]_TOKEN)=(\S+)$", secrets.read_text(), re.M)).get(var)
-    if stored and works(url, stored) and sees(url, stored, "users/permissions") and granted(url, stored, "users.token"):
+    if stored and works(url, stored) and sees(url, stored, "users/permissions") and granted(url, stored, "tenancy.contactassignment"):
         print(stored)
         return
     s = requests.Session()

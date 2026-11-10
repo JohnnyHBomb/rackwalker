@@ -1,5 +1,5 @@
 {
-  "contract_version": "2.3.0",
+  "contract_version": "2.4.0",
   "site_id": 1,
   "total": 3,
   "offset": 0,
@@ -35,8 +35,8 @@
     }
   ],
   "completeness": {
-    "percent": 78,
-    "total": 141,
+    "percent": 80,
+    "total": 159,
     "open": 31
   },
   "source": "fixture",
