@@ -275,14 +275,18 @@ def test_a_device_nobody_logs_in_to_is_never_paid_for(tmp_path, monkeypatch):
     for d in data["dcim/devices"][1:]:
         d["primary_ip"] = None
     cl, box, app = start(tmp_path, monkeypatch, data)
-    reach = "q:device_unreachable:site:1"
-    post(cl, "answer", reach, step="ip_2", choice="none")
+    # this NetBox has no custom field for how a device is managed: the answer is remembered by the game, and pays nothing
+    q = post(cl, "answer", "q:device_unreachable:device:2", step="mode_2", choice="unmanaged")
+    assert q["status"] == "dismissed" and q["proposal"] is None
+    reach = "q:device_unreachable:device:3"
+    post(cl, "answer", reach, step="mode_3", choice="local")
     q = post(cl, "answer", reach, step="ip_3", choice="unknown")
+    assert q["status"] == "parked"
     data["dcim/devices"][2]["primary_ip"] = {"id": 3, "address": "192.0.2.3/24"}
     v = post(cl, "verify", reach)
-    assert (v["complete"], v["xp_awarded"]) == (True, 60)            # one of two checks confirmed; the waived one pays nothing
+    assert (v["complete"], v["xp_awarded"]) == (True, 40)            # the address NetBox now shows is paid; the waived device is not
     b = board(cl, fresh=True)
-    assert b["sites"][0]["completeness"]["open"] == 0 and b["rewards"]["xp"] == 60
+    assert b["sites"][0]["completeness"]["open"] == 0 and b["rewards"]["xp"] == 40
 
 
 # ---------------------------------------------------------------- a fix pays once
@@ -378,7 +382,7 @@ def test_a_real_write_is_read_back_from_netbox_names_the_player_and_then_pays(tm
     assert box.writes[0][2]["changelog_message"] == "rackwalker (walker): quest: What sw3 plugs into"
     assert len(box.lists("dcim/devices")) == reads + 1                  # NetBox was read again after the write
     assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"], v["unlocked"]) == ("real", True, True, 120, ["cable_tracer"])
-    assert v["message"] == "NetBox confirms it. Mill is now 100 % complete." and v["result"]["applied"] is True
+    assert v["message"].startswith("NetBox confirms it. Mill is now 100 % complete.") and v["result"]["applied"] is True
     assert v["trace"] == "NetBox's cable trace from sw3 eth1 finds no cable." and v["can_now"] == "You can now trace sw3 to what it plugs into."
     assert line_of(board(cl), SW3)["status"] == "done"
 
@@ -517,7 +521,13 @@ def test_what_each_change_needs_of_the_player():
         "move_rack": [("dcim.rack", "change")], "place_device": [("dcim.device", "change")], "unplace_device": [("dcim.device", "change")],
         "create_rack": [("dcim.rack", "add")], "connect_cable": [("dcim.cable", "add")], "create_circuit": [("circuits.circuit", "add")],
         "create_circuit_termination": [("circuits.circuittermination", "add")],
-        "assign_ip": [("ipam.ipaddress", "add"), ("dcim.device", "change")], "create_prefix": [("ipam.prefix", "add")]}
+        "assign_ip": [("ipam.ipaddress", "add"), ("dcim.device", "change")], "create_prefix": [("ipam.prefix", "add")],
+        "set_management": [("dcim.device", "change")], "record_circuit": [("circuits.circuit", "change")],
+        "create_provider_account": [("circuits.provideraccount", "add")], "create_provider_network": [("circuits.providernetwork", "add")],
+        "create_contact": [("tenancy.contact", "add")], "assign_contact": [("tenancy.contactassignment", "add")]}
+    # a model's default lives on the device type: recording it needs that permission too
+    op = {"op": "set_management", "target": {"kind": "device", "id": 1}, "fields": {"mode": "cloud", "model_default": "cloud"}}
+    assert perms.needs_of([op]) == [("dcim.device", "change"), ("dcim.devicetype", "change")]
     ops = [{"op": "update_fields", "target": {"kind": "site", "id": 1}}, {"op": "create_circuit", "target": {"kind": "circuit", "id": None}},
            {"op": "something_new", "target": {"kind": "device", "id": 1}}, {"op": "update_fields", "target": {"kind": "site", "id": 2}}]
     # an op the table does not know needs a permission nobody has: it is refused, never waved through

@@ -68,7 +68,8 @@ class Build:
     def circuit(self, cid="C-1", provider="Carrier") -> int:
         pid = next((p["id"] for p in self.e.providers.values() if p["name"] == provider), None) or self.provider(provider)
         i = self.id()
-        self.e.circuits[i] = {"id": i, "cid": cid, "provider_id": pid, "type": "Internet", "status": "active"}
+        self.e.circuits[i] = {"id": i, "cid": cid, "provider_id": pid, "type": "Internet", "status": "active", "account_id": None,
+                              "install_date": None, "commit_rate": None, "mrc": None, "nrc": None, "currency": None}
         return i
 
     def provider(self, name="Carrier") -> int:
@@ -79,7 +80,7 @@ class Build:
 
     def term(self, circuit: int, side: str, site: int | None) -> tuple[str, int]:
         i = self.id()
-        self.e.cterms[i] = {"id": i, "circuit_id": circuit, "side": side, "site_id": site, "cable_id": None}
+        self.e.cterms[i] = {"id": i, "circuit_id": circuit, "side": side, "site_id": site, "network_id": None, "cable_id": None}
         return "circuit_termination", i
 
     def ip(self, port: tuple[str, int] | None, address: str) -> int:
@@ -98,7 +99,9 @@ def linked_pair(b: Build, site: int, room=None, rack=None) -> tuple[int, int]:
     return r, s
 
 
-TEXT = {"circuit_id": "EXF-1", "other_name": "old-hub", "subnet_typed": "192.0.2.0/24"}
+TEXT = {"circuit_id": "EXF-1", "other_name": "old-hub", "subnet_typed": "192.0.2.0/24", "network_name": "Carrier Internet", "account_no": "SYN-44-1021"}
+# what a player who knows everything types into a form, by the end of the field's id
+FORM = {"country": "NL", "install_date": "2024-03-01", "currency": "GBP", "email": "noc@example.net", "phone": "+44 1632 960123", "name": "Carrier NOC"}
 
 
 def play(e: Estate, line: dict, prefer: dict[str, str] | None = None, tools=frozenset()) -> tuple[dict, dict]:
@@ -113,13 +116,13 @@ def play(e: Estate, line: dict, prefer: dict[str, str] | None = None, tools=froz
             want = (prefer or {}).get(step["id"])
             pick = next((c for c in step["choices"] if want and c["label"].startswith(want)), None) or \
                 next((c for c in step["choices"] if c["kind"] in ("candidate", "confirm", "skip")), None) or \
-                next(c for c in step["choices"] if c["id"] == "typed")
+                next(c for c in step["choices"] if c["id"] in ("typed", "new"))
             answers[step["id"]] = {"choice": pick["id"]}
         elif step["input"] == "text":
             answers[step["id"]] = {"text": TEXT.get(step["id"], "192.0.2.77/24")}
         else:
             answers[step["id"]] = {"values": {f["id"]: (f["options"][0]["id"] if f["type"] == "select" else 3 + i if f["type"] == "number"
-                                                        else "NL" if f["id"] == "country" else f"V{i}") for i, f in enumerate(step["fields"])}}
+                                                        else FORM.get(f["id"].rsplit(":", 1)[-1], f"V{i}")) for i, f in enumerate(step["fields"])}}
     raise AssertionError("the line never came to an end")
 
 
@@ -214,6 +217,37 @@ def provider_unused():
     ok = b.circuit("C-OK")
     b.cable(b.p(r, "eth3"), b.term(ok, "A", s))
     b.provider("Forgotten Telecom")
+    return b.e
+
+
+def circuit_handoff():
+    """A circuit that is plugged in, with no address on the port it plugs into."""
+    b = Build()
+    s = b.site()
+    r, _ = linked_pair(b, s)
+    c = b.circuit("C-OK")
+    b.cable(b.p(r, "eth3"), b.term(c, "A", s))
+    # its paper side is all on record, so only the address is missing
+    b.e.accounts[1] = {"id": 1, "provider_id": b.e.circuits[c]["provider_id"], "account": "SYN-1", "name": ""}
+    b.e.networks[1] = {"id": 1, "provider_id": b.e.circuits[c]["provider_id"], "name": "Carrier Internet"}
+    b.e.cterms[9001] = {"id": 9001, "circuit_id": c, "side": "Z", "site_id": None, "network_id": 1, "cable_id": None}
+    b.e.contacts[1] = {"id": 1, "name": "Carrier NOC", "phone": "", "email": ""}
+    b.e.contact_roles[1] = {"id": 1, "name": "Support", "slug": "support"}
+    b.e.assignments[1] = {"id": 1, "object_type": "circuits.circuit", "object_id": c, "contact_id": 1, "role_id": 1}
+    b.e.circuits[c].update(account_id=1, install_date="2024-03-01", commit_rate=100000, mrc="240.00", nrc="0.00", currency="GBP")
+    return b.e
+
+
+def circuit_record():
+    """A circuit that is plugged in and addressed, with nothing of its paper side on record."""
+    b = Build()
+    s = b.site()
+    r, _ = linked_pair(b, s)
+    c = b.circuit("C-OK")
+    b.cable(b.p(r, "eth3"), b.term(c, "A", s))
+    b.ip(b.p(r, "eth3"), "192.0.2.201/24")
+    for i, name in enumerate(("Support / NOC", "Account manager", "Billing"), 1):
+        b.e.contact_roles[i] = {"id": i, "name": name, "slug": name.split()[0].lower()}
     return b.e
 
 
@@ -331,7 +365,7 @@ def room_layout():
 
 
 CASES = [device_unconnected, switch_no_uplink, site_island, locations_not_linked, sites_not_linked, site_no_way_out, circuit_unterminated,
-         provider_unused, router_no_address, device_unreachable, device_no_power, address_no_prefix, interface_no_cable, rack_audit,
+         provider_unused, circuit_handoff, circuit_record, router_no_address, device_unreachable, device_no_power, address_no_prefix, interface_no_cable, rack_audit,
          shelf_audit, platform_survey, site_record, rack_devices_unpositioned, room_layout]
 
 
@@ -483,12 +517,13 @@ def test_the_unconnected_example_gives_the_expected_findings_in_order():
 
 def test_the_example_plays_through_until_the_whole_site_can_be_traced():
     e = practice.example_estate(complete=True)
-    for expected in ("site_no_way_out", "locations_not_linked", "site_island"):
+    # the cables first; then the circuit that is now plugged in is asked about: its address, then its paper side
+    for expected in ("site_no_way_out", "locations_not_linked", "site_island", "circuit_handoff", "circuit_record"):
         a = findings.analyse(e)
         line = quests.lines(e, a)[0]
         assert line["kind"] == expected
         state, _ = play(e, line, {"device": "sw-quay-1", "peer": "sw-quay-2" if expected == "locations_not_linked" else "sw-loft-1"})
-        assert simulate(e, state["proposal"]["ops"])[-1]["error"] is None
+        assert [r["error"] for r in simulate(e, state["proposal"]["ops"])] == [None] * len(state["proposal"]["ops"])
     a = findings.analyse(e)
     assert a.findings == [] and a.completeness(9000001)["percent"] == 100
     comp = e.components()
@@ -665,22 +700,30 @@ def test_one_answer_says_what_every_device_of_a_model_runs_unless_they_differ():
     assert other["status"] == "parked" and other["checklist"][0] == "Add the platform to NetBox (Devices > Platforms > Add)."
 
 
-def test_a_device_nobody_logs_in_to_is_said_once_and_never_asked_or_paid():
+def test_a_device_nobody_logs_in_to_is_said_once_and_never_asked_for_an_address():
     e = device_unreachable()
     line = one(e, "device_unreachable")
-    ids = line["finding"]["data"]["device_ids"]
+    did = line["finding"]["data"]["device_id"]
     first = quests.evaluate(e, line, {})["step"]
-    assert first["choices"][-2] == {"id": "none", "label": "It has none: nobody logs in to it", "kind": "not_applicable"}
-    answers = {f"ip_{ids[0]}": {"choice": "none"}}
+    # the first question is how it is managed, never "what is its address"
+    assert first["id"] == f"mode_{did}" and first["prompt"] == "How is sw1 (M) managed?"
+    assert [c["label"] for c in first["choices"]] == ["Locally: it has an address to log in to", "By a cloud or controller service",
+                                                      "It is not managed at all (unmanaged, passive)", "I don't know yet"]
+    answers = {f"mode_{did}": {"choice": "unmanaged"}}
     state = quests.evaluate(e, line, answers)
-    assert state["waived"] == [f"device:{ids[0]}:primary_ip"] == quests.waived(line, answers)
-    if len(ids) == 1:
-        assert state["status"] == "dismissed" and state["proposal"] is None
-    else:
-        assert state["status"] == "asking" and state["step"]["id"] == f"ip_{ids[1]}"
-    # a router's address is not something to wave away
+    # the answer is written to the device (nothing about an address), and counts as answered from the moment it is given
+    assert state["status"] == "ready" and state["proposal"]["ops"] == [
+        {"op": "set_management", "target": {"kind": "device", "id": did}, "fields": {"mode": "unmanaged"}}]
+    assert state["changes"] == ["sw1: not managed."]
+    assert state["waived"] == [f"device:{did}:primary_ip"] == quests.waived(line, answers) and settle(e, line, state) == []
+    # a NetBox without the custom field cannot hold it: the game remembers the answer and writes nothing
+    e.no_fields.append("rw_mgmt_mode")
+    held = quests.evaluate(e, line, answers)
+    assert held["status"] == "dismissed" and held["proposal"] is None and "rw_mgmt_mode" in held["note"]
+    # a router's address is not something to wave away: it is asked for directly
     router = one(router_no_address(), "router_no_address")
-    assert "none" not in [c["id"] for c in quests.evaluate(router_no_address(), router, {})["step"]["choices"]]
+    step = quests.evaluate(router_no_address(), router, {})["step"]
+    assert step["id"].startswith("ip_") and "none" not in [c["id"] for c in step["choices"]]
     assert quests.waived(router, {"ip_1": {"choice": "none"}}) == []
 
 

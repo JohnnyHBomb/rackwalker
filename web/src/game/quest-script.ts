@@ -118,7 +118,9 @@ export function offerScript(board: QuestBoard, siteName: string): Script {
     { label: 'Show me the quest log', set: { [PICK]: 'log' }, next: null },
     { label: 'Not now', next: null },
   ];
-  const text = lead.status === 'parked' ? `Still looking into "${lead.title}"? Tell me when you know more.` : lead.purpose;
+  // a later stage of a chain says where it stands in it; a first stage opens as it always did
+  const stage = lead.chain && lead.chain.position > 1 ? `Next in "${lead.chain.title}": ${lead.chain.label}. ` : '';
+  const text = lead.status === 'parked' ? `Still looking into "${lead.title}"? Tell me when you know more.` : `${stage}${lead.purpose}`;
   return loadScript({ id: 'quest-offer', start: 'o0', nodes: say('o', text, (t) => ({ speaker: 'giver', text: t, choices })).nodes });
 }
 

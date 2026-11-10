@@ -343,8 +343,10 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
             if row:
                 st.add(Rec("provider", row["id"], None, {"name": row["name"]}))
         if op.op == "create_provider_account":
-            for row in await client.list_raw("circuits/provider-accounts", {"provider_id": f["provider_id"], "account": f["account"]}):
-                st.add(Rec("provider_account", row["id"], None, {"provider_id": f["provider_id"], "account": row["account"]}))
+            # asked for by provider only: an account number never goes into a URL (URLs end up in logs)
+            for row in await client.list_raw("circuits/provider-accounts", {"provider_id": f["provider_id"]}):
+                if row.get("account") == f["account"]:
+                    st.add(Rec("provider_account", row["id"], None, {"provider_id": f["provider_id"], "account": row["account"]}))
         if op.op == "create_provider_network":
             for row in await client.list_raw("circuits/provider-networks", {"provider_id": f["provider_id"], "name": f["name"]}):
                 st.add(Rec("provider_network", row["id"], None, {"provider_id": f["provider_id"], "name": row["name"]}))
@@ -383,7 +385,10 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
                     st.add(Rec("contact", contact["id"], None, {"name": contact["name"]}))
                 for row in await client.list_raw("tenancy/contact-assignments", {"object_type": f"circuits.{kind}", "object_id": tid,
                                                                                   "contact_id": f["contact_id"], "role_id": f["role_id"]}):
-                    st.add(Rec("contact_assignment", row["id"], None, {"object": (kind, tid), "contact_id": f["contact_id"], "role_id": f["role_id"]}))
+                    # as the row itself says (never taken from the request: a filter NetBox ignored must not look like a match)
+                    if row.get("object_type") == f"circuits.{kind}" and row.get("object_id") == tid:
+                        st.add(Rec("contact_assignment", row["id"], None, {"object": (kind, tid), "contact_id": (row.get("contact") or {}).get("id"),
+                                                                           "role_id": (row.get("role") or {}).get("id")}))
         if op.op == "create_circuit_termination":
             if isinstance(f["circuit_id"], int):
                 row = await _one(client, "circuits/circuits", f["circuit_id"])

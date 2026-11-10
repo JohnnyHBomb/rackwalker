@@ -116,9 +116,14 @@ export type ChangeOp =
   | CreateProviderNetworkOp
   | CreateContactOp
   | AssignContactOp;
-export type CreateCircuitTerminationFields = {
-  [k: string]: unknown | undefined;
-} & {
+export type CreateCircuitTerminationFields = (
+  | {
+      site_id: Id;
+    }
+  | {
+      provider_network_id: IdOrRef;
+    }
+) & {
   circuit_id: IdOrRef;
   term_side: "A" | "Z";
   site_id?: Id;

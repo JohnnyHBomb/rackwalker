@@ -407,27 +407,14 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         for sid in sorted(e.sites):
             open_lines = stand.open_lines(ls, sid)
             waiting = [line for line in open_lines if rows.get(line["id"], {}).get("status") in ("parked", "practised")]
-            # Chains: the first few with something to do are in play, and only the stage each has reached is asked
-            # about. A chain that waits on the player alone (a field task, a fact not known yet) takes no place.
+            # Chains: only the stage each chain has reached is asked about; a later stage waits for the earlier one.
             open_ids = {line["id"] for line in open_lines}
             playable: set[str] = set()
-            slots = 0
-            for ch in chains_at.get(sid, []):
+            site_chains = chains_at.get(sid, [])
+            for ch in site_chains:
                 v = views[ch["id"]]
-                if v["status"] == "complete":
-                    if site_id in (None, sid) and any(cid in mine for st_ in ch["stages"] for cid in st_["checks"]):
-                        shown_chains.append(ch["id"])
-                    continue
-                current = set(v["stages"][v["position"] - 1]["quest_ids"]) & open_ids
-                live = [q for q in current if rows.get(q, {}).get("status") not in ("parked", "practised")]
-                if live and v["status"] == "open":
-                    if slots >= chains.MAX_CHAINS:
-                        chains_queued += 1 if site_id in (None, sid) else 0
-                        continue
-                    slots += 1
-                playable |= current
-                if site_id in (None, sid):
-                    shown_chains.append(ch["id"])
+                if v["status"] != "complete":
+                    playable |= set(v["stages"][v["position"] - 1]["quest_ids"]) & open_ids
             fresh = [line for line in open_lines if line not in waiting
                      and (line["id"] not in in_chain or line["id"] in playable or line["id"] in rows)]
             comp = a.completeness(sid, dismissed)
@@ -442,6 +429,18 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     (waiting if parked_spot else fresh).append(spot)
             real_open = len(open_lines)
             shown = offer(fresh) + waiting[:MAX_PARKED]
+            # The chains in play are those of the few lines on offer or waiting (so at most a few per site), those that
+            # wait on a fact the player does not know yet, and those this player completed; the rest are counted.
+            in_play = {in_chain[line["id"]][0]["id"] for line in shown if line["id"] in in_chain}
+            for ch in site_chains if site_id in (None, sid) else []:
+                v = views[ch["id"]]
+                if v["status"] == "complete":
+                    if any(cid in mine for st_ in ch["stages"] for cid in st_["checks"]):
+                        shown_chains.append(ch["id"])
+                elif ch["id"] in in_play or v["status"] == "open_questions":
+                    shown_chains.append(ch["id"])
+                else:
+                    chains_queued += 1
             if site_id in (None, sid):
                 queued += max(0, len(open_lines) - len(shown))
                 for line in shown:
@@ -755,10 +754,6 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
     def verdict(uid: int, scope: str, line: dict[str, Any], s: dict[str, Any], mode: str, verified: bool, message: str,
                 result: dict[str, Any] | None, trace: str | None, e: Estate, gate: Gate | None = None) -> dict[str, Any]:
         st = store()
-        if s["complete"] and verified and line["site_id"] in e.sites:
-            # the small step, and where it leaves the site
-            comp = findings.analyse(e).completeness(line["site_id"], Standing(findings.analyse(e), st.quests(uid, scope)).settled)
-            message += f" {e.sites[line['site_id']]['name']} is now {comp['percent']} % complete."
         rows = st.quests(uid, "netbox")
         prows = st.quests(uid, "practice")
         state = None
@@ -774,12 +769,19 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             status = {"asking": "active"}.get(state["status"], state["status"])   # as the quest log would show it
         # the line's chain, as the estate stands now: where the player is, and the record so far read back from NetBox
         ch = chain_view(uid, scope, e, shown, s["saved"]["checks"])
-        if ch is not None and (verified or mode == "practice") and (s["newly"] or s["complete"]):
+        told = (verified or mode == "practice") and (s["newly"] or s["complete"])
+        going_on = ch is not None and ch["total"] > 1 and ch["status"] != "complete"
+        if s["complete"] and verified and line["site_id"] in e.sites and not going_on:
+            # the small step, and where it leaves the site. (In the middle of a chain the next stage is said instead:
+            # a circuit that has just been plugged in brings its own questions, and the percentage would only dip.)
+            comp = findings.analyse(e).completeness(line["site_id"], Standing(findings.analyse(e), st.quests(uid, scope)).settled)
+            message += f" {e.sites[line['site_id']]['name']} is now {comp['percent']} % complete."
+        if ch is not None and told:
             if ch["status"] == "complete" and ch["total"] > 1:
                 message += f" That completes the chain \"{ch['title']}\"." + (f" {ch['summary']}" if ch["summary"] else "")
             elif ch["status"] == "open_questions":
                 message += f" The chain \"{ch['title']}\" stays open at {ch['label']}."
-            elif ch["total"] > 1:
+            elif going_on and s["complete"]:
                 message += f" Next in the chain \"{ch['title']}\": {ch['label']}."
         return {"quest": quest_body(scope, shown, s["saved"], state, status, gate=gate, chain=line_chain(uid, scope, e, shown)), "chain": ch,
                 "chain_xp": s["chain_xp"], "mode": mode, "verified": verified,

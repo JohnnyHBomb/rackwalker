@@ -102,7 +102,7 @@
   "complete": true,
   "xp_awarded": 0,
   "potions_awarded": 0,
-  "message": "The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it. Practice Island is now 54 % complete. Next in the chain \"The way out of Practice Island\": 2 of 3: logical.",
+  "message": "The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it. Next in the chain \"The way out of Practice Island\": 2 of 3: logical.",
   "can_now": "You can now see in NetBox where the line to the outside comes into Practice Island, and trace it.",
   "unlocked": [],
   "trace": null,

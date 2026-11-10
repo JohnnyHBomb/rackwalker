@@ -145,7 +145,7 @@ def test_a_stack_member_is_not_cut_off_unlinked_or_unreachable_when_its_stack_is
     b, s, sw, member = stack()
     # as two separate switches, the second one is an island with no uplink and no management address
     assert ids(b.e, "site_island") == [f"site_island:device:{member}"] and ids(b.e, "switch_no_uplink") == [f"switch_no_uplink:device:{member}"]
-    assert ids(b.e, "device_unreachable") == [f"device_unreachable:site:{s}"]
+    assert ids(b.e, "device_unreachable") == [f"device_unreachable:device:{member}"]
     for d in (sw, member):
         b.e.devices[d]["vc_id"] = 5
     b.e.touch()
@@ -358,26 +358,26 @@ def test_a_management_address_can_go_on_any_interface_and_vlan_interfaces_come_f
     b.port(big, "interface", "Vlan10", type="virtual")
     b.port(big, "interface", "Loopback0", type="virtual")
     line = one(b.e, "device_unreachable")
-    answers = {f"ip_{big}": {"choice": "typed"}, f"addr_{big}": {"text": "192.0.2.20/24"}}
+    answers = {f"mode_{big}": {"choice": "local"}, f"ip_{big}": {"choice": "typed"}, f"addr_{big}": {"text": "192.0.2.20/24"}}
     step = quests.evaluate(b.e, line, answers)["step"]
     assert labels(step)[:3] == ["Loopback0", "Vlan10", "eth1"] and "Another interface that is in NetBox" in labels(step)
     answers.update({f"port_{big}": {"choice": "named"}, f"port_{big}_name": {"text": "eth23"}})
     state = quests.evaluate(b.e, line, answers)
-    assert state["status"] == "ready" and state["proposal"]["ops"][0]["fields"]["interface_id"] == b.p(big, "eth23")[1]
+    assert state["status"] == "ready" and [o["op"] for o in state["proposal"]["ops"]] == ["set_management", "assign_ip"]
+    assert state["proposal"]["ops"][1]["fields"]["interface_id"] == b.p(big, "eth23")[1]
 
 
-def test_the_last_answer_is_the_one_taken_back_also_after_it_has_none():
+def test_the_last_answer_is_the_one_taken_back():
     b = Build()
     s, room, rack = site_with_room(b)
     r, sw = linked_pair(b, s, room, rack)
-    sw2, sw3 = (b.dev(s, n, "switch", room, rack, primary_ip=None) for n in ("sw2", "sw3"))
-    for d, port in ((sw2, "eth2"), (sw3, "eth3")):
-        b.cable(b.p(d, "eth1"), b.p(sw, port))
-        b.ip(b.p(d, "eth2"), f"192.0.2.{d}/24")
+    sw2 = b.dev(s, "sw2", "switch", room, rack, primary_ip=None)
+    b.cable(b.p(sw2, "eth1"), b.p(sw, "eth2"))
+    b.ip(b.p(sw2, "eth2"), "192.0.2.50/24")
     line = one(b.e, "device_unreachable")
     have = b.e.device_ips(sw2)[0]["id"]
-    state = quests.evaluate(b.e, line, {f"ip_{sw2}": {"choice": f"ip:{have}"}, f"ip_{sw3}": {"choice": "none"}})
-    assert state["answered"] == [f"ip_{sw2}", f"ip_{sw3}"]      # in the order they were asked: "back" takes the last one
+    state = quests.evaluate(b.e, line, {f"mode_{sw2}": {"choice": "local"}, f"ip_{sw2}": {"choice": f"ip:{have}"}})
+    assert state["answered"] == [f"mode_{sw2}", f"ip_{sw2}"]      # in the order they were asked: "back" takes the last one
 
 
 # ---------------------------------------------------------------- finding ids
@@ -597,7 +597,9 @@ def test_every_kind_of_line_but_a_routers_address_can_be_answered_as_how_it_is_o
             answers[step["id"]] = {"choice": pick["id"]}
         if not seen:
             without.append(case.__name__)
-    assert without == ["router_no_address"]     # a router routes on some address: that one is found out, not waved away
+    # a router routes on some address: that one is found out, not waved away. How a device is managed has its own
+    # answer for "nobody logs in to it" ("it is not managed at all"), which is recorded rather than waved away.
+    assert without == ["router_no_address", "device_unreachable"]
 
 
 def test_a_form_can_be_closed_as_nothing_to_record_and_that_is_not_a_blank_answer():

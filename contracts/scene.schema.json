@@ -2510,12 +2510,22 @@
             {
               "required": [
                 "site_id"
-              ]
+              ],
+              "properties": {
+                "site_id": {
+                  "$ref": "#/$defs/Id"
+                }
+              }
             },
             {
               "required": [
                 "provider_network_id"
-              ]
+              ],
+              "properties": {
+                "provider_network_id": {
+                  "$ref": "#/$defs/IdOrRef"
+                }
+              }
             }
           ]
         },

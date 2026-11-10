@@ -76,7 +76,7 @@ def test_a_version_1_file_is_brought_up_to_date_and_keeps_everything(tmp_path):
     path = tmp_path / "game.sqlite3"
     old_file(path, V1, 1).close()
     st = GameStore(path)
-    assert st.version == SCHEMA_VERSION == 3
+    assert st.version == SCHEMA_VERSION == 4
     assert st.saves(7) == [{"slot": "auto", "rev": 5, "updated_at": "2026-11-08T10:00:00Z", "data": SAVE}]
     assert st.flags(7) == {"ilatea.intro.seen": True}
     kept = st.settings(7)
@@ -99,7 +99,7 @@ def test_a_version_2_file_keeps_its_quest_log_and_what_was_confirmed_is_not_paid
     db.execute("INSERT INTO reward(user_id, quest_id, kind, amount, item, signature, at) VALUES (7, 'q:rack_audit:rack:1', 'xp', 25, NULL, 'rack_audit:1', 'x')")
     db.close()
     st = GameStore(path)
-    assert st.version == 3 and st.rewards(7)["xp"] == 25
+    assert st.version == 4 and st.rewards(7)["xp"] == 25
     assert st.quests(7, "netbox")["q:rack_audit:rack:1"]["verified"] == ["device:1:serial"]
     # what NetBox had confirmed before is on the ledger: confirming it again pays nothing; the practice island never paid
     assert st.mark_paid(7, ["device:1:serial", "device:2:serial", "site:9000001:gps"]) == ["device:2:serial", "site:9000001:gps"]

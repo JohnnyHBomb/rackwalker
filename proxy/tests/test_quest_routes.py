@@ -91,10 +91,10 @@ def test_the_practice_board_offers_a_few_lines_the_most_valuable_first(cl):
     assert b["write_blocked"] == "The practice island is made up: nothing you do here reaches NetBox."
     assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "locations_not_linked", "device_unconnected"]
     assert all(q["status"] == "offered" and q["step"] and 2 <= q["minutes"] <= 5 for q in b["quests"])
-    assert b["queued"] == 7 and b["next_quest_id"] == b["quests"][0]["id"]
+    assert b["queued"] == 8 and b["next_quest_id"] == b["quests"][0]["id"]
     assert all(q["write_blocked"] is None for q in b["quests"])   # nothing is proposed yet
-    assert b["sites"] == [{"site_id": ISLAND, "name": "Practice Island", "completeness": {"percent": 60, "total": 30, "open": 12},
-                           "open_quests": 10, "boss_ready": False, "boss_acknowledged": False, "giver": {"name": "Tansy"}}]
+    assert b["sites"] == [{"site_id": ISLAND, "name": "Practice Island", "completeness": {"percent": 56, "total": 30, "open": 13},
+                           "open_quests": 11, "boss_ready": False, "boss_acknowledged": False, "giver": {"name": "Tansy"}}]
     # on the island both tools are on loan, so a player meets them before earning them
     assert b["rewards"] == {"xp": 0, "level": 1, "next_level_xp": 250, "potions": 0, "tools": ["label_maker", "cable_tracer"],
                             "completed": 0, "practised": 0, "lapsed": 0}
@@ -112,14 +112,20 @@ def test_a_practice_line_from_offer_to_preview_to_verified_and_no_xp(cl):
     pre = cl.post("/api/game/quests/preview", json={"scope": "practice", "quest_id": qid}).json()
     schema_validator("ChangeResult").validate(pre)
     assert (pre["mode"], pre["applied"], [o["status"] for o in pre["ops"]]) == ("preview", False, ["ok", "ok", "ok"])
-    assert board(cl)["sites"][0]["completeness"]["open"] == 12   # a preview changes nothing
+    assert board(cl)["sites"][0]["completeness"]["open"] == 13   # a preview changes nothing
     v = apply(cl, qid)
     assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"], v["quest"]["status"]) == ("practice", True, True, 0, "done")
     assert v["can_now"] == "You can now see in NetBox where the line to the outside comes into Practice Island, and trace it." and v["result"]["applied"]
     after = board(cl)
     assert after["rewards"]["xp"] == 0 and after["rewards"]["practised"] == 1 and after["rewards"]["completed"] == 0
     assert qid not in [q["id"] for q in after["quests"] if q["status"] != "done"]
-    assert after["sites"][0]["completeness"]["open"] == 10   # the site has a way out, and sw-quay-1 a cable
+    # the site has a way out and sw-quay-1 a cable (two checks fewer); the circuit that is now plugged in brings its own:
+    # the address on it, and the seven facts of its record
+    assert after["sites"][0]["completeness"]["open"] == 13 - 2 + 1 + 7
+    assert v["message"] == ("The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it. "
+                            "Next in the chain \"The way out of Practice Island\": 2 of 3: logical.")
+    assert v["chain"]["label"] == "2 of 3: logical" and [s["status"] for s in v["chain"]["stages"]] == ["done", "open", "locked"]
+    assert v["chain"]["summary"] == "Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre."
     # applying it twice is refused: the line is no longer open
     assert cl.post("/api/game/quests/apply", json={"scope": "practice", "quest_id": qid}).status_code == 404
 
@@ -158,12 +164,12 @@ def test_the_whole_island_can_be_put_in_order_then_its_confusion_is_ready(cl):
     # practice pays nothing however much of it is done
     assert b["rewards"]["xp"] == 0 and b["rewards"]["practised"] >= 7
     reset = cl.post("/api/game/practice/reset").json()
-    assert reset["sites"][0]["completeness"]["open"] == 12 and not reset["sites"][0]["boss_ready"] and reset["rewards"]["practised"] == 0
+    assert reset["sites"][0]["completeness"]["open"] == 13 and not reset["sites"][0]["boss_ready"] and reset["rewards"]["practised"] == 0
 
 
 def test_a_boss_that_is_not_ready_cannot_be_acknowledged(cl):
     r = cl.post("/api/game/boss/ack", json={"scope": "practice", "site_id": ISLAND})
-    assert r.status_code == 409 and r.json()["error"]["details"]["completeness"]["open"] == 12
+    assert r.status_code == 409 and r.json()["error"]["details"]["completeness"]["open"] == 13
 
 
 def test_on_real_data_a_dry_run_completion_is_marked_practice_and_pays_nothing(cl):
@@ -209,7 +215,7 @@ def test_a_version_1_store_gains_the_quest_tables_and_keeps_its_saves(tmp_path):
     db.execute("INSERT INTO flag VALUES (7, 'ilatea.intro.seen', 'true')")
     db.close()
     st = GameStore(path)
-    assert st.version == SCHEMA_VERSION == 3
+    assert st.version == SCHEMA_VERSION == 4
     assert st.saves(7) == [{"slot": "auto", "rev": 5, "updated_at": "2026-11-08T10:00:00Z", "data": save}]
     assert st.flags(7) == {"ilatea.intro.seen": True}
     assert st.quests(7, "netbox") == {} and st.rewards(7) == {"xp": 0, "potions": 0, "tools": [], "repeats": {}}
@@ -389,25 +395,33 @@ async def _blocked_proxy(refuse, reason, health):
         assert (e.value.code, e.value.details) == ("netbox_error", {"reason": reason})
 
 
+TYPED = {"addr": "203.0.113.2/30", "install_date": "2024-03-01"}
+
+
+def play_line(cl, q: dict) -> dict:
+    """Answers a line as a player who knows everything, until it has a change ready (or stops asking)."""
+    for _ in range(14):
+        step = q["step"]
+        if q["status"] not in ("offered", "active"):
+            break
+        if step["input"] == "choice":
+            pick = next((x for x in step["choices"] if x["kind"] in ("candidate", "confirm", "skip")), None) or \
+                next(x for x in step["choices"] if x["id"] in ("new", "typed"))
+            q = answer(cl, q["id"], step["id"], choice=pick["id"])
+        elif step["input"] == "text":
+            q = answer(cl, q["id"], step["id"], text=TYPED.get(step["id"], "EXF-1"))
+        else:
+            q = answer(cl, q["id"], step["id"], values={f["id"]: (f["options"][0]["id"] if f["type"] == "select" else 5 if f["type"] == "number"
+                                                                  else TYPED.get(f["id"], f"PI-{i:04d}")) for i, f in enumerate(step["fields"], 7)})
+    return q
+
+
 def put_island_in_order(cl) -> None:
-    for _ in range(12):
+    for _ in range(20):
         b = board(cl)
         if b["all_in_order"]:
             return
-        q = next(x for x in b["quests"] if x["status"] in ("offered", "active"))
-        for _ in range(10):
-            step = q["step"]
-            if q["status"] not in ("offered", "active"):
-                break
-            if step["input"] == "choice":
-                pick = next((x for x in step["choices"] if x["kind"] in ("candidate", "confirm", "skip")), None) or \
-                    next(x for x in step["choices"] if x["id"] in ("new", "typed"))
-                q = answer(cl, q["id"], step["id"], choice=pick["id"])
-            elif step["input"] == "text":
-                q = answer(cl, q["id"], step["id"], text="EXF-1")
-            else:
-                q = answer(cl, q["id"], step["id"], values={f["id"]: (f["options"][0]["id"] if f["type"] == "select" else 5 if f["type"] == "number"
-                                                                      else f"PI-{i:04d}") for i, f in enumerate(step["fields"], 7)})
+        q = play_line(cl, next(x for x in b["quests"] if x["status"] in ("offered", "active")))
         apply(cl, q["id"])
 
 
@@ -489,23 +503,11 @@ def test_part_of_an_errand_confirmed_on_the_island_goes_on_with_the_rest_only(cl
 
 
 def put_island_in_order_until(cl, kind: str) -> None:
-    for _ in range(12):
+    for _ in range(20):
         b = board(cl)
         if any(q["kind"] == kind for q in b["quests"]):
             return
-        q = next(x for x in b["quests"] if x["status"] in ("offered", "active"))
-        for _ in range(10):
-            step = q["step"]
-            if q["status"] not in ("offered", "active"):
-                break
-            if step["input"] == "choice":
-                pick = next((x for x in step["choices"] if x["kind"] in ("candidate", "confirm", "skip")), None) or \
-                    next(x for x in step["choices"] if x["id"] in ("new", "typed"))
-                q = answer(cl, q["id"], step["id"], choice=pick["id"])
-            elif step["input"] == "text":
-                q = answer(cl, q["id"], step["id"], text="EXF-1")
-            else:
-                q = answer(cl, q["id"], step["id"], values={f["id"]: f"PI-{i:04d}" for i, f in enumerate(step["fields"], 7)})
+        q = play_line(cl, next(x for x in b["quests"] if x["status"] in ("offered", "active")))
         apply(cl, q["id"])
     raise AssertionError(f"no {kind} line was offered")
 
@@ -584,14 +586,14 @@ def test_a_device_nobody_logs_in_to_counts_as_answered_for_that_player():
     e = device_unreachable()
     a = findings.analyse(e)
     line = next(x for x in quests.lines(e, a) if x["kind"] == "device_unreachable")
-    ids = line["finding"]["data"]["device_ids"]
+    did = line["finding"]["data"]["device_id"]
     site = line["site_id"]
     before = a.completeness(site)
-    rows = {line["id"]: {"status": "active", "checks": quests.check_ids(line), "verified": [], "snapshot": {"kind": line["kind"]},
-                         "answers": {f"ip_{ids[0]}": {"choice": "none"}}}}
+    rows = {line["id"]: {"status": "active", "checks": quests.check_ids(line), "verified": [], "snapshot": {"kind": line["kind"], "id": line["id"]},
+                         "answers": {f"mode_{did}": {"choice": "cloud"}}}}
     st = Standing(a, rows)
-    assert st.resolved == {f"device:{ids[0]}:primary_ip"}
-    assert a.completeness(site, st.resolved)["open"] == before["open"] - 1
+    assert st.resolved == {f"device:{did}:primary_ip"}
+    assert a.completeness(site, st.settled)["open"] == before["open"] - 1
 
 
 def test_every_finding_kind_is_in_the_admin_docs_table():

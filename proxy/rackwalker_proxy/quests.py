@@ -661,7 +661,7 @@ def flow_handoff(ctx: Ctx) -> list[dict[str, Any]]:
     checklist = [f"Read the hand-over sheet or the order mail of {prov}: it names the address on your side of circuit {circ['cid']}.",
                  f"Or log in to {nm(dev)} and read the address on {port['name']}."]
     ctx.choice("has", f"Circuit {circ['cid']} plugs into {where}. Does that port carry an address of yours on {prov}'s line?",
-               [choice("typed", "Yes: I will type it", "other"), na("No address there (bridged, or their router holds it)")], checklist)
+               [choice("typed", "Yes: I will type it", "other"), na("No address there: bridged, or theirs to hold")], checklist)
     addr = ctx.text("addr", f"What is the address on {where}, with its mask?", address_check, "for example 203.0.113.2/30", checklist)
     ops = [{"op": "assign_ip", "target": {"kind": "device", "id": dev["id"]},
             "fields": {"address": addr, "interface_id": port["id"], "primary": False}}]
@@ -897,7 +897,7 @@ def sample(ctx: Ctx, sid: str, prompt: str, value: str, na: str | None = None) -
     None for "I don't know yet", or "none"."""
     extra = [choice("none", na, "not_applicable")] if na else []
     picked = ctx.choice(sid, f"{prompt} (Practice: the island's made-up bill is the only paper here.)",
-                        [choice("sample", f"As on the bill: {value}", "confirm")] + extra, ["Look at the island's made-up bill."], soft=True, part=True)
+                        [choice("sample", f"The bill says {value}", "confirm")] + extra, ["Look at the island's made-up bill."], soft=True, part=True)
     return None if picked == "unknown" else "none" if picked == "none" else value
 
 
@@ -1584,8 +1584,9 @@ def prune(answers: dict[str, Any], confirmed: list[str]) -> dict[str, Any]:
             continue
         if isinstance(ans, dict) and isinstance(ans.get("values"), dict):
             values = {k: v for k, v in ans["values"].items() if k not in form_keys and not (sid == "record" and k in site_fields)}
-            if not values:
-                continue
+            if not values and (ans["values"] or sid not in RECORD_STEPS):
+                continue   # every value of it is confirmed. (In a circuit's record a form left blank is the answer "I
+                #            don't know yet" to that part, and is kept: the line goes on without asking it again.)
             ans = {**ans, "values": values}
         out[sid] = ans
     return out

@@ -1,13 +1,13 @@
 // Quests in the browser: the conversation with a site's quest giver, the quest log, the marker to the next small step,
 // the preview-and-apply panel, and the reward moment. Everything a quest says, asks and proposes comes from the proxy
-// (contract 2.3.0: QuestBoard, Quest, QuestStep, QuestVerdict), which builds it from the player's own NetBox; this
+// (contract 2.4.0: QuestBoard, Quest, QuestStep, QuestVerdict, Chain), which builds it from the player's own NetBox; this
 // module only shows it and sends the player's answers back. A line is never completed here: the proxy reads NetBox
 // again after the write and says what it found.
 //
 // Choice questions run in the shared dialogue bubble (scripts made by quest-script.ts); a typed value or a form (a
 // rack audit) opens a panel. "I don't know yet" is always there: the line is parked as a field task with a short
 // checklist, costs nothing, and asks the same question again later.
-import type { ChangeResult, Quest, QuestBoard, QuestScope, QuestStep, QuestTarget, QuestVerdict, Rewards, ToolId } from '../contracts/scene.gen';
+import type { Chain, ChangeResult, Quest, QuestBoard, QuestScope, QuestStep, QuestTarget, QuestVerdict, Rewards, ToolId } from '../contracts/scene.gen';
 import { SceneSourceError } from '../engine/source';
 import type { GameApi } from './api';
 import type { Effects, Script } from './dialogue';
@@ -60,6 +60,14 @@ body[data-scene=iso] #quest-giver{left:auto;right:112px}
 .quest-panel table.diff td{font-size:13px;vertical-align:top}
 .quest-panel .said{font-size:13px}
 .quest-panel .mode{border:2px dashed #1d1a14;padding:6px 8px;margin:8px 0;background:#fffaf0}
+.quest-panel .chain{border:2px solid #1d1a14;background:#fffaf0;padding:6px 8px;margin:6px 0}
+.quest-panel .chain .t{font-weight:bold}
+.quest-panel .chain .s{font-size:13px}
+.quest-panel .chain ol{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:6px 0;padding:0}
+.quest-panel .chain li{border:2px solid #1d1a14;padding:1px 6px;font-size:12px;background:#f6efd9}
+.quest-panel .chain li[data-status=open]{background:#fff27a;font-weight:bold}
+.quest-panel .chain li[data-status=locked]{border-style:dashed;color:#4a4436}
+.quest-reward .chain{font-size:13px;border-top:2px solid #1d1a14;margin-top:8px;padding-top:6px}
 .quest-reward{position:fixed;left:50%;top:14%;transform:translateX(-50%);z-index:40;width:min(560px,calc(100vw - 24px));box-sizing:border-box;background:#f6efd9;color:#1d1a14;
   border:4px solid #1d1a14;box-shadow:0 0 0 2px #f6efd9,0 0 0 4px #1d1a14;padding:14px 16px;font:15px/1.45 ui-monospace,monospace;text-align:center}
 .quest-reward h2{margin:0 0 6px;font-size:18px;text-transform:uppercase;letter-spacing:1px}
@@ -77,6 +85,33 @@ const STATUS_WORDS: Readonly<Record<Quest['status'], string>> = {
   offered: 'on offer', active: 'in progress', ready: 'change ready to preview', parked: 'waiting for you (field task)', dismissed: 'not needed',
   practised: 'practised (not written)', done: 'done',
 };
+
+/** A stage's state in words and a shape, never by colour alone. */
+const STAGE_WORDS: Readonly<Record<Chain['stages'][number]['status'], string>> = {
+  done: '✓ in NetBox', answered: '✓ answered', not_known: '? not known yet', open: '▶ in play', locked: '· comes later',
+};
+
+/** One chain as a card: where the player is, each stage, what the record will hold, and the record so far. */
+export function chainCard(c: Chain): HTMLElement {
+  const card = el('div', undefined, 'chain');
+  card.dataset.chain = c.id;
+  card.dataset.status = c.status;
+  const t = el('div', undefined, 't');
+  t.append(el('span', 'chain', 'tag'), `${c.title} · ${c.label}`);
+  const stages = el('ol');
+  c.stages.forEach((s, i) => {
+    const li = el('li', `${i + 1} ${s.stage}: ${STAGE_WORDS[s.status]}`);
+    li.dataset.stage = s.stage;
+    li.dataset.status = s.status;
+    li.title = s.missing.length ? `${s.title}. Still missing: ${s.missing.join('; ')}` : s.title;
+    stages.append(li);
+  });
+  card.append(t, stages);
+  if (c.summary) card.append(el('div', c.summary, 's summary'));
+  if (c.open_questions.length) card.append(el('div', `Open questions: ${c.open_questions.join(', ')}.`, 's open-questions'));
+  if (c.status !== 'complete') card.append(el('div', `When it is complete, NetBox holds ${c.holds}.`, 's hint'));
+  return card;
+}
 
 export interface QuestHooks {
   /** Plays a script in the shared bubble with the given quest giver as the speaker `giver`. */
@@ -239,7 +274,7 @@ export class Quests {
     if (!this.next.firstChild) this.next.append(el('b'), el('span'));
     const where = q?.target ? ` → ${q.target.label}` : '';
     this.next.children[0]!.textContent = r ? `Quests · Level ${r.level} · ${r.xp} XP` : 'Quests';
-    this.next.children[1]!.textContent = q ? `Next: ${q.title}${where}` : this.lastError ? 'The quest log is not available right now.' : this.boards.netbox ? 'Nothing open: all in order.' : 'Reading the quest log…';
+    this.next.children[1]!.textContent = q ? `Next: ${q.title}${q.chain && q.chain.total > 1 ? ` (${q.chain.label})` : ''}${where}` : this.lastError ? 'The quest log is not available right now.' : this.boards.netbox ? 'Nothing open: all in order.' : 'Reading the quest log…';
     this.next.title = 'Open the quest log';
     this.next.dataset.quest = q?.id ?? '';
   }
@@ -602,6 +637,13 @@ export class Quests {
       row.append(spriteCanvas('icon_potion', 3), `Level ${v.rewards.level}! A potion for the road.`);
       box.append(row);
     }
+    if (v.chain && v.chain.total > 1) {
+      // where this leaves the chain the line belongs to; a whole verified record pays a bonus of its own
+      const row = el('div', `${v.chain.title} · ${v.chain.label}${v.chain_xp > 0 ? ` · ${v.chain_xp} XP of this for the whole record` : ''}`, 'chain');
+      row.id = 'quest-reward-chain';
+      row.dataset.status = v.chain.status;
+      box.append(row);
+    }
     let finish!: () => void;
     const done = new Promise<void>((r) => (finish = r));
     const ok = btn('Onwards', 'quest-reward-ok', () => (box.remove(), finish()));
@@ -665,8 +707,29 @@ export class Quests {
       note.id = 'quest-write-note';
       p.append(note);
     }
+    const setup = this.boards.netbox?.setup ?? [];
+    if (setup.length) {
+      // what this NetBox cannot hold yet is said once, up front; the game does not ask for it
+      const note = el('p', setup.join(' '), 'mode');
+      note.id = 'quest-setup';
+      p.append(note);
+    }
     const sites = [...(this.boards.netbox?.sites ?? []), ...(this.boards.practice?.sites ?? [])];
     const quests = [...(this.boards.netbox?.quests ?? []), ...(this.boards.practice?.quests ?? [])];
+    const chains = [...(this.boards.netbox?.chains ?? []), ...(this.boards.practice?.chains ?? [])].filter((c) => siteId === null || c.site_id === siteId);
+    if (chains.length) {
+      // chains first: each is a short series (physical, logical, administrative) that ends in a whole record
+      p.append(el('h3', 'Chains'));
+      const box = el('div');
+      box.id = 'quest-chains';
+      // those in play, then those waiting on a fact, then the complete ones; a long estate shows the first few
+      const order = { open: 0, open_questions: 1, complete: 2 } as const;
+      const shown = [...chains].sort((a, b) => order[a.status] - order[b.status]).slice(0, 8);
+      for (const c of shown) box.append(chainCard(c));
+      const more = chains.length - shown.length + (this.boards.netbox?.chains_queued ?? 0);
+      if (more > 0) box.append(el('p', `${more} more chain${more === 1 ? '' : 's'} come into play as these are completed.`, 'hint'));
+      p.append(box);
+    }
     const section = (title: string, list: Quest[], id: string) => {
       if (!list.length) return;
       p.append(el('h3', title));
@@ -680,6 +743,11 @@ export class Quests {
         const t = el('div', undefined, 't');
         t.append(el('span', q.rank, `tag rank-${q.rank}`), q.title);
         card.append(t, el('div', `${site}${q.scope === 'practice' ? ' (practice, never NetBox)' : ''} · ${STATUS_WORDS[q.status]}${q.lapsed ? ' · since undone in NetBox' : ''} · about ${q.minutes} min`, 's'));
+        if (q.chain && q.chain.total > 1) {
+          const c = el('div', `Chain: ${q.chain.title} · ${q.chain.label}`, 's in-chain');
+          c.dataset.chain = q.chain.id;
+          card.append(c);
+        }
         if (q.status !== 'done' && q.status !== 'dismissed') {
           card.append(el('div', q.purpose, 's'));
           if (q.status === 'parked' && q.checklist.length) card.append(el('div', `Look for: ${q.checklist[0]}`, 's'));

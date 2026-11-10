@@ -4,8 +4,8 @@ Game state is never written into NetBox. NetBox is the inventory; this file hold
 player, keyed by the player's NetBox user id: profile, save slots (an autosave slot plus manual slots), settings and
 dialogue flags. Sign-in sessions live here too, stored only as a SHA-256 of the cookie value.
 
-The schema is versioned with `PRAGMA user_version`; `MIGRATIONS[i]` takes the file from version i to i + 1 inside one
-transaction. A file written by a newer RackWalker (user_version above what this code knows) is refused, never
+The schema is versioned with `PRAGMA user_version`; `MIGRATIONS[i]` (SQL, or a function of the connection where rows
+have to be read and rewritten) takes the file from version i to i + 1 inside one transaction. A file written by a newer RackWalker (user_version above what this code knows) is refused, never
 rewritten. The default location is `<repo>/data/game.sqlite3` (gitignored); RACKWALKER_STATE_DIR moves it.
 
 Rows are JSON checked against the contract when they are read, not only when they are written, so a damaged row or
@@ -33,7 +33,47 @@ from . import schema
 
 log = logging.getLogger("rackwalker_proxy.gamestore")
 
-MIGRATIONS: list[str] = [
+def split_management_rows(db: sqlite3.Connection) -> None:
+    rows = db.execute("SELECT user_id, scope, quest_id, site_id, status, answers, checks, verified, snapshot, updated_at FROM quest "
+                      "WHERE quest_id LIKE 'q:device\\_unreachable:site:%' ESCAPE '\\'").fetchall()
+    for user_id, scope, quest_id, site_id, status, answers, checks, verified, snapshot, updated_at in rows:
+        try:
+            ans, chk, ver, snap = json.loads(answers), json.loads(checks), json.loads(verified), json.loads(snapshot)
+            if not (isinstance(ans, dict) and isinstance(chk, list) and isinstance(ver, list) and isinstance(snap, dict)):
+                raise ValueError("not the expected shape")
+        except ValueError:
+            continue   # a damaged row is left as it is (it is left out when read, as before)
+        names = {r.get("id"): r.get("name") for r in (snap.get("finding") or {}).get("evidence") or [] if isinstance(r, dict)}
+        for check in chk:
+            m = re.fullmatch(r"device:(\d+):primary_ip", check) if isinstance(check, str) else None
+            if m is None:
+                continue
+            did = m.group(1)
+            mine = {k: v for k, v in ans.items() if k.rsplit("_", 1)[-1] == did}
+            said_none = isinstance(mine.get(f"ip_{did}"), dict) and mine[f"ip_{did}"].get("choice") == "none"
+            if said_none:
+                mine = {f"mode_{did}": {"choice": "unmanaged"}}
+            elif any(k.startswith(("ip_", "addr_", "port_")) for k in mine) and not (isinstance(mine.get(f"ip_{did}"), dict)
+                                                                                    and mine[f"ip_{did}"].get("choice") == "unknown"):
+                mine[f"mode_{did}"] = {"choice": "local"}   # an address was being given: it is managed locally
+            done = check in ver
+            if not mine and not done:
+                continue   # never touched for this device: the new line is simply offered
+            unknown = isinstance(mine.get(f"ip_{did}"), dict) and mine[f"ip_{did}"].get("choice") == "unknown"
+            new_status = "done" if done else "parked" if unknown and status == "parked" else "active"
+            name = names.get(int(did)) or f"device {did}"
+            new_id = f"q:device_unreachable:device:{did}"
+            new_snap = {**snap, "id": new_id, "title": f"How {name} is managed", "xp": 40,
+                        "finding": {**(snap.get("finding") or {}), "id": new_id[2:], "evidence": [{"kind": "device", "id": int(did), "name": name}],
+                                    "title": f"NetBox does not say how {name} is managed, or how to reach it.", "data": {}}}
+            db.execute("INSERT OR IGNORE INTO quest(user_id, scope, quest_id, site_id, status, answers, checks, verified, snapshot, updated_at) "
+                       "VALUES (?,?,?,?,?,?,?,?,?,?)",
+                       (user_id, scope, new_id, site_id, new_status, json.dumps(mine, sort_keys=True), json.dumps([check]),
+                        json.dumps([check] if done else []), json.dumps(new_snap, sort_keys=True), updated_at))
+        db.execute("DELETE FROM quest WHERE user_id=? AND scope=? AND quest_id=?", (user_id, scope, quest_id))
+
+
+MIGRATIONS: list[Any] = [
     # 0 -> 1: players, sessions, saves, settings, flags.
     """
     CREATE TABLE player (
@@ -131,6 +171,11 @@ MIGRATIONS: list[str] = [
         FROM quest, json_each(CASE WHEN json_valid(quest.verified) AND json_type(quest.verified) = 'array' THEN quest.verified ELSE '[]' END)
         WHERE quest.scope = 'netbox' AND json_each.type = 'text';
     """,
+    # 3 -> 4: how a device is managed is asked device by device (it is a stage of that device's chain), where it was one
+    # line for a whole site ("how to reach the kit"). Each such row becomes one row per device it had an answer or a
+    # confirmed check for, with that device's answers; "It has none: nobody logs in to it" becomes the answer "it is
+    # not managed at all" to the new first question, so it is not asked again and can be written to the device.
+    split_management_rows,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
 SESSION_SECONDS = 7 * 24 * 3600
@@ -250,7 +295,7 @@ def _only_comments(text: str) -> bool:
     return not rest.strip(" \t\r\n;")
 
 
-def migrate(db: sqlite3.Connection, steps: list[str], label: object = "game state file") -> int:
+def migrate(db: sqlite3.Connection, steps: list[Any], label: object = "game state file") -> int:
     """Brings `db` (autocommit mode) to version len(steps): `steps[i]` takes it from version i to i + 1 inside one
     transaction, so a failing step leaves the file at the version before it. A newer file is refused untouched."""
     have = db.execute("PRAGMA user_version").fetchone()[0]
@@ -260,8 +305,11 @@ def migrate(db: sqlite3.Connection, steps: list[str], label: object = "game stat
     for v in range(have, len(steps)):
         db.execute("BEGIN IMMEDIATE")
         try:
-            for stmt in statements(steps[v]):
-                db.execute(stmt)
+            if callable(steps[v]):
+                steps[v](db)   # a step that has to read and rewrite rows (JSON inside them)
+            else:
+                for stmt in statements(steps[v]):
+                    db.execute(stmt)
             db.execute(f"PRAGMA user_version = {v + 1}")
             db.execute("COMMIT")
         except BaseException:
