@@ -8,7 +8,8 @@
       "latitude": 54.118,
       "longitude": -1.342,
       "facility": null,
-      "country": "GB"
+      "country": "GB",
+      "last_updated": null
     },
     {
       "id": 2,
@@ -18,7 +19,8 @@
       "latitude": 51.621,
       "longitude": -2.893,
       "facility": null,
-      "country": "GB"
+      "country": "GB",
+      "last_updated": null
     },
     {
       "id": 3,
@@ -28,7 +30,8 @@
       "latitude": 52.784,
       "longitude": 1.412,
       "facility": null,
-      "country": "GB"
+      "country": "GB",
+      "last_updated": null
     }
   ],
   "locations": [
@@ -81,7 +84,8 @@
       "location_id": 1,
       "u_height": 42,
       "iso_x": 1,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 2,
@@ -90,7 +94,8 @@
       "location_id": 1,
       "u_height": 42,
       "iso_x": 3,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 3,
@@ -99,7 +104,8 @@
       "location_id": 1,
       "u_height": 42,
       "iso_x": 5,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 4,
@@ -108,7 +114,8 @@
       "location_id": 1,
       "u_height": 42,
       "iso_x": 7,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 5,
@@ -117,7 +124,8 @@
       "location_id": 2,
       "u_height": 24,
       "iso_x": 1,
-      "iso_y": 1
+      "iso_y": 1,
+      "last_updated": null
     },
     {
       "id": 6,
@@ -126,7 +134,8 @@
       "location_id": 4,
       "u_height": 42,
       "iso_x": 2,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 7,
@@ -135,7 +144,8 @@
       "location_id": 4,
       "u_height": 42,
       "iso_x": 5,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 8,
@@ -144,7 +154,8 @@
       "location_id": 5,
       "u_height": 24,
       "iso_x": 1,
-      "iso_y": 1
+      "iso_y": 1,
+      "last_updated": null
     },
     {
       "id": 9,
@@ -153,7 +164,8 @@
       "location_id": 6,
       "u_height": 42,
       "iso_x": 2,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 10,
@@ -162,7 +174,8 @@
       "location_id": 6,
       "u_height": 42,
       "iso_x": 4,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 11,
@@ -171,7 +184,8 @@
       "location_id": 7,
       "u_height": 42,
       "iso_x": 2,
-      "iso_y": 2
+      "iso_y": 2,
+      "last_updated": null
     },
     {
       "id": 12,
@@ -180,7 +194,8 @@
       "location_id": 8,
       "u_height": 24,
       "iso_x": 1,
-      "iso_y": 1
+      "iso_y": 1,
+      "last_updated": null
     }
   ],
   "devices": [
@@ -201,7 +216,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 2,
@@ -220,7 +237,9 @@
       "primary_ip": "192.0.2.2/24",
       "u_height": 2.0,
       "model": "EX-C9000",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 3,
@@ -239,7 +258,9 @@
       "primary_ip": "192.0.2.1/24",
       "u_height": 1.0,
       "model": "EX-R400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 4,
@@ -258,7 +279,9 @@
       "primary_ip": "192.0.2.3/24",
       "u_height": 1.0,
       "model": "EX-F200",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 5,
@@ -277,7 +300,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 6,
@@ -296,7 +321,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 7,
@@ -315,7 +342,9 @@
       "primary_ip": "192.0.2.10/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 8,
@@ -334,7 +363,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 9,
@@ -353,7 +384,9 @@
       "primary_ip": "192.0.2.101/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 10,
@@ -372,7 +405,9 @@
       "primary_ip": "192.0.2.102/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 11,
@@ -391,7 +426,9 @@
       "primary_ip": "192.0.2.103/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 12,
@@ -410,7 +447,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 13,
@@ -429,7 +468,9 @@
       "primary_ip": "192.0.2.12/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 14,
@@ -448,7 +489,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 15,
@@ -467,7 +510,9 @@
       "primary_ip": "192.0.2.104/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 16,
@@ -486,7 +531,9 @@
       "primary_ip": "192.0.2.105/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 17,
@@ -505,7 +552,9 @@
       "primary_ip": "192.0.2.106/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 18,
@@ -524,7 +573,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 19,
@@ -543,7 +594,9 @@
       "primary_ip": "192.0.2.14/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 20,
@@ -562,7 +615,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 21,
@@ -581,7 +636,9 @@
       "primary_ip": "192.0.2.107/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 22,
@@ -600,7 +657,9 @@
       "primary_ip": "192.0.2.108/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 23,
@@ -619,7 +678,9 @@
       "primary_ip": "192.0.2.109/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 24,
@@ -638,7 +699,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 25,
@@ -657,7 +720,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 26,
@@ -676,7 +741,9 @@
       "primary_ip": "192.0.2.30/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 27,
@@ -695,7 +762,9 @@
       "primary_ip": null,
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 28,
@@ -714,7 +783,9 @@
       "primary_ip": null,
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 29,
@@ -733,7 +804,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 30,
@@ -752,7 +825,9 @@
       "primary_ip": "198.51.100.2/24",
       "u_height": 2.0,
       "model": "EX-C9000",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 31,
@@ -771,7 +846,9 @@
       "primary_ip": "198.51.100.1/24",
       "u_height": 1.0,
       "model": "EX-R400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 32,
@@ -790,7 +867,9 @@
       "primary_ip": "198.51.100.3/24",
       "u_height": 1.0,
       "model": "EX-F200",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 33,
@@ -809,7 +888,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 34,
@@ -828,7 +909,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 35,
@@ -847,7 +930,9 @@
       "primary_ip": "198.51.100.10/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 36,
@@ -866,7 +951,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 37,
@@ -885,7 +972,9 @@
       "primary_ip": "198.51.100.101/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 38,
@@ -904,7 +993,9 @@
       "primary_ip": "198.51.100.102/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 39,
@@ -923,7 +1014,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 40,
@@ -942,7 +1035,9 @@
       "primary_ip": "198.51.100.30/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 41,
@@ -961,7 +1056,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-F200",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 42,
@@ -980,7 +1077,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 43,
@@ -999,7 +1098,9 @@
       "primary_ip": "203.0.113.2/24",
       "u_height": 2.0,
       "model": "EX-C9000",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 44,
@@ -1018,7 +1119,9 @@
       "primary_ip": "203.0.113.1/24",
       "u_height": 1.0,
       "model": "EX-R400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 45,
@@ -1037,7 +1140,9 @@
       "primary_ip": "203.0.113.3/24",
       "u_height": 1.0,
       "model": "EX-F200",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 46,
@@ -1056,7 +1161,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 47,
@@ -1075,7 +1182,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 48,
@@ -1094,7 +1203,9 @@
       "primary_ip": "203.0.113.10/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 49,
@@ -1113,7 +1224,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 50,
@@ -1132,7 +1245,9 @@
       "primary_ip": "203.0.113.101/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 51,
@@ -1151,7 +1266,9 @@
       "primary_ip": "203.0.113.102/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 52,
@@ -1170,7 +1287,9 @@
       "primary_ip": "203.0.113.103/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 53,
@@ -1189,7 +1308,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 54,
@@ -1208,7 +1329,9 @@
       "primary_ip": "203.0.113.12/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 55,
@@ -1227,7 +1350,9 @@
       "primary_ip": null,
       "u_height": 0.0,
       "model": "EX-PDU16",
-      "manufacturer": "Example Power"
+      "manufacturer": "Example Power",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 56,
@@ -1246,7 +1371,9 @@
       "primary_ip": "203.0.113.104/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 57,
@@ -1265,7 +1392,9 @@
       "primary_ip": "203.0.113.105/24",
       "u_height": 2.0,
       "model": "EX-S2",
-      "manufacturer": "Example Compute"
+      "manufacturer": "Example Compute",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 58,
@@ -1284,7 +1413,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-PP24",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 59,
@@ -1303,7 +1434,9 @@
       "primary_ip": "203.0.113.30/24",
       "u_height": 1.0,
       "model": "EX-A2400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     },
     {
       "id": 60,
@@ -1322,7 +1455,9 @@
       "primary_ip": null,
       "u_height": 1.0,
       "model": "EX-R400",
-      "manufacturer": "Example Networks"
+      "manufacturer": "Example Networks",
+      "vc_id": null,
+      "last_updated": null
     }
   ],
   "ports": [
@@ -19474,171 +19609,239 @@
     {
       "id": 1,
       "address": "192.0.2.2/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 1
     },
     {
       "id": 2,
       "address": "192.0.2.1/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 26
     },
     {
       "id": 3,
       "address": "192.0.2.3/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 39
     },
     {
       "id": 4,
       "address": "192.0.2.10/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 64
     },
     {
       "id": 5,
       "address": "192.0.2.101/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 68
     },
     {
       "id": 6,
       "address": "192.0.2.102/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 71
     },
     {
       "id": 7,
       "address": "192.0.2.103/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 74
     },
     {
       "id": 8,
       "address": "192.0.2.12/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 100
     },
     {
       "id": 9,
       "address": "192.0.2.104/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 104
     },
     {
       "id": 10,
       "address": "192.0.2.105/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 107
     },
     {
       "id": 11,
       "address": "192.0.2.106/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 110
     },
     {
       "id": 12,
       "address": "192.0.2.14/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 136
     },
     {
       "id": 13,
       "address": "192.0.2.107/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 140
     },
     {
       "id": 14,
       "address": "192.0.2.108/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 143
     },
     {
       "id": 15,
       "address": "192.0.2.109/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 146
     },
     {
       "id": 16,
       "address": "192.0.2.30/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 172
     },
     {
       "id": 17,
       "address": "198.51.100.2/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 181
     },
     {
       "id": 18,
       "address": "198.51.100.1/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 206
     },
     {
       "id": 19,
       "address": "198.51.100.3/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 219
     },
     {
       "id": 20,
       "address": "198.51.100.10/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 244
     },
     {
       "id": 21,
       "address": "198.51.100.101/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 248
     },
     {
       "id": 22,
       "address": "198.51.100.102/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 251
     },
     {
       "id": 23,
       "address": "198.51.100.30/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 277
     },
     {
       "id": 24,
       "address": "203.0.113.2/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 288
     },
     {
       "id": 25,
       "address": "203.0.113.1/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 313
     },
     {
       "id": 26,
       "address": "203.0.113.3/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 326
     },
     {
       "id": 27,
       "address": "203.0.113.10/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 351
     },
     {
       "id": 28,
       "address": "203.0.113.101/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 355
     },
     {
       "id": 29,
       "address": "203.0.113.102/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 358
     },
     {
       "id": 30,
       "address": "203.0.113.103/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 361
     },
     {
       "id": 31,
       "address": "203.0.113.12/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 387
     },
     {
       "id": 32,
       "address": "203.0.113.104/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 391
     },
     {
       "id": 33,
       "address": "203.0.113.105/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 394
     },
     {
       "id": 34,
       "address": "203.0.113.30/24",
+      "vrf_id": null,
+      "vrf": null,
       "interface_id": 420
     }
   ],

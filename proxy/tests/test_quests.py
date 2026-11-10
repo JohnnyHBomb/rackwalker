@@ -476,8 +476,8 @@ def test_the_unconnected_example_gives_the_expected_findings_in_order():
         "Let's record its uplink."]
     assert lines[1]["title"] == "The link between Loft and Quay Room" and lines[1]["outcome"] == "You can now trace from Loft to Quay Room."
     q = quests.evaluate(e, lines[2], {})["step"]
-    assert q["prompt"] == "sw-quay-1 has 26 ports and nothing recorded on any of them. What does it uplink to?"
-    assert [c["label"] for c in q["choices"]] == ["sw-quay-2 (switch)", "sw-loft-1 (switch)", "Something not listed",
+    assert q["prompt"] == "What is sw-quay-1 (rack PI-Q1 U10 in Quay Room) plugged into?"
+    assert [c["label"] for c in q["choices"]] == ["sw-quay-2 (switch)", "sw-loft-1 (switch)", "A device that is not in NetBox yet",
                                                   "Nothing: it stands alone, on purpose", "I don't know yet"]
 
 
@@ -502,7 +502,7 @@ def test_i_dont_know_yet_parks_with_a_checklist_and_resumes_at_the_same_question
     state = quests.evaluate(e, line, answers)
     assert state["status"] == "parked" and state["step"]["id"] == "local_port" and state["proposal"] is None
     assert state["checklist"] == ["Find sw-quay-1: rack PI-Q1 U10 in Quay Room.", "Read the label printed next to the port the cable is in."]
-    assert state["said"] == [{"step": "peer", "question": "sw-quay-1 has 26 ports and nothing recorded on any of them. What does it uplink to?",
+    assert state["said"] == [{"step": "peer", "question": "What is sw-quay-1 (rack PI-Q1 U10 in Quay Room) plugged into?",
                               "answer": "sw-quay-2 (switch)"}]
     answers["local_port"] = {"choice": state["step"]["choices"][0]["id"]}
     assert quests.evaluate(e, line, answers)["step"]["id"] == "peer_port"
@@ -522,9 +522,13 @@ def test_something_not_listed_and_not_applicable_never_write():
 def test_a_typed_value_that_does_not_fit_is_asked_again_with_the_reason():
     e = practice.example_estate()
     line = one(e, "device_unconnected")
-    base = {"peer": {"choice": "device:9000002"}, "local_port": {"choice": "typed"}}
+    base = {"peer": {"choice": "device:9000002"}, "local_port": {"choice": "named"}}
     state = quests.evaluate(e, line, {**base, "local_port_name": {"text": "Gi9/9/9"}})
-    assert state["status"] == "asking" and state["step"]["error"] == "sw-quay-1 has no free port called 'Gi9/9/9'."
+    assert state["status"] == "asking" and state["step"]["error"].startswith("NetBox has no free port called 'Gi9/9/9' that fits here.")
+    # the start of a name is enough when it means one port; when it means several, they are named
+    several = quests.evaluate(e, line, {**base, "local_port_name": {"text": "te1/1/"}})["step"]["error"]
+    assert several == "2 free ports match 'te1/1/': Te1/1/2, Te1/1/1. Type more of the name."
+    assert quests.evaluate(e, line, {**base, "local_port_name": {"text": "te1/1/2"}})["step"]["id"] == "peer_port"
     assert quests.evaluate(e, line, {**base, "local_port_name": {"text": "gi1/0/17"}})["step"]["id"] == "peer_port"
 
 
@@ -566,7 +570,10 @@ def test_xp_follows_rank_and_verified_share_and_repeats_pay_less():
     assert [quests.XP[r] for r in findings.RANKS] == [120, 50, 30]
     assert [xp_for(120, 1, 1, n) for n in range(5)] == [120, 96, 72, 48, 48]
     # an errand with six labels pays by what NetBox confirms, not by fields touched: two confirmed of six
-    assert xp_for(50, 2, 6, 0) == 17 and xp_for(50, 6, 6, 0) == 50 and xp_for(50, 0, 6, 0) == 0
+    # (a long errand is played four objects at a time, and one such pass is worth the line's XP)
+    assert xp_for(50, 2, 6, 0) == 25 and xp_for(50, 6, 6, 0) == 50 and xp_for(50, 0, 6, 0) == 0 and xp_for(50, 1, 3, 0) == 17
+    # one address of a hundred and thirteen is worth a quarter of a pass, not a hundred-and-thirteenth of the line
+    assert xp_for(120, 1, 113, 0) == 30 and xp_for(120, 4, 113, 0) == 120 and xp_for(120, 4, 113, 1) == 96
 
 
 def test_a_large_estate_is_analysed_in_one_pass_not_once_per_device():
@@ -616,7 +623,8 @@ def test_every_opening_line_names_what_is_missing_and_where():
     e = interface_no_cable()
     port = one(e, "interface_no_cable")
     assert port["purpose"].startswith("sw1 eth4 has a description (uplink to the annex) but no cable.")
-    asked = quests.evaluate(e, port, {"peer": {"choice": "unknown"}})
+    first = quests.evaluate(e, port, {})["step"]["id"]
+    asked = quests.evaluate(e, port, {first: {"choice": "unknown"}})
     assert asked["step"]["prompt"] == "What is on the other end of sw1 eth4 (described as 'uplink to the annex')?"
     assert asked["checklist"][:2] == ["Find sw1: rack R1 U10 in Room.", "Follow the lead in port eth4 to its far end."]
 
@@ -626,7 +634,7 @@ def test_ports_are_offered_likeliest_uplink_first():
     line = one(e, "device_unconnected")
     step = quests.evaluate(e, line, {"peer": {"choice": "device:9000002"}})["step"]
     # the fibre cages before the copper ports, the highest-numbered first; the rest behind "Another port"
-    assert [c["label"] for c in step["choices"]] == ["Te1/1/2", "Te1/1/1", "Gi1/0/24", "Gi1/0/23", "Gi1/0/22", "Gi1/0/21", "Another port",
+    assert [c["label"] for c in step["choices"]] == ["Te1/1/2", "Te1/1/1", "Gi1/0/24", "Gi1/0/23", "Gi1/0/22", "Gi1/0/21", "Another free port that is in NetBox",
                                                      "I don't know yet"]
     b = Build()
     s = b.site()
@@ -642,7 +650,8 @@ def test_one_answer_says_what_every_device_of_a_model_runs_unless_they_differ():
     assert line["title"] == "What the M devices run" and line["finding"]["title"] == "NetBox does not say what sw1 and sw2 (M) at Mill run."
     step = quests.evaluate(e, line, {})["step"]
     assert step["prompt"] == "2 M devices have no platform on record: sw1 and sw2. What do they run?"
-    assert [c["label"] for c in step["choices"]] == ["Example OS", "They do not all run the same", "Something not listed", "I don't know yet"]
+    assert [c["label"] for c in step["choices"]] == ["Example OS", "They do not all run the same", "A platform that is not in NetBox yet",
+                                                     "Nothing we track: no system to record", "I don't know yet"]
     state = quests.evaluate(e, line, {"platform": {"choice": "platform:1"}})
     assert state["proposal"]["ops"] == [{"op": "update_fields", "target": {"kind": "device", "id": i}, "fields": {"platform_id": 1}} for i in ids]
     assert state["changes"] == ["sw1: platform Example OS.", "sw2: platform Example OS."] and settle(e, line, state) == []

@@ -13,15 +13,22 @@ hits its cap is named in `Estate.truncated`, and a list NetBox refuses to the pr
 `Estate.unreadable`. Rules that would need a truncated or unreadable list say nothing (the game never reports
 something as missing only because it could not look).
 
-The connectivity graph (`Estate.components`) joins: every interface of a device to that device; a patch panel's front
-port to the rear port it maps to; the two ends of a cable; the terminations of a circuit. Power ports, outlets and
-feeds are a separate graph (`powered`).
+The connectivity graph (`Estate.components`) joins: every interface of a device to that device, unless the device is
+an end host (a server, a wireless access point: traffic ends there, so two switches that share only a dual-homed server
+are not linked); the members of a virtual chassis (a switch stack) to each other; a patch panel's front port to the
+rear port it maps to; the two ends of a cable; the terminations of a circuit. Power ports, outlets and feeds are a
+separate graph (`powered`).
+
+What a device is comes from its role's name and slug, word by word (`NETWORK_WORDS`, `END_WORDS`, ...). A role the
+words do not know ("ToR", "Kit") still counts as a network device when the device has `MANY_PORTS` or more physical
+interfaces: a box with a row of ports is a switch, whatever its role is called.
 """
 from __future__ import annotations
 
 import asyncio
 import copy
 import ipaddress
+import re
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -38,9 +45,15 @@ DATA_PORTS = ("interface", "front_port", "rear_port")
 POWER_PORTS = ("power_port", "power_outlet")
 # NetBox interface types that never take a cable.
 NON_PHYSICAL = ("virtual", "bridge", "lag")
-NETWORK_ROLES = ("switch", "router", "firewall", "core", "access", "distribution", "gateway", "wan", "edge", "spine", "leaf")
-ROUTER_ROLES = ("router", "gateway", "wan", "edge")
-PASSIVE_ROLES = ("patch", "panel", "pdu", "power", "cable-management", "shelf", "blank")
+NETWORK_WORDS = ("switch", "router", "firewall", "core", "access", "distribution", "gateway", "wan", "edge", "spine", "leaf", "tor",
+                 "network", "aggregation", "agg")
+ROUTER_WORDS = ("router", "gateway", "wan", "edge", "firewall")
+SWITCH_WORDS = ("switch", "access", "core", "distribution", "spine", "leaf", "tor", "aggregation", "agg")
+PASSIVE_WORDS = ("patch", "panel", "pdu", "power", "cable", "shelf", "blank")
+WIRELESS_WORDS = ("ap", "aps", "wireless", "wifi", "wlan")
+END_WORDS = ("server", "host", "storage", "hypervisor", "compute", "workstation", "desktop", "printer", "camera", "phone", "nas", "san")
+# A device with this many physical interfaces is a network device even when its role's name says nothing.
+MANY_PORTS = 8
 
 
 def port_key(s: str) -> PortKey:
@@ -53,25 +66,50 @@ def is_physical(port: dict[str, Any]) -> bool:
     return port["kind"] != "interface" or not (t in NON_PHYSICAL or t.startswith("ieee802.11") or t.startswith("virtual"))
 
 
+def role_words(dev: dict[str, Any]) -> list[str]:
+    return [w for w in re.split(r"[^a-z0-9]+", f"{dev.get('role') or ''} {dev.get('role_name') or ''}".lower()) if w]
+
+
 def role_is(dev: dict[str, Any], words: tuple[str, ...]) -> bool:
-    text = f"{dev.get('role') or ''} {dev.get('role_name') or ''}".lower()
-    return any(w in text for w in words)
+    """A role names one of `words`: a short word (up to three letters) as a whole word of the role's name or slug, a
+    longer one as the start of a word ("switches", "routers")."""
+    have = role_words(dev)
+    return any((h == w if len(w) <= 3 else h.startswith(w)) for w in words for h in have)
+
+
+def is_wireless(dev: dict[str, Any]) -> bool:
+    have = role_words(dev)
+    return role_is(dev, WIRELESS_WORDS) or ("access" in have and any(h.startswith("point") for h in have))
 
 
 def is_network(dev: dict[str, Any]) -> bool:
-    return role_is(dev, NETWORK_ROLES)
+    """By the role's words alone; `Estate.is_network` also looks at the device's ports."""
+    return role_is(dev, NETWORK_WORDS) and not is_wireless(dev)
 
 
 def is_router(dev: dict[str, Any]) -> bool:
-    return role_is(dev, ROUTER_ROLES + ("firewall",))
+    return role_is(dev, ROUTER_WORDS) and not is_wireless(dev)
 
 
 def is_switch(dev: dict[str, Any]) -> bool:
-    return role_is(dev, ("switch", "access", "core", "distribution", "spine", "leaf"))
+    return role_is(dev, SWITCH_WORDS) and not is_wireless(dev)
 
 
 def is_passive(dev: dict[str, Any]) -> bool:
-    return role_is(dev, PASSIVE_ROLES)
+    return role_is(dev, PASSIVE_WORDS)
+
+
+def is_end_host(dev: dict[str, Any]) -> bool:
+    """Traffic ends here: a wireless access point, or a role that names a server and no network device."""
+    return is_wireless(dev) or (role_is(dev, END_WORDS) and not role_is(dev, NETWORK_WORDS))
+
+
+def name_of(dev: dict[str, Any]) -> str:
+    """A device's name for a sentence. NetBox allows a device with no name: it is called by what it is and its id."""
+    if dev.get("name"):
+        return dev["name"]
+    what = (dev.get("model") or dev.get("role_name") or "device").strip()
+    return f"the unnamed {what} (device {dev['id']})"
 
 
 @dataclass
@@ -118,6 +156,26 @@ class Estate:
                 idx.setdefault(d["site_id"], []).append(d)
             self._memo["devices"] = idx
         return idx
+
+    def _physical(self) -> dict[int, int]:
+        """Per device: how many physical interfaces it has."""
+        idx = self._memo.get("physical")
+        if idx is None:
+            idx = {}
+            for p in self.ports.values():
+                if p["kind"] == "interface" and is_physical(p):
+                    idx[p["device_id"]] = idx.get(p["device_id"], 0) + 1
+            self._memo["physical"] = idx
+        return idx
+
+    def is_network(self, dev: dict[str, Any]) -> bool:
+        """A switch, router or firewall: by its role's words, or (a role the words do not know) by a row of ports."""
+        if is_network(dev):
+            return True
+        return not is_passive(dev) and not is_end_host(dev) and self._physical().get(dev["id"], 0) >= MANY_PORTS
+
+    def is_switch(self, dev: dict[str, Any]) -> bool:
+        return is_switch(dev) or (self.is_network(dev) and not is_network(dev))
 
     def _ips_by_interface(self) -> dict[int, list[dict[str, Any]]]:
         idx = self._memo.get("ips")
@@ -174,7 +232,7 @@ class Estate:
 
     def device_name(self, device_id: int) -> str:
         d = self.devices.get(device_id)
-        return (d["name"] or f"device {device_id}") if d else f"device {device_id}"
+        return name_of(d) if d else f"device {device_id}"
 
     def port_site(self, key: PortKey) -> int | None:
         p = self.ports.get(key)
@@ -238,8 +296,11 @@ class Components:
         self.e = e
         self.parent: dict[Any, Any] = {}
         self._lists: tuple[dict[Any, list[int]], dict[Any, list[int]]] | None = None
-        for did in e.devices:
+        self.end_hosts = {did for did, d in e.devices.items() if is_end_host(d) and not e.is_network(d)}
+        for did, d in e.devices.items():
             self._find(("d", did))
+            if d.get("vc_id") is not None:
+                self._union(("d", did), ("v", d["vc_id"]))   # a stack is one switch
         for key, p in e.ports.items():
             if p["kind"] == "interface":
                 continue
@@ -258,7 +319,10 @@ class Components:
         kind, oid = key
         if kind == "interface":
             p = self.e.ports.get(key)
-            return ("d", p["device_id"]) if p else None
+            if p is None:
+                return None
+            # a port of an end host is an end, not a way through: its other ports are not reached by it
+            return ("i", oid) if p["device_id"] in self.end_hosts else ("d", p["device_id"])
         if kind in ("front_port", "rear_port"):
             return ("p", kind, oid)
         if kind == "circuit_termination":
@@ -367,19 +431,19 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         "power_outlet": ("dcim/power-outlets", "id,name,device,cable,description"),
     }
     jobs = {
-        "sites": ("dcim/sites", "id,name,slug,status,latitude,longitude,facility,region,physical_address,custom_fields", CAPS["sites"]),
+        "sites": ("dcim/sites", "id,name,slug,status,latitude,longitude,facility,region,physical_address,custom_fields,last_updated", CAPS["sites"]),
         "locations": ("dcim/locations", "id,name,site", CAPS["locations"]),
-        "racks": ("dcim/racks", "id,name,site,location,u_height,custom_fields", CAPS["racks"]),
-        "devices": ("dcim/devices", "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip", CAPS["devices"]),
+        "racks": ("dcim/racks", "id,name,site,location,u_height,custom_fields,last_updated", CAPS["racks"]),
+        "devices": ("dcim/devices", "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,virtual_chassis,last_updated", CAPS["devices"]),
         "cables": ("dcim/cables", "id,type,label,status,a_terminations,b_terminations", CAPS["cables"]),
         "circuits": ("circuits/circuits", "id,cid,provider,type,status", CAPS["circuits"]),
         "providers": ("circuits/providers", "id,name", CAPS["circuits"]),
         "circuit_types": ("circuits/circuit-types", "id,name", CAPS["circuits"]),
         "cterms": ("circuits/circuit-terminations", "id,circuit,term_side,termination_type,termination_id,cable", CAPS["circuits"]),
         "feeds": ("dcim/power-feeds", "id,name,rack,cable", CAPS["circuits"]),
-        "platforms": ("dcim/platforms", "id,name", CAPS["circuits"]),
-        "ips": ("ipam/ip-addresses", "id,address,assigned_object_type,assigned_object_id", CAPS["ips"]),
-        "prefixes": ("ipam/prefixes", "id,prefix", CAPS["prefixes"]),
+        "platforms": ("dcim/platforms", "id,name,manufacturer", CAPS["circuits"]),
+        "ips": ("ipam/ip-addresses", "id,address,vrf,assigned_object_type,assigned_object_id", CAPS["ips"]),
+        "prefixes": ("ipam/prefixes", "id,prefix,vrf", CAPS["prefixes"]),
     }
     names = [n for n in jobs if not (site_ids is not None and n == "ips")]
     got = await asyncio.gather(*(_rows(client, e, n, *jobs[n], where(n)) for n in names),
@@ -398,12 +462,14 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
             "id": s["id"], "name": s["name"], "slug": s.get("slug"), "status": _val(s.get("status")),
             "latitude": s.get("latitude"), "longitude": s.get("longitude"), "facility": s.get("facility") or None,
             "country": country_mod.site_country(_cf(s, "iso_country"), (s.get("region") or {}).get("slug"),
-                                                (s.get("region") or {}).get("name"), s.get("physical_address"))}
+                                                (s.get("region") or {}).get("name"), s.get("physical_address")),
+            "last_updated": s.get("last_updated")}
     for loc in raw["locations"]:
         e.locations[loc["id"]] = {"id": loc["id"], "name": loc["name"], "site_id": _id(loc.get("site"))}
     for r in raw["racks"]:
         e.racks[r["id"]] = {"id": r["id"], "name": r["name"], "site_id": _id(r.get("site")), "location_id": _id(r.get("location")),
-                            "u_height": r.get("u_height") or 42, "iso_x": _cf(r, "iso_x"), "iso_y": _cf(r, "iso_y")}
+                            "u_height": r.get("u_height") or 42, "iso_x": _cf(r, "iso_x"), "iso_y": _cf(r, "iso_y"),
+                            "last_updated": r.get("last_updated")}
     dtypes = await client.device_types({_id(d.get("device_type")) for d in raw["devices"]} - {None})  # type: ignore[arg-type]
     roles = await client.roles({_id(d.get("role")) for d in raw["devices"]} - {None})  # type: ignore[arg-type]
     for d in raw["devices"]:
@@ -417,7 +483,8 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
             "platform": (d.get("platform") or {}).get("name") if d.get("platform") else None,
             "primary_ip": ip.get("address") if isinstance(ip, dict) else None,
             "u_height": float(dt.u_height) if dt else 1.0, "model": dt.model if dt else None,
-            "manufacturer": dt.manufacturer.name if dt else None}
+            "manufacturer": dt.manufacturer.name if dt else None, "vc_id": _id(d.get("virtual_chassis")),
+            "last_updated": d.get("last_updated")}
     for kind, rows in raw_ports.items():
         for p in rows:
             did = _id(p.get("device"))
@@ -452,13 +519,21 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
     for f in raw["feeds"]:
         e.feeds[f["id"]] = {"id": f["id"], "name": f["name"], "rack_id": _id(f.get("rack")), "cable_id": _id(f.get("cable"))}
     for p in raw["platforms"]:
-        e.platforms[p["id"]] = {"id": p["id"], "name": p["name"]}
+        e.platforms[p["id"]] = {"id": p["id"], "name": p["name"], "manufacturer": (p.get("manufacturer") or {}).get("name")}
     for ip in raw["ips"]:
-        e.ips[ip["id"]] = {"id": ip["id"], "address": ip["address"],
+        e.ips[ip["id"]] = {"id": ip["id"], "address": ip["address"], "vrf_id": _id(ip.get("vrf")),
+                           "vrf": (ip.get("vrf") or {}).get("name"),
                            "interface_id": ip.get("assigned_object_id") if ip.get("assigned_object_type") == "dcim.interface" else None}
     for p in raw["prefixes"]:
-        e.prefixes[p["id"]] = {"id": p["id"], "prefix": p["prefix"]}
+        e.prefixes[p["id"]] = {"id": p["id"], "prefix": p["prefix"], "vrf_id": _id(p.get("vrf"))}
     return e
+
+
+def left(base: Estate, part: Estate, site_ids: list[int]) -> bool:
+    """True when something `base` had at `site_ids` is not in `part` (a read of those sites): it was deleted, or it
+    moved to a site that was not read. A splice would drop it from the estate, so the whole estate is read instead."""
+    here = set(site_ids)
+    return any(r["site_id"] in here and i not in getattr(part, t) for t in ("locations", "racks", "devices") for i, r in getattr(base, t).items())
 
 
 def splice(base: Estate, part: Estate, site_ids: list[int]) -> Estate:
@@ -596,17 +671,17 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 found = next((ip for ip in e.ips.values() if ip["address"] == addr and ip["interface_id"] == iface["id"]), None)
                 if found is None:
                     iid = e.next_id("ips")
-                    e.ips[iid] = {"id": iid, "address": addr, "interface_id": iface["id"]}
+                    e.ips[iid] = {"id": iid, "address": addr, "interface_id": iface["id"], "vrf_id": None, "vrf": None}
                 res["before"] = {"primary_ip": d["primary_ip"]}
                 if f.get("primary", True):
                     d["primary_ip"] = addr
                 res["after"] = {"address": addr, "interface_id": iface["id"], "primary_ip": d["primary_ip"]}
             elif name == "create_prefix":
                 net = str(ipaddress.ip_network(f["prefix"], strict=True))
-                if any(p["prefix"] == net for p in e.prefixes.values()):
+                if any(p["prefix"] == net and p.get("vrf_id") is None for p in e.prefixes.values()):
                     raise SimError(f"Prefix {net} already exists.")
                 pid = e.next_id("prefixes")
-                e.prefixes[pid] = {"id": pid, "prefix": net}
+                e.prefixes[pid] = {"id": pid, "prefix": net, "vrf_id": None}
                 res["target"]["id"] = pid
                 res["after"] = {"prefix": net}
             else:

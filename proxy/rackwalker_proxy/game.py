@@ -4,8 +4,17 @@ Identity: the player is a NetBox user. They sign in with one of their own NetBox
 who owns it (GET /api/authentication-check/, NetBox >= 4.3) and forgets the token. Why a token and not a password:
   * no password ever reaches the game, so none can be stored or logged by it;
   * NetBox has no API that checks a password without side effects (token provisioning creates a token in NetBox);
-  * it works the same for local, LDAP and SSO NetBox users, and a read-only token is enough.
+  * it works the same for local, LDAP and SSO NetBox users.
 The proxy's own least-privilege token still does every NetBox read and write; the player's token is used once.
+
+What the token may do carries over to the session. At sign-in the proxy asks NetBox, with the player's own token, for
+that token's record (GET /api/users/tokens/?key=<the public key part of a v2 token>): its id, its write flag and its
+expiry. A token NetBox marks read-only (write_enabled=false) starts a session that plays in dry-run and is refused
+every NetBox write: a read-only token must not gain write rights by passing through the game. The session ends when
+the token expires. Before every write (and on reads every recheck interval) the proxy looks the token up again by its
+id with its own token (it needs view on users.token): a deleted, disabled or expired token ends the session, and a
+changed write flag is taken over. A legacy v1 token cannot be looked up without putting the secret in a URL, so its
+session is read-only; so is one whose record NetBox would not show.
 
 Session: a random cookie value (HttpOnly, SameSite=Strict, Path=/api); only its SHA-256 is stored. Writes need
 the session's CSRF token in the X-RackWalker-CSRF header (a custom header cannot be sent cross-site without a CORS
@@ -26,6 +35,7 @@ import logging
 import sqlite3
 import threading
 import time
+from datetime import datetime
 from pathlib import Path
 from collections.abc import Callable
 from typing import Annotated, Any
@@ -103,6 +113,67 @@ async def netbox_whoami(url: str, token: str, transport: httpx.AsyncBaseTranspor
         return {"id": uid, "username": str(u["username"])[:150], "display_name": name[:300] or None}
     except (ValueError, KeyError, TypeError, AttributeError):
         raise ApiError("netbox_error", "NetBox's sign-in check answered in an unexpected shape.", None) from None
+
+
+def token_key(token: str) -> str | None:
+    """The public key part of a v2 NetBox token (`nbt_<key>.<secret>`), or None for any other shape."""
+    if token.startswith("nbt_") and "." in token:
+        key = token[4:].split(".", 1)[0]
+        return key if key.isalnum() else None
+    return None
+
+
+def _expiry(value: Any) -> float | None:
+    """NetBox's `expires` (RFC 3339 or null) as a Unix time."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+    except ValueError:
+        return None
+
+
+def token_facts(row: dict[str, Any]) -> dict[str, Any]:
+    return {"id": row.get("id") if isinstance(row.get("id"), int) else None,
+            "can_write": row.get("write_enabled") is True and row.get("enabled", True) is not False, "expires": _expiry(row.get("expires")),
+            "enabled": row.get("enabled", True) is not False}
+
+
+async def netbox_token_facts(url: str, token: str, transport: httpx.AsyncBaseTransport | None = None) -> dict[str, Any]:
+    """What NetBox says about the token a player signs in with: {id, can_write, expires}. Asked with that token itself
+    (every user may list their own tokens). When NetBox does not show the record (a v1 token, an unexpected answer),
+    the token is taken as read-only: write rights are never assumed."""
+    unknown = {"id": None, "can_write": False, "expires": None, "enabled": True}
+    key = token_key(token)
+    if key is None:
+        return unknown
+    extra = {"transport": transport} if transport is not None else {}
+    try:
+        async with httpx.AsyncClient(timeout=10, **extra) as hc:
+            r = await hc.get(f"{url}/api/users/tokens/", params={"key": key, "limit": 2},
+                             headers={"Authorization": auth_header(token), "Accept": "application/json"})
+        rows = r.json().get("results") if r.status_code == 200 else None
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return unknown
+    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict) or rows[0].get("key") not in (None, key):
+        return unknown
+    return token_facts(rows[0])
+
+
+async def netbox_token_status(url: str, proxy_token: str, token_id: int, transport: httpx.AsyncBaseTransport | None = None) -> dict[str, Any] | str | None:
+    """The record of a player's token, looked up by id with the proxy's own token: its facts, 'gone' (404: deleted), or
+    None when NetBox cannot or will not say (unreachable, or the proxy may not view tokens)."""
+    if not url or not proxy_token:
+        return None
+    extra = {"transport": transport} if transport is not None else {}
+    try:
+        async with httpx.AsyncClient(timeout=5, **extra) as hc:
+            r = await hc.get(f"{url}/api/users/tokens/{token_id}/", headers={"Authorization": auth_header(proxy_token), "Accept": "application/json"})
+        if r.status_code == 404:
+            return "gone"
+        return token_facts(r.json()) if r.status_code == 200 else None
+    except (httpx.HTTPError, ValueError, AttributeError):
+        return None
 
 
 async def netbox_user_status(url: str, proxy_token: str, uid: int, transport: httpx.AsyncBaseTransport | None = None) -> str | None:
@@ -194,9 +265,32 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
             return ended.get(GameStore.cookie_hash(cookie))
 
     def signed_out_why(reason: str) -> ApiError:
+        if reason.startswith("token_"):
+            what = {"token_gone": "was deleted", "token_expired": "has expired", "token_disabled": "was disabled"}[reason]
+            return ApiError("unauthorized", f"The NetBox token you signed in with {what}, so the game session has ended. "
+                            "Sign in again with a token NetBox accepts.", {"reason": reason})
         what = "deleted" if reason == "gone" else "deactivated"
         return ApiError("unauthorized", f"Your NetBox user was {what} in NetBox, so the game session has ended. "
                         "Sign in again with an active NetBox user.", {"reason": reason})
+
+    def token_ended(cookie: str, s: Session) -> str | None:
+        """Looks the session's token up in NetBox again. Returns why the session must end ("token_gone", ...), else
+        None after taking over a changed write flag or expiry. Says nothing when NetBox cannot tell."""
+        if fixtures_dir or s.token_id is None:
+            return None
+        got = anyio.from_thread.run(netbox_token_status, netbox_url, netbox_token, s.token_id, transport)
+        if got == "gone":
+            return "token_gone"
+        if not isinstance(got, dict):
+            return None
+        if not got["enabled"]:
+            return "token_disabled"
+        wall = get_store().clock()
+        if got["expires"] is not None and got["expires"] <= wall:
+            return "token_expired"
+        if got["can_write"] != s.can_write or got["expires"] is not None:
+            get_store().update_session(cookie, got["can_write"], got["expires"])
+        return None
 
     def user_status(uid: int) -> str | None:
         if fixtures_dir:
@@ -224,9 +318,15 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
             return s
         status = user_status(s.user_id)
         if status == "active":
+            why = token_ended(cookie, s)
+            if why:
+                get_store().end_session(cookie)
+                with checked_lock:
+                    ended[GameStore.cookie_hash(cookie)] = why
+                raise signed_out_why(why)
             with checked_lock:
                 checked[s.user_id] = now
-            return s
+            return get_store().session(cookie) or s
         if status == "no_permission":
             if write:
                 raise ApiError("netbox_error", "Nothing was written: RackWalker cannot check your NetBox user, because NetBox "
@@ -297,8 +397,15 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
         s = get_store().session(request.cookies.get(COOKIE)) if request.cookies.get(COOKIE) else None
         return (s.user_id if s is not None else None), name
 
+    def session_may_write(request: Request) -> bool:
+        """False for a session started with a read-only NetBox token. The local mode has no token and may write."""
+        cookie = request.cookies.get(COOKIE)
+        s = get_store().session(cookie) if cookie else None
+        return s.can_write if s is not None else local_player
+
     app.state.change_identity = change_identity
     app.state.game_require = require
+    app.state.session_may_write = session_may_write
 
     def session_body(s: Session | None) -> dict[str, Any]:
         if s is not None:
@@ -331,17 +438,19 @@ def install(app: FastAPI, *, open_store: Callable[[], GameStore], netbox_url: st
             raise ApiError("forbidden", f"Sign-in needs the {CSRF_HEADER} header from the game's own page.", None)
         token = _valid("SignInRequest", body)["token"]
         user = fixture_whoami(fixtures_dir, token) if fixtures_dir else await netbox_whoami(netbox_url, token, transport)
+        facts = ({"id": None, "can_write": True, "expires": None} if fixtures_dir   # fixture mode never writes anyway
+                 else await netbox_token_facts(netbox_url, token, transport))
         del token, body  # used once, never kept
-        value, s, resp_body = await run_in_threadpool(start_session, request.cookies.get(COOKIE), user)
+        value, s, resp_body = await run_in_threadpool(start_session, request.cookies.get(COOKIE), user, facts)
         resp = no_store(JSONResponse(resp_body))
         resp.set_cookie(COOKIE, value, max_age=int(s.expires_at - get_store().clock()), path=COOKIE_PATH, httponly=True,
                         samesite="strict", secure=cookie_secure)
         return resp
 
-    def start_session(old_cookie: str | None, user: dict[str, Any]) -> tuple[str, Session, dict[str, Any]]:
+    def start_session(old_cookie: str | None, user: dict[str, Any], facts: dict[str, Any]) -> tuple[str, Session, dict[str, Any]]:
         get_store().end_session(old_cookie)
         get_store().upsert_player(user["id"], user["username"], user["display_name"])
-        value, s = get_store().new_session(user["id"])
+        value, s = get_store().new_session(user["id"], facts["can_write"], facts["id"], facts["expires"])
         with checked_lock:
             checked[user["id"]] = _now()  # NetBox has just vouched for this user
         return value, s, session_body(s)

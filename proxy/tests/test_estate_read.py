@@ -14,7 +14,7 @@ from rackwalker_proxy import netbox as nb
 from rackwalker_proxy.app import Settings, create_app
 from rackwalker_proxy.game import CSRF_HEADER
 
-from .conftest import LOCAL, schema_validator
+from .conftest import LOCAL, schema_validator, token_record
 
 
 def ref(i: int, **extra: Any) -> dict[str, Any]:
@@ -99,11 +99,12 @@ def test_the_estate_is_read_with_slim_field_selections_and_becomes_plain_data():
     e = read(fake)
     assert (len(e.sites), len(e.devices), len(e.ports), len(e.cables), e.truncated, e.unreadable) == (1, 3, 6, 1, [], [])
     assert e.sites[1] == {"id": 1, "name": "Mill", "slug": "mill", "status": "active", "latitude": 52.0, "longitude": 4.0, "facility": "M1",
-                          "country": "NL"}
+                          "country": "NL", "last_updated": None}
     assert e.devices[2]["role"] == "switch" and e.devices[2]["primary_ip"] == "192.0.2.2/24" and e.racks[1]["iso_x"] == 1
     assert e.cables[1]["a"] == [("interface", 11)] and e.ports[("interface", 21)]["cable_id"] == 1
     # every list asks NetBox only for the fields the scanner uses
-    assert fake.lists("dcim/devices")[0]["fields"] == "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip"
+    assert fake.lists("dcim/devices")[0]["fields"] == ("id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,"
+                                                      "virtual_chassis,last_updated")
     assert fake.lists("dcim/interfaces")[0]["fields"] == "id,name,device,type,enabled,mgmt_only,cable,description,mark_connected"
     # the estate survives a round trip through JSON (the fixture-mode estate is stored that way)
     again = estate.Estate.from_json(e.to_json())
@@ -182,6 +183,8 @@ def test_the_quest_log_can_ask_for_a_fresh_read_of_netbox(live_like, monkeypatch
     real = fake.__call__
 
     def with_user(req: httpx.Request) -> httpx.Response:
+        if token_record(req) is not None:
+            return token_record(req)
         if req.url.path == "/api/authentication-check/":
             return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
         if req.url.path == "/api/users/users/9/":
@@ -208,6 +211,8 @@ def test_a_fix_that_was_later_undone_in_netbox_reopens_nothing_and_is_counted(li
     real = fake.__call__
 
     def with_user(req: httpx.Request) -> httpx.Response:
+        if token_record(req) is not None:
+            return token_record(req)
         if req.url.path == "/api/authentication-check/":
             return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
         if req.url.path == "/api/users/users/9/":
@@ -307,6 +312,8 @@ def walker(fake: FakeNetBox, monkeypatch, permissions: list[dict[str, Any]] | No
     real = fake.__call__
 
     def with_user(req: httpx.Request) -> httpx.Response:
+        if token_record(req) is not None:
+            return token_record(req)
         if req.url.path == "/api/authentication-check/":
             return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
         if req.url.path == "/api/users/users/9/":
@@ -419,6 +426,8 @@ def test_a_proxy_that_cannot_read_permissions_says_so_in_the_quest_log(tmp_path,
     real = fake.__call__
 
     def with_user(req: httpx.Request) -> httpx.Response:
+        if token_record(req) is not None:
+            return token_record(req)
         if req.url.path == "/api/authentication-check/":
             return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
         if req.url.path.startswith("/api/users/users/"):
@@ -469,3 +478,84 @@ def test_a_read_that_was_under_way_when_a_write_dropped_the_estate_is_not_kept(l
     monkeypatch.setattr(questroutes, "read_estate", real)
     assert cl.get("/api/quests/gaps/1").json()["source"] == "netbox"   # read again: the first read may predate the write
     assert cl.get("/api/quests/gaps/1").json()["source"] == "cache"
+
+
+def test_every_netbox_field_the_scanner_uses_lands_in_the_estate_where_it_belongs():
+    """One row of each kind with values that differ from the defaults, so a field read from the wrong place shows."""
+    data = tiny()
+    data["dcim/sites"][0]["last_updated"] = "2026-11-09T10:00:01Z"
+    data["dcim/racks"][0].update(custom_fields={"iso_x": 3, "iso_y": 7}, last_updated="2026-11-09T10:00:02Z")
+    data["dcim/devices"][0].update(virtual_chassis=ref(5, name="stack"), last_updated="2026-11-09T10:00:03Z", platform=ref(4, name="Example OS"),
+                                   asset_tag="AT-1", serial="SER-1")
+    data["dcim/devices"][1]["name"] = None
+    data["dcim/platforms"] = [{"id": 4, "name": "Example OS", "manufacturer": ref(2, name="Example Networks")}, {"id": 6, "name": "Any OS", "manufacturer": None}]
+    off, mgmt, marked, described = data["dcim/interfaces"][1], data["dcim/interfaces"][3], data["dcim/interfaces"][4], data["dcim/interfaces"][5]
+    off["enabled"] = False
+    mgmt.update(mgmt_only=True, type={"value": "virtual"})
+    marked["mark_connected"] = True
+    described["description"] = "to the annex"
+    data["dcim/devices"].append({**data["dcim/devices"][0], "id": 8, "name": "pp1", "virtual_chassis": None, "primary_ip": None})
+    data["dcim/front-ports"] = [{"id": 81, "name": "1", "device": ref(8), "cable": ref(1), "description": "",
+                                 "rear_ports": [{"position": 1, "rear_port": 91, "rear_port_position": 1}]}]
+    data["dcim/rear-ports"] = [{"id": 91, "name": "R1", "device": ref(8), "cable": None, "description": "trunk"}]
+    data["dcim/power-ports"] = [{"id": 71, "name": "PSU1", "device": ref(1), "cable": ref(9), "description": ""}]
+    data["dcim/power-outlets"] = [{"id": 72, "name": "OUT1", "device": ref(8), "cable": ref(9), "description": ""}]
+    data["dcim/power-feeds"] = [{"id": 3, "name": "feed A", "rack": ref(1), "cable": None}]
+    data["circuits/providers"] = [{"id": 2, "name": "Carrier"}]
+    data["circuits/circuit-types"] = [{"id": 3, "name": "Internet"}]
+    data["circuits/circuits"] = [{"id": 4, "cid": "C-1", "provider": ref(2), "type": ref(3, name="Internet"), "status": {"value": "active"}}]
+    data["circuits/circuit-terminations"] = [
+        {"id": 5, "circuit": ref(4), "term_side": "A", "termination_type": "dcim.site", "termination_id": 1, "cable": ref(2)},
+        {"id": 6, "circuit": ref(4), "term_side": "Z", "termination_type": "circuits.providernetwork", "termination_id": 1, "cable": None}]
+    data["ipam/ip-addresses"] += [{"id": 50, "address": "10.0.0.1/24", "vrf": ref(7, name="tenant-a"), "assigned_object_type": "dcim.interface",
+                                   "assigned_object_id": 12},
+                                  {"id": 51, "address": "10.0.0.2/24", "vrf": None, "assigned_object_type": "virtualization.vminterface",
+                                   "assigned_object_id": 12},
+                                  {"id": 52, "address": "10.0.0.3/24", "vrf": None, "assigned_object_type": None, "assigned_object_id": None}]
+    data["ipam/prefixes"].append({"id": 9, "prefix": "10.0.0.0/24", "vrf": ref(7, name="tenant-a")})
+    fake = FakeNetBox(data)
+    e = read(fake)
+    assert (e.sites[1]["last_updated"], e.racks[1]["last_updated"], e.devices[1]["last_updated"]) == (
+        "2026-11-09T10:00:01Z", "2026-11-09T10:00:02Z", "2026-11-09T10:00:03Z")
+    assert (e.racks[1]["iso_x"], e.racks[1]["iso_y"]) == (3, 7)
+    d = e.devices[1]
+    assert (d["vc_id"], d["platform"], d["asset_tag"], d["serial"], d["model"], d["manufacturer"], d["role"], d["role_name"]) == (
+        5, "Example OS", "AT-1", "SER-1", "EX", "Example", "switch", "Switch")
+    assert e.devices[2]["name"] is None and e.devices[2]["vc_id"] is None and e.device_name(2) == "the unnamed EX (device 2)"
+    assert e.platforms == {4: {"id": 4, "name": "Example OS", "manufacturer": "Example Networks"}, 6: {"id": 6, "name": "Any OS", "manufacturer": None}}
+    port = lambda i: e.ports[("interface", i)]  # noqa: E731
+    assert (port(12)["enabled"], port(11)["enabled"]) == (False, True)
+    assert (port(22)["mgmt_only"], port(22)["type"], port(21)["mgmt_only"], port(21)["type"]) == (True, "virtual", False, "1000base-t")
+    assert (port(31)["mark_connected"], port(32)["mark_connected"], port(32)["description"], port(31)["description"]) == (True, False, "to the annex", "")
+    assert not estate.is_physical(port(22)) and estate.is_physical(port(21))
+    assert e.ports[("front_port", 81)]["rear_ids"] == [91] and e.ports[("front_port", 81)]["cable_id"] == 1
+    assert e.ports[("rear_port", 91)]["description"] == "trunk" and e.ports[("rear_port", 91)]["rear_ids"] == []
+    assert e.ports[("power_port", 71)]["cable_id"] == 9 and e.ports[("power_outlet", 72)]["device_id"] == 8 and e.powered(1) is True
+    assert e.feeds == {3: {"id": 3, "name": "feed A", "rack_id": 1, "cable_id": None}}
+    assert e.circuits == {4: {"id": 4, "cid": "C-1", "provider_id": 2, "type": "Internet", "status": "active"}}
+    # a circuit end names a site only when it ends at a site (not at a provider network)
+    assert e.cterms == {5: {"id": 5, "circuit_id": 4, "side": "A", "site_id": 1, "cable_id": 2},
+                        6: {"id": 6, "circuit_id": 4, "side": "Z", "site_id": None, "cable_id": None}}
+    # an address counts as on an interface only when it is assigned to a device interface
+    assert e.ips[50] == {"id": 50, "address": "10.0.0.1/24", "vrf_id": 7, "vrf": "tenant-a", "interface_id": 12}
+    assert e.ips[51]["interface_id"] is None and e.ips[52]["interface_id"] is None and e.ips[1]["vrf_id"] is None
+    assert e.prefixes == {1: {"id": 1, "prefix": "192.0.2.0/24", "vrf_id": None}, 9: {"id": 9, "prefix": "10.0.0.0/24", "vrf_id": 7}}
+    # the front port leads to its rear port: a cable on the one and a cable on the other are one path
+    comp = e.components()
+    assert comp._find(("p", "front_port", 81)) == comp._find(("p", "rear_port", 91))
+    # the slim selections name every field read above
+    assert fake.lists("dcim/front-ports")[0]["fields"] == "id,name,device,cable,rear_ports,description"
+    assert fake.lists("circuits/circuit-terminations")[0]["fields"] == "id,circuit,term_side,termination_type,termination_id,cable"
+    assert fake.lists("ipam/ip-addresses")[0]["fields"] == "id,address,vrf,assigned_object_type,assigned_object_id"
+    assert fake.lists("ipam/prefixes")[0]["fields"] == "id,prefix,vrf" and fake.lists("dcim/platforms")[0]["fields"] == "id,name,manufacturer"
+    assert fake.lists("dcim/racks")[0]["fields"] == "id,name,site,location,u_height,custom_fields,last_updated"
+
+
+def test_a_site_read_that_misses_something_the_estate_had_is_not_spliced():
+    fake = FakeNetBox(two_sites())
+    e = read(fake)
+    assert not estate.left(e, read_part(fake, [1]), [1])
+    fake.data["dcim/devices"][2].update(site=ref(2), location=ref(2), rack=ref(2))     # sw3 moves to the other site
+    part = read_part(fake, [1])
+    assert estate.left(e, part, [1]) and 3 not in estate.splice(e, part, [1]).devices   # a splice would lose it: hence the check
+    assert not estate.left(e, read_part(fake, [1, 2]), [1, 2])

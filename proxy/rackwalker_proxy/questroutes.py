@@ -7,9 +7,12 @@ own write, "Check NetBox" and "Read NetBox again" read only the sites concerned 
 estate (`estate.splice`); such reads on request are spaced out (FRESH_SITE_S, FRESH_ALL_S), so no player can make the
 proxy read a large NetBox over and over. A write through the editor drops the kept estate.
 
-A quest line is complete only when a fresh read of NetBox no longer shows what it was about. XP comes from that
-check, never from the client: per line, `rank XP x share of its checks NetBox now confirms x repeat factor` (the
-same kind of fix at the same site pays 100, 80, 60, then 40 %). Practice and dry-run completions pay nothing.
+A quest line is complete only when a fresh read of NetBox shows its checks as passed. A check the fresh analysis does
+not make at all (the device was deleted, switched off or moved; the proxy could not read a list) confirms nothing: a
+line left with only such checks is closed as "no longer applies", with no XP and no tool. XP comes from the check,
+never from the client: per line, `line XP x share of one pass that NetBox now confirms x repeat factor` (the same kind
+of fix at the same site pays 100, 80, 60, then 40 %). A check pays once per player, whatever line it is confirmed
+under and however many requests ask at once (the store's `paid` table). Practice and dry-run completions pay nothing.
 """
 from __future__ import annotations
 
@@ -27,7 +30,7 @@ from fastapi.responses import JSONResponse
 from . import changes, findings, perms, practice, quests, schema
 from . import contracts_gen as c
 from .errors import ApiError
-from .estate import Estate, read_estate, simulate, splice
+from .estate import Estate, left, read_estate, simulate, splice
 from .netbox import NetBox
 
 log = logging.getLogger("rackwalker_proxy.quests")
@@ -42,6 +45,8 @@ TOOL_FOR_RANK = {"connectivity": "cable_tracer", "identity": "label_maker"}
 # whole estate at most every FRESH_ALL_S; in between, the kept estate answers. A quest's own write is always read back.
 FRESH_SITE_S = 5.0
 FRESH_ALL_S = 15.0
+READ_ONLY_TOKEN = ("You signed in with a read-only NetBox token (or before the game checked tokens), so changes are previewed, not "
+                   "written. Sign in again with a write-enabled token of your own to write.")
 GIVER_NAMES = ("Bramble", "Tansy", "Pippin", "Moss", "Wren", "Sorrel", "Hazel", "Fenn", "Juniper", "Teasel")
 Json = Annotated[Any, Body()]
 
@@ -64,9 +69,12 @@ def rewards_body(raw: dict[str, Any], rows: dict[str, dict[str, Any]], practice_
 
 
 def xp_for(line_xp: int, newly: int, total: int, repeats: int) -> int:
-    """XP for `newly` confirmed checks of a line that stands for `total`: the line's rank XP, by the share NetBox now
-    confirms, times the repeat factor (the same kind of fix at the same site has paid `repeats` times before)."""
-    return round(line_xp * newly / max(1, total) * REPEAT[min(repeats, len(REPEAT) - 1)])
+    """XP for `newly` confirmed checks of a line that stands for `total`: the line's XP, by the share NetBox now
+    confirms, times the repeat factor (the same kind of fix at the same site has paid `repeats` times before). A long
+    line is played a few objects at a time (quests.MAX_BUNDLE), and one such pass is worth the line's XP: recording
+    how to reach four of a hundred devices pays the same as four of four."""
+    share = min(1.0, newly / max(1, min(total, quests.MAX_BUNDLE)))
+    return round(line_xp * share * REPEAT[min(repeats, len(REPEAT) - 1)])
 
 
 def offer(fresh: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -118,7 +126,8 @@ class Standing:
 
     def __init__(self, a: findings.Analysis, rows: dict[str, dict[str, Any]]):
         self.a, self.rows = a, rows
-        self.resolved = {qid[2:] for qid, r in rows.items() if r["status"] == "dismissed"} | \
+        # a dismissed line settles every check it stood for (a line about twelve ports has twelve), not only its own id
+        self.resolved = {cid for qid, r in rows.items() if r["status"] == "dismissed" for cid in [qid[2:], *r["checks"]]} | \
                         {cid for r in rows.values() for cid in quests.waived(r["snapshot"], r["answers"])}
 
     def closed(self, line: dict[str, Any]) -> bool:
@@ -172,6 +181,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
     # (`drops` counts the times the estate was dropped: a read that was under way when a write dropped it is not kept)
     cached: dict[str, Any] = {"at": 0.0, "estate": None, "sites": {}, "drops": 0}
     reading = asyncio.Lock()   # one read of NetBox at a time: requests that arrive meanwhile use its result
+    applying: dict[int, asyncio.Lock] = {}   # per player: one quest apply at a time (two tabs never write one line twice)
 
     def drop_estate() -> None:
         cached.update(estate=None, sites={}, drops=cached["drops"] + 1)
@@ -221,10 +231,18 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             if not want:
                 return base
             try:
-                e = splice(base, await read_estate(client, want), want)
+                part = await read_estate(client, want)
+            except ApiError as err:
+                if err.code == "netbox_error" and (err.details or {}).get("status") == 400:
+                    return await read_whole()   # NetBox no longer knows one of these sites: the whole picture is read
+                drop_estate()
+                raise
             except BaseException:
                 drop_estate()   # never serve what was read before a write as current
                 raise
+            if left(base, part, want):
+                return await read_whole()   # something left these sites (moved or deleted): only a whole read says where it is
+            e = splice(base, part, want)
             if cached["drops"] == drops:
                 cached["estate"] = e
                 cached["sites"].update({s: time.monotonic() for s in want})
@@ -255,11 +273,12 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 out.add(target["id"])
         return {s for s in out if s is not None}
 
-    async def may_write(uid: int | None) -> perms.Permissions | None:
-        """The player's NetBox permissions, or None for the single-user local mode (no NetBox user to ask about)."""
+    async def may_write(uid: int | None, fresh: bool = False) -> perms.Permissions | None:
+        """The player's NetBox permissions, or None for the single-user local mode (no NetBox user to ask about).
+        `fresh` (every write) asks NetBox now; the quest log may use an answer a few seconds old."""
         if uid is None or uid == 0 or reader is None:
             return None
-        return await reader.of(uid)
+        return await reader.of(uid, fresh=fresh)
 
     app.state.may_write = may_write
 
@@ -270,7 +289,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         e, source = await real_estate()
         if site_id not in e.sites:
             raise ApiError("not_found", f"Site {site_id} does not exist.", {"kind": "site", "id": site_id})
-        a = findings.analyse(e)
+        a = await run_in_threadpool(findings.analyse, e)   # the first scan of a large estate takes seconds
         items = a.site_gaps(site_id)
         body = {"contract_version": schema.CONTRACT_VERSION, "site_id": site_id, "total": len(items), "offset": offset, "limit": limit,
                 "unlisted": a.unlisted.get(site_id, 0),
@@ -279,11 +298,33 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         return JSONResponse(body)
 
     # ---------------------------------------------------------------- the board
+    LIVE_ROW = ("active", "parked", "ready", "practised")
+
+    def adopt(uid: int, scope: str, a: findings.Analysis, ls: list[dict[str, Any]]) -> dict[str, dict[str, Any]]:
+        """The player's rows, after any line they had begun has followed its finding to a new id. A finding about a
+        group is named after the group's first member; when that member goes (the first address is deleted, the first
+        switch of an island is switched off, the device moves to another rack) the same unfixed problem comes back
+        under another id, and the begun line goes with it instead of being left behind."""
+        st = store()
+        rows = st.quests(uid, scope)
+        by_id = {line["id"]: line for line in ls}
+        for qid, r in sorted(rows.items()):
+            if r["status"] not in LIVE_ROW or qid in by_id or qid.startswith("q:spot_check:"):
+                continue
+            still = {cid for cid in r["checks"] if a.check(cid, r["site_id"]) is False}
+            heir = next((line for line in ls if line["kind"] == r["snapshot"].get("kind") and line["id"] not in rows
+                         and still & set(quests.check_ids(line))), None) if still else None
+            if heir is not None:
+                st.move_quest(uid, scope, qid, {**r, "quest_id": heir["id"], "site_id": heir["site_id"],
+                                                "checks": list(dict.fromkeys(r["checks"] + quests.check_ids(heir))), "snapshot": snapshot(heir)})
+                rows = st.quests(uid, scope)
+        return rows
+
     def board(uid: int, scope: str, site_id: int | None, e: Estate, gate: Gate) -> dict[str, Any]:
         st = store()
         a = findings.analyse(e)
         ls = quests.lines(e, a)
-        rows = st.quests(uid, scope)
+        rows = adopt(uid, scope, a, ls)
         raw = st.rewards(uid)
         tools = frozenset(["label_maker", "cable_tracer"] if scope == "practice" else raw["tools"])
         by_id = {line["id"]: line for line in ls}
@@ -291,8 +332,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         stand = Standing(a, rows)
         dismissed = stand.resolved
         # something the player completed that NetBox no longer shows: counted, never reopened
-        lapsed_ids = {qid for qid, r in rows.items() if r["status"] == "done" and qid in by_id and stand.closed(by_id[qid])
-                      and quests.open_checks(a, by_id[qid])}
+        lapsed_ids = {qid for qid, r in rows.items() if r["status"] == "done" and
+                      ((qid in by_id and stand.closed(by_id[qid]) and quests.open_checks(a, by_id[qid]))
+                       or (qid not in by_id and any(a.check(cid, r["site_id"]) is False for cid in r["verified"])))}
         reopened = {qid for qid, r in rows.items() if r["status"] in ("done", "dismissed") and qid in by_id and not stand.closed(by_id[qid])}
         # a list that was cut at its cap, or that NetBox refuses to the proxy: the picture is not whole
         partial = sorted(set(e.truncated + e.unreadable))
@@ -327,18 +369,25 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     out_quests.append(quest_body(scope, line, row, state, status, gate=gate))
             if fresh and fresh[0] in ls and (best is None or ls.index(fresh[0]) < best[0]):
                 best = (ls.index(fresh[0]), fresh[0]["id"])
+            # a site's Confusion appears over kit that is in order: a site with nothing in it has nothing to guard
             sites_out.append({"site_id": sid, "name": e.sites[sid]["name"], "completeness": comp, "open_quests": real_open,
-                              "boss_ready": comp["total"] > 0 and comp["open"] == 0 and not partial, "boss_acknowledged": sid in acks,
-                              "giver": {"name": GIVER_NAMES[sid % len(GIVER_NAMES)]}})
-        # A line the player had begun whose finding is gone: someone recorded it by other means. It waits in the log as
-        # "ready" with nothing to write; checking it against NetBox completes it.
+                              "boss_ready": comp["total"] > 0 and comp["open"] == 0 and not partial and bool(e.site_devices(sid)),
+                              "boss_acknowledged": sid in acks, "giver": {"name": GIVER_NAMES[sid % len(GIVER_NAMES)]}})
+        # A line the player had begun whose finding is gone. Either NetBox now shows what it asked for (someone recorded
+        # it by other means), or what it was about is no longer there. It waits in the log as "ready" with nothing to
+        # write; "Check NetBox" completes it in the first case and closes it, unpaid, in the second.
         if scope == "netbox":
             for r in rows.values():
-                if r["status"] in ("active", "parked", "ready", "practised") and r["quest_id"] not in by_id and site_id in (None, r["site_id"]) \
+                if r["status"] in LIVE_ROW and r["quest_id"] not in by_id and site_id in (None, r["site_id"]) \
                         and not r["quest_id"].startswith("q:spot_check:"):   # a spot check is answered by the player, never by NetBox
                     snap = r["snapshot"]
+                    shows = any(a.check(cid, r["site_id"]) is True for cid in r["checks"])
                     gone = {"step": None, "proposal": None, "checklist": [], "said": [], "target": None,
-                            "note": "NetBox already shows this. Check it against NetBox to complete the line."}
+                            "note": (f"The game could not read everything from NetBox ({', '.join(partial)}), so this line cannot be "
+                                     "checked now. It stays as it is." if partial and not shows else
+                                     "NetBox already shows this. Check it against NetBox to complete the line." if shows else
+                                     "This no longer applies: what the line was about is not in NetBox any more, or is asked about in "
+                                     "another line. Check it against NetBox to close it (nothing is paid for it).")}
                     out_quests.append(quest_body(scope, {**snap, "finding": {**snap["finding"], "data": {}}}, r, gone, "ready"))
         done = sorted((r for r in rows.values() if r["status"] in ("done", "dismissed") and site_id in (None, r["site_id"])
                        and r["quest_id"] not in reopened),
@@ -350,17 +399,21 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         here = [q for q in out_quests if q["status"] not in ("done", "dismissed") and q["kind"] != "spot_check"]
         in_view = [s for s in sites_out if site_id in (None, s["site_id"])]
         undone = sum(1 for qid in lapsed_ids if site_id in (None, rows[qid]["site_id"]))
-        all_ok = not here and queued == 0 and all(s["completeness"]["open"] == 0 for s in in_view) and not partial
+        left_open = sum(s["completeness"]["open"] for s in in_view)
+        all_ok = not here and queued == 0 and left_open == 0 and not partial
         where = e.sites[site_id]["name"] if site_id in e.sites else ("the practice island" if scope == "practice" else "your estate")
-        if partial and not here and queued == 0 and all(s["completeness"]["open"] == 0 for s in in_view):
+        if partial and not here and queued == 0 and left_open == 0:
             message = (f"Nothing to ask at {where} from what the game could read, but it could not read everything "
                        f"({', '.join(partial)}): the picture is not whole, so nothing here counts as complete.")
         elif all_ok:
             message = f"All in order at {where}: nothing the game can see is missing. Well kept."
-        elif not here and queued == 0:
+        elif not here and queued == 0 and undone:
             # nothing left to ask, yet not complete: something done before is no longer in NetBox. Said, not reopened.
             message = (f"Nothing new to ask at {where}. {undone} thing{'s' if undone != 1 else ''} you recorded before "
                        f"{'are' if undone != 1 else 'is'} no longer in NetBox; nothing is reopened.")
+        elif not here and queued == 0:
+            message = (f"Nothing new to ask at {where} right now, though {left_open} check{'s' if left_open != 1 else ''} "
+                       f"{'are' if left_open != 1 else 'is'} still open; read NetBox again later.")
         else:
             n = len(here) + queued
             message = f"{n} thing{'s' if n != 1 else ''} to find out at {where}; the most useful one comes first."
@@ -373,28 +426,31 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 "rewards": rewards_body(raw, real_rows, practice_rows, len(lapsed_ids) if scope == "netbox" else 0, loan=scope == "practice"),
                 "incomplete": partial}
 
-    async def gate_of(scope: str, uid: int | None) -> Gate:
-        """Whether a change would really be written for this player: the proxy's mode first, then the player's own
-        NetBox permissions (so the quest log says it before the player has answered a whole line)."""
+    async def gate_of(scope: str, uid: int | None, request: Request | None = None, fresh: bool = False) -> Gate:
+        """Whether a change would really be written for this player: the proxy's mode first, then the token they signed
+        in with, then the player's own NetBox permissions (so the quest log says it before the player has answered a
+        whole line). `fresh` (an apply) reads the permissions from NetBox now."""
         if scope == "practice":
             return Gate("The practice island is made up: nothing you do here reaches NetBox.", None)
         if fixtures_dir:
             return Gate("This proxy serves canned fixture data: nothing is written.", None)
         if not write_enabled:
             return Gate("The proxy runs in dry-run mode (WRITE_ENABLED is not 1): changes are previewed, not written.", None)
+        if request is not None and not await run_in_threadpool(app.state.session_may_write, request):
+            return Gate(READ_ONLY_TOKEN, None)
         try:
-            return Gate(None, await may_write(uid))
+            return Gate(None, await may_write(uid, fresh))
         except ApiError as err:
             text = err.message.removeprefix(perms.NOT_WRITTEN)
             return Gate(text[:1].upper() + text[1:], None)
 
-    async def board_for(uid: int, scope: str, site_id: int | None, fresh: bool = False) -> dict[str, Any]:
+    async def board_for(uid: int, scope: str, site_id: int | None, fresh: bool = False, request: Request | None = None) -> dict[str, Any]:
         e, _ = await estate_of(scope, uid, fresh, site_id)
         if site_id is not None and site_id not in e.sites and scope == "netbox" and not fresh:
             e, _ = await real_estate(fresh=True)   # a site added to NetBox since the estate was read
         if site_id is not None and site_id not in e.sites:
             raise ApiError("not_found", f"Site {site_id} does not exist.", {"kind": "site", "id": site_id})
-        gate = await gate_of(scope, uid)
+        gate = await gate_of(scope, uid, request)
         return await run_in_threadpool(board, uid, scope, site_id, e, gate)
 
     def find_line(e: Estate, scope: str, uid: int, quest_id: str) -> tuple[dict[str, Any], dict[str, Any] | None, findings.Analysis, frozenset[str]]:
@@ -430,7 +486,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         uid = await run_in_threadpool(require, request, False)
         # fresh=true reads NetBox now instead of using the kept estate (the log's "Read NetBox again")
         # (asked too soon after the last such read, the kept estate answers: see FRESH_SITE_S and FRESH_ALL_S)
-        return _no_store(await board_for(uid, scope, site_id, fresh))
+        return _no_store(await board_for(uid, scope, site_id, fresh, request))
 
     @app.post("/api/game/quests/answer")
     async def answer(request: Request, body: Json):
@@ -438,7 +494,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         b = _valid("QuestAnswer", body)
         scope = b["scope"]
         e, _ = await estate_of(scope, uid)
-        gate = await gate_of(scope, uid)
+        gate = await gate_of(scope, uid, request)
 
         def work() -> dict[str, Any]:
             line, row, _, tools = find_line(e, scope, uid, b["quest_id"])
@@ -493,44 +549,79 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         planned = await changes.preview(client, c.ChangeSet.model_validate(state["proposal"]))
         return _no_store(changes.result("preview", planned, write_enabled).model_dump(mode="json", exclude_unset=True))
 
-    def settle(uid: int, scope: str, line: dict[str, Any], row: dict[str, Any] | None, after: Estate, real: bool) -> dict[str, Any]:
-        """Reads the outcome from a fresh estate: which of the line's checks are now confirmed, what that pays."""
+    def settle(uid: int, scope: str, line: dict[str, Any], after: Estate, real: bool, orphan: bool = False) -> dict[str, Any]:
+        """Reads the outcome from a fresh estate: which of the line's checks NetBox now confirms, and what that pays.
+
+        A check counts as confirmed only when the fresh analysis makes it and it passes. A check the analysis no longer
+        makes (the object is gone, or is no longer of that kind) confirms nothing; a line left with only such checks is
+        closed and forgotten, unpaid. `orphan`: the line's finding is gone, so a check of it that is still open belongs
+        to another line now. What a line has had confirmed stays counted when the fix is undone later (it is never
+        reopened or paid again). The row is read, paid and saved in one store transaction, and a check pays once per
+        player, so two requests at the same moment cannot both be paid."""
         st = store()
         a = findings.analyse(after)
-        base = base_checks(line, row)
-        said = row["answers"] if row else {}
-        waived = set(quests.waived(line, said))   # "there is none, on purpose": answered, never paid
-        site_checks = a.checks.get(line["site_id"], {})
-        still = {cid for cid in base if site_checks.get(cid) is False and cid not in waived}
-        confirmed = [cid for cid in base if cid not in still and cid not in waived]
-        newly = [cid for cid in confirmed if cid not in (row["verified"] if row else [])]
-        complete = not still
-        xp = potions = 0
-        unlocked: list[str] = []
-        if real and newly:
-            signature = f"{line['kind']}:{line['site_id']}"
-            raw = st.rewards(uid)
-            xp = xp_for(line["xp"], len(newly), len(base), raw["repeats"].get(signature, 0))
-            before_level = 1 + raw["xp"] // LEVEL_XP
-            st.add_reward(uid, line["id"], "xp", xp, signature)
-            if 1 + (raw["xp"] + xp) // LEVEL_XP > before_level:
-                potions = 1
-                st.add_reward(uid, line["id"], "potion", 1, "level")
-            tool = TOOL_FOR_RANK.get(line["rank"])
-            if complete and tool and tool not in raw["tools"]:
-                st.add_reward(uid, line["id"], "tool", 1, "tool", item=tool)
-                unlocked.append(tool)
-        if complete:
-            status = "done" if (real or scope == "practice") else "practised"
-        else:
-            status = "active"
-        # What the player said is kept: a check that found nothing new, a dry run and a refused write change nothing,
-        # so the line stands where it stood. Only the answers about what is now confirmed go (the rest of an errand
-        # is asked about, not the part that is done).
-        wrote = real or scope == "practice"
-        answers = quests.prune(said, confirmed) if status == "active" and wrote else said
-        saved = save_row(uid, scope, line, row, status, answers, verified=confirmed if wrote else (row["verified"] if row else []))
-        return {"saved": saved, "complete": complete, "newly": newly, "xp": xp, "potions": potions, "unlocked": unlocked, "open": sorted(still)}
+        whole = not (after.truncated or after.unreadable)
+        with st.atomic():
+            row = st.quests(uid, scope).get(line["id"])
+            base = base_checks(line, row)
+            said = row["answers"] if row else {}
+            before = list(row["verified"]) if row else []
+            waived = set(quests.waived(line, said))   # "there is none, on purpose": answered, never paid
+            state = {cid: a.check(cid, line["site_id"]) for cid in base}
+            now = [cid for cid in base if state[cid] is True and cid not in waived]
+            newly = [cid for cid in now if cid not in before]
+            # what is counted stays counted; an open check is one NetBox shows as open (or one it could not look at)
+            still = [cid for cid in base if cid not in waived and cid not in before
+                     and (state[cid] is False and not orphan or state[cid] is None and not whole)]
+            verified = list(dict.fromkeys(before + now))
+            complete = not still and bool(verified)
+            moot = real and not still and not verified and any(cid not in waived for cid in base)
+            xp = potions = 0
+            unlocked: list[str] = []
+            if real and newly:
+                paid = st.mark_paid(uid, newly)
+                if paid:
+                    signature = f"{line['kind']}:{line['site_id']}"
+                    raw = st.rewards(uid)
+                    # the share is of what the line still stands for: a check that went away is not part of the errand
+                    stands = [cid for cid in base if state[cid] is not None or cid in before]
+                    xp = xp_for(line["xp"], len(paid), len(stands), raw["repeats"].get(signature, 0))
+                    before_level = 1 + raw["xp"] // LEVEL_XP
+                    st.add_reward(uid, line["id"], "xp", xp, signature)
+                    if 1 + (raw["xp"] + xp) // LEVEL_XP > before_level:
+                        potions = 1
+                        st.add_reward(uid, line["id"], "potion", 1, "level")
+                    tool = TOOL_FOR_RANK.get(line["rank"])
+                    if complete and tool and tool not in raw["tools"]:
+                        st.add_reward(uid, line["id"], "tool", 1, "tool", item=tool)
+                        unlocked.append(tool)
+            wrote = real or scope == "practice"
+            if moot:
+                st.delete_quest(uid, scope, line["id"])
+                saved = {**(row or {"quest_id": line["id"], "site_id": line["site_id"], "answers": {}, "checks": base, "verified": [],
+                                    "snapshot": snapshot(line), "updated_at": None}), "status": "dismissed"}
+            else:
+                if complete:
+                    status = "done" if wrote else "practised"
+                elif row is not None and row["status"] == "dismissed" and not wrote:
+                    status = "dismissed"
+                else:
+                    status = "active"
+                # What the player said is kept: a check that found nothing new, a dry run and a refused write change
+                # nothing, so the line stands where it stood. Only the answers about what is now confirmed go (the rest
+                # of an errand is asked about, not the part that is done).
+                answers = quests.prune(said, now) if status == "active" and wrote else said
+                saved = save_row(uid, scope, line, row, status, answers, verified=verified if wrote else before)
+        undone = [cid for cid in before if state.get(cid) is False]
+        return {"saved": saved, "complete": complete, "newly": newly, "xp": xp, "potions": potions, "unlocked": unlocked, "open": sorted(still),
+                "moot": moot, "undone": undone, "was_done": row is not None and row["status"] == "done"}
+
+    def standing_still(uid: int, scope: str, line: dict[str, Any]) -> dict[str, Any]:
+        """A settlement that changes nothing: the line stays exactly where it stood (a write NetBox did not take)."""
+        row = store().quests(uid, scope).get(line["id"])
+        saved = row if row is not None else save_row(uid, scope, line, None, "active", {})
+        return {"saved": saved, "complete": False, "newly": [], "xp": 0, "potions": 0, "unlocked": [], "open": [], "moot": False,
+                "undone": [], "was_done": False}
 
     def verdict(uid: int, scope: str, line: dict[str, Any], s: dict[str, Any], mode: str, verified: bool, message: str,
                 result: dict[str, Any] | None, trace: str | None, e: Estate, gate: Gate | None = None) -> dict[str, Any]:
@@ -554,7 +645,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             status = {"asking": "active"}.get(state["status"], state["status"])   # as the quest log would show it
         return {"quest": quest_body(scope, shown, s["saved"], state, status, gate=gate), "mode": mode, "verified": verified,
                 "complete": s["complete"], "xp_awarded": s["xp"], "potions_awarded": s["potions"], "message": message,
-                "can_now": line["outcome"] if s["complete"] and verified else None, "unlocked": s["unlocked"], "trace": trace, "result": result,
+                "can_now": line["outcome"] if s["complete"] and verified and not s["was_done"] else None, "unlocked": s["unlocked"],
+                "trace": trace, "result": result,
                 "rewards": rewards_body(st.rewards(uid), rows, prows, 0, loan=scope == "practice")}
 
     async def trace_text(e: Estate, proposal: dict[str, Any] | None) -> str | None:
@@ -578,26 +670,36 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         for t in far or []:
             if t.get("circuit"):
                 names.append(f"circuit {t['circuit'].get('cid')} (side {t.get('term_side')})")
-            else:
-                names.append(f"{(t.get('device') or {}).get('name') or '?'} {t.get('name') or ''}".strip())
+            elif t.get("device"):
+                names.append(f"{t['device'].get('name') or 'an unnamed device'} {t.get('name') or ''}".strip())
+            elif t.get("name") or t.get("display"):
+                names.append(str(t.get("name") or t.get("display")))   # a circuit's far side: the site or network it ends at
         return f"NetBox's cable trace from {start} reaches {' and '.join(names) or 'an open end'} in {len(segs)} hop{'s' if len(segs) != 1 else ''}."
+
+    def refusal_reason(result: dict[str, Any]) -> str:
+        err = next((o.get("error") for o in result["ops"] if o["status"] == "error" and o.get("error")), None)
+        return (err or {}).get("message") or "NetBox gave no reason."
 
     @app.post("/api/game/quests/apply")
     async def apply(request: Request, body: Json):
         uid = await run_in_threadpool(require, request, True)
         b = _valid("QuestRef", body)
+        async with applying.setdefault(uid, asyncio.Lock()):
+            return await apply_one(request, uid, b)
+
+    async def apply_one(request: Request, uid: int, b: dict[str, Any]) -> JSONResponse:
         scope = b["scope"]
         e, _ = await estate_of(scope, uid)
         line, row, state = await run_in_threadpool(ready_line, e, scope, uid, b["quest_id"])
         proposal = state["proposal"]
-        gate = await gate_of(scope, uid)
+        gate = await gate_of(scope, uid, request, fresh=True)
         if scope == "practice":
             result, after = sim_result(e, proposal, "apply")
             ok = all(o["status"] != "error" for o in result["ops"])
             if ok:
                 result["applied"] = True
                 await run_in_threadpool(lambda: store().set_practice_ops(uid, store().practice_ops(uid) + proposal["ops"]))
-            s = await run_in_threadpool(settle, uid, scope, line, row, after if ok else e, False)
+            s = await run_in_threadpool(settle, uid, scope, line, after if ok else e, False)
             msg = ("The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it."
                    if s["complete"] else "The island took that change." if ok else "That change does not fit the island; look at the preview.")
             return _no_store(await run_in_threadpool(verdict, uid, scope, line, s, "practice", ok and s["complete"], msg, result, None, after if ok else e, gate))
@@ -613,9 +715,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 after = e.copy()
                 simulate(after, proposal["ops"])
             ok = all(o["status"] != "error" for o in result["ops"])
-            s = await run_in_threadpool(settle, uid, scope, line, row, after if ok else e, False)
+            s = await run_in_threadpool(settle, uid, scope, line, after if ok else e, False)
             msg = (f"Practice run, nothing was written: {blocked} No XP for a practice run." if ok
-                   else "NetBox would refuse that change; look at the preview.")
+                   else f"NetBox would refuse that change: {refusal_reason(result)}")
             return _no_store(await run_in_threadpool(verdict, uid, scope, line, s, "dry_run", False, msg, result, None, e, gate))
         assert client is not None
         try:
@@ -628,12 +730,21 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             if reader:
                 reader.clear()
         result = res.model_dump(mode="json", exclude_unset=True)
+        wrote_some = any(o["status"] == "ok" for o in result["ops"])
+        if not res.applied and not wrote_some:
+            # NetBox took nothing (the object changed or went since the question was asked, or NetBox refused the
+            # value): nothing is confirmed and nothing is paid. The estate is read again before the next question, so
+            # the line asks with what NetBox holds now.
+            drop_estate()
+            s = await run_in_threadpool(standing_still, uid, scope, line)
+            msg = f"NetBox did not take that change, and nothing was written: {refusal_reason(result)}"
+            return _no_store(await run_in_threadpool(verdict, uid, scope, line, s, "real", False, msg, result, None, e, gate))
         # never the client's word: NetBox is read again, at the sites this change reached
         after = await site_estate(touched_sites(e, line, proposal["ops"]), force=True)
-        s = await run_in_threadpool(settle, uid, scope, line, row, after, True)
+        s = await run_in_threadpool(settle, uid, scope, line, after, True)
         trace = await trace_text(after, proposal) if res.applied else None
         if not res.applied:
-            msg = "NetBox did not take that change; look at the preview for the reason."
+            msg = f"NetBox took only part of that change: {refusal_reason(result)}"
         elif s["complete"]:
             msg = "NetBox confirms it."
         elif s["newly"]:
@@ -654,23 +765,36 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         st_rows = await run_in_threadpool(lambda: store().quests(uid, "netbox"))
         row = st_rows.get(b["quest_id"])
         kept, _ = await real_estate()
-        known = next((x for x in quests.lines(kept, findings.analyse(kept)) if x["id"] == b["quest_id"]), None)
+        known = next((x for x in await run_in_threadpool(lambda: quests.lines(kept, findings.analyse(kept))) if x["id"] == b["quest_id"]), None)
         if row is None and known is None:
             raise ApiError("not_found", "That quest is not open.", {"quest_id": b["quest_id"]})
         # the line's own site is read again (not the whole estate), and not more often than every few seconds
         after = await site_estate({row["site_id"] if row else known["site_id"]})
-        a = findings.analyse(after)
-        line = next((x for x in quests.lines(after, a) if x["id"] == b["quest_id"]), None)
+        line = next((x for x in await run_in_threadpool(lambda: quests.lines(after, findings.analyse(after))) if x["id"] == b["quest_id"]), None)
+        orphan = line is None
         if line is None:
             if row is None:
                 raise ApiError("not_found", "That quest is not open.", {"quest_id": b["quest_id"]})
             snap = row["snapshot"]
             line = {**snap, "finding": {**snap["finding"], "data": {}}, "site_id": row["site_id"]}
-        s = await run_in_threadpool(settle, uid, "netbox", line, row, after, True)
-        msg = ("NetBox confirms it." if s["complete"] else
-               f"NetBox confirms {len(s['newly'])} more; the rest stays open." if s["newly"] else "NetBox does not show it yet.")
-        gate = await gate_of("netbox", uid)
-        return _no_store(await run_in_threadpool(verdict, uid, "netbox", line, s, "real", bool(s["newly"]) or s["complete"], msg, None, None, after, gate))
+        s = await run_in_threadpool(settle, uid, "netbox", line, after, True, orphan)
+        if s["moot"]:
+            msg = ("This no longer applies: what the line was about is not in NetBox any more (deleted, switched off, moved, or "
+                   "asked about in another line). The line is closed; nothing is paid for it.")
+        elif s["was_done"] and not s["newly"]:
+            msg = ("NetBox no longer shows what you recorded here. It stays counted as done; nothing is reopened or paid again."
+                   if s["undone"] else "NetBox still confirms it.")
+        elif s["complete"]:
+            msg = "NetBox confirms it."
+        elif s["newly"]:
+            msg = f"NetBox confirms {len(s['newly'])} more; the rest stays open."
+        elif after.truncated or after.unreadable:
+            msg = (f"The game could not read everything from NetBox ({', '.join(sorted(set(after.truncated + after.unreadable)))}), "
+                   "so nothing could be checked. The line stays as it is.")
+        else:
+            msg = "NetBox does not show it yet."
+        gate = await gate_of("netbox", uid, request)
+        return _no_store(await run_in_threadpool(verdict, uid, "netbox", line, s, "real", bool(s["newly"]) or (s["complete"] and not s["undone"]), msg, None, None, after, gate))
 
     @app.post("/api/game/practice/reset")
     async def reset_practice(request: Request):

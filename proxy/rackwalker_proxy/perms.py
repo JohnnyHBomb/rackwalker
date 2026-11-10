@@ -17,7 +17,7 @@ with its own token (it needs view on users, groups and object permissions) and a
     query on NetBox's side), so a constrained permission never counts here: the player is told, and can make that
     change in NetBox itself. Refusing is the safe side.
 
-The answer is cached per user for a short time and dropped after any write.
+The answer is kept per user for a short time for the quest log only; every write reads it from NetBox again.
 """
 from __future__ import annotations
 
@@ -75,9 +75,10 @@ class PermissionReader:
     def clear(self) -> None:
         self._cache.clear()
 
-    async def of(self, user_id: int) -> Permissions:
+    async def of(self, user_id: int, fresh: bool = False) -> Permissions:
+        """`fresh`: ask NetBox now (every write does: a permission taken away is gone at the next write, not 30 s on)."""
         hit = self._cache.get(user_id)
-        if hit and time.monotonic() - hit[0] < self.ttl:
+        if not fresh and hit and time.monotonic() - hit[0] < self.ttl:
             return hit[1]
         try:
             user = await self.client.request("GET", f"users/users/{user_id}/", not_found={"kind": "user", "id": user_id})

@@ -36,7 +36,9 @@ VIEW = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.devicety
         # the quest scanner reads these as well (estate.py):
         "circuits.provider", "circuits.circuittype", "dcim.platform", "ipam.ipaddress", "ipam.prefix",
         # and before any write the proxy reads the player's own permissions (perms.py):
-        "users.group", "users.objectpermission"]
+        "users.group", "users.objectpermission",
+        # and it rechecks the token a player signed in with (still there, still write-enabled, not expired):
+        "users.token"]
 CHANGE = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.cable", "dcim.interface"]  # changes.ENDPOINT
 # what a quest line may create: a cable, a circuit and its end at a site, an address, a prefix (changes.NET_OPS)
 ADD = ["dcim.rack", "dcim.cable", "circuits.circuit", "circuits.circuittermination", "ipam.ipaddress", "ipam.prefix"]
@@ -51,7 +53,7 @@ def main() -> None:
     url, admin, secrets = os.environ["NETBOX_URL"].rstrip("/"), os.environ["NETBOX_TOKEN"], Path(os.environ["SECRETS"])
     var = f"PROXY_{which.upper()}_TOKEN"
     stored = dict(re.findall(r"^(PROXY_R[OW]_TOKEN)=(\S+)$", secrets.read_text(), re.M)).get(var)
-    if stored and works(url, stored) and sees(url, stored, "users/permissions"):
+    if stored and works(url, stored) and sees(url, stored, "users/permissions") and granted(url, stored, "users.token"):
         print(stored)
         return
     s = requests.Session()
@@ -93,6 +95,12 @@ def sees(url: str, token: str, path: str) -> bool:
     """False when a token minted before the permission list grew cannot read `path` yet (then it is minted again)."""
     r = requests.get(f"{url}/api/{path}/", params={"limit": 1}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
     return r.status_code == 200
+
+
+def granted(url: str, token: str, object_type: str) -> bool:
+    """False when the proxy user's view permission was made before `object_type` joined the list (then it is made again)."""
+    r = requests.get(f"{url}/api/users/permissions/", params={"name": PERMS[0][0]}, headers={"Authorization": f"Bearer {token}"}, timeout=30)
+    return r.status_code == 200 and any(object_type in p.get("object_types", []) for p in r.json().get("results", []))
 
 
 def works(url: str, token: str) -> bool:

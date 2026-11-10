@@ -186,18 +186,18 @@ class World:
                 n += 1
                 # devnetbox/seed.py puts each primary address on the device type's management-ish interface
                 name = {"ex-c9000": "mgmt0", "ex-a2400": "mgmt0", "ex-r400": "ge-0/0/0", "ex-f200": "port8", "ex-s2": "eth0"}[d.dtype]
-                ips.append({"id": n, "address": d.ip, "interface_id": self.ports[("interface", d.name, name)]["id"]})
+                ips.append({"id": n, "address": d.ip, "vrf_id": None, "vrf": None, "interface_id": self.ports[("interface", d.name, name)]["id"]})
         return {
             "sites": [{"id": self.site_id[s.slug], "name": s.name, "slug": s.slug, "status": "active", "latitude": s.lat, "longitude": s.lon,
-                       "facility": None, "country": s.country} for s in m.sites],
+                       "facility": None, "country": s.country, "last_updated": None} for s in m.sites],
             "locations": [{"id": self.loc_id[x.slug], "name": x.name, "site_id": self.site_id[x.site]} for x in m.locations],
             "racks": [{"id": self.rack_id[r.name], "name": r.name, "site_id": self.site_id[r.site], "location_id": self.loc_id[r.location],
-                       "u_height": r.u_height, "iso_x": r.iso[0], "iso_y": r.iso[1]} for r in m.racks],
+                       "u_height": r.u_height, "iso_x": r.iso[0], "iso_y": r.iso[1], "last_updated": None} for r in m.racks],
             "devices": [{"id": self.dev_id[d.name], "name": d.name, "site_id": self.site_id[d.site], "location_id": self.loc_id[d.location],
                          "rack_id": self.rack_id[d.rack] if d.rack else None, "position": d.position, "face": d.face, "role": d.role,
                          "role_name": sm.ROLES[d.role][0], "status": d.status, "serial": d.serial, "asset_tag": None, "platform": None,
                          "primary_ip": d.ip, "u_height": float(sm.DEVICE_TYPES[d.dtype].u_height), "model": sm.DEVICE_TYPES[d.dtype].model,
-                         "manufacturer": sm.DEVICE_TYPES[d.dtype].manufacturer} for d in m.devices],
+                         "manufacturer": sm.DEVICE_TYPES[d.dtype].manufacturer, "vc_id": None, "last_updated": None} for d in m.devices],
             "ports": sorted(ports, key=lambda p: (p["kind"], p["id"])),
             "cables": [{"id": c["id"], "type": c["spec"].type, "label": c["spec"].label, "status": c["spec"].status,
                         "a": [key(c["a"])], "b": [key(c["b"])]} for c in self.cables],
@@ -459,7 +459,8 @@ def quest_examples(files: dict[str, object], index: list[dict], token: str) -> t
             out["quest-board.json"] = board
             qid = board["next_quest_id"]
             ref = {"scope": "practice", "quest_id": qid}
-            answers = [("device", {"choice": "device:9000001"}), ("circuit_id", {"text": "EXF-20417"}), ("circuit_type", {"choice": "type:9000001"}),
+            answers = [("device", {"choice": "device:9000001"}), ("provider", {"choice": "provider:9000001"}),
+           ("circuit_id", {"text": "EXF-20417"}), ("circuit_type", {"choice": "type:9000001"}),
                        ("local_port", {"choice": "interface:9000026"}), ("cable_type", {"choice": "smf"})]
             for step, a in answers:
                 body = {**ref, "step": step, **a}

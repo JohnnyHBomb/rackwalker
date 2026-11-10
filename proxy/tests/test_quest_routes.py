@@ -22,7 +22,8 @@ from .plan_helpers import device, site
 from .test_game import fixture_client, sign_in
 
 ISLAND = 9000001
-WAY_OUT = [("device", {"choice": "device:9000001"}), ("circuit_id", {"text": "EXF-20417"}), ("circuit_type", {"choice": "type:9000001"}),
+WAY_OUT = [("device", {"choice": "device:9000001"}), ("provider", {"choice": "provider:9000001"}),
+           ("circuit_id", {"text": "EXF-20417"}), ("circuit_type", {"choice": "type:9000001"}),
            ("local_port", {"choice": "interface:9000026"}), ("cable_type", {"choice": "smf"})]
 
 
@@ -114,7 +115,7 @@ def test_a_practice_line_from_offer_to_preview_to_verified_and_no_xp(cl):
     assert board(cl)["sites"][0]["completeness"]["open"] == 12   # a preview changes nothing
     v = apply(cl, qid)
     assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"], v["quest"]["status"]) == ("practice", True, True, 0, "done")
-    assert v["can_now"] == "You can now trace Practice Island to the carrier's hand-off." and v["result"]["applied"]
+    assert v["can_now"] == "You can now see in NetBox where the line to the outside comes into Practice Island, and trace it." and v["result"]["applied"]
     after = board(cl)
     assert after["rewards"]["xp"] == 0 and after["rewards"]["practised"] == 1 and after["rewards"]["completed"] == 0
     assert qid not in [q["id"] for q in after["quests"] if q["status"] != "done"]
@@ -133,10 +134,13 @@ def test_parked_lines_wait_beside_the_open_ones_and_resume(cl):
     assert [x["status"] for x in b2["quests"]] == ["offered", "offered", "offered", "parked"] and b2["next_quest_id"] != qid
     assert b2["rewards"]["xp"] == 0   # parking costs nothing
     q = answer(cl, qid, "device", choice="device:9000002")
-    assert q["status"] == "active" and q["step"]["id"] == "circuit_id"
+    # whose line it is is asked even with one provider on record: it may be another carrier's
+    assert q["status"] == "active" and q["step"]["id"] == "provider"
+    assert [c["label"] for c in q["step"]["choices"]] == ["Example Fibre", "A carrier that is not in NetBox yet", "I don't know yet"]
     # an answer to a question the line is not waiting at changes nothing
     stale = answer(cl, qid, "cable_type", choice="smf")
-    assert stale["step"]["id"] == "circuit_id"
+    assert stale["step"]["id"] == "provider"
+    assert answer(cl, qid, "provider", choice="provider:9000001")["step"]["id"] == "circuit_id"
     restarted = answer(cl, qid, "restart")
     assert restarted["step"]["id"] == "device" and restarted["said"] == []
 
@@ -205,7 +209,7 @@ def test_a_version_1_store_gains_the_quest_tables_and_keeps_its_saves(tmp_path):
     db.execute("INSERT INTO flag VALUES (7, 'ilatea.intro.seen', 'true')")
     db.close()
     st = GameStore(path)
-    assert st.version == SCHEMA_VERSION == 2
+    assert st.version == SCHEMA_VERSION == 3
     assert st.saves(7) == [{"slot": "auto", "rev": 5, "updated_at": "2026-11-08T10:00:00Z", "data": save}]
     assert st.flags(7) == {"ilatea.intro.seen": True}
     assert st.quests(7, "netbox") == {} and st.rewards(7) == {"xp": 0, "potions": 0, "tools": [], "repeats": {}}
@@ -429,7 +433,7 @@ def test_a_site_offers_different_kinds_of_line_before_a_second_of_one_kind(cl):
     # the seed's North Depot has two addressed ports with no cable and four unpowered racks: it offers one of each
     b = board(cl, "netbox", site_id=1)
     assert [q["kind"] for q in b["quests"]] == ["interface_no_cable", "device_no_power", "address_no_prefix"]
-    assert b["next_quest_id"] == b["quests"][0]["id"] and b["queued"] == len(b["findings"]) + 2 - 3
+    assert b["next_quest_id"] == b["quests"][0]["id"] and b["queued"] == len(b["findings"]) - 3
 
 
 def play_first(cl, q: dict, scope: str, knows: int = 1) -> dict:
@@ -515,14 +519,14 @@ def test_one_answer_can_be_taken_back(cl):
         q = answer(cl, qid, step, **a)
     assert q["status"] == "ready"
     q = answer(cl, qid, "back")
-    assert (q["status"], q["step"]["id"], [s["step"] for s in q["said"]]) == ("active", "cable_type", ["device", "circuit_id", "circuit_type", "local_port"])
+    assert (q["status"], q["step"]["id"], [s["step"] for s in q["said"]]) == ("active", "cable_type", ["device", "provider", "circuit_id", "circuit_type", "local_port"])
     q = answer(cl, qid, "back")
-    assert q["step"]["id"] == "local_port" and len(q["said"]) == 3
+    assert q["step"]["id"] == "local_port" and len(q["said"]) == 4
     # a parked line: the question it waits at is opened again, the answers before it stay
     q = answer(cl, qid, "local_port", choice="unknown")
     assert q["status"] == "parked"
     q = answer(cl, qid, "back")
-    assert (q["status"], q["step"]["id"], len(q["said"])) == ("active", "local_port", 3)
+    assert (q["status"], q["step"]["id"], len(q["said"])) == ("active", "local_port", 4)
     # with nothing answered there is nothing to take back
     fresh = answer(cl, qid, "restart")
     assert answer(cl, qid, "back")["step"] == fresh["step"]

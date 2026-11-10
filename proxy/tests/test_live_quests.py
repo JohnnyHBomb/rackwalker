@@ -161,7 +161,8 @@ def test_the_way_out_line_ends_in_a_trace_netbox_confirms_live(admin, harbour, n
     quest = _board(admin, site)["quests"][0]
     assert quest["step"]["prompt"] == "Which device at Harbour Office does the line to the outside plug into?"
     assert [c["label"] for c in quest["step"]["choices"]] == ["sw-loft-1 (switch)", "sw-quay-1 (switch)", "sw-quay-2 (switch)",
-                                                              "Something not listed", "I don't know yet"]
+                                                              "A device that is not in NetBox yet",
+                                                              "None: this site has no line out, on purpose", "I don't know yet"]
     quest = _answer(admin, quest, {"device": "sw-quay-1", "provider": "Example Fibre", "circuit_id": "EXF-20417", "circuit_type": "Internet",
                                    "local_port": "Te1/1/2", "cable_type": "Single-mode"})
     assert quest["status"] == "ready"
@@ -178,7 +179,7 @@ def test_the_way_out_line_ends_in_a_trace_netbox_confirms_live(admin, harbour, n
     schema_validator("QuestVerdict").validate(v)
     assert (v["mode"], v["verified"], v["complete"], v["quest"]["status"]) == ("real", True, True, "done")
     assert v["xp_awarded"] == 120 and v["unlocked"] == ["cable_tracer"]
-    assert v["can_now"] == "You can now trace Harbour Office to the carrier's hand-off."
+    assert v["can_now"] == "You can now see in NetBox where the line to the outside comes into Harbour Office, and trace it."
     assert v["message"].startswith("NetBox confirms it. Harbour Office is now ") and v["message"].endswith(" % complete.")
     assert v["trace"] == "NetBox's cable trace from sw-quay-1 Te1/1/2 reaches circuit EXF-20417 (side A) in 1 hop."
     # NetBox itself: the circuit exists, ends at the site, and the switch port traces to it
@@ -380,7 +381,7 @@ def test_the_practice_island_never_writes_to_netbox_live(admin, nbx):
     admin.post("/api/game/practice/reset")
     b = _board(admin, scope="practice")
     assert b["sites"][0]["name"] == "Practice Island" and not b["can_write"]
-    quest = _answer(admin, b["quests"][0], {"device": "sw-quay-1", "circuit_id": "EXF-1", "circuit_type": "Internet", "local_port": "Te1/1/1",
+    quest = _answer(admin, b["quests"][0], {"device": "sw-quay-1", "provider": "Example Fibre", "circuit_id": "EXF-1", "circuit_type": "Internet", "local_port": "Te1/1/1",
                                             "cable_type": "Copper"}, scope="practice")
     v = admin.post("/api/game/quests/apply", json={"scope": "practice", "quest_id": quest["id"]}).json()
     assert (v["mode"], v["complete"], v["xp_awarded"]) == ("practice", True, 0)

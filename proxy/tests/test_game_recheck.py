@@ -10,7 +10,7 @@ from rackwalker_proxy.app import Settings, create_app
 from rackwalker_proxy.game import COOKIE, CSRF_HEADER, fixture_user_status, fixture_whoami
 from rackwalker_proxy.errors import ApiError
 
-from .conftest import LOCAL
+from .conftest import LOCAL, token_record
 
 SAVE = {"scene": "overworld", "overworld": {"x": 3, "y": 4, "facing": "S"}, "iso": None}
 
@@ -23,10 +23,17 @@ class FakeNetBox:
         self.down = False
         self.status: int | None = None    # an HTTP error NetBox answers to the user lookup instead
         self.lookups = 0
+        self.token: dict = {}             # what NetBox says about the player's token (conftest.token_record)
+        self.token_lookups = 0
 
     def __call__(self, req: httpx.Request) -> httpx.Response:
         if self.down:
             raise httpx.ConnectError("refused")
+        if req.url.path.startswith("/api/users/tokens/"):
+            if req.url.path != "/api/users/tokens/":
+                assert req.headers["authorization"] == "Bearer nbt_proxy.proxysecret"   # looked up again with the proxy's token
+                self.token_lookups += 1
+            return token_record(req, **self.token)
         if req.url.path == "/api/authentication-check/":
             return httpx.Response(200, json={"id": 7, "username": "jdoe", "first_name": "", "last_name": ""})
         if req.url.path == "/api/users/users/7/":

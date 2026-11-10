@@ -352,8 +352,12 @@ def create_app(settings: Settings | None = None, transport: httpx.AsyncBaseTrans
             raise ApiError("bad_request", "Fixture mode never writes.")
         cs = changeset(body)
         refuse_island(body)
-        # The proxy's token never widens what a player may change: the player's own NetBox permissions must cover it.
-        allowed = await app.state.may_write(uid)
+        # The proxy's token never widens what a player may change: a session started with a read-only NetBox token
+        # writes nothing, and the player's own NetBox permissions (read now, not from a cache) must cover the change.
+        if not await run_in_threadpool(app.state.session_may_write, request):
+            raise ApiError("forbidden", "Nothing was written: you signed in with a read-only NetBox token. Sign in again with a "
+                           "write-enabled token of your own to change NetBox through the game.", {"reason": "read_only_token"})
+        allowed = await app.state.may_write(uid, True)
         if allowed is not None:
             missing = allowed.missing(perms.needs_of(body["ops"]))
             if missing:

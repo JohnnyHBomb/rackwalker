@@ -183,7 +183,7 @@
       "site_id": 9000001,
       "title": "The way out of Practice Island",
       "purpose": "Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.",
-      "outcome": "You can now trace Practice Island to the carrier's hand-off.",
+      "outcome": "You can now see in NetBox where the line to the outside comes into Practice Island, and trace it.",
       "status": "offered",
       "step": {
         "id": "device",
@@ -207,8 +207,13 @@
           },
           {
             "id": "other",
-            "label": "Something not listed",
+            "label": "A device that is not in NetBox yet",
             "kind": "other"
+          },
+          {
+            "id": "none",
+            "label": "None: this site has no line out, on purpose",
+            "kind": "not_applicable"
           },
           {
             "id": "unknown",
@@ -287,12 +292,12 @@
           },
           {
             "id": "other",
-            "label": "Something not listed",
+            "label": "A device that is not in NetBox yet",
             "kind": "other"
           },
           {
             "id": "none",
-            "label": "Nothing: it stands alone, on purpose",
+            "label": "None: there is no link, on purpose",
             "kind": "not_applicable"
           },
           {
@@ -362,7 +367,7 @@
       "status": "offered",
       "step": {
         "id": "peer",
-        "prompt": "sw-quay-1 has 26 ports and nothing recorded on any of them. What does it uplink to?",
+        "prompt": "What is sw-quay-1 (rack PI-Q1 U10 in Quay Room) plugged into?",
         "input": "choice",
         "choices": [
           {
@@ -377,7 +382,7 @@
           },
           {
             "id": "other",
-            "label": "Something not listed",
+            "label": "A device that is not in NetBox yet",
             "kind": "other"
           },
           {

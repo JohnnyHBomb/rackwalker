@@ -12,7 +12,7 @@ from rackwalker_proxy.app import Settings, create_app
 from rackwalker_proxy.game import COOKIE, CSRF_HEADER
 from rackwalker_proxy.gamestore import DEFAULT_SETTINGS, MAX_FLAGS, SCHEMA_VERSION, GameStore, migrate, statements, upgrade_settings
 
-from .conftest import LOCAL, load, schema_validator
+from .conftest import LOCAL, load, schema_validator, token_record
 from .netbox_replay import RECORDED_HOST, Replay, load as recordings
 from .test_game import SAVE, fixture_client, netbox_client, nb_transport, sign_in
 
@@ -304,6 +304,8 @@ def test_a_signed_in_players_write_names_them_in_the_netbox_changelog(tmp_path):
 
     class NetBox(Replay):
         async def handle_async_request(self, request):
+            if token_record(request) is not None:
+                return token_record(request)
             if request.url.path == "/api/authentication-check/":
                 return httpx.Response(200, json={"id": 9, "username": "player-nine", "first_name": "", "last_name": ""}, request=request)
             if request.url.path == "/api/users/users/9/":  # the session recheck before the write

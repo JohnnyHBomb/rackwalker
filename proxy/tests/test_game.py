@@ -11,7 +11,7 @@ from rackwalker_proxy.app import Settings, create_app
 from rackwalker_proxy.game import COOKIE, CSRF_HEADER
 from rackwalker_proxy.gamestore import DEFAULT_SETTINGS, SCHEMA_VERSION, GameStore, StoreError, migrate, statements
 
-from .conftest import LOCAL, REPO, load, schema_validator
+from .conftest import LOCAL, REPO, load, schema_validator, token_record
 
 PLAYER_TOKEN = load("players.json")["players"][0]["token"]
 SAVE = {"scene": "iso", "overworld": {"x": 12, "y": 9, "facing": "S"},
@@ -223,8 +223,12 @@ def test_a_slow_game_store_never_stalls_the_other_routes(tmp_path, monkeypatch):
 
 def nb_transport(status: int, body: dict | None = None):
     seen = []
+    tokens = nb_transport.token_lookups = []   # the lookups of the player's own token record
 
     def handler(req: httpx.Request) -> httpx.Response:
+        if token_record(req) is not None:
+            tokens.append(req)
+            return token_record(req) if status == 200 else httpx.Response(status, json=body or {})
         seen.append(req)
         # the sign-in check, and the read-only user lookup the proxy makes (with its own token) before a write
         assert req.url.path in ("/api/authentication-check/", "/api/users/users/7/")
@@ -238,15 +242,19 @@ def netbox_client(tmp_path, transport) -> TestClient:
     return TestClient(base_url=LOCAL, app=create_app(s, transport=transport))
 
 
-def test_netbox_sign_in_uses_the_players_token_once(tmp_path, caplog):
+def test_netbox_sign_in_uses_the_players_token_at_sign_in_and_never_again(tmp_path, caplog):
     t, seen = nb_transport(200, {"id": 7, "username": "jdoe", "first_name": "Jo", "last_name": "Doe", "is_staff": False})
     cl = netbox_client(tmp_path, t)
     r = cl.post("/api/game/session", json={"token": "nbt_player.playersecret"}, headers={CSRF_HEADER: "x"})
     assert r.status_code == 200
     assert r.json()["player"] == {"id": 7, "username": "jdoe", "display_name": "Jo Doe"}
     assert [q.headers["authorization"] for q in seen] == ["Bearer nbt_player.playersecret"]
+    # ... and once more, in the same sign-in, to ask NetBox what that token may do (its own record, by its public key)
+    asked = nb_transport.token_lookups
+    assert [(q.url.path, q.url.params["key"], q.headers["authorization"]) for q in asked] == [("/api/users/tokens/", "player", "Bearer nbt_player.playersecret")]
+    assert "playersecret" not in str(asked[0].url)
     cl.get("/api/game/state")
-    assert len(seen) == 1  # the token is not used again
+    assert len(seen) == 1 and len(asked) == 1  # the token is not used again
     assert "playersecret" not in caplog.text and "playersecret" not in r.text
 
 

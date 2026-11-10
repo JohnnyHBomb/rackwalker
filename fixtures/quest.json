@@ -6,13 +6,23 @@
   "site_id": 9000001,
   "title": "The way out of Practice Island",
   "purpose": "Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.",
-  "outcome": "You can now trace Practice Island to the carrier's hand-off.",
+  "outcome": "You can now see in NetBox where the line to the outside comes into Practice Island, and trace it.",
   "status": "active",
   "step": {
-    "id": "circuit_id",
-    "prompt": "What is the circuit ID? Example Fibre prints it on the bill and on the hand-off box.",
-    "input": "text",
+    "id": "provider",
+    "prompt": "Whose line is it?",
+    "input": "choice",
     "choices": [
+      {
+        "id": "provider:9000001",
+        "label": "Example Fibre",
+        "kind": "candidate"
+      },
+      {
+        "id": "other",
+        "label": "A carrier that is not in NetBox yet",
+        "kind": "other"
+      },
       {
         "id": "unknown",
         "label": "I don't know yet",
@@ -20,7 +30,7 @@
       }
     ],
     "fields": [],
-    "hint": "exactly as printed, for example EXF-20417",
+    "hint": null,
     "error": null
   },
   "proposal": null,

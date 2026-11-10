@@ -110,6 +110,27 @@ MIGRATIONS: list[str] = [
         PRIMARY KEY (user_id, scope, site_id)
     );
     """,
+    # 2 -> 3: what a session may do, and a reward ledger that cannot pay twice.
+    # A session records whether the NetBox token it was started with may write (a read-only token plays in dry-run) and
+    # that token's NetBox id (not a secret), so the proxy can notice when the token is deleted. Sessions from before
+    # this step read as "may not write" until the player signs in again.
+    # `paid` holds every check NetBox has confirmed for a player, once: XP is paid only for a row this table accepts,
+    # so the same fix is never paid twice (two requests at once, a line that changed its id, a fix undone and redone).
+    # It starts with what the quest log already counts as confirmed.
+    """
+    ALTER TABLE session ADD COLUMN can_write INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE session ADD COLUMN token_id INTEGER;
+    CREATE TABLE paid (
+        user_id  INTEGER NOT NULL REFERENCES player(user_id) ON DELETE CASCADE,
+        check_id TEXT NOT NULL,                     -- a check id of the scanner, such as 'device:12:serial'
+        at       TEXT NOT NULL,
+        PRIMARY KEY (user_id, check_id)
+    );
+    INSERT OR IGNORE INTO paid(user_id, check_id, at)
+        SELECT quest.user_id, json_each.value, quest.updated_at
+        FROM quest, json_each(CASE WHEN json_valid(quest.verified) AND json_type(quest.verified) = 'array' THEN quest.verified ELSE '[]' END)
+        WHERE quest.scope = 'netbox' AND json_each.type = 'text';
+    """,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
 SESSION_SECONDS = 7 * 24 * 3600
@@ -254,6 +275,8 @@ class Session:
     user_id: int
     csrf: str
     expires_at: float
+    can_write: bool = True      # the NetBox token this session was started with may write
+    token_id: int | None = None  # that token's id in NetBox (not a secret), when NetBox told it
 
 
 class GameStore:
@@ -264,7 +287,8 @@ class GameStore:
         if isinstance(self.path, Path):
             self.path.parent.mkdir(parents=True, exist_ok=True)
         self.clock = clock
-        self._lock = threading.Lock()
+        self._lock = threading.RLock()
+        self._depth = 0   # open `_tx` blocks of the thread that holds the lock: only the outermost begins and commits
         self._db = sqlite3.connect(str(path), check_same_thread=False, isolation_level=None)
         self._db.row_factory = sqlite3.Row
         self._db.execute("PRAGMA foreign_keys = ON")
@@ -290,6 +314,11 @@ class GameStore:
     def _tx(self):
         return _Tx(self)
 
+    def atomic(self):
+        """Several store calls as one transaction: `with store.atomic(): ...`. Calls made inside by the same thread
+        join it; every other thread waits. An exception rolls all of it back."""
+        return _Tx(self)
+
     # ------------------------------------------------------------------------------------------- players, sessions
 
     def upsert_player(self, user_id: int, username: str, display_name: str | None) -> None:
@@ -304,24 +333,34 @@ class GameStore:
             r = db.execute("SELECT user_id, username, display_name FROM player WHERE user_id=?", (user_id,)).fetchone()
         return None if r is None else {"id": r["user_id"], "username": r["username"], "display_name": r["display_name"]}
 
-    def new_session(self, user_id: int) -> tuple[str, Session]:
-        """Returns (cookie value, session). Only the hash of the cookie value is stored."""
+    def new_session(self, user_id: int, can_write: bool = True, token_id: int | None = None,
+                    token_expires: float | None = None) -> tuple[str, Session]:
+        """Returns (cookie value, session). Only the hash of the cookie value is stored. A session never outlives the
+        NetBox token it was started with (`token_expires`, a time on the store's clock)."""
         token, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(24)
         now = self.clock()
+        until = min(now + SESSION_SECONDS, token_expires) if token_expires is not None else now + SESSION_SECONDS
         with self._tx() as db:
             db.execute("DELETE FROM session WHERE expires_at <= ?", (now,))
-            db.execute("INSERT INTO session(id_hash, user_id, csrf, created_at, expires_at) VALUES (?,?,?,?,?)",
-                       (_hash(token), user_id, csrf, now, now + SESSION_SECONDS))
-        return token, Session(user_id, csrf, now + SESSION_SECONDS)
+            db.execute("INSERT INTO session(id_hash, user_id, csrf, created_at, expires_at, can_write, token_id) VALUES (?,?,?,?,?,?,?)",
+                       (_hash(token), user_id, csrf, now, until, int(can_write), token_id))
+        return token, Session(user_id, csrf, until, can_write, token_id)
 
     def session(self, token: str | None) -> Session | None:
         if not token or len(token) > 200:
             return None
         with self._tx() as db:
-            r = db.execute("SELECT user_id, csrf, expires_at FROM session WHERE id_hash=?", (_hash(token),)).fetchone()
+            r = db.execute("SELECT user_id, csrf, expires_at, can_write, token_id FROM session WHERE id_hash=?", (_hash(token),)).fetchone()
         if r is None or r["expires_at"] <= self.clock():
             return None
-        return Session(r["user_id"], r["csrf"], r["expires_at"])
+        return Session(r["user_id"], r["csrf"], r["expires_at"], bool(r["can_write"]), r["token_id"])
+
+    def update_session(self, token: str, can_write: bool, token_expires: float | None) -> None:
+        """What NetBox now says about the token a session was started with: its write flag and its expiry."""
+        with self._tx() as db:
+            db.execute("UPDATE session SET can_write=? WHERE id_hash=?", (int(can_write), _hash(token)))
+            if token_expires is not None:
+                db.execute("UPDATE session SET expires_at=MIN(expires_at, ?) WHERE id_hash=?", (token_expires, _hash(token)))
 
     def end_user_sessions(self, user_id: int) -> list[str]:
         """Ends every session of one player (their NetBox user was deleted or deactivated). Returns the ended sessions'
@@ -438,6 +477,27 @@ class GameStore:
                         json.dumps(row["checks"]), json.dumps(row["verified"]), json.dumps(row["snapshot"], sort_keys=True), now))
         return {**row, "updated_at": now}
 
+    def delete_quest(self, user_id: int, scope: str, quest_id: str) -> None:
+        with self._tx() as db:
+            db.execute("DELETE FROM quest WHERE user_id=? AND scope=? AND quest_id=?", (user_id, scope, quest_id))
+
+    def move_quest(self, user_id: int, scope: str, old_id: str, row: dict[str, Any]) -> None:
+        """A begun line takes the id its finding now has: the old row goes, `row` (with the new quest_id) is stored."""
+        with self._tx():
+            self.delete_quest(user_id, scope, old_id)
+            self.put_quest(user_id, scope, row)
+
+    def mark_paid(self, user_id: int, check_ids: list[str]) -> list[str]:
+        """Records checks as confirmed-and-paid for a player and returns those that were not recorded before: each
+        check pays once, whoever asks and however often."""
+        fresh: list[str] = []
+        with self._tx() as db:
+            for cid in check_ids:
+                cur = db.execute("INSERT OR IGNORE INTO paid(user_id, check_id, at) VALUES (?,?,?)", (user_id, cid, _now_iso()))
+                if cur.rowcount == 1:
+                    fresh.append(cid)
+        return fresh
+
     def clear_quests(self, user_id: int, scope: str) -> None:
         with self._tx() as db:
             db.execute("DELETE FROM quest WHERE user_id=? AND scope=?", (user_id, scope))
@@ -494,14 +554,22 @@ class _Tx:
 
     def __enter__(self) -> sqlite3.Connection:
         self.store._lock.acquire()
-        self.store._db.execute("BEGIN IMMEDIATE")
+        if self.store._depth == 0:
+            try:
+                self.store._db.execute("BEGIN IMMEDIATE")
+            except BaseException:
+                self.store._lock.release()
+                raise
+        self.store._depth += 1
         return self.store._db
 
     def __exit__(self, et, ev, tb) -> bool:
+        self.store._depth -= 1
         try:
-            self.store._db.execute("COMMIT" if et is None else "ROLLBACK")
+            if self.store._depth == 0:
+                self.store._db.execute("COMMIT" if et is None else "ROLLBACK")
         finally:
             self.store._lock.release()
-        if isinstance(ev, _Rollback):
+        if isinstance(ev, _Rollback) and self.store._depth == 0:
             raise ev.cause
         return False

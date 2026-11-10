@@ -23,7 +23,10 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
-from .estate import Estate, is_network, is_passive, is_physical, is_router, is_switch
+import zlib
+
+from .estate import Estate, is_passive, is_physical, is_router
+from .estate import name_of as nm
 
 RANKS = ("connectivity", "identity", "layout")
 # Devices in these states are expected to be connected, powered and reachable.
@@ -54,6 +57,18 @@ class Analysis:
     checks: dict[int, dict[str, bool]] = field(default_factory=lambda: defaultdict(dict))
     # per site: interface gaps found beyond MAX_INTERFACE_GAPS (counted, not listed)
     unlisted: dict[int, int] = field(default_factory=lambda: defaultdict(int))
+    _flat: dict[str, bool] | None = field(default=None, repr=False, compare=False)
+
+    def check(self, cid: str, site_id: int | None = None) -> bool | None:
+        """What the analysis says about one check: True (passed), False (open) or None (it made no such check: the
+        object is gone, is no longer of that kind, or could not be read). Looked up at `site_id` first, then anywhere
+        (a device that moved to another site takes its checks with it)."""
+        here = self.checks.get(site_id, {}) if site_id is not None else {}
+        if cid in here:
+            return here[cid]
+        if self._flat is None:
+            self._flat = {c: ok for checks in self.checks.values() for c, ok in checks.items()}
+        return self._flat.get(cid)
 
     def site_findings(self, site_id: int) -> list[dict[str, Any]]:
         return [f for f in self.findings if f["site_id"] == site_id]
@@ -109,6 +124,18 @@ def _analyse(e: Estate) -> Analysis:
             dev_ips[dev_of_iface[iid]] += n
 
     uses_tags = any(d["asset_tag"] for d in e.devices.values())
+    # A virtual chassis (a switch stack) is one switch: its members' cables, uplink and management address are the
+    # stack's. The member with the lowest id speaks for it in the device rules.
+    stacks: dict[int, list[int]] = defaultdict(list)
+    for did, d in sorted(e.devices.items()):
+        if d.get("vc_id") is not None:
+            stacks[d["vc_id"]].append(did)
+
+    def stack(d: dict[str, Any]) -> list[int]:
+        return stacks[d["vc_id"]] if d.get("vc_id") is not None else [d["id"]]
+
+    def degree(d: dict[str, Any]) -> int:
+        return sum(comp.degree(i) for i in stack(d))
 
     def add(kind: str, obj: tuple[str, int], site_id: int, title: str, evidence: list[dict[str, Any]], **data: Any) -> None:
         fid = f"{kind}:{obj[0]}:{obj[1]}"
@@ -123,18 +150,24 @@ def _analyse(e: Estate) -> Analysis:
         return ref("device", d["id"], d["name"])
 
     can_graph = e.can_see("devices", "ports", "cables", "cterms", "circuits")
-    live_net: dict[int, list[dict[str, Any]]] = {s: [d for d in ds if d["status"] in LIVE and is_network(d) and d["id"] in has_ifaces]
+    live_net: dict[int, list[dict[str, Any]]] = {s: [d for d in ds if d["status"] in LIVE and e.is_network(d) and d["id"] in has_ifaces]
                                                  for s, ds in by_site.items()}
-    # A circuit termination "lands" when it is cabled to something.
+    # A circuit termination "lands" when it is cabled to something. A circuit with an end recorded at a site and no
+    # cable on that end is unfinished: it carries nobody anywhere yet, whatever its other end is plugged into.
     landed: dict[int, list[dict[str, Any]]] = defaultdict(list)
-    for t in e.cterms.values():
+    loose: set[int] = set()
+    waiting: dict[int, list[dict[str, Any]]] = defaultdict(list)   # per site: circuit ends recorded there with no cable
+    for _, t in sorted(e.cterms.items()):
         if t["cable_id"] is not None:
             landed[t["circuit_id"]].append(t)
+        elif t["site_id"] is not None:
+            loose.add(t["circuit_id"])
+            waiting[t["site_id"]].append(t)
 
     def way_out(site_id: int) -> bool:
-        """A device of the site shares a component with a circuit that lands somewhere."""
+        """A device of the site shares a component with a circuit that lands, and has no end left loose."""
         roots = {comp.of_device(d["id"]) for d in live_net.get(site_id, [])}
-        return any(comp.of_circuit(c) in roots for c in landed)
+        return any(comp.of_circuit(c) in roots for c in landed if c not in loose)
 
     for site_id in sorted(e.sites):
         site = e.sites[site_id]
@@ -144,20 +177,20 @@ def _analyse(e: Estate) -> Analysis:
         if can_graph:
             # ---- devices nothing is connected to; switches with no uplink
             for d in devs:
-                if d["status"] not in LIVE or is_passive(d) or d["id"] not in has_ifaces:
+                if d["status"] not in LIVE or is_passive(d) or d["id"] not in has_ifaces or stack(d)[0] != d["id"]:
                     continue
                 n_ports = sum(1 for p in e.device_ports(d["id"], ("interface",)) if is_physical(p))
-                if comp.degree(d["id"]) == 0:
+                if degree(d) == 0:
                     add("device_unconnected", ("device", d["id"]), site_id,
-                        f"{d['name'] or 'A device'} has {n_ports} port{'s' if n_ports != 1 else ''} and nothing recorded on any of them.",
+                        f"{_cap(nm(d))} has {n_ports} port{'s' if n_ports != 1 else ''} and nothing recorded on any of them.",
                         [dref(d)], device_id=d["id"], ports=n_ports)
                     continue
                 passed("device_unconnected", ("device", d["id"]), site_id)
-                if is_switch(d):
-                    others = [o for o in comp.devices_in(comp.of_device(d["id"])) if o != d["id"] and is_network(e.devices[o])]
+                if e.is_switch(d):
+                    others = [o for o in comp.devices_in(comp.of_device(d["id"])) if o not in stack(d) and e.is_network(e.devices[o])]
                     if not others and not comp.circuits_in(comp.of_device(d["id"])):
                         add("switch_no_uplink", ("device", d["id"]), site_id,
-                            f"{d['name']} has devices plugged in, but no uplink to another switch, a router or a circuit.",
+                            f"{_cap(nm(d))} has devices plugged in, but no uplink to another switch, a router or a circuit.",
                             [dref(d)], device_id=d["id"])
                     else:
                         passed("switch_no_uplink", ("device", d["id"]), site_id)
@@ -166,7 +199,8 @@ def _analyse(e: Estate) -> Analysis:
             for d in net:
                 if d["location_id"] is not None:
                     by_loc[d["location_id"]].append(d)
-            if len(by_loc) >= 2:
+            apart: set[int] = set()   # rooms that locations_not_linked reports as cut off from the main room
+            if len(by_loc) >= 2 and e.can_see("locations") and all(loc in e.locations for loc in by_loc):
                 group: dict[int, int] = {loc: loc for loc in by_loc}
 
                 def find(x: int) -> int:
@@ -187,37 +221,45 @@ def _analyse(e: Estate) -> Analysis:
                         if g is main:
                             passed("locations_not_linked", ("location", loc), site_id)
                             continue
+                        apart.add(loc)
                         add("locations_not_linked", ("location", loc), site_id,
                             f"{e.locations[loc]['name']} and {e.locations[main[0]]['name']} at {site['name']} have no link between them.",
                             [ref("location", loc, e.locations[loc]["name"]), ref("location", main[0], e.locations[main[0]]["name"])]
                             + [dref(d) for d in by_loc[loc]],
                             location_id=loc, main_location_id=main[0], device_ids=[d["id"] for d in by_loc[loc]],
                             main_device_ids=[d["id"] for x in main for d in by_loc[x]])
-            connected = [d for d in net if comp.degree(d["id"]) > 0]
+            connected = [d for d in net if degree(d) > 0]
             roots: dict[Any, list[dict[str, Any]]] = defaultdict(list)
             for d in connected:
                 roots[comp.of_device(d["id"])].append(d)
-            if len(roots) >= 2:
+            if roots:
                 main_root = max(roots, key=lambda r: (len(roots[r]), -roots[r][0]["id"]))
-                main_locs = {d["location_id"] for d in roots[main_root]}
+                for d in roots[main_root]:
+                    passed("site_island", ("device", d["id"]), site_id)
                 for r, members in sorted(roots.items(), key=lambda kv: kv[1][0]["id"]):
                     if r == main_root:
                         continue
                     first = members[0]
-                    if not ({d["location_id"] for d in members} & main_locs):
-                        continue  # a room of its own: said by locations_not_linked
-                    names = ", ".join(d["name"] or "?" for d in members[:3]) + (" and others" if len(members) > 3 else "")
+                    if all(d["location_id"] in apart for d in members):
+                        continue  # every room of this group is already reported as cut off (locations_not_linked)
+                    names = ", ".join(nm(d) for d in members[:3]) + (" and others" if len(members) > 3 else "")
+                    # one check per member: the line stays the same line when its first member goes away
                     add("site_island", ("device", first["id"]), site_id,
-                        f"{names} {'are' if len(members) > 1 else 'is'} cabled, but cut off from the rest of {site['name']}.",
+                        f"{_cap(names)} {'are' if len(members) > 1 else 'is'} cabled, but cut off from the rest of {site['name']}.",
                         [dref(d) for d in members], device_ids=[d["id"] for d in members],
-                        main_device_ids=[d["id"] for d in roots[main_root]])
+                        main_device_ids=[d["id"] for d in roots[main_root]],
+                        gap_ids=[f"site_island:device:{d['id']}" for d in members])
+                    for d in members:
+                        a.checks[site_id][f"site_island:device:{d['id']}"] = False
             # ---- the way out of the site, and links to the other sites
             if net:
                 has_out = way_out(site_id)
                 other_sites = [s for s in sorted(e.sites) if s != site_id and live_net.get(s)]
                 my_roots = {comp.of_device(d["id"]) for d in net}
                 linked = [s for s in other_sites if any(comp.of_device(d["id"]) in my_roots for d in live_net[s])]
-                if not has_out and not any(way_out(s) for s in linked) and (e.providers or e.circuits):
+                if waiting.get(site_id):
+                    pass   # a circuit end is on record here with no cable: "where it lands" asks this, once
+                elif not has_out and not any(way_out(s) for s in linked) and (e.providers or e.circuits):
                     provs = [ref("provider", p["id"], p["name"]) for _, p in sorted(e.providers.items())]
                     add("site_no_way_out", ("site", site_id), site_id,
                         f"Nobody can tell from NetBox how {site['name']} reaches the outside world.", [sref] + provs[:3],
@@ -246,7 +288,7 @@ def _analyse(e: Estate) -> Analysis:
                         fid = f"device_no_power:{'rack' if rid else 'site'}:{rid or site_id}"
                         a.findings.append({
                             "id": fid, "kind": "device_no_power", "rank": "connectivity", "site_id": site_id,
-                            "title": f"{_some([d['name'] or '?' for d in members])} in {where} {'have' if len(members) != 1 else 'has'} "
+                            "title": f"{_cap(_some([nm(d) for d in members]))} in {where} {'have' if len(members) != 1 else 'has'} "
                                      f"no power feed on record, although other devices at {site['name']} do.",
                             "evidence": [dref(d) for d in members],
                             "data": {"rack_id": rid or None, "device_ids": [d["id"] for d in members],
@@ -254,9 +296,10 @@ def _analyse(e: Estate) -> Analysis:
             # ---- expected cables: a port NetBox already says is in use (address or description), with no cable
             listed = 0
             for d in devs:
-                if d["status"] not in LIVE or d["rack_id"] is None or comp.degree(d["id"]) == 0:
+                if d["status"] not in LIVE or d["rack_id"] is None or degree(d) == 0:
                     continue
                 on_device = 0
+                open_ports: list[dict[str, Any]] = []
                 for p in e.device_ports(d["id"], ("interface",)):
                     if not expects_cable(p, bool(iface_ips.get(p["id"]))):
                         continue
@@ -264,6 +307,7 @@ def _analyse(e: Estate) -> Analysis:
                         a.checks[site_id][f"interface:{p['id']}:cable"] = True
                         continue
                     a.checks[site_id][f"interface:{p['id']}:cable"] = False
+                    open_ports.append(p)
                     if listed >= MAX_INTERFACE_GAPS or on_device >= MAX_INTERFACE_GAPS_PER_DEVICE:
                         a.unlisted[site_id] += 1
                         continue
@@ -272,7 +316,20 @@ def _analyse(e: Estate) -> Analysis:
                     why = "an address" if iface_ips.get(p["id"]) else f"a description ({p['description'].strip()[:40]})"
                     a.gaps.append({"id": f"interface:{p['id']}:cable", "kind": "interface", "object_id": p["id"], "field": "cable",
                                    "site_id": site_id, "rank": "connectivity",
-                                   "label": f"{d['name']} {p['name']} has {why} but no cable.", "device_id": d["id"]})
+                                   "label": f"{nm(d)} {p['name']} has {why} but no cable.", "device_id": d["id"]})
+                if open_ports:
+                    # one line per device for all of its ports (the gap list above is capped; the line is not)
+                    n = len(open_ports)
+                    shown = _some([p["name"] for p in open_ports])
+                    first = open_ports[0]
+                    why = "an address" if iface_ips.get(first["id"]) else f"a description ({first['description'].strip()[:40]})"
+                    a.findings.append({
+                        "id": f"interface_no_cable:device:{d['id']}", "kind": "interface_no_cable", "rank": "connectivity", "site_id": site_id,
+                        "title": (f"{_cap(nm(d))} {first['name']} has {why} but no cable." if n == 1 else
+                                  f"{_cap(nm(d))} {shown} are in use by NetBox's own record (a description or an address), but have no cable."),
+                        "evidence": [dref(d)] + [ref("interface", p["id"], f"{nm(d)} {p['name']}") for p in open_ports[:5]],
+                        "data": {"device_id": d["id"], "interface_ids": [p["id"] for p in open_ports],
+                                 "gap_ids": [f"interface:{p['id']}:cable" for p in open_ports]}})
         # ---- addresses: routers with none; devices with no management address; addresses outside every prefix
         if e.can_see("devices", "ports", "ips"):
             for d in devs:
@@ -281,13 +338,15 @@ def _analyse(e: Estate) -> Analysis:
                 if is_router(d):
                     if dev_ips.get(d["id"], 0) == 0:
                         add("router_no_address", ("device", d["id"]), site_id,
-                            f"{d['name']} routes traffic, but no interface of it has an address in NetBox.", [dref(d)], device_id=d["id"])
+                            f"{_cap(nm(d))} routes traffic, but no interface of it has an address in NetBox.", [dref(d)], device_id=d["id"])
                         continue
                     passed("router_no_address", ("device", d["id"]), site_id)
+                if len(stack(d)) > 1 and (stack(d)[0] != d["id"] or any(e.devices[i]["primary_ip"] for i in stack(d))):
+                    continue   # a stack is managed at one address: asked of its first member, and only when no member has one
                 if d["primary_ip"] is None:
                     a.gaps.append({"id": f"device:{d['id']}:primary_ip", "kind": "device", "object_id": d["id"], "field": "primary_ip",
                                    "site_id": site_id, "rank": "connectivity", "device_id": d["id"],
-                                   "label": f"{d['name']} has no management address (primary IP)."})
+                                   "label": f"{_cap(nm(d))} has no management address (primary IP)."})
                     a.checks[site_id][f"device:{d['id']}:primary_ip"] = False
                 else:
                     a.checks[site_id][f"device:{d['id']}:primary_ip"] = True
@@ -300,23 +359,34 @@ def _analyse(e: Estate) -> Analysis:
                                    "title": f"NetBox does not say how to reach {_some(names)} to manage {'it' if len(ids) == 1 else 'them'}.",
                                    "data": {"device_ids": ids}})
             if e.can_see("prefixes"):
-                nets = [ipaddress.ip_network(p["prefix"], strict=False) for p in e.prefixes.values()]
-                orphans: dict[str, list[dict[str, Any]]] = defaultdict(list)
+                # NetBox keeps one address table per VRF (and the global one): a prefix holds an address only in its own
+                nets: dict[Any, list[Any]] = defaultdict(list)
+                for p in e.prefixes.values():
+                    nets[p.get("vrf_id")].append(ipaddress.ip_network(p["prefix"], strict=False))
+                orphans: dict[tuple[int, str], list[dict[str, Any]]] = defaultdict(list)
                 site_devs = {d["id"] for d in devs}
                 for _, ip in sorted(e.ips.items()):
                     if ip["interface_id"] is None or dev_of_iface.get(ip["interface_id"]) not in site_devs:
                         continue
                     iface = ipaddress.ip_interface(ip["address"])
-                    if any(iface.ip in n for n in nets if n.version == iface.version):
+                    if any(iface.ip in n for n in nets.get(ip.get("vrf_id"), []) if n.version == iface.version):
                         passed("address_no_prefix", ("ip", ip["id"]), site_id)
                     else:
-                        orphans[str(iface.network)].append(ip)
-                for network, ips in sorted(orphans.items()):
+                        # a host address (/32, /128) names no subnet: all of them in one table are one question
+                        host = iface.network.prefixlen == iface.max_prefixlen
+                        orphans[(ip.get("vrf_id") or 0, f"hosts{iface.version}" if host else str(iface.network))].append(ip)
+                for (vrf_id, network), ips in sorted(orphans.items()):
                     first = ips[0]
+                    vrf = first.get("vrf") or (f"VRF {vrf_id}" if vrf_id else None)
+                    # one check per address: the line stays the same line when its first address goes away
                     add("address_no_prefix", ("ip", first["id"]), site_id,
                         f"{_some([i['address'] for i in ips])} {'is' if len(ips) == 1 else 'are'} in use at {site['name']}, "
-                        "but NetBox has no prefix that holds " + ("it." if len(ips) == 1 else "them."),
-                        [ref("ip_address", i["id"], i["address"]) for i in ips[:5]], network=network, ip_ids=[i["id"] for i in ips])
+                        f"but NetBox has no prefix{f' in VRF {vrf}' if vrf else ''} that holds " + ("it." if len(ips) == 1 else "them."),
+                        [ref("ip_address", i["id"], i["address"]) for i in ips[:5]], network=None if network.startswith("hosts") else network,
+                        ip_ids=[i["id"] for i in ips], vrf_id=vrf_id or None, vrf=vrf,
+                        gap_ids=[f"address_no_prefix:ip:{i['id']}" for i in ips])
+                    for i in ips:
+                        a.checks[site_id][f"address_no_prefix:ip:{i['id']}"] = False
         # ---- identity gaps, bundled per rack (or per room for what is not in a rack)
         for d in devs:
             for fld, empty, label in (("serial", not d["serial"], "serial number"), ("asset_tag", d["asset_tag"] is None, "asset tag"),
@@ -325,13 +395,15 @@ def _analyse(e: Estate) -> Analysis:
                 # has any (and never for passive kit such as patch panels and power strips).
                 if fld == "platform" and (is_passive(d) or not e.platforms):
                     continue
+                if fld == "serial" and is_passive(d):
+                    continue   # patch panels, shelves and blanking plates often carry no serial at all
                 if fld == "asset_tag" and not uses_tags:
                     continue
                 gid = f"device:{d['id']}:{fld}"
                 a.checks[site_id][gid] = not empty
                 if empty:
                     a.gaps.append({"id": gid, "kind": "device", "object_id": d["id"], "field": fld, "site_id": site_id,
-                                   "rank": "identity", "label": f"{d['name'] or 'A device'} has no {label}.", "device_id": d["id"]})
+                                   "rank": "identity", "label": f"{_cap(nm(d))} has no {label}.", "device_id": d["id"]})
         id_gaps: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
         by_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for g in a.gaps:
@@ -342,10 +414,15 @@ def _analyse(e: Estate) -> Analysis:
                     by_model[d["model"] or "unknown model"].append(g)
                 else:
                     id_gaps[("rack", d["rack_id"]) if d["rack_id"] else ("location", d["location_id"] or 0)].append(g)
+        slugs: dict[str, int] = defaultdict(int)
+        for model in by_model:
+            slugs[_slug(model)] += 1
         for model, gaps in sorted(by_model.items()):
+            # two model names that differ only in punctuation ("EX 4300", "EX-4300") are two lines with two ids
+            key = _slug(model) + (f"-{zlib.crc32(model.encode()):08x}" if slugs[_slug(model)] > 1 else "")
             ids = [g["object_id"] for g in gaps][:MAX_SURVEY]
             more = f" ({len(gaps) - len(ids)} more after these)" if len(gaps) > len(ids) else ""
-            a.findings.append({"id": f"platform_survey:site:{site_id}:{_slug(model)}", "kind": "platform_survey", "rank": "identity",
+            a.findings.append({"id": f"platform_survey:site:{site_id}:{key}", "kind": "platform_survey", "rank": "identity",
                                "site_id": site_id,
                                "title": f"NetBox does not say what {_some([e.device_name(i) for i in ids])} ({model}) at {site['name']} "
                                         f"run{'s' if len(ids) == 1 else ''}{more}.",
@@ -354,6 +431,8 @@ def _analyse(e: Estate) -> Analysis:
         for (kind, oid), gaps in sorted(id_gaps.items()):
             dev_ids = sorted({g["object_id"] for g in gaps}, key=lambda i: (-(e.devices[i]["position"] or 0), i))
             lacking = _some([w for fld, w in (("serial", "serial number"), ("asset_tag", "asset tag")) if any(g["field"] == fld for g in gaps)], "or")
+            if kind == "rack" and oid not in e.racks:
+                continue   # the rack list could not be read (or was cut short): nothing is said about a rack unseen
             if kind == "rack":
                 rack = e.racks[oid]
                 a.findings.append({"id": f"rack_audit:rack:{oid}", "kind": "rack_audit", "rank": "identity", "site_id": site_id,
@@ -394,12 +473,16 @@ def _analyse(e: Estate) -> Analysis:
             loose = [d for d in devs if d["rack_id"] == rid and d["position"] is None and d["u_height"] > 0]
             if loose:
                 add("rack_devices_unpositioned", ("rack", rid), site_id,
-                    f"{_some([d['name'] or '?' for d in loose])} in rack {rack['name']} {'have' if len(loose) != 1 else 'has'} no rack unit on record.",
+                    f"{_cap(_some([nm(d) for d in loose]))} in rack {rack['name']} {'have' if len(loose) != 1 else 'has'} no rack unit on record.",
                     [ref("rack", rid, rack["name"])] + [dref(d) for d in loose], rack_id=rid, device_ids=[d["id"] for d in loose])
             elif any(d["rack_id"] == rid for d in devs):
                 passed("rack_devices_unpositioned", ("rack", rid), site_id)
+            # a site that records no rooms at all is not asked which room a rack is in
+            has_rooms = e.can_see("locations") and any(loc["site_id"] == site_id for loc in e.locations.values())
             for fld, empty, label in (("location", rack["location_id"] is None, "room"),
                                       ("iso", rack["iso_x"] is None or rack["iso_y"] is None, "place on the floor plan (iso_x, iso_y)")):
+                if fld == "location" and not has_rooms:
+                    continue
                 gid = f"rack:{rid}:{fld}"
                 a.checks[site_id][gid] = not empty
                 if empty:
@@ -425,9 +508,11 @@ def _analyse(e: Estate) -> Analysis:
         home = min(e.sites)
         claimed = {p for f in a.findings if f["kind"] == "site_no_way_out" for p in f["data"]["provider_ids"]}
         for cid, c in sorted(e.circuits.items()):
-            terms = [t for t in e.cterms.values() if t["circuit_id"] == cid]
-            site_id = next((t["site_id"] for t in sorted(terms, key=lambda t: t["side"] or "") if t["site_id"] in e.sites), home)
-            if landed.get(cid):
+            terms = sorted((t for t in e.cterms.values() if t["circuit_id"] == cid), key=lambda t: t["side"] or "")
+            # an end recorded at a site with no cable on it ends nowhere, even when the other end is cabled
+            loose_end = next((t for t in terms if t["site_id"] in e.sites and t["cable_id"] is None), None)
+            site_id = loose_end["site_id"] if loose_end else next((t["site_id"] for t in terms if t["site_id"] in e.sites), home)
+            if landed.get(cid) and loose_end is None:
                 passed("circuit_unterminated", ("circuit", cid), site_id)
                 continue
             prov = e.providers.get(c["provider_id"] or 0, {}).get("name", "its provider")
@@ -451,6 +536,11 @@ def _some(names: list[str], joint: str = "and") -> str:
     if len(names) <= 3:
         return ", ".join(names[:-1]) + (f" {joint} " if len(names) > 1 else "") + (names[-1] if names else "")
     return f"{names[0]}, {names[1]} and {len(names) - 2} more"
+
+
+def _cap(text: str) -> str:
+    """A sentence may start with an unnamed device ("The unnamed EX-A2400 ..."); a real name keeps its own case."""
+    return "The" + text[3:] if text.startswith("the unnamed") else text
 
 
 def _slug(text: str) -> str:
