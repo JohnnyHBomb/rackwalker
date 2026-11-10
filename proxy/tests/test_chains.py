@@ -57,7 +57,9 @@ def test_chains_are_derived_per_subject_connectivity_before_devices_before_racks
     schema_validator("Chain").validate(out)
     # the way out always shows its three stages: the later ones wait for the circuit to be plugged in
     assert [(s["stage"], s["status"]) for s in out["stages"]] == [("physical", "open"), ("logical", "locked"), ("administrative", "locked")]
-    assert out["title"] == "The way out of Practice Island" and out["holds"].startswith("the port the line plugs into, the circuit, your address")
+    assert out["title"] == "The way out of Practice Island" and out["holds"] == ("the port the line plugs into, and the circuit; your address on it; "
+                                                                             "the carrier's network, your account, who to call, and what it costs")
+    assert out["bonus_xp"] == 250
     assert out["stages"][0]["quest_ids"] == [f"q:site_no_way_out:site:{ISLAND}"] and out["summary"] is None
     # a stage NetBox already satisfies is done, never asked: every switch has its management address on record
     dev = v["chain:device:device:9000001"]
@@ -83,7 +85,7 @@ def test_a_later_stage_unlocks_when_the_earlier_one_is_verified_answered_or_on_p
     v = views(e, resolved={hand})[cid]
     assert v["label"] == "3 of 3: administrative" and [s["status"] for s in v["stages"]] == ["done", "answered", "open"]
     # facts answered "I don't know yet" leave the chain honestly open at that stage, listed as open questions
-    v = views(e, resolved={hand, *facts[:5]}, deferred=set(facts[5:]))[cid]
+    v = views(e, resolved={hand, *facts[:-2]}, deferred=set(facts[-2:]))[cid]
     assert (v["status"], v["label"]) == ("open_questions", "3 of 3: administrative (not known yet: the monthly charge and the one-off charge)")
     assert v["open_questions"] == ["the monthly charge", "the one-off charge"] and v["stages"][2]["status"] == "not_known"
     # everything answered: complete (but only what NetBox itself shows counts as a verified record)
@@ -110,6 +112,9 @@ def test_the_board_offers_only_the_stage_a_chain_has_reached(tmp_path):
                              "position": 1, "total": 3, "label": "1 of 3: physical"}
     # chains that have nothing to do yet are counted, not listed
     assert {c["status"] for c in b["chains"]} == {"open"} and b["setup"] == []
+    # the island pays nothing, so its chains promise no bonus; neither does a proxy that writes nothing
+    assert {c["bonus_xp"] for c in b["chains"]} == {0}
+    assert {c["bonus_xp"] for c in cl.get("/api/game/quests", params={"scope": "netbox"}).json()["chains"]} == {0}
 
 
 # ---------------------------------------------------------------- how a device is managed
@@ -210,6 +215,27 @@ def test_a_locally_managed_device_names_the_port_that_carries_management_and_tha
     assert [g["id"] for g in findings.analyse(e).gaps if g["field"] == "cable"] == [f"interface:{b.p(sw2, 'eth4')[1]}:cable"]
 
 
+def test_a_models_default_of_local_exempts_the_management_port_like_the_devices_own_answer():
+    b = Build()
+    s = b.site()
+    room = b.room(s)
+    rack = b.rack(s, room)
+    r, sw = linked_pair(b, s, room, rack)
+    port = {}
+    # each is cabled to sw1 on eth1 and has its management address on eth3, a front-panel port with no cable
+    for n, (name, own, default) in enumerate((("own", "local", None), ("model", None, "local"), ("unsaid", None, None)), 2):
+        d = b.dev(s, name, "switch", room, rack, primary_ip=f"192.0.2.{50 + n}/24", type_id=n, mgmt_mode=own, mgmt_default=default)
+        b.cable(b.p(d, "eth1"), b.p(sw, f"eth{n}"))
+        b.ip(b.p(d, "eth3"), f"192.0.2.{50 + n}/24")
+        port[name] = b.p(d, "eth3")[1]
+    a = findings.analyse(b.e)
+    # recorded as locally managed, on the device or as its model's default: the address says how it is reached, and no cable
+    # is asked for. With nothing recorded, an addressed port is a port in use, as it was before the game asked how kit is managed.
+    assert [g["id"] for g in a.gaps if g["field"] == "cable"] == [f"interface:{port['unsaid']}:cable"]
+    assert [f["title"] for f in a.findings if f["kind"] == "interface_no_cable"] == ["unsaid eth3 has an address but no cable."]
+    assert [b.e.mgmt_recorded(d) for d in b.e.devices.values() if d["name"] in port] == ["local", "local", None]
+
+
 # ---------------------------------------------------------------- a circuit's record
 def recorded(e: Estate, cid: int) -> dict[str, bool]:
     return findings.circuit_facts(e, cid)
@@ -221,11 +247,12 @@ def test_each_fact_of_a_circuits_record_has_its_home_in_netbox():
     assert list(recorded(e, cid)) == list(findings.CIRCUIT_FACTS) and not any(recorded(e, cid).values())
     line = one(e, "circuit_record")
     assert line["purpose"].startswith("Circuit C-OK from Carrier is plugged in at Mill, but NetBox does not hold the provider's network it lands on, "
-                                      "the account with the provider and 5 more.")
+                                      "the account with the provider and 7 more.")
     answers = {"network": {"choice": "new"}, "network_name": {"text": "Carrier Internet"},
                "account": {"choice": "new"}, "account_no": {"text": "SYN-44-1021"},
                "contact_for": {"choice": "provider"},
                "contact": {"values": {"contact:support:name": "Carrier NOC", "contact:support:phone": "+44 1632 960123",
+                                      "contact:account:name": "carrier noc",
                                       "contact:billing:name": "Carrier Billing", "contact:billing:email": "bills@example.net"}},
                "terms": {"values": {"install_date": "2024-03-01", "commit_rate": 100}},
                "cost": {"values": {"mrc": 240, "nrc": 500, "currency": "gbp"}}}
@@ -237,20 +264,22 @@ def test_each_fact_of_a_circuits_record_has_its_home_in_netbox():
         ("create_provider_network", "provider_network", {"provider_id": pid, "name": "Carrier Internet"}),          # circuits.ProviderNetwork
         ("create_circuit_termination", "circuit_termination", {"circuit_id": cid, "term_side": "Z", "provider_network_id": "@network"}),
         ("create_provider_account", "provider_account", {"provider_id": pid, "account": "SYN-44-1021"}),          # circuits.ProviderAccount
-        ("create_contact", "contact", {"name": "Carrier Billing", "email": "bills@example.net"}),                   # tenancy.Contact
-        ("assign_contact", "provider", {"contact_id": "@contact_billing", "role_id": roles["billing"]["id"]}),      # tenancy.ContactAssignment
-        ("create_contact", "contact", {"name": "Carrier NOC", "phone": "+44 1632 960123"}),
-        ("assign_contact", "provider", {"contact_id": "@contact_support", "role_id": roles["support"]["id"]}),
+        ("create_contact", "contact", {"name": "Carrier NOC", "phone": "+44 1632 960123"}),                         # tenancy.Contact
+        ("assign_contact", "provider", {"contact_id": "@contact_support", "role_id": roles["support"]["id"]}),      # tenancy.ContactAssignment
+        # one desk in two roles is one contact, assigned twice
+        ("assign_contact", "provider", {"contact_id": "@contact_support", "role_id": roles["account"]["id"]}),
+        ("create_contact", "contact", {"name": "Carrier Billing", "email": "bills@example.net"}),
+        ("assign_contact", "provider", {"contact_id": "@contact_billing", "role_id": roles["billing"]["id"]}),
         # the circuit's own fields, and the three custom fields for what NetBox has no field for
         ("record_circuit", "circuit", {"provider_account_id": "@account", "install_date": "2024-03-01", "commit_rate": 100000,
                                        "mrc": "240.00", "nrc": "500.00", "currency": "GBP"})]
     schema_validator("ChangeSet").validate(st["proposal"])
     assert st["changes"][-1] == "Circuit C-OK: account SYN-44-1021, installed 2024-03-01, commit rate 100 Mbps, 240.00 GBP a month, 500.00 GBP once."
-    assert [r["error"] for r in simulate(e, st["proposal"]["ops"])] == [None] * 8
+    assert [r["error"] for r in simulate(e, st["proposal"]["ops"])] == [None] * 9
     assert all(recorded(e, cid).values()) and not [f for f in findings.analyse(e).findings if f["kind"] == "circuit_record"]
     # the record, read back from the estate
     assert chains.circuit_summary(e, cid) == ("rtr1 eth3 -> circuit C-OK (Internet), Carrier, network Carrier Internet, your address 192.0.2.201/24, "
-                                              "account SYN-44-1021, Billing: Carrier Billing bills@example.net, Support / NOC: Carrier NOC +44 1632 960123, "
+                                              "account SYN-44-1021, Support / NOC: Carrier NOC +44 1632 960123, Billing: Carrier Billing bills@example.net, "
                                               "240.00 GBP a month, 500.00 GBP once, installed 2024-03-01, 100 Mbps committed")
 
 
@@ -264,7 +293,7 @@ def test_what_is_not_known_is_left_open_and_the_rest_is_written():
     # the install date is written; "none, on purpose" is an answer; what is not known is listed and waits
     assert st["status"] == "ready" and st["proposal"]["ops"] == [{"op": "record_circuit", "target": {"kind": "circuit", "id": cid},
                                                                    "fields": {"install_date": "2024-03-01"}}]
-    assert st["waived"] == [f"circuit:{cid}:network", f"circuit:{cid}:contacts"] == quests.waived(line, answers)
+    assert st["waived"] == [f"circuit:{cid}:{f}" for f in ("network", "contact_support", "contact_account", "contact_billing")] == quests.waived(line, answers)
     not_known = [f"circuit:{cid}:{f}" for f in ("account", "commit_rate", "mrc", "nrc")]
     assert st["deferred"] == not_known and sorted(quests.deferred(line, answers)) == sorted(not_known)
     assert "The monthly charge (MRC) is on every bill" in " ".join(st["checklist"])
@@ -275,6 +304,19 @@ def test_what_is_not_known_is_left_open_and_the_rest_is_written():
     assert again["note"] == "Not known yet for circuit C-OK: the account, the commit rate and 2 more. The line waits here; nothing is lost."
     v = views(e, resolved=set(st["waived"]), deferred=set(not_known))["chain:way_out:site:1"]
     assert v["label"] == "3 of 3: administrative (not known yet: the account, the commit rate and 2 more)"
+    # A form of the player's own figures is stored only as the facts it left blank. While those are all it is asked for, it
+    # is not asked again; if the proxy restarted before the figures were written, a figure is missing and it is.
+    base = {"network": {"choice": "none"}, "account": {"choice": "none"}, "contact_for": {"choice": "none"}, "terms": {"choice": "none"}}
+    assert quests.blank_facts("cost", {"nrc": 5, "currency": "GBP"}) == ["mrc"]
+    assert quests.blank_facts("contact", {"contact:support:name": "NOC", "contact:billing:phone": "1"}) == ["contact_account", "contact_billing"]
+    fresh = circuit_record()
+    lost = quests.evaluate(fresh, one(fresh, "circuit_record"), {**base, "cost": {"unknown": ["mrc"]}})
+    assert lost["status"] == "asking" and lost["step"]["id"] == "cost"
+    fresh.circuits[cid].update(nrc="5.00", currency="GBP")
+    fresh.touch()
+    line = one(fresh, "circuit_record")
+    kept = quests.evaluate(fresh, line, {**base, "cost": {"unknown": ["mrc"]}})
+    assert kept["status"] == "parked" and kept["deferred"] == [f"circuit:{cid}:mrc"] == quests.deferred(line, {"cost": {"unknown": ["mrc"]}})
     # everything "none, on purpose": the line closes with nothing written
     closed = quests.evaluate(circuit_record(), one(circuit_record(), "circuit_record"),
                              {"network": {"choice": "none"}, "account": {"choice": "none"}, "contact_for": {"choice": "none"},
@@ -313,15 +355,24 @@ def test_real_names_are_the_choices_and_what_netbox_cannot_hold_is_not_asked_for
             base["terms"] = {"choice": "none"}
         bad = quests.evaluate(e, line, {**base, step_id: {"values": values}})
         assert bad["status"] == "asking" and bad["step"]["id"] == step_id and says in bad["step"]["error"], (step_id, bad["step"])
-    # NetBox without the cost fields: the charges are not asked for and are no part of the record; without contact roles the
-    # line says what to add before anybody looks up a phone number
+    # NetBox without the cost fields or without contact roles: neither the charges nor who to call is asked for or is part
+    # of the record, and the quest log says what to add
     bare = circuit_record()
     bare.no_fields += ["rw_mrc", "rw_nrc", "rw_currency"]
     bare.contact_roles.clear()
-    assert list(recorded(bare, cid)) == ["network", "account", "contacts", "install_date", "commit_rate"]
-    st = quests.evaluate(bare, one(bare, "circuit_record"), {"network": {"choice": "none"}, "account": {"choice": "none"}, "terms": {"choice": "none"}})
-    assert st["status"] == "parked" and st["checklist"][0].startswith("NetBox has no contact role for support, the account manager or billing yet")
-    assert questroutes.setup_notes(bare)[0].startswith("NetBox has no custom fields rw_mrc, rw_nrc and rw_currency on circuits")
+    assert list(recorded(bare, cid)) == ["network", "account", "install_date", "commit_rate"]
+    st = quests.evaluate(bare, one(bare, "circuit_record"), {"network": {"choice": "none"}, "account": {"choice": "none"}})
+    assert st["status"] == "asking" and st["step"]["id"] == "terms"
+    notes = questroutes.setup_notes(bare)
+    assert notes[0].startswith("NetBox has no custom fields rw_mrc, rw_nrc and rw_currency on circuits")
+    assert notes[1].startswith("NetBox has no contact role for support, the account manager or billing")
+    # one role only: that contact is the only one asked for
+    bare.contact_roles[4] = {"id": 4, "name": "Accounts payable", "slug": "ap"}
+    bare.touch()
+    assert list(recorded(bare, cid)) == ["network", "account", "contact_billing", "install_date", "commit_rate"]
+    step = quests.evaluate(bare, one(bare, "circuit_record"), {"network": {"choice": "none"}, "account": {"choice": "none"},
+                                                               "contact_for": {"choice": "provider"}})["step"]
+    assert [f["id"] for f in step["fields"]] == ["contact:billing:name", "contact:billing:phone", "contact:billing:email"]
 
 
 def test_the_hand_off_address_and_its_prefix():
@@ -478,7 +529,8 @@ class Office(Box):
             table, oid = path.rsplit("/", 1)
             row = next(r for r in self.data[table] if r["id"] == int(oid))
             if "primary_ip4" in fields:
-                ip = next(i for i in self.data["ipam/ip-addresses"] if i["id"] == fields.pop("primary_ip4"))
+                primary = fields.pop("primary_ip4")
+                ip = next(i for i in self.data["ipam/ip-addresses"] if i["id"] == primary)
                 row["primary_ip"] = {"id": ip["id"], "address": ip["address"]}
             row["custom_fields"] = {**row.get("custom_fields", {}), **fields.pop("custom_fields", {})}   # NetBox merges a partial dict
             row.update(fields, last_updated=self.stamp())
@@ -520,7 +572,7 @@ def say(cl, quest_id: str, *answers: tuple[str, dict[str, Any]]) -> dict[str, An
 
 WAY_OUT, HANDOFF, RECORD = "q:site_no_way_out:site:1", "q:circuit_handoff:circuit:1", "q:circuit_record:circuit:1"
 CHAIN = "chain:way_out:site:1"
-SECRETS = ("44-1021", "241.37", "505.5", "0800 000 0000", "Northlight NOC")
+SECRETS = ("44-1021", "241.37", "505.5", "0800 000 0000", "Northlight NOC", "Northlight Billing", "bills@northlight.example")
 
 
 def stored(tmp_path) -> bytes:
@@ -533,6 +585,7 @@ def test_the_example_estate_plays_the_way_out_from_nothing_to_the_complete_recor
     cl, box = office(tmp_path, monkeypatch)
     b = board(cl)
     chain = next(c for c in b["chains"] if c["id"] == CHAIN)
+    assert chain["bonus_xp"] == chains.CHAIN_XP["way_out"]                    # this player's changes are written: the whole record can pay
     assert chain["label"] == "1 of 3: physical" and [q["kind"] for q in b["quests"]] == ["site_no_way_out", "locations_not_linked", "device_unconnected"]
     assert b["quests"][0]["chain"]["label"] == "1 of 3: physical"
     # ---- physical: the device, the port, the circuit's end, the cable
@@ -542,56 +595,70 @@ def test_the_example_estate_plays_the_way_out_from_nothing_to_the_complete_recor
     v = post(cl, "apply", WAY_OUT)
     assert (v["complete"], v["xp_awarded"], v["chain_xp"], v["chain"]["label"]) == (True, 120, 0, "2 of 3: logical")
     assert v["message"] == 'NetBox confirms it. Next in the chain "The way out of Mill Lane": 2 of 3: logical.'
-    # ---- logical: the address on it; the stage that has just unlocked is the one on offer
+    # ---- logical: the address on it; the stage that has just unlocked is the one on offer, and it comes first: a
+    # connection that has been begun is carried on before the rooms' link, which ranks above an address otherwise
     b = board(cl)
+    assert b["next_quest_id"] == HANDOFF and [q["id"] for q in b["quests"]][0] == HANDOFF
     assert next(q for q in b["quests"] if q["id"] == HANDOFF)["chain"]["label"] == "2 of 3: logical"
     assert RECORD not in [q["id"] for q in b["quests"]]                      # the administrative stage is still locked
     say(cl, HANDOFF, ("has", {"choice": "typed"}), ("addr", {"text": "203.0.113.2/30"}), ("prefix", {"choice": "yes"}))
     v = post(cl, "apply", HANDOFF)
     assert (v["complete"], v["xp_awarded"], v["chain"]["label"]) == (True, 60, "3 of 3: administrative")
-    # ---- administrative: whose network, the account, who to call, the terms; the cost is not known yet
+    # ---- administrative: whose network, the account, the terms, the support desk and the one-off charge; the other two
+    # contacts and the monthly charge are left blank
     b = board(cl)
-    assert next(q for q in b["quests"] if q["id"] == RECORD)["step"]["id"] == "network"
+    assert b["next_quest_id"] == RECORD and next(q for q in b["quests"] if q["id"] == RECORD)["step"]["id"] == "network"
     q = say(cl, RECORD, ("network", {"choice": "new"}), ("network_name", {"text": "Northlight Internet"}),
             ("account", {"choice": "new"}), ("account_no", {"text": "44-1021"}), ("contact_for", {"choice": "provider"}),
             ("contact", {"values": {"contact:support:name": "Northlight NOC", "contact:support:phone": "0800 000 0000"}}),
-            ("terms", {"values": {"install_date": "2024-03-01", "commit_rate": 100}}), ("cost", {"values": {}}))
-    assert q["status"] == "ready" and q["changes"][-1] == "Circuit NLT-7001: account 44-1021, installed 2024-03-01, commit rate 100 Mbps."
-    # what was typed for the account and the contact is in the proxy's memory, never in the game's store
+            ("terms", {"values": {"install_date": "2024-03-01", "commit_rate": 100}}), ("cost", {"values": {"nrc": 505.5, "currency": "gbp"}}))
+    assert q["status"] == "ready" and q["changes"][-1] == "Circuit NLT-7001: account 44-1021, installed 2024-03-01, commit rate 100 Mbps, 505.50 GBP once."
+    # a blank field is "not known yet" at once, before anything is written
+    not_known = "not known yet: the account manager, the billing contact and the monthly charge"
+    assert next(c for c in board(cl)["chains"] if c["id"] == CHAIN)["label"] == "3 of 3: administrative"   # the rest is still to be written
+    # what was typed for the account, the contact and the cost is in the proxy's memory, never in the game's store
     assert not [s for s in SECRETS if s.encode() in stored(tmp_path)]
     v = post(cl, "apply", RECORD)
-    assert (v["complete"], v["verified"], v["quest"]["status"], v["chain_xp"]) == (False, True, "parked", 0)
-    assert v["chain"]["status"] == "open_questions"
-    assert v["chain"]["label"] == "3 of 3: administrative (not known yet: the monthly charge and the one-off charge)"
-    assert v["message"].endswith('The chain "The way out of Mill Lane" stays open at 3 of 3: administrative (not known yet: the monthly charge '
-                                 'and the one-off charge).')
-    assert v["quest"]["step"]["id"] == "cost" and v["quest"]["note"].startswith("Not known yet for circuit NLT-7001: the monthly charge")
+    assert (v["complete"], v["verified"], v["quest"]["status"], v["chain_xp"], v["xp_awarded"]) == (False, True, "parked", 0, 120)
+    assert v["chain"]["status"] == "open_questions" and v["chain"]["label"] == f"3 of 3: administrative ({not_known})"
+    assert v["message"] == (f'NetBox confirms 6 of 9; the rest of this line stays open. The chain "The way out of Mill Lane" stays open at '
+                            f'3 of 3: administrative ({not_known}).')
+    # the line waits at the first blank; it does not ask for the blanks a second time before it counts them as not known
+    assert v["quest"]["step"]["id"] == "contact" and [f["id"] for f in v["quest"]["step"]["fields"]][::3] == ["contact:account:name", "contact:billing:name"]
+    assert v["quest"]["note"] == "Not known yet for circuit NLT-7001: the account manager, the billing contact and the monthly charge. The line waits here; nothing is lost."
     # NetBox's own models hold it
     circ = box.data["circuits/circuits"][0]
     assert (circ["provider_account"], circ["install_date"], circ["commit_rate"]) == ({"id": 1}, "2024-03-01", 100000)
+    assert circ["custom_fields"] == {"rw_mrc": None, "rw_nrc": 505.5, "rw_currency": "GBP"}   # numbers: what a decimal field takes
     assert box.data["circuits/provider-accounts"] == [{"id": 1, "provider": {"id": 1}, "account": "44-1021"}]
     assert box.data["circuits/provider-networks"] == [{"id": 1, "provider": {"id": 1}, "name": "Northlight Internet"}]
     assert box.data["circuits/circuit-terminations"][1] | {"cable": None} == {
         "id": 2, "circuit": {"id": 1}, "term_side": "Z", "termination_type": "circuits.providernetwork", "termination_id": 1, "cable": None}
     assert box.data["tenancy/contact-assignments"] == [{"id": 1, "object_type": "circuits.provider", "object_id": 1, "contact": {"id": 1}, "role": {"id": 1}}]
-    # ---- the cost is not known: the chain is honestly open, and that does not hold the site's completeness back
+    # ---- three facts are not known: the chain is honestly open, and that does not hold the site's completeness back
     b = board(cl)
     site = b["sites"][0]
     waiting = next(q for q in b["quests"] if q["id"] == RECORD)
-    assert waiting["status"] == "parked" and next(c for c in b["chains"] if c["id"] == CHAIN)["open_questions"] == ["the monthly charge", "the one-off charge"]
+    assert waiting["status"] == "parked"
+    assert next(c for c in b["chains"] if c["id"] == CHAIN)["open_questions"] == ["the account manager", "the billing contact", "the monthly charge"]
     open_checks = {c for c, ok in findings.analyse(questroutes_estate(cl)).checks[1].items() if not ok}
-    assert {"circuit:1:mrc", "circuit:1:nrc"} <= open_checks and site["completeness"]["open"] == len(open_checks) - 2
-    # ---- later the bill turns up
-    q = say(cl, RECORD, ("cost", {"values": {"mrc": 241.37, "nrc": 505.5, "currency": "gbp"}}))
-    assert q["status"] == "ready" and q["changes"] == ["Circuit NLT-7001: 241.37 GBP a month, 505.50 GBP once."]
+    assert {"circuit:1:contact_account", "circuit:1:contact_billing", "circuit:1:mrc"} <= open_checks
+    assert site["completeness"]["open"] == len(open_checks) - 3
+    # ---- later the bill turns up: the same desk is the account manager too (one contact, a second role), and billing is new
+    q = say(cl, RECORD, ("contact", {"values": {"contact:account:name": "northlight noc", "contact:billing:name": "Northlight Billing",
+                                                "contact:billing:email": "bills@northlight.example"}}),
+            ("cost", {"values": {"mrc": 241.37}}))
+    assert q["status"] == "ready" and q["changes"][-1] == "Circuit NLT-7001: 241.37 GBP a month."
     assert not [s for s in SECRETS if s.encode() in stored(tmp_path)]
     v = post(cl, "apply", RECORD)
     assert (v["complete"], v["chain"]["status"], v["chain"]["label"]) == (True, "complete", "3 of 3: complete")
     # the whole record pays above its stages, once: every stage was this player's
-    assert v["chain_xp"] == chains.CHAIN_XP["way_out"] and v["xp_awarded"] == v["chain_xp"] + 48
-    assert circ["custom_fields"] == {"rw_mrc": 241.37, "rw_nrc": 505.5, "rw_currency": "GBP"}   # numbers: what a decimal field takes
+    assert v["chain_xp"] == chains.CHAIN_XP["way_out"] == v["chain"]["bonus_xp"] and v["xp_awarded"] == v["chain_xp"] + 72
+    assert circ["custom_fields"] == {"rw_mrc": 241.37, "rw_nrc": 505.5, "rw_currency": "GBP"}
+    assert [(a["contact"]["id"], a["role"]["id"]) for a in box.data["tenancy/contact-assignments"]] == [(1, 1), (1, 2), (2, 3)]
     summary = ("Mill Lane: ml-sw1 Te1/1/1 -> circuit NLT-7001 (Internet), Northlight Telecom, network Northlight Internet, your address 203.0.113.2/30, "
-               "account 44-1021, Support / NOC: Northlight NOC 0800 000 0000, 241.37 GBP a month, 505.50 GBP once, installed 2024-03-01, 100 Mbps committed.")
+               "account 44-1021, Support / NOC: Northlight NOC 0800 000 0000, Billing: Northlight Billing bills@northlight.example, "
+               "241.37 GBP a month, 505.50 GBP once, installed 2024-03-01, 100 Mbps committed.")
     assert v["chain"]["summary"] == summary and v["message"].endswith(f'That completes the chain "The way out of Mill Lane". {summary}')
     assert post(cl, "verify", RECORD)["chain_xp"] == 0                         # checked again: nothing is paid twice
     done = next(c for c in board(cl)["chains"] if c["id"] == CHAIN)
@@ -616,6 +683,13 @@ def questroutes_estate(cl) -> Estate:
 
 def test_how_a_device_is_managed_is_written_to_the_device_and_its_model(tmp_path, monkeypatch):
     data = mill_lane()
+    # ml-sw1 and ml-sw2 are cabled to each other, so both are checked for ports in use with no cable
+    data["dcim/cables"].append({"id": 1, "type": "smf", "label": "", "status": {"value": "connected"},
+                                "a_terminations": [{"object_type": "dcim.interface", "object_id": 12}],
+                                "b_terminations": [{"object_type": "dcim.interface", "object_id": 22}]})
+    for p in data["dcim/interfaces"]:
+        if p["id"] in (12, 22):
+            p["cable"] = {"id": 1}
     cl, box = office(tmp_path, monkeypatch, data)
     line = "q:device_unreachable:device:1"
     q = say(cl, line, (f"mode_1", {"choice": "local"}), ("model_1", {"choice": "all"}), ("ip_1", {"choice": "typed"}),
@@ -632,9 +706,16 @@ def test_how_a_device_is_managed_is_written_to_the_device_and_its_model(tmp_path
     # the model's default now says how the other two are managed: they are asked for their address, not for the mode again
     other = say(cl, "q:device_unreachable:device:2", ("ip_2", {"choice": "unknown"}))
     assert other["status"] == "parked" and other["purpose"].startswith("ml-sw2 is managed locally, but NetBox has no address to log in to it.")
-    # Te1/1/3 of ml-sw1 has an address and no cable, and is not listed as an uncabled port for that
+    # ml-sw2 takes "local" from its model: only the address is written, on a front-panel port
+    q = say(cl, "q:device_unreachable:device:2", ("ip_2", {"choice": "typed"}), ("addr_2", {"text": "192.0.2.12/24"}), ("port_2", {"choice": "interface:23"}))
+    assert q["changes"] == ["ml-sw2: 192.0.2.12/24 on Te1/1/3, as its management address (primary IP)."]
+    assert post(cl, "apply", "q:device_unreachable:device:2")["complete"]
+    assert data["dcim/devices"][1]["custom_fields"]["rw_mgmt_mode"] is None
+    # Te1/1/3 of each has an address and no cable, and neither is listed as an uncabled port for that: not the one whose
+    # device says "local" itself, and not the one that has it from its model
     gaps = cl.get("/api/quests/gaps/1").json()
     assert [g["id"] for g in gaps["items"] if g["field"] == "cable"] == [] and b["setup"] == []
+    assert "interface_no_cable" not in [f["kind"] for f in board(cl)["findings"]]
 
 
 def test_netbox_without_the_custom_fields_is_told_so_and_nothing_is_asked_that_it_cannot_hold(tmp_path, monkeypatch):
@@ -680,9 +761,13 @@ def test_the_island_teaches_one_whole_chain_with_a_made_up_bill(tmp_path):
     q = answer(rec, ("network", {"choice": "network:9000001"}), ("account", {"choice": "new"}))
     # on the island no figure is typed: the made-up bill is the only answer on offer besides "I don't know yet"
     assert q["step"]["input"] == "choice" and [c["label"] for c in q["step"]["choices"]] == ["The bill says PI-ACC-0042", "I don't know yet"]
-    q = answer(rec, ("account_no", {"choice": "sample"}), ("contact_for", {"choice": "provider"}), ("contact", {"choice": "sample"}),
-               ("terms", {"values": {"install_date": "2025-01-15", "commit_rate": 500}}))
-    assert [c["label"] for c in q["step"]["choices"]] == ["The bill says 45.00 EUR a month, 120.00 EUR once", "No charge of its own to record",
+    q = answer(rec, ("account_no", {"choice": "sample"}), ("contact_for", {"choice": "provider"}))
+    assert q["step"]["prompt"] == ("Who are they? The bill names Example Fibre NOC (support), Example Fibre Accounts (account manager) and "
+                                   "Example Fibre Billing (billing). (Practice: the island's made-up bill is the only paper here.)")
+    assert [c["label"] for c in q["step"]["choices"]] == ["Those the bill names", "I don't know yet"]
+    q = answer(rec, ("contact", {"choice": "sample"}), ("terms", {"values": {"install_date": "2025-01-15", "commit_rate": 500}}))
+    # XTS is the currency code kept for testing: the island's bill means no real money
+    assert [c["label"] for c in q["step"]["choices"]] == ["The bill says 45.00 XTS a month, 120.00 XTS once", "No charge of its own to record",
                                                           "I don't know yet"]
     q = answer(rec, ("cost", {"choice": "unknown"}))
     v = apply(rec)
@@ -703,8 +788,9 @@ def test_the_island_teaches_one_whole_chain_with_a_made_up_bill(tmp_path):
     v = (answer(rec, ("cost", {"choice": "sample"})), apply(rec))[1]
     assert (v["complete"], v["xp_awarded"], v["chain"]["status"]) == (True, 0, "complete")      # practice never pays, chain or not
     assert v["chain"]["summary"] == ("Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre, network Example Fibre Internet, "
-                                     "your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, 45.00 EUR a month, "
-                                     "120.00 EUR once, installed 2025-01-15, 500 Mbps committed.")
+                                     "your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, "
+                                     "Account manager: Example Fibre Accounts accounts@fibre.example, Billing: Example Fibre Billing billing@fibre.example, "
+                                     "45.00 XTS a month, 120.00 XTS once, installed 2025-01-15, 500 Mbps committed.")
     assert cl.get("/api/game/quests", params={"scope": "practice"}).json()["all_in_order"]
 
 
@@ -755,8 +841,20 @@ def test_a_save_from_before_chains_keeps_its_answers_one_line_per_device(tmp_pat
 
 @pytest.mark.parametrize("kind", ["way_out", "device", "rack", "room_link"])
 def test_every_chain_kind_says_what_its_record_will_hold_and_is_worth_more_than_a_stage(kind):
-    assert chains.HOLDS[kind] and kind in chains.KINDS
+    assert kind in chains.KINDS and chains.holds(kind, list(chains.STAGES))
     assert chains.CHAIN_XP[kind] == 0 or chains.CHAIN_XP[kind] >= 100
+
+
+def test_a_chain_promises_only_what_its_stages_record():
+    from .test_quests import sites_not_linked
+
+    e = sites_not_linked()
+    link = next(v for v in views(e).values() if v["kind"] == "site_link")
+    # two sites with nothing between them: one stage, so no address, carrier, account or cost is promised, and no bonus
+    assert (link["label"], link["holds"], link["bonus_xp"]) == ("1 of 1: physical", "the port and the circuit that join the sites", 0)
+    rack = next(v for v in views(practice.example_estate()).values() if v["kind"] == "rack")
+    assert rack["holds"] == ("where the rack stands, which unit each device is in, and what powers it; the serial number and asset tag of each device")
+    assert rack["bonus_xp"] == chains.CHAIN_XP["rack"]
 
 
 def test_a_chain_that_was_complete_all_along_pays_nobody_and_one_stage_is_a_loose_stage():

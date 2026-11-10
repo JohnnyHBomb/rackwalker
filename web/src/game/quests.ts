@@ -109,7 +109,11 @@ export function chainCard(c: Chain): HTMLElement {
   card.append(t, stages);
   if (c.summary) card.append(el('div', c.summary, 's summary'));
   if (c.open_questions.length) card.append(el('div', `Open questions: ${c.open_questions.join(', ')}.`, 's open-questions'));
-  if (c.status !== 'complete') card.append(el('div', `When it is complete, NetBox holds ${c.holds}.`, 's hint'));
+  if (c.status !== 'complete') {
+    // the bonus is the most the whole record pays: by the share of its stages this player confirmed
+    const bonus = c.bonus_xp > 0 ? ` The whole record, once NetBox confirms it, is worth up to ${c.bonus_xp} XP on top of its stages.` : '';
+    card.append(el('div', `When it is complete, NetBox holds ${c.holds}.${bonus}`, 's hint'));
+  }
   return card;
 }
 

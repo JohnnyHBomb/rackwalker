@@ -294,13 +294,16 @@ class Estate:
         or controller service manages it: no local address is expected) or `unmanaged`; None when NetBox does not say.
         The device's own field wins; else the default of its model, unless that says the model varies; a device with
         a primary IP and neither is locally managed (NetBox already says how to reach it)."""
+        return self.mgmt_recorded(dev) or ("local" if dev.get("primary_ip") else None)
+
+    def mgmt_recorded(self, dev: dict[str, Any]) -> str | None:
+        """How a device is managed as somebody recorded it: its own field, else the default of its model (unless that
+        says the model varies). A primary IP alone is no such record."""
         own = dev.get("mgmt_mode")
         if own in MGMT_MODES:
             return own
         default = dev.get("mgmt_default")
-        if default in MGMT_MODES:
-            return default
-        return "local" if dev.get("primary_ip") else None
+        return default if default in MGMT_MODES else None
 
     def mgmt_service(self, dev: dict[str, Any]) -> str | None:
         return dev.get("mgmt_service") or (dev.get("mgmt_default_service") if dev.get("mgmt_mode") is None else None) or None

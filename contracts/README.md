@@ -51,7 +51,7 @@ QuestVerdict    quest, mode (real|dry_run|practice), verified, complete, xp_awar
                 unlocked[ ToolId ], trace, result: ChangeResult|null, rewards, chain: Chain|null, chain_xp
 Chain           id, kind (way_out|site_link|room_link|device|rack), site_id, title, holds, status (open|open_questions|complete),
                 position, total, label, stages[ ChainStage {stage, title, status, quest_ids[], missing[]} ], summary|null,
-                open_questions[]                                   (2.4.0; also QuestBoard.chains[], Quest.chain: QuestChainRef|null)
+                open_questions[], bonus_xp                                   (2.4.0; also QuestBoard.chains[], Quest.chain: QuestChainRef|null)
 ```
 
 Quest bodies (2.3.0; chains 2.4.0) are made by the proxy from NetBox (or from the practice island, which is made up and lives in the

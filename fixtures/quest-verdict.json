@@ -51,7 +51,7 @@
     "kind": "way_out",
     "site_id": 9000001,
     "title": "The way out of Practice Island",
-    "holds": "the port the line plugs into, the circuit, your address on it, the carrier and their network, your account, who to call, and what it costs",
+    "holds": "the port the line plugs into, and the circuit; your address on it; the carrier's network, your account, who to call, and what it costs",
     "status": "open",
     "position": 2,
     "total": 3,
@@ -85,7 +85,9 @@
         "missing": [
           "the provider's network",
           "the account",
-          "who to call",
+          "the support contact",
+          "the account manager",
+          "the billing contact",
           "the install date",
           "the commit rate",
           "the monthly charge",
@@ -94,7 +96,8 @@
       }
     ],
     "summary": "Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), Example Fibre.",
-    "open_questions": []
+    "open_questions": [],
+    "bonus_xp": 0
   },
   "chain_xp": 0,
   "mode": "practice",

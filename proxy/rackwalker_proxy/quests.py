@@ -32,7 +32,7 @@ from typing import Any
 
 from .estate import Estate, is_passive, is_physical, is_router, natural
 from .estate import name_of as nm
-from .findings import Analysis
+from .findings import CONTACT_ROLES, FACT_SHORT, Analysis, contact_roles
 from .findings import _some as some
 
 XP = {"connectivity": 120, "identity": 50, "layout": 30}
@@ -676,28 +676,28 @@ def flow_handoff(ctx: Ctx) -> list[dict[str, Any]]:
     return ops
 
 
-# The contact roles a circuit's record asks for, and the words that find them among NetBox's own contact roles.
-CONTACT_ROLES = (("support", "Support or NOC (who to call when it is down)", ("support", "noc", "operations", "technical", "fault")),
-                 ("account", "Account manager", ("account", "sales", "commercial")),
-                 ("billing", "Billing", ("billing", "finance", "invoice", "payable")))
 # The questions of a circuit's record, the facts each settles, and which of them hold the player's own figures: what
 # is typed there is kept in the proxy's memory until it is written to NetBox, never in the game's store.
+CONTACT_FACTS = tuple(f"contact_{key}" for key, _, _ in CONTACT_ROLES)
 RECORD_STEPS = {"network": ("network",), "network_name": ("network",), "account": ("account",), "account_no": ("account",),
-                "contact_for": ("contacts",), "contact": ("contacts",), "terms": ("install_date", "commit_rate"), "cost": ("mrc", "nrc")}
+                "contact_for": CONTACT_FACTS, "contact": CONTACT_FACTS, "terms": ("install_date", "commit_rate"), "cost": ("mrc", "nrc")}
 PRIVATE_STEPS = ("account_no", "contact", "cost")
 
 
-def contact_roles(e: Estate) -> dict[str, dict[str, Any]]:
-    """NetBox's own contact roles that stand for support, the account manager and billing (by a word of their name or
-    slug; "billing" is looked for before "account", so "Accounts payable" is billing)."""
-    out: dict[str, dict[str, Any]] = {}
-    for key, _, words in sorted(CONTACT_ROLES, key=lambda r: r[0] != "billing"):
-        taken = {r["id"] for r in out.values()}
-        hit = next((r for _, r in sorted(e.contact_roles.items()) if r["id"] not in taken
-                    and any(w in f"{r['name']} {r.get('slug') or ''}".lower() for w in words)), None)
-        if hit is not None:
-            out[key] = hit
-    return out
+def blank_facts(step: str, values: dict[str, Any]) -> list[str]:
+    """The facts of a circuit's record that a form's answer leaves blank (a contact with no name is no contact)."""
+    def filled(fact: str) -> bool:
+        return values.get(f"contact:{fact[len('contact_'):]}:name" if fact.startswith("contact_") else fact) not in (None, "")
+    return [fact for fact in RECORD_STEPS.get(step, ()) if not filled(fact)]
+
+
+def recall(ctx: Ctx, sid: str, facts: list[str]) -> None:
+    """A form of the player's own figures that was answered before the proxy last started: the figures are gone (they
+    were never stored), and what the store kept is which facts were left blank. A fact asked for now that was not left
+    blank then has lost its figure, so the form is asked again."""
+    ans = ctx.answers.get(sid)
+    if isinstance(ans, dict) and "values" not in ans and "unknown" in ans and not set(facts) <= set(ans["unknown"] or []):
+        ctx.answers = {k: v for k, v in ctx.answers.items() if k != sid}
 
 
 def flow_record(ctx: Ctx) -> list[dict[str, Any]]:
@@ -780,53 +780,55 @@ def flow_record(ctx: Ctx) -> list[dict[str, Any]]:
             later("account")
         elif picked != "none":
             rec["provider_account_id"] = int(picked.split(":")[1])
-    if "contacts" in open_:
+    want = [key for key, _, _ in CONTACT_ROLES if f"contact_{key}" in open_]
+    if want:
         roles = contact_roles(e)
-        if not roles:
-            # said before the player looks a number up for nothing: a contact is recorded with a role
-            ctx.skipped.append("NetBox has no contact role for support, the account manager or billing yet: add them under Organization > "
-                               "Contact Roles (the setup script does), then come back to record who to call.")
-            later("contacts")
-        else:
-            whose = ctx.choice("contact_for", f"Who do you call about circuit {label}? First: are the contacts you have good for everything from {prov}, or only for this circuit?",
-                               [choice("provider", f"For everything from {clip(prov, 24)}"), choice("circuit", f"Only for circuit {clip(label, 24)}"),
-                                na("Nobody: there is no contact to record")], bill + ["The support number is often on the hand-off box as well."], soft=True, part=True)
-            if whose == "unknown":
-                later("contacts")
-            elif whose != "none":
-                target_obj = {"kind": whose, "id": pid if whose == "provider" else cid}
-                if e.synthetic:
-                    got = sample(ctx, "contact", "Who is the support contact?", f"{BILL['contact']} ({BILL['phone']})")
-                    values: dict[str, Any] | None = {} if got is None else {"contact:support:name": BILL["contact"], "contact:support:phone": BILL["phone"]}
-                    if "support" not in roles:
-                        values = {}
-                else:
-                    fields = []
-                    for key, words, _ in CONTACT_ROLES:
-                        if key in roles:
-                            fields += [{"id": f"contact:{key}:name", "label": f"{words}: name", "type": "text", "max_length": 100, "hint": "a person, a team or a desk", "suggestion": None, "options": []},
-                                       {"id": f"contact:{key}:phone", "label": f"{words}: phone", "type": "text", "max_length": 50, "hint": None, "suggestion": None, "options": []},
-                                       {"id": f"contact:{key}:email", "label": f"{words}: email", "type": "text", "max_length": 254, "pattern": r"[^@\s]+@[^@\s]+\.[^@\s]+",
-                                        "pattern_hint": "an email address", "hint": None, "suggestion": None, "options": []}]
-                    values = ctx.form("contact", f"Who are they? Fill in what you know of {prov}'s contacts; leave the rest blank. It goes to NetBox only; the game does not keep it.",
-                                      fields, bill, soft=True)
-                per: dict[str, dict[str, str]] = {}
-                for fid, v in (values or {}).items():
-                    _, key, fld = fid.split(":")
-                    per.setdefault(key, {})[fld] = v
-                if any("name" not in p for p in per.values()):
-                    ctx.error = "A contact needs a name (a person, a team or a desk) besides its phone or email."
-                    raise Stop("asking", ctx._step("contact", "Who are they? Fill in what you know; leave the rest blank.", "form", [UNKNOWN], fields))
-                if not per:
-                    later("contacts")
-                by_name = {c["name"].lower(): c for _, c in sorted(e.contacts.items(), reverse=True)}
-                for key, p in sorted(per.items()):
-                    known = by_name.get(p["name"].lower())
-                    contact: Any = known["id"] if known else f"@contact_{key}"
-                    if known is None:
-                        ops.append({"op": "create_contact", "target": {"kind": "contact", "id": None}, "client_ref": f"contact_{key}",
-                                    "fields": {"name": p["name"], **{k: p[k] for k in ("phone", "email") if k in p}}})
-                    ops.append({"op": "assign_contact", "target": target_obj, "fields": {"contact_id": contact, "role_id": roles[key]["id"]}})
+        asked = [f"contact_{key}" for key in want]
+        whose = ctx.choice("contact_for", f"Who do you call about circuit {label}? First: are the contacts you have good for everything from {prov}, or only for this circuit?",
+                           [choice("provider", f"For everything from {clip(prov, 24)}"), choice("circuit", f"Only for circuit {clip(label, 24)}"),
+                            na("Nobody: there is no contact to record")], bill + ["The support number is often on the hand-off box as well."], soft=True, part=True)
+        if whose == "unknown":
+            later(*asked)
+        elif whose != "none":
+            target_obj = {"kind": whose, "id": pid if whose == "provider" else cid}
+            fields: list[dict[str, Any]] = []
+            if e.synthetic:
+                named = some([f"{BILL['contacts'][key]['name']} ({BILL['contacts'][key]['role']})" for key in want[:3]])
+                got = sample(ctx, "contact", f"Who are they? The bill names {named}.", "", label="Those the bill names")
+                values: dict[str, Any] | None = {} if got is None else \
+                    {f"contact:{key}:{fld}": v for key in want for fld, v in BILL["contacts"][key].items() if fld != "role"}
+            else:
+                for key, words, _ in CONTACT_ROLES:
+                    if key in want:
+                        fields += [{"id": f"contact:{key}:name", "label": f"{words}: name", "type": "text", "max_length": 100, "hint": "a person, a team or a desk", "suggestion": None, "options": []},
+                                   {"id": f"contact:{key}:phone", "label": f"{words}: phone", "type": "text", "max_length": 50, "hint": None, "suggestion": None, "options": []},
+                                   {"id": f"contact:{key}:email", "label": f"{words}: email", "type": "text", "max_length": 254, "pattern": r"[^@\s]+@[^@\s]+\.[^@\s]+",
+                                    "pattern_hint": "an email address", "hint": None, "suggestion": None, "options": []}]
+                recall(ctx, "contact", asked)
+                values = ctx.form("contact", f"Who are they? Fill in what you know of {prov}'s contacts; leave the rest blank. It goes to NetBox only; the game does not keep it.",
+                                  fields, bill, soft=True)
+            per: dict[str, dict[str, str]] = {}
+            for fid, v in (values or {}).items():
+                _, key, fld = fid.split(":")
+                per.setdefault(key, {})[fld] = v
+            if any("name" not in p for p in per.values()):
+                ctx.error = "A contact needs a name (a person, a team or a desk) besides its phone or email."
+                raise Stop("asking", ctx._step("contact", "Who are they? Fill in what you know; leave the rest blank.", "form", [UNKNOWN], fields))
+            later(*[f"contact_{key}" for key in want if key not in per])
+            by_name = {c["name"].lower(): c for _, c in sorted(e.contacts.items(), reverse=True)}
+            made: dict[str, str] = {}
+            for key in want:
+                p = per.get(key)
+                if p is None:
+                    continue
+                known = by_name.get(p["name"].lower())
+                # one person in two roles is one contact: created once, assigned twice
+                contact: Any = known["id"] if known else made.get(p["name"].lower(), f"@contact_{key}")
+                if known is None and p["name"].lower() not in made:
+                    made[p["name"].lower()] = f"@contact_{key}"
+                    ops.append({"op": "create_contact", "target": {"kind": "contact", "id": None}, "client_ref": f"contact_{key}",
+                                "fields": {"name": p["name"], **{k: p[k] for k in ("phone", "email") if k in p}}})
+                ops.append({"op": "assign_contact", "target": target_obj, "fields": {"contact_id": contact, "role_id": roles[key]["id"]}})
     terms = [x for x in ("install_date", "commit_rate") if x in open_]
     if terms:
         fields = []
@@ -865,6 +867,7 @@ def flow_record(ctx: Ctx) -> list[dict[str, Any]]:
             got = sample(ctx, "cost", f"What does circuit {label} cost?", words, na="No charge of its own to record")
             values = None if got == "none" else {} if got is None else {**{x: BILL[x] for x in cost}, "currency": BILL["currency"]}
         else:
+            recall(ctx, "cost", cost)
             values = ctx.form("cost", prompt, fields, cost_bill, na="No charge of its own to record", soft=True)
         if values is not None:
             amounts = {x: values[x] for x in cost if x in values}
@@ -887,17 +890,13 @@ def flow_record(ctx: Ctx) -> list[dict[str, Any]]:
     return ops
 
 
-FACT_SHORT = {"network": "the provider's network", "account": "the account", "contacts": "who to call", "install_date": "the install date",
-              "commit_rate": "the commit rate", "mrc": "the monthly charge", "nrc": "the one-off charge"}
-
-
-def sample(ctx: Ctx, sid: str, prompt: str, value: str, na: str | None = None) -> str | None:
+def sample(ctx: Ctx, sid: str, prompt: str, value: str, na: str | None = None, label: str | None = None) -> str | None:
     """On the practice island nothing of the player's own is typed for a figure: the island's made-up bill is the only
     answer on offer (so no real account number or charge is ever kept with the practice changes). Returns the value,
     None for "I don't know yet", or "none"."""
     extra = [choice("none", na, "not_applicable")] if na else []
     picked = ctx.choice(sid, f"{prompt} (Practice: the island's made-up bill is the only paper here.)",
-                        [choice("sample", f"The bill says {value}", "confirm")] + extra, ["Look at the island's made-up bill."], soft=True, part=True)
+                        [choice("sample", label or f"The bill says {value}", "confirm")] + extra, ["Look at the island's made-up bill."], soft=True, part=True)
     return None if picked == "unknown" else "none" if picked == "none" else value
 
 
@@ -1548,9 +1547,10 @@ def deferred(line: dict[str, Any], answers: dict[str, Any]) -> list[str]:
         if ans.get("choice") == "unknown":
             out += facts
         elif isinstance(ans.get("values"), dict):
-            blank = [f for f in facts if ans["values"].get(f) in (None, "")] if step in ("terms", "cost") else \
-                    list(facts) if not any(v not in (None, "") for v in ans["values"].values()) else []
-            out += blank
+            out += blank_facts(step, ans["values"])
+        elif isinstance(ans.get("unknown"), list):
+            # a form of the player's own figures: the store holds only which of its facts were left blank
+            out += [fact for fact in facts if fact in ans["unknown"]]
     return [f"circuit:{cid}:{fact}" for fact in dict.fromkeys(out)]
 
 

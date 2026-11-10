@@ -125,7 +125,10 @@ class CableSpec:
 
 # The circuits' paper side (made up; the phone number is from a range reserved for fiction).
 CARRIER_ACCOUNT = "SYN-ACC-1001"
-CARRIER_CONTACT = ("Example Carrier NOC", "+44 1632 960001", "noc@example.net")
+# (name, phone, email, the slug of its contact role): who to call when a line is down, the account manager, who sends the bill
+CARRIER_CONTACTS = (("Example Carrier NOC", "+44 1632 960001", "noc@example.net", "support"),
+                    ("Example Carrier Accounts", "+44 1632 960002", "accounts@example.net", "account-manager"),
+                    ("Example Carrier Billing", "+44 1632 960003", "billing@example.net", "billing"))
 CARRIER_PREFIX = "198.18.0.0/29"
 CURRENCY = "GBP"
 CONTACT_ROLES = (("Support / NOC", "support"), ("Account manager", "account-manager"), ("Billing", "billing"))

@@ -120,8 +120,8 @@ def test_a_practice_line_from_offer_to_preview_to_verified_and_no_xp(cl):
     assert after["rewards"]["xp"] == 0 and after["rewards"]["practised"] == 1 and after["rewards"]["completed"] == 0
     assert qid not in [q["id"] for q in after["quests"] if q["status"] != "done"]
     # the site has a way out and sw-quay-1 a cable (two checks fewer); the circuit that is now plugged in brings its own:
-    # the address on it, and the seven facts of its record
-    assert after["sites"][0]["completeness"]["open"] == 13 - 2 + 1 + 7
+    # the address on it, and the nine facts of its record
+    assert after["sites"][0]["completeness"]["open"] == 13 - 2 + 1 + 9
     assert v["message"] == ("The island now shows it. On your own NetBox this would earn XP, once NetBox confirms it. "
                             "Next in the chain \"The way out of Practice Island\": 2 of 3: logical.")
     assert v["chain"]["label"] == "2 of 3: logical" and [s["status"] for s in v["chain"]["stages"]] == ["done", "open", "locked"]

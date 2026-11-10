@@ -20199,6 +20199,18 @@
       "name": "Example Carrier NOC",
       "phone": "+44 1632 960001",
       "email": "noc@example.net"
+    },
+    {
+      "id": 2,
+      "name": "Example Carrier Accounts",
+      "phone": "+44 1632 960002",
+      "email": "accounts@example.net"
+    },
+    {
+      "id": 3,
+      "name": "Example Carrier Billing",
+      "phone": "+44 1632 960003",
+      "email": "billing@example.net"
     }
   ],
   "contact_roles": [
@@ -20225,6 +20237,20 @@
       "object_id": 1,
       "contact_id": 1,
       "role_id": 1
+    },
+    {
+      "id": 2,
+      "object_type": "circuits.provider",
+      "object_id": 1,
+      "contact_id": 2,
+      "role_id": 2
+    },
+    {
+      "id": 3,
+      "object_type": "circuits.provider",
+      "object_id": 1,
+      "contact_id": 3,
+      "role_id": 3
     }
   ],
   "no_fields": [],

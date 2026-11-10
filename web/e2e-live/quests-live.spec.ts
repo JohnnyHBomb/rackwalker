@@ -130,6 +130,12 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
     await expect(page.locator('#quest-counts')).toContainText('confirmed by NetBox');
     await expect(page.locator('#quest-write-note')).toContainText('Your NetBox user may not add circuits, add circuit ends');
     await expect(page.locator('#quest-rewards')).toContainText('Cable tracer');
+    // A chain in play says what its whole record is worth on top of its stages: this player's changes can be written.
+    const open = (await page.evaluate(() => window.__game!.shell.quests!.boards.netbox!)).chains.filter((c) => c.status !== 'complete' && c.total > 1);
+    expect(open.length).toBeGreaterThan(0);
+    expect(open[0]!.bonus_xp).toBeGreaterThan(0);
+    await expect(page.locator(`#quest-chains .chain[data-chain="${open[0]!.id}"] .hint`))
+      .toContainText(`The whole record, once NetBox confirms it, is worth up to ${open[0]!.bonus_xp} XP on top of its stages.`);
     await page.screenshot({ path: `${SHOTS}/live-quest-log.png` });
   } finally {
     // put the stack back as seeded

@@ -233,7 +233,14 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             vault[(uid, scope, quest_id)] = private
         else:
             vault.pop((uid, scope, quest_id), None)
-        return {k: v for k, v in answers.items() if k not in private}
+        stored = {k: v for k, v in answers.items() if k not in private}
+        for k, v in private.items():
+            # which facts a form left blank is no figure: it is stored, so a blank field is "not known yet" at once and
+            # is not asked for a second time when the rest has been written
+            blank = quests.blank_facts(k, v["values"]) if isinstance(v.get("values"), dict) else []
+            if blank:
+                stored[k] = {"unknown": blank}
+        return stored
 
     def drop_estate() -> None:
         cached.update(estate=None, sites={}, drops=cached["drops"] + 1)
@@ -417,6 +424,12 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     playable |= set(v["stages"][v["position"] - 1]["quest_ids"]) & open_ids
             fresh = [line for line in open_lines if line not in waiting
                      and (line["id"] not in in_chain or line["id"] in playable or line["id"] in rows)]
+            # A connection this player has begun to record (a stage of its chain stands through them) is carried on
+            # before anything else is started: after the cable comes the address, then the paperwork.
+            carried = {ch["id"] for ch in site_chains if ch["kind"] in ("way_out", "site_link") and views[ch["id"]]["status"] != "complete"
+                       and any(cid in mine for st_ in ch["stages"] for cid in st_["checks"])}
+            carry_on = lambda line: line["id"] in in_chain and in_chain[line["id"]][0]["id"] in carried  # noqa: E731
+            fresh.sort(key=lambda line: not carry_on(line))
             comp = a.completeness(sid, dismissed)
             if partial:
                 comp = {**comp, "percent": min(comp["percent"], 99)}   # never 100 % on a picture that is not whole
@@ -450,8 +463,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     if row is not None and row["status"] == "practised" and state["status"] == "ready":
                         status = "practised"
                     out_quests.append(quest_body(scope, line, row, state, status, gate=gate, chain=chain_ref(line["id"], in_chain, views)))
-            if fresh and fresh[0] in ls and (best is None or ls.index(fresh[0]) < best[0]):
-                best = (ls.index(fresh[0]), fresh[0]["id"])
+            if fresh and fresh[0] in ls and (best is None or (not carry_on(fresh[0]), ls.index(fresh[0])) < best[0]):
+                best = ((not carry_on(fresh[0]), ls.index(fresh[0])), fresh[0]["id"])
             # a site's Confusion appears over kit that is in order: a site with nothing in it has nothing to guard
             sites_out.append({"site_id": sid, "name": e.sites[sid]["name"], "completeness": comp, "open_quests": real_open,
                               "boss_ready": comp["total"] > 0 and comp["open"] == 0 and not partial and bool(e.site_devices(sid)),
@@ -508,7 +521,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 "queued": queued, "next_quest_id": best[1] if best else None, "sites": sites_out,
                 "rewards": rewards_body(raw, real_rows, practice_rows, len(lapsed_ids) if scope == "netbox" else 0, loan=scope == "practice"),
                 "incomplete": partial,
-                "chains": [chains.view(e, a, ch, stand.resolved, stand.deferred, titles) for ch in all_chains if ch["id"] in set(shown_chains[:MAX_CHAINS_SHOWN])],
+                "chains": [chains.view(e, a, ch, stand.resolved, stand.deferred, titles, pays=gate.board()[0])
+                           for ch in all_chains if ch["id"] in set(shown_chains[:MAX_CHAINS_SHOWN])],
                 "chains_queued": chains_queued + max(0, len(shown_chains) - MAX_CHAINS_SHOWN), "setup": setup_notes(e) if scope == "netbox" else []}
 
     async def gate_of(scope: str, uid: int | None, request: Request | None = None, fresh: bool = False) -> Gate:
@@ -607,8 +621,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             return quest_body(scope, line, saved, state, status, gate=gate, chain=line_chain(uid, scope, e, line))
         return _no_store(await run_in_threadpool(work))
 
-    def chain_view(uid: int, scope: str, e: Estate, line: dict[str, Any], checks: list[str] | None = None) -> dict[str, Any] | None:
-        """The chain of a line as it stands for this player on this estate (also when the line's finding is gone)."""
+    def chain_view(uid: int, scope: str, e: Estate, line: dict[str, Any], checks: list[str] | None = None, pays: bool = False) -> dict[str, Any] | None:
+        """The chain of a line as it stands for this player on this estate (also when the line's finding is gone).
+        `pays`: this player's changes are really written, so a whole record can pay its bonus."""
         a = findings.analyse(e)
         ls = quests.lines(e, a)
         all_chains = chains.build(e, a, ls)
@@ -617,7 +632,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         if ch is None:
             return None
         stand = Standing(a, store().quests(uid, scope))
-        return chains.view(e, a, ch, stand.resolved, stand.deferred, {x["id"]: x["title"] for x in ls})
+        return chains.view(e, a, ch, stand.resolved, stand.deferred, {x["id"]: x["title"] for x in ls}, pays=pays)
 
     def line_chain(uid: int, scope: str, e: Estate, line: dict[str, Any]) -> dict[str, Any] | None:
         v = chain_view(uid, scope, e, line)
@@ -768,7 +783,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         if status == "active" and state is not None:
             status = {"asking": "active"}.get(state["status"], state["status"])   # as the quest log would show it
         # the line's chain, as the estate stands now: where the player is, and the record so far read back from NetBox
-        ch = chain_view(uid, scope, e, shown, s["saved"]["checks"])
+        ch = chain_view(uid, scope, e, shown, s["saved"]["checks"], pays=gate is not None and gate.board()[0])
         told = (verified or mode == "practice") and (s["newly"] or s["complete"])
         going_on = ch is not None and ch["total"] > 1 and ch["status"] != "complete"
         if s["complete"] and verified and line["site_id"] in e.sites and not going_on:

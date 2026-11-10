@@ -39,7 +39,7 @@ make netbox-reset   NB_PROJECT=...  NB_PORT=...          # destroy + up + seed
 | Addresses | primary IPs from the documentation ranges 192.0.2.0/24, 198.51.100.0/24 and 203.0.113.0/24 (one per site) |
 | Cables | 82: servers -> access, access -> core uplinks, patch-panel trunks (front/rear ports), PDU power, BMC network, 2 carrier circuits between sites, 1 planned dark-fibre cable North <-> East |
 | Custom fields | `iso_x`, `iso_y`, `iso_w`, `iso_h`, `iso_facing`, `iso_theme`, `iso_latitude`, `iso_longitude`, and for quests `rw_mgmt_mode`, `rw_mgmt_service`, `rw_mgmt_default`, `rw_mrc`, `rw_nrc`, `rw_currency` (group `rackwalker`); contact roles Support / NOC, Account manager, Billing |
-| Circuits' paper side | one provider account, one support contact assigned to the carrier, and on each circuit an install date, a commit rate, made-up charges, and an address on its A end inside one prefix (198.18.0.0/29) |
+| Circuits' paper side | one provider account, three contacts assigned to the carrier (support, account manager, billing), and on each circuit an install date, a commit rate, made-up charges, and an address on its A end inside one prefix (198.18.0.0/29) |
 
 Idempotent: objects are looked up by natural key (slug, name, cable label) and only created when missing;
 existing ones are patched back to the model. A second run reports `created: 0, patched: 0`. `seed.py` refuses a

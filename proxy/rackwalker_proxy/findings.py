@@ -100,9 +100,32 @@ def expects_cable(port: dict[str, Any], has_address: bool, carries_management: b
 
 # The facts of a circuit's administrative record, in the order they are asked for. Each is one check
 # (`circuit:<id>:<fact>`); none of them is known to everybody, so "I don't know yet" on one leaves the rest writable.
-CIRCUIT_FACTS = ("network", "account", "contacts", "install_date", "commit_rate", "mrc", "nrc")
-FACT_WORDS = {"network": "the provider's network it lands on", "account": "the account with the provider", "contacts": "who to call",
+CIRCUIT_FACTS = ("network", "account", "contact_support", "contact_account", "contact_billing", "install_date", "commit_rate", "mrc", "nrc")
+FACT_WORDS = {"network": "the provider's network it lands on", "account": "the account with the provider",
+              "contact_support": "who to call when it is down", "contact_account": "who the account manager is", "contact_billing": "who sends the bill",
               "install_date": "the install date", "commit_rate": "the commit rate", "mrc": "the monthly charge", "nrc": "the one-off charge"}
+# The same facts in a few words, for a list of what is still to find out.
+FACT_SHORT = {"network": "the provider's network", "account": "the account", "contact_support": "the support contact",
+              "contact_account": "the account manager", "contact_billing": "the billing contact", "install_date": "the install date",
+              "commit_rate": "the commit rate", "mrc": "the monthly charge", "nrc": "the one-off charge"}
+# The three contacts a circuit's record asks for, each its own fact (support on record says nothing about who sends the
+# bill), and the words that find each among NetBox's own contact roles.
+CONTACT_ROLES = (("support", "Support or NOC (who to call when it is down)", ("support", "noc", "operations", "technical", "fault")),
+                 ("account", "Account manager", ("account", "sales", "commercial")),
+                 ("billing", "Billing", ("billing", "finance", "invoice", "payable")))
+
+
+def contact_roles(e: Estate) -> dict[str, dict[str, Any]]:
+    """NetBox's own contact roles that stand for support, the account manager and billing (by a word of their name or
+    slug; "billing" is looked for before "account", so "Accounts payable" is billing)."""
+    out: dict[str, dict[str, Any]] = {}
+    for key, _, words in sorted(CONTACT_ROLES, key=lambda r: r[0] != "billing"):
+        taken = {r["id"] for r in out.values()}
+        hit = next((r for _, r in sorted(e.contact_roles.items()) if r["id"] not in taken
+                    and any(w in f"{r['name']} {r.get('slug') or ''}".lower() for w in words)), None)
+        if hit is not None:
+            out[key] = hit
+    return out
 
 
 def circuit_facts(e: Estate, circuit_id: int) -> dict[str, bool]:
@@ -117,7 +140,11 @@ def circuit_facts(e: Estate, circuit_id: int) -> dict[str, bool]:
     if e.can_see("accounts"):
         out["account"] = c.get("account_id") is not None
     if e.can_see("contacts", "contact_roles", "assignments"):
-        out["contacts"] = bool(e.contacts_of(circuit_id))
+        roles = contact_roles(e)
+        held = {a["role_id"] for a in e.contacts_of(circuit_id)}
+        for key, _, _ in CONTACT_ROLES:
+            if key in roles:   # a contact is recorded with its role: with no such role in NetBox there is nothing to ask
+                out[f"contact_{key}"] = roles[key]["id"] in held
     out["install_date"] = bool(c.get("install_date"))
     out["commit_rate"] = c.get("commit_rate") is not None
     for fact in ("mrc", "nrc"):
@@ -330,8 +357,9 @@ def _analyse(e: Estate) -> Analysis:
                     continue
                 on_device = 0
                 open_ports: list[dict[str, Any]] = []
-                # the port the player named as carrying management, on a device recorded as locally managed
-                carrier = e.primary_interface(d) if d.get("mgmt_mode") == "local" else None
+                # the port that carries management, on a device recorded as locally managed (on the device itself, or
+                # as the default of its model)
+                carrier = e.primary_interface(d) if e.mgmt_recorded(d) == "local" else None
                 for p in e.device_ports(d["id"], ("interface",)):
                     if not expects_cable(p, bool(iface_ips.get(p["id"])), p["id"] == carrier):
                         continue

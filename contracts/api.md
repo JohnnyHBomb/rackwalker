@@ -200,10 +200,14 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   earlier stage is `open`, `not_known` or `locked` (a line the player has already begun stays listed). `Quest.chain`
   names the line's chain and stage; `QuestVerdict.chain` is the chain after the check, with `summary` read from the
   estate that was read back, and `chain_xp` the part of `xp_awarded` that is the bonus for a chain NetBox now shows
-  complete. `QuestBoard.setup` says in words which custom fields or contact roles this NetBox lacks.
+  complete. `Chain.bonus_xp` is the most that bonus can be (0 for a chain of one stage, and wherever nothing is paid: the practice island, a dry-run proxy, a player whose
+  changes would not be written);
+  `Chain.holds` is made from the stages the chain has. In `next_quest_id` and in the order of `quests`, the next
+  stage of a way out or a site link the player has begun comes before any other line. `QuestBoard.setup` says in words which custom fields or contact roles this NetBox lacks.
 * **Private answers (2.4.0).** A typed answer to the steps `account_no`, `contact` and `cost` of a `circuit_record`
   line is kept in the proxy's memory until the line is applied, never in the game store; "I don't know yet" on them is
-  stored like any answer. After a proxy restart such a question is asked again. On the practice island these steps
+  stored like any answer, and of a form only which facts it left blank (they are "not known yet" at once, and are not
+  asked for again after the rest is written). After a proxy restart such a question is asked again. On the practice island these steps
   are choices from a made-up bill and take no typed value.
 
 * **The estate.** The quest routes analyse one bounded read of NetBox (slim field selections, capped lists), kept for

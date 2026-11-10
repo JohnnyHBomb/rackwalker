@@ -1528,7 +1528,17 @@ class Chain(BaseModel):
     site_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
     title: str
     holds: Annotated[
-        str, Field(description='What the record will hold when the chain is complete.')
+        str,
+        Field(
+            description='What the record will hold when the chain is complete, from the stages this chain has.'
+        ),
+    ]
+    bonus_xp: Annotated[
+        int,
+        Field(
+            description='The most XP the whole record pays on top of its stages once NetBox shows every stage (QuestVerdict.chain_xp is what was paid: by the share of the stages this player confirmed, and less for a repeat). 0 for a chain of one stage.',
+            ge=0,
+        ),
     ]
     status: Annotated[
         Literal['open', 'open_questions', 'complete'],

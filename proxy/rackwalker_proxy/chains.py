@@ -31,27 +31,35 @@ from typing import Any
 
 from .estate import Estate, is_passive, is_physical
 from .estate import name_of as nm
-from .findings import CIRCUIT_FACTS, LIVE, Analysis
+from .findings import CIRCUIT_FACTS, FACT_SHORT, LIVE, Analysis
 from .findings import _some as some
 
 STAGES = ("physical", "logical", "administrative")
 STAGE_TITLES = {"physical": "what is plugged into what", "logical": "addresses, and how it is managed",
                 "administrative": "whose it is, who to call, what it costs"}
 KINDS = ("way_out", "site_link", "room_link", "device", "rack")
-HOLDS = {
-    "way_out": "the port the line plugs into, the circuit, your address on it, the carrier and their network, your account, who to call, "
-               "and what it costs",
-    "site_link": "the port and the circuit that join the sites, your address on it, the carrier, your account, who to call, and what it costs",
-    "room_link": "the cable between the two rooms, and the port at each end",
-    "device": "what the device is plugged into, how it is managed, and the address to log in to it if it has one",
-    "rack": "where the rack stands, which unit each device is in, what powers it, and the serial number and asset tag of each device",
+# What each stage of a chain puts on record. A chain says what it will hold from the stages it has, so a link that is
+# a plain cable (one stage) promises no carrier and no bill.
+STAGE_HOLDS = {
+    ("way_out", "physical"): "the port the line plugs into, and the circuit",
+    ("way_out", "logical"): "your address on it",
+    ("way_out", "administrative"): "the carrier's network, your account, who to call, and what it costs",
+    ("site_link", "physical"): "the port and the circuit that join the sites",
+    ("site_link", "logical"): "your address on it",
+    ("site_link", "administrative"): "the carrier's network, your account, who to call, and what it costs",
+    ("room_link", "physical"): "the cable between the two rooms, and the port at each end",
+    ("device", "physical"): "what the device is plugged into",
+    ("device", "logical"): "how it is managed, and the address to log in to it if it has one",
+    ("rack", "physical"): "where the rack stands, which unit each device is in, and what powers it",
+    ("rack", "administrative"): "the serial number and asset tag of each device",
 }
 # The bonus for a chain NetBox shows complete: more than any single stage of it pays. A chain of one stage has none.
 CHAIN_XP = {"way_out": 250, "site_link": 250, "room_link": 0, "device": 150, "rack": 100}
-# Chains in play at one site at a time: the first few, connectivity before devices before racks.
-MAX_CHAINS = 3
-FACT_SHORT = {"network": "the provider's network", "account": "the account", "contacts": "who to call", "install_date": "the install date",
-              "commit_rate": "the commit rate", "mrc": "the monthly charge", "nrc": "the one-off charge"}
+
+
+def holds(kind: str, stages: list[str]) -> str:
+    """What a chain's finished record will hold, from the stages it has."""
+    return "; ".join(STAGE_HOLDS[(kind, stage)] for stage in stages if (kind, stage) in STAGE_HOLDS)
 
 
 def build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -87,7 +95,7 @@ def _build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str
                 rows.append({"stage": stage, "title": STAGE_TITLES[stage], "checks": checks,
                              "line_ids": list(dict.fromkeys(q for c in checks for q in by_check.get(c, [])))})
         if any(r["checks"] for r in rows):
-            out.append({"id": f"chain:{kind}:{obj[0]}:{obj[1]}", "kind": kind, "site_id": site_id, "title": title, "holds": HOLDS[kind],
+            out.append({"id": f"chain:{kind}:{obj[0]}:{obj[1]}", "kind": kind, "site_id": site_id, "title": title,
                         "stages": rows, "object": {"kind": obj[0], "id": obj[1]}})
 
     out: list[dict[str, Any]] = []
@@ -164,10 +172,11 @@ def of_checks(chains: list[dict[str, Any]], checks: list[str]) -> dict[str, Any]
 
 
 def view(e: Estate, a: Analysis, chain: dict[str, Any], resolved: set[str] | frozenset[str] = frozenset(),
-         deferred: set[str] | frozenset[str] = frozenset(), titles: dict[str, str] | None = None, told: bool = True) -> dict[str, Any]:
+         deferred: set[str] | frozenset[str] = frozenset(), titles: dict[str, str] | None = None, told: bool = True,
+         pays: bool = True) -> dict[str, Any]:
     """Where a player stands in a chain: each stage's status, the position ("2 of 3: logical"), what is still missing,
     and the record so far in one sentence. `resolved` are checks the player answered "none, on purpose"; `deferred` are
-    facts answered "I don't know yet"."""
+    facts answered "I don't know yet". `pays` is false where nothing is paid (the practice island, a dry run, a player who may not write): no bonus is shown."""
     site_id = chain["site_id"]
     stages: list[dict[str, Any]] = []
     blocked = False
@@ -205,9 +214,10 @@ def view(e: Estate, a: Analysis, chain: dict[str, Any], resolved: set[str] | fro
         label = f"{position} of {total}: {stages[current]['stage']}" + (f" (not known yet: {some(not_known)})" if waiting else "")
     for s in stages:
         s.pop("_left")
-    return {"id": chain["id"], "kind": chain["kind"], "site_id": site_id, "title": chain["title"], "holds": chain["holds"], "status": status,
+    return {"id": chain["id"], "kind": chain["kind"], "site_id": site_id, "title": chain["title"],
+            "holds": holds(chain["kind"], [s["stage"] for s in stages]), "status": status,
             "position": position, "total": total, "label": label, "stages": stages, "summary": summary(e, chain) if told else None,
-            "open_questions": not_known}
+            "open_questions": not_known, "bonus_xp": CHAIN_XP.get(chain["kind"], 0) if total > 1 and pays else 0}
 
 
 def verified(a: Analysis, chain: dict[str, Any]) -> bool:

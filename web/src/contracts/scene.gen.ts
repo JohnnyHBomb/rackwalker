@@ -1815,9 +1815,13 @@ export interface Chain {
   site_id: Id;
   title: string;
   /**
-   * What the record will hold when the chain is complete.
+   * What the record will hold when the chain is complete, from the stages this chain has.
    */
   holds: string;
+  /**
+   * The most XP the whole record pays on top of its stages once NetBox shows every stage (QuestVerdict.chain_xp is what was paid: by the share of the stages this player confirmed, and less for a repeat). 0 for a chain of one stage.
+   */
+  bonus_xp: number;
   /**
    * open_questions = nothing left to ask except facts the player does not know yet.
    */

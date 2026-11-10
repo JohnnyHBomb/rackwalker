@@ -238,16 +238,16 @@ def seed_data(nb: NB, m: sm.Model) -> None:
     prov = nb.ensure("circuits/providers", {"slug": "example-carrier"}, {"name": "Example Carrier", "slug": "example-carrier"})["id"]
     ctype = nb.ensure("circuits/circuit-types", {"slug": "ethernet-wan"}, {"name": "Ethernet WAN", "slug": "ethernet-wan"})["id"]
     term_id = {}
-    # the circuits' paper side: one account with the carrier, its support desk, and what each circuit costs
+    # the circuits' paper side: one account with the carrier, its three contacts, and what each circuit costs
     account = nb.ensure("circuits/provider-accounts", {"provider_id": prov, "account": sm.CARRIER_ACCOUNT},
                         {"provider": prov, "account": sm.CARRIER_ACCOUNT, "name": "Example Carrier account"})["id"]
-    name, phone, email = sm.CARRIER_CONTACT
-    contact = nb.ensure("tenancy/contacts", {"name": name}, {"name": name, "phone": phone, "email": email})["id"]
-    support = nb.list("tenancy/contact-roles", slug="support")[0]["id"]
-    if not nb.list("tenancy/contact-assignments", object_type="circuits.provider", object_id=prov, contact_id=contact):
-        nb.created += 1
-        nb.req("POST", "tenancy/contact-assignments/", data=json.dumps({"object_type": "circuits.provider", "object_id": prov,
-                                                                         "contact": contact, "role": support}))
+    for name, phone, email, role_slug in sm.CARRIER_CONTACTS:
+        contact = nb.ensure("tenancy/contacts", {"name": name}, {"name": name, "phone": phone, "email": email})["id"]
+        role = nb.list("tenancy/contact-roles", slug=role_slug)[0]["id"]
+        if not nb.list("tenancy/contact-assignments", object_type="circuits.provider", object_id=prov, contact_id=contact):
+            nb.created += 1
+            nb.req("POST", "tenancy/contact-assignments/", data=json.dumps({"object_type": "circuits.provider", "object_id": prov,
+                                                                             "contact": contact, "role": role}))
     for c in m.circuits:
         cid = nb.ensure("circuits/circuits", {"cid": c.cid}, {"cid": c.cid, "provider": prov, "type": ctype, "status": c.status,
                                                              "commit_rate": 1000000, "provider_account": account,

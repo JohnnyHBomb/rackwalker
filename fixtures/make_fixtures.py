@@ -192,7 +192,6 @@ class World:
                 n += 1
                 _, owner, port = next(x.a for x in m.cables if x.b == ("circuit_termination", c.cid, "A"))
                 ips.append({"id": n, "address": c.a_address, "vrf_id": None, "vrf": None, "interface_id": self.ports[("interface", owner, port)]["id"]})
-        name, phone, email = sm.CARRIER_CONTACT
         return {
             "sites": [{"id": self.site_id[s.slug], "name": s.name, "slug": s.slug, "status": "active", "latitude": s.lat, "longitude": s.lon,
                        "facility": None, "country": s.country, "last_updated": None} for s in m.sites],
@@ -221,9 +220,10 @@ class World:
             # devnetbox/seed.py creates one prefix (the carrier's hand-off range) and none for the devices' own addresses
             "prefixes": [{"id": 1, "prefix": sm.CARRIER_PREFIX, "vrf_id": None}],
             "accounts": [{"id": 1, "provider_id": 1, "account": sm.CARRIER_ACCOUNT, "name": "Example Carrier account"}], "networks": [],
-            "contacts": [{"id": 1, "name": name, "phone": phone, "email": email}],
+            "contacts": [{"id": i, "name": name, "phone": phone, "email": email} for i, (name, phone, email, _) in enumerate(sm.CARRIER_CONTACTS, 1)],
             "contact_roles": [{"id": i, "name": n_, "slug": s_} for i, (n_, s_) in enumerate(sm.CONTACT_ROLES, 1)],
-            "assignments": [{"id": 1, "object_type": "circuits.provider", "object_id": 1, "contact_id": 1, "role_id": 1}],
+            "assignments": [{"id": i, "object_type": "circuits.provider", "object_id": 1, "contact_id": i,
+                             "role_id": 1 + [slug for _, slug in sm.CONTACT_ROLES].index(role)} for i, (_, _, _, role) in enumerate(sm.CARRIER_CONTACTS, 1)],
             "no_fields": [],
             "truncated": [], "unreadable": [], "synthetic": False}
 

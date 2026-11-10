@@ -412,7 +412,9 @@ test('a chain: the island\'s way out from the cable to the bill, "I don\'t know 
   await page.click('#quest-next');
   await expect(chain()).toContainText('The way out of Practice Island · 1 of 3: physical');
   await expect(chain().locator('li')).toHaveText(['1 physical: ▶ in play', '2 logical: · comes later', '3 administrative: · comes later']);
-  await expect(chain()).toContainText('When it is complete, NetBox holds the port the line plugs into, the circuit, your address on it');
+  await expect(chain()).toContainText('When it is complete, NetBox holds the port the line plugs into, and the circuit; your address on it; the carrier\'s network, your account, who to call, and what it costs.');
+  // practice pays nothing, so the island's chain promises no bonus
+  await expect(chain()).not.toContainText('XP');
   await expect(page.locator('#quest-open .q', { hasText: 'The way out of Practice Island' }).locator('.in-chain')).toHaveText('Chain: The way out of Practice Island · 1 of 3: physical');
   await chain().evaluate((e) => e.scrollIntoView({ block: 'start' }));
   await page.screenshot({ path: `${SHOTS}/chain-overview.png` });
@@ -468,7 +470,7 @@ test('a chain: the island\'s way out from the cable to the bill, "I don\'t know 
   await choose(page, 'An account not in NetBox yet');
   await choose(page, 'The bill says PI-ACC-0042');
   await choose(page, 'For everything from Example Fibre');
-  await choose(page, 'The bill says Example Fibre NOC');
+  await choose(page, 'Those the bill names');
   await expect(page.locator('#quest-step')).toContainText('What does the contract for circuit EXF-20417 say? Leave blank what you do not know.');
   await page.fill('#quest-field-0', '2025-01-15');
   await page.fill('#quest-field-1', '500');
@@ -489,14 +491,15 @@ test('a chain: the island\'s way out from the cable to the bill, "I don\'t know 
   // later the bill turns up: the line picks up at that question
   await page.locator('#quest-waiting .q', { hasText: 'The record of EXF-20417' }).locator('button', { hasText: 'I know more now' }).click();
   await expect.poll(async () => (await game(page)).dialogue?.text).toContain('What does circuit EXF-20417 cost?');
-  await choose(page, 'The bill says 45.00 EUR a month, 120.00 EUR once');
-  await expect(page.locator('#quest-changes li')).toHaveText(['Circuit EXF-20417: 45.00 EUR a month, 120.00 EUR once.']);
+  await choose(page, 'The bill says 45.00 XTS a month, 120.00 XTS once');
+  await expect(page.locator('#quest-changes li')).toHaveText(['Circuit EXF-20417: 45.00 XTS a month, 120.00 XTS once.']);
   await page.click('#quest-apply');
   // the closing summary: the whole record, read back from the island
   await expect(page.locator('#quest-reward h2')).toHaveText('Practice complete');
   await expect(page.locator('#quest-reward')).toContainText('That completes the chain "The way out of Practice Island". Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), '
-    + 'Example Fibre, network Example Fibre Internet, your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, 45.00 EUR a month, '
-    + '120.00 EUR once, installed 2025-01-15, 500 Mbps committed.');
+    + 'Example Fibre, network Example Fibre Internet, your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, '
+    + 'Account manager: Example Fibre Accounts accounts@fibre.example, Billing: Example Fibre Billing billing@fibre.example, 45.00 XTS a month, '
+    + '120.00 XTS once, installed 2025-01-15, 500 Mbps committed.');
   await expect(page.locator('#quest-reward-chain')).toHaveAttribute('data-status', 'complete');
   await page.screenshot({ path: `${SHOTS}/chain-summary.png` });
   await page.click('#quest-reward-ok');

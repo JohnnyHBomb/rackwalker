@@ -16,8 +16,12 @@ from .estate import Estate, simulate
 PRACTICE_SITE_ID = 9_000_001
 SITE_NAME = "Practice Island"
 # The island's made-up bill. On the island nobody types an account number, a contact or a charge: the questions about
-# them offer only what this bill says, so nothing of a player's own is ever kept with their practice changes.
-BILL = {"account": "PI-ACC-0042", "contact": "Example Fibre NOC", "phone": "+00 555 0100", "mrc": "45.00", "nrc": "120.00", "currency": "EUR"}
+# them offer only what this bill says, so nothing of a player's own is ever kept with their practice changes. Its
+# currency is XTS, the code ISO 4217 keeps for testing: no real money is meant.
+BILL = {"account": "PI-ACC-0042", "mrc": "45.00", "nrc": "120.00", "currency": "XTS",
+        "contacts": {"support": {"role": "support", "name": "Example Fibre NOC", "phone": "+00 555 0100"},
+                     "account": {"role": "account manager", "name": "Example Fibre Accounts", "email": "accounts@fibre.example"},
+                     "billing": {"role": "billing", "name": "Example Fibre Billing", "email": "billing@fibre.example"}}}
 
 
 def example_estate(base: int = 9_000_000, site_name: str = SITE_NAME, complete: bool = False) -> Estate:

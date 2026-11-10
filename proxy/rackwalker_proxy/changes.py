@@ -402,7 +402,9 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
             if row:
                 st.add(Rec("end:interface", row["id"], None, {"cable": (row.get("cable") or {}).get("id"), "name": row["name"],
                                                               "device_id": (row.get("device") or {}).get("id"), "device": (row.get("device") or {}).get("name")}))
-            for ip in await client.list_raw("ipam/ip-addresses", {"address": f["address"]}):
+            # by the host address alone: NetBox refuses the same host under another mask too, and its `address` filter
+            # matches every mask when none is given
+            for ip in await client.list_raw("ipam/ip-addresses", {"address": str(f["address"]).split("/")[0]}):
                 st.add(Rec("ip_address", ip["id"], None, {"address": ip["address"], "assigned_type": ip.get("assigned_object_type"),
                                                           "assigned_id": ip.get("assigned_object_id")}))
         if op.op == "create_prefix":

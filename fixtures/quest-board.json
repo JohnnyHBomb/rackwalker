@@ -513,7 +513,7 @@
       "kind": "way_out",
       "site_id": 9000001,
       "title": "The way out of Practice Island",
-      "holds": "the port the line plugs into, the circuit, your address on it, the carrier and their network, your account, who to call, and what it costs",
+      "holds": "the port the line plugs into, and the circuit; your address on it; the carrier's network, your account, who to call, and what it costs",
       "status": "open",
       "position": 1,
       "total": 3,
@@ -546,7 +546,8 @@
         }
       ],
       "summary": null,
-      "open_questions": []
+      "open_questions": [],
+      "bonus_xp": 0
     },
     {
       "id": "chain:room_link:location:9000002",
@@ -572,14 +573,15 @@
         }
       ],
       "summary": null,
-      "open_questions": []
+      "open_questions": [],
+      "bonus_xp": 0
     },
     {
       "id": "chain:device:device:9000001",
       "kind": "device",
       "site_id": 9000001,
       "title": "sw-quay-1: from its ports to its login",
-      "holds": "what the device is plugged into, how it is managed, and the address to log in to it if it has one",
+      "holds": "what the device is plugged into; how it is managed, and the address to log in to it if it has one",
       "status": "open",
       "position": 1,
       "total": 2,
@@ -605,7 +607,8 @@
         }
       ],
       "summary": "sw-quay-1: managed locally at 192.0.2.11/24.",
-      "open_questions": []
+      "open_questions": [],
+      "bonus_xp": 0
     }
   ],
   "chains_queued": 4,
