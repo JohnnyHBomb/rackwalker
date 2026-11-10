@@ -191,6 +191,8 @@ never asks "what is its management address" first. It asks **how the device is m
 | By a cloud or controller service | `rw_mgmt_mode` = `cloud`, and the service's name in `rw_mgmt_service` (free text; services already on record are offered as choices) | no address: the device is complete for management |
 | It is not managed at all (unmanaged, passive) | `rw_mgmt_mode` = `unmanaged` | no address: complete |
 
+![The first question is how the device is managed](screenshots/quests/management-mode.png)
+
 * **Asked once per model, where that is true.** When NetBox has more than one device of the model, the game asks "are
   they all managed that way?". "Yes" also writes the model's default (`rw_mgmt_default` on the device type), and no
   other device of the model is asked again. "No, it differs from device to device" writes `varies` there, and each
@@ -255,6 +257,8 @@ a complete record.
 The other lines (`site_island`, `provider_unused`, `address_no_prefix`, `shelf_audit`, `platform_survey`,
 `site_record`) belong to no chain and are offered as before.
 
+![The quest log lists the chains in play, stage by stage](screenshots/quests/chain-overview.png)
+
 * **Derived from NetBox, never stored.** A stage NetBox already satisfies is shown as done and never asked: a switch
   whose management address is on record starts its chain at "physical", with "logical" ticked.
 * **A later stage unlocks** when every earlier one is done in NetBox, or was answered "none, on purpose". A stage
@@ -265,6 +269,7 @@ The other lines (`site_island`, `provider_unused`, `address_no_prefix`, `shelf_a
   hold when the chain is complete.
 * **The closing summary.** When the last stage is confirmed, the game reads the whole record back from NetBox and
   says it in one sentence (see the example at the top). The summary is always what NetBox holds, never what you typed.
+  ![The closing summary of a chain, read back from the practice island](screenshots/quests/chain-summary.png)
 * **Order and pacing.** A site's lines are offered most valuable first, as before: the way out and the links, and the
   stages that continue them, before devices, before racks. At most three lines are on offer at a site, so at most three
   chains are in play there; the others are counted in the log. A stage is one line of two to five minutes.
