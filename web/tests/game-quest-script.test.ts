@@ -169,4 +169,23 @@ describe('quest questions as dialogue scripts', () => {
     const lastNode = Object.values(withSpot.nodes).find((n) => n.choices)!;
     expect(lastNode.choices!.map((c) => c.label)).toEqual(['Spot-check one device', 'Show me the quest log', 'Not now']);
   });
+
+  it('a later stage of a chain says where it stands in the chain; a first stage opens as it always did', () => {
+    const b = board as unknown as QuestBoard;
+    const lead = b.quests[0]!;
+    const text = (q: Quest) => {
+      const s = offerScript({ ...b, quests: [q] }, 'Practice Island');
+      const out: string[] = [];
+      for (let n: string | null | undefined = s.start; n; n = typeof s.nodes[n]!.next === 'string' ? (s.nodes[n]!.next as string) : null) out.push(s.nodes[n]!.text);
+      return out.join(' ');
+    };
+    expect(lead.chain).toMatchObject({ stage: 'physical', position: 1, total: 3, label: '1 of 3: physical' });
+    expect(text(lead)).toBe(lead.purpose);
+    const later: Quest = { ...lead, chain: { ...lead.chain!, stage: 'logical', position: 2, label: '2 of 3: logical' } };
+    expect(text(later)).toBe(`Next in "The way out of Practice Island": 2 of 3: logical. ${lead.purpose}`);
+    expect(validateScript(offerScript({ ...b, quests: [later] }, 'Practice Island'))).toEqual([]);
+    // the fixture quest log lists the chains in play, each with its stages and what the record will hold
+    expect(b.chains.map((c) => [c.kind, c.label])).toEqual([['way_out', '1 of 3: physical'], ['room_link', '1 of 1: physical'], ['device', '1 of 2: physical']]);
+    expect(b.chains[0]!.stages.map((s) => s.status)).toEqual(['open', 'locked', 'locked']);
+  });
 });

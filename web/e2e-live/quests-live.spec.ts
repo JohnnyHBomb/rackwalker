@@ -62,7 +62,8 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
     // The quest log says up front what this player's NetBox user may and may not write: cables yes, the rest no.
     const board = await page.evaluate(() => window.__game!.shell.quests!.boards.netbox!);
     expect(board.can_write).toBe(true);
-    expect(board.write_blocked).toBe('Your NetBox user may not add circuits, add circuit ends, add addresses, add prefixes, change devices, change racks or change sites. '
+    expect(board.write_blocked).toBe('Your NetBox user may not add circuits, add circuit ends, add addresses, add prefixes, change devices, change racks, change sites, '
+      + 'change circuits, add provider accounts, add provider networks, add contacts, assign contacts or change device types. '
       + 'Lines that need that run as practice, with no XP; ask a NetBox admin for the permission.');
 
     // The giver of North Depot: stand beside them (wherever the last visit left the player), press the interact key,
