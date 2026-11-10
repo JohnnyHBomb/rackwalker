@@ -169,13 +169,23 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
     reader = perms.PermissionReader(client) if client is not None else None
     app.state.permission_reader = reader
     # the kept estate: when it was read whole, and when single sites of it were read again since
-    cached: dict[str, Any] = {"at": 0.0, "estate": None, "sites": {}}
+    # (`drops` counts the times the estate was dropped: a read that was under way when a write dropped it is not kept)
+    cached: dict[str, Any] = {"at": 0.0, "estate": None, "sites": {}, "drops": 0}
     reading = asyncio.Lock()   # one read of NetBox at a time: requests that arrive meanwhile use its result
 
     def drop_estate() -> None:
-        cached.update(estate=None, sites={})
+        cached.update(estate=None, sites={}, drops=cached["drops"] + 1)
         if reader:
             reader.clear()
+
+    async def read_whole() -> Estate:
+        """Reads the whole estate (the caller holds `reading`) and keeps it, unless a write dropped the estate meanwhile."""
+        assert client is not None
+        drops = cached["drops"]
+        e = await read_estate(client)
+        if cached["drops"] == drops:
+            cached.update(at=time.monotonic(), estate=e, sites={})
+        return e
 
     app.state.drop_estate = drop_estate
 
@@ -195,22 +205,18 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         async with reading:
             if kept() is not None:
                 return cached["estate"], "cache"
-            e = await read_estate(client)
-            cached.update(at=time.monotonic(), estate=e, sites={})
-            return e, "netbox"
+            return await read_whole(), "netbox"
 
     async def site_estate(site_ids: set[int], force: bool = False) -> Estate:
         """The kept estate with these sites read again from NetBox now. Without `force` (a player asked: "Check
         NetBox", "Read NetBox again") a site read less than FRESH_SITE_S seconds ago is not read again; with it (the
         proxy has just written there) it always is. With no kept estate, the whole estate is read."""
-        if fixtures_dir or client is None or cached["estate"] is None or time.monotonic() - cached["at"] >= estate_ttl:
+        if fixtures_dir or client is None:
             return (await real_estate())[0]
-        async with reading:
-            base, now = cached["estate"], time.monotonic()
-            if base is None:
-                e = await read_estate(client)
-                cached.update(at=now, estate=e, sites={})
-                return e
+        async with reading:   # whatever is read from here on is read after the write that asked for it
+            base, now, drops = cached["estate"], time.monotonic(), cached["drops"]
+            if base is None or now - cached["at"] >= estate_ttl:
+                return await read_whole()
             want = sorted(s for s in site_ids if force or now - max(cached["at"], cached["sites"].get(s, 0.0)) >= FRESH_SITE_S)
             if not want:
                 return base
@@ -219,8 +225,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             except BaseException:
                 drop_estate()   # never serve what was read before a write as current
                 raise
-            cached["estate"] = e
-            cached["sites"].update({s: time.monotonic() for s in want})
+            if cached["drops"] == drops:
+                cached["estate"] = e
+                cached["sites"].update({s: time.monotonic() for s in want})
             return e
 
     async def estate_of(scope: str, uid: int, fresh: bool = False, site_id: int | None = None) -> tuple[Estate, str]:
@@ -441,6 +448,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             elif b["step"] == "back":
                 # one answer back: the question a parked line waits at, else the last one answered
                 now = quests.evaluate(e, line, answers, tools)
+                if row is None:
+                    return quest_body(scope, line, None, now, "offered", gate=gate)   # nothing answered: nothing to take back
                 last = now["step"]["id"] if now["status"] == "parked" and now["step"] else (now["answered"] or [None])[-1]
                 answers.pop(last, None)
             else:

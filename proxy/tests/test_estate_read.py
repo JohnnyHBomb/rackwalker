@@ -454,3 +454,18 @@ def test_a_list_that_was_cut_short_never_counts_as_complete(tmp_path, monkeypatc
         assert cl.post("/api/game/boss/ack", json={"scope": "netbox", "site_id": 1}).status_code == 409
         r = cl.post("/api/game/quests/answer", json={"scope": "netbox", "quest_id": "q:spot_check:device:1:0", "step": "same", "choice": "yes"})
         assert r.status_code == 409
+
+
+def test_a_read_that_was_under_way_when_a_write_dropped_the_estate_is_not_kept(live_like, monkeypatch):
+    cl, fake, app = live_like
+    real = questroutes.read_estate
+
+    async def overtaken(client, site_ids=None):
+        e = await real(client, site_ids)
+        app.state.drop_estate()        # a write through the editor lands while NetBox is being read
+        return e
+    monkeypatch.setattr(questroutes, "read_estate", overtaken)
+    assert cl.get("/api/quests/gaps/1").json()["source"] == "netbox"
+    monkeypatch.setattr(questroutes, "read_estate", real)
+    assert cl.get("/api/quests/gaps/1").json()["source"] == "netbox"   # read again: the first read may predate the write
+    assert cl.get("/api/quests/gaps/1").json()["source"] == "cache"

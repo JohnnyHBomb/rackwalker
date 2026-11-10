@@ -526,6 +526,9 @@ def test_one_answer_can_be_taken_back(cl):
     # with nothing answered there is nothing to take back
     fresh = answer(cl, qid, "restart")
     assert answer(cl, qid, "back")["step"] == fresh["step"]
+    other = next(x for x in board(cl)["quests"] if x["status"] == "offered")
+    assert answer(cl, other["id"], "back")["status"] == "offered"
+    assert next(x for x in board(cl)["quests"] if x["id"] == other["id"])["status"] == "offered"   # a line never begun stays on offer
 
 
 def test_a_closed_line_is_offered_again_only_for_something_it_never_covered():
