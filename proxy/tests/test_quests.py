@@ -613,8 +613,12 @@ def test_every_opening_line_names_what_is_missing_and_where():
     b.e.touch()
     assert one(b.e, "site_record")["finding"]["title"] == ("Mill Lane has no GPS position, facility name or country on record, so it cannot be "
                                                           "put on a map or named to a carrier.")
-    port = one(interface_no_cable(), "interface_no_cable")
+    e = interface_no_cable()
+    port = one(e, "interface_no_cable")
     assert port["purpose"].startswith("sw1 eth4 has a description (uplink to the annex) but no cable.")
+    asked = quests.evaluate(e, port, {"peer": {"choice": "unknown"}})
+    assert asked["step"]["prompt"] == "What is on the other end of sw1 eth4 (described as 'uplink to the annex')?"
+    assert asked["checklist"][:2] == ["Find sw1: rack R1 U10 in Room.", "Follow the lead in port eth4 to its far end."]
 
 
 def test_ports_are_offered_likeliest_uplink_first():

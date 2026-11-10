@@ -13,6 +13,7 @@ import httpx
 import pytest
 from fastapi.testclient import TestClient
 
+from rackwalker_proxy import questroutes
 from rackwalker_proxy.app import Settings, create_app
 
 from .conftest import LOCAL, schema_validator
@@ -79,8 +80,8 @@ def harbour(nbx):
         assert r.status_code in (204, 404), (path, r.text)
 
 
-def _client(tmp, token: str, write: bool = True) -> TestClient:
-    app = create_app(Settings(URL, TOKEN, write, None, cache_ttl=0, state_dir=tmp, estate_ttl=0))
+def _client(tmp, token: str, write: bool = True, estate_ttl: float = 0) -> TestClient:
+    app = create_app(Settings(URL, TOKEN, write, None, cache_ttl=0, state_dir=tmp, estate_ttl=estate_ttl))
     cl = TestClient(base_url=LOCAL, app=app)
     r = cl.post("/api/game/session", json={"token": token}, headers={CSRF: "sign-in"})
     assert r.status_code == 200, r.text
@@ -91,7 +92,9 @@ def _client(tmp, token: str, write: bool = True) -> TestClient:
 
 @pytest.fixture(scope="module")
 def admin(tmp_path_factory, harbour):
-    with _client(tmp_path_factory.mktemp("quests-admin"), ADMIN) as cl:
+    # this player's proxy keeps its read of the estate, as a real one does: after each quest only the sites it changed
+    # are read again, and every later test sees the estate through that
+    with _client(tmp_path_factory.mktemp("quests-admin"), ADMIN, estate_ttl=600) as cl:
         yield cl
 
 
@@ -146,7 +149,10 @@ def test_the_unconnected_estate_is_found_and_ordered_live(admin, harbour):
     # at most a few lines are open at one site, the most valuable first; the rest wait
     assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "sites_not_linked", "locations_not_linked"]
     assert b["queued"] == 5 and all(q["status"] == "offered" for q in b["quests"])
-    assert b["quests"][0]["purpose"] == "Nobody can tell how Harbour Office reaches the internet. Let's find out."
+    assert b["quests"][0]["purpose"] == "Nobody can tell from NetBox how Harbour Office reaches the outside world. Let's find out."
+    assert b["quests"][2]["purpose"] == ("Loft and Quay Room at Harbour Office have no link between them. If that link fails, nobody knows "
+                                         "which cable to check. Let's record it.")
+    assert (b["can_write"], b["write_blocked"]) == (True, None)
     assert not next(s for s in b["sites"] if s["site_id"] == site)["boss_ready"]
 
 
@@ -173,6 +179,7 @@ def test_the_way_out_line_ends_in_a_trace_netbox_confirms_live(admin, harbour, n
     assert (v["mode"], v["verified"], v["complete"], v["quest"]["status"]) == ("real", True, True, "done")
     assert v["xp_awarded"] == 120 and v["unlocked"] == ["cable_tracer"]
     assert v["can_now"] == "You can now trace Harbour Office to the carrier's hand-off."
+    assert v["message"].startswith("NetBox confirms it. Harbour Office is now ") and v["message"].endswith(" % complete.")
     assert v["trace"] == "NetBox's cable trace from sw-quay-1 Te1/1/2 reaches circuit EXF-20417 (side A) in 1 hop."
     # NetBox itself: the circuit exists, ends at the site, and the switch port traces to it
     circuit = _first(nbx, "circuits/circuits/", cid="EXF-20417")
@@ -202,7 +209,7 @@ def test_i_dont_know_yet_parks_the_line_and_it_resumes_where_it_stopped_live(adm
     v = admin.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": quest["id"]}).json()
     assert (v["verified"], v["complete"]) == (True, True)
     assert v["trace"] == "NetBox's cable trace from sw-loft-1 Te1/1/1 reaches sw-quay-2 Te1/1/1 in 1 hop."
-    assert v["can_now"] == "You can now trace from one room to the other."
+    assert v["can_now"] == "You can now trace from Loft to Quay Room."
     assert v["xp_awarded"] == 120 and v["unlocked"] == []
 
 
@@ -240,6 +247,87 @@ def _player(nbx, name: str, perms: list[dict]) -> tuple[int, str]:
     return uid, t["token"] if t["token"].startswith("nbt_") else f"nbt_{t['key']}.{t['token']}"
 
 
+def test_an_errand_is_confirmed_part_by_part_and_a_device_nobody_logs_in_to_is_an_answer_live(admin, harbour, nbx):
+    site = harbour["site"]["id"]
+
+    def still_open() -> tuple[int, int]:
+        """(open checks as this player's quest log counts them, open checks as the scanner reads them from NetBox)."""
+        mine = next(s for s in _board(admin, site)["sites"] if s["site_id"] == site)["completeness"]["open"]
+        return mine, admin.get(f"/api/quests/gaps/{site}").json()["completeness"]["open"]
+    assert still_open()[0] == still_open()[1] - 1          # "no link to the other sites, on purpose" was said earlier
+    quest = next(q for q in _board(admin, site)["quests"] if q["kind"] == "device_unreachable")
+    assert quest["purpose"].startswith("NetBox does not say how to reach sw-quay-1, sw-quay-2 and sw-loft-1 to manage them.")
+    ids = [harbour["devs"][n]["id"] for n in ("sw-quay-1", "sw-quay-2", "sw-loft-1")]
+    quest = _answer(admin, quest, {f"ip_{ids[0]}": "An address not in NetBox yet", f"addr_{ids[0]}": "192.0.2.61/24", f"port_{ids[0]}": "Gi1/0/1",
+                                   f"ip_{ids[1]}": "It has none", f"ip_{ids[2]}": "I don't know yet"})
+    assert quest["status"] == "ready" and [o["op"] for o in quest["proposal"]["ops"]] == ["assign_ip"]
+    v = admin.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": quest["id"]}).json()
+    schema_validator("QuestVerdict").validate(v)
+    # one of three is confirmed and paid as a third; the one with no address counts as answered and pays nothing
+    assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"]) == ("real", True, False, 40)
+    assert v["message"] == "NetBox confirms 1 of 3; the rest of this line stays open."
+    assert v["quest"]["progress"] == {"total": 3, "verified": 1} and v["quest"]["status"] == "parked"   # sw-loft-1: "I don't know yet"
+    assert _first(nbx, "dcim/devices/", id=ids[0])["primary_ip4"]["address"] == "192.0.2.61/24"
+    b = _board(admin, site)
+    gaps = [g["id"] for g in admin.get(f"/api/quests/gaps/{site}", params={"limit": 500}).json()["items"] if g["field"] == "primary_ip"]
+    assert gaps == [f"device:{i}:primary_ip" for i in sorted(ids[1:])]         # NetBox: two devices still have no primary IP
+    assert still_open()[0] == still_open()[1] - 2                                 # for this player, one of them is answered
+    # the line goes on with the device still unknown, and only with it
+    again = next(q for q in b["quests"] if q["id"] == quest["id"])
+    assert again["step"]["prompt"] == "How do you reach sw-loft-1 to manage it?"
+    # checking NetBox again changes nothing and pays nothing
+    v2 = admin.post("/api/game/quests/verify", json={"scope": "netbox", "quest_id": quest["id"]}).json()
+    assert (v2["xp_awarded"], v2["complete"], v2["quest"]["step"]["prompt"]) == (0, False, "How do you reach sw-loft-1 to manage it?")
+    done = _answer(admin, {**again, "status": "active"}, {f"ip_{ids[2]}": "It has none"})
+    assert done["status"] == "dismissed"
+    assert still_open()[0] == still_open()[1] - 3
+
+
+def test_the_kept_estate_matches_a_whole_new_read_of_netbox_live(admin, harbour, monkeypatch):
+    """Every write above was read back one site at a time into the kept estate. A whole new read must say the same."""
+    kept = _board(admin)
+    monkeypatch.setattr(questroutes, "FRESH_ALL_S", 0.0)
+    r = admin.get("/api/game/quests", params={"scope": "netbox", "fresh": "true"})
+    assert r.status_code == 200, r.text
+    whole = r.json()
+    for key in ("findings", "sites", "quests", "queued", "incomplete", "message"):
+        assert kept[key] == whole[key], key
+    gaps = admin.get(f"/api/quests/gaps/{harbour['site']['id']}").json()
+    assert gaps["source"] == "cache" and gaps["completeness"]["total"] > 0
+
+
+def test_a_fix_deleted_in_netbox_reopens_nothing_and_is_counted_live(admin, harbour, nbx, monkeypatch):
+    site = harbour["site"]["id"]
+    line = next(q for q in _board(admin, site)["quests"] if q["kind"] == "locations_not_linked")
+    assert line["status"] == "done" and not line["lapsed"]
+    xp = _board(admin)["rewards"]["xp"]
+    for name in ("Te1/1/1", "Te1/1/2"):                                               # someone removes sw-loft-1's cables in NetBox
+        port = _first(nbx, "dcim/interfaces/", device_id=harbour["devs"]["sw-loft-1"]["id"], name=name)
+        assert nbx.delete(f"dcim/cables/{port['cable']['id']}/").status_code == 204
+    monkeypatch.setattr(questroutes, "FRESH_SITE_S", 0.0)
+    r = admin.get("/api/game/quests", params={"scope": "netbox", "site_id": site, "fresh": "true"})    # "Read NetBox again"
+    assert r.status_code == 200, r.text
+    b = r.json()
+    schema_validator("QuestBoard").validate(b)
+    again = next(q for q in b["quests"] if q["id"] == line["id"])
+    assert (again["status"], again["lapsed"], again["step"]) == ("done", True, None)
+    assert b["rewards"]["xp"] == xp and b["rewards"]["lapsed"] == 1
+    assert not [q for q in b["quests"] if q["kind"] == "locations_not_linked" and q["status"] != "done"]
+    # what NetBox does not know now is asked as lines of their own: the switches that lost their only cable
+    assert "device_unconnected" in [q["kind"] for q in b["quests"] if q["status"] == "offered"]
+    assert {"device_unconnected:device:%d" % harbour["devs"][n]["id"] for n in ("sw-loft-1", "sw-quay-2")} <= {f["id"] for f in b["findings"]}
+
+
+def test_health_reports_a_proxy_token_that_cannot_read_permissions_live(tmp_path, nbx):
+    uid, token = _player(nbx, "quest-blind-proxy", [VIEW_ALL])
+    try:
+        app = create_app(Settings(URL, token, False, None, cache_ttl=0, state_dir=tmp_path))
+        with TestClient(base_url=LOCAL, app=app) as cl:
+            assert cl.get("/api/health").json()["netbox"]["permission_check"] == "cannot_view_users"
+    finally:
+        nbx.delete(f"users/users/{uid}/")
+
+
 VIEW_ALL = {"object_types": ["dcim.site", "dcim.device", "dcim.rack"], "actions": ["view"]}
 
 
@@ -265,14 +353,22 @@ def test_a_write_needs_the_players_own_netbox_permission_live(tmp_path, nbx, har
             assert err["details"]["missing"] == [{"object_type": "dcim.site", "action": "change", "constrained": bool(extra)}]
             assert "you can still play in practice mode" in err["message"]
             # the same player on a quest line: the change is shown as a practice run, nothing is written, no XP
-            line = next(q for q in _board(cl, harbour["site"]["id"])["quests"] if q["kind"] == "site_record")
+            b = _board(cl, harbour["site"]["id"])
+            # the quest log says it before the first answer, not after the last
+            assert b["write_enabled"] and not b["can_write"]
+            assert b["write_blocked"].startswith("Your NetBox user may not change anything a quest writes")
+            line = {"id": f"q:site_record:site:{harbour['site']['id']}"}
             form = {"scope": "netbox", "quest_id": line["id"], "step": "record", "values": {"facility": "HBR-1"}}
             quest = cl.post("/api/game/quests/answer", json=form).json()
-            assert quest["status"] == "ready"
+            assert quest["status"] == "ready" and quest["write_blocked"].startswith("Your NetBox user may not change dcim.site.")
             v = cl.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": line["id"]}).json()
             assert (v["mode"], v["verified"], v["xp_awarded"], v["quest"]["status"]) == ("dry_run", False, 0, "practised")
-            assert "your NetBox user may not change dcim.site" in v["message"]
+            assert v["message"].startswith("Practice run, nothing was written: Your NetBox user may not change dcim.site. Ask a NetBox admin")
+            assert v["message"].lower().count("nothing was written") == 1 and v["message"].endswith("No XP for a practice run.")
             assert _changelog_count(nbx) == before and _board(cl)["rewards"]["xp"] == 0
+            # the practice run threw nothing away: the line still has the answer and its change
+            kept = next(q for q in _board(cl, harbour["site"]["id"])["quests"] if q["id"] == line["id"])   # a practised line waits in the log
+            assert kept["status"] == "practised" and kept["said"] and kept["proposal"]["ops"][0]["fields"] == {"facility": "HBR-1"}
     finally:
         nbx.delete(f"users/users/{uid}/")
         if allowed:
@@ -295,7 +391,7 @@ def test_the_practice_island_never_writes_to_netbox_live(admin, nbx):
 def test_a_dry_run_proxy_marks_a_completion_as_practice_live(tmp_path, harbour, nbx):
     with _client(tmp_path, ADMIN, write=False) as cl:
         before = _changelog_count(nbx)
-        line = next(q for q in _board(cl, harbour["site"]["id"])["quests"] if q["kind"] == "site_record")
+        line = {"id": f"q:site_record:site:{harbour['site']['id']}"}
         cl.post("/api/game/quests/answer", json={"scope": "netbox", "quest_id": line["id"], "step": "record", "values": {"facility": "HBR-1"}})
         v = cl.post("/api/game/quests/apply", json={"scope": "netbox", "quest_id": line["id"]}).json()
         assert (v["mode"], v["verified"], v["xp_awarded"], v["quest"]["status"]) == ("dry_run", False, 0, "practised")

@@ -192,7 +192,7 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   `next_quest_id` is the most valuable fresh line of the scope. `can_write` is false, with `write_blocked` saying why,
   on the practice island, in fixture mode, on a dry-run proxy, when the proxy cannot read the player's NetBox
   permissions, and when those permissions cover nothing a quest writes. When they cover only some of it, `can_write`
-  stays true and `write_blocked` names what is missing. `Quest.write_blocked` says the same for one line's own
+  stays true and `write_blocked` says in plain words what is missing. `Quest.write_blocked` says the same for one line's own
   proposal, so the game can say "practice run" before the player presses Apply.
   A list that was cut at its cap or that NetBox refuses to the proxy is named in `incomplete`; then no site is
   reported above 99 %, `boss_ready` and `all_in_order` are false, and no spot check is offered.

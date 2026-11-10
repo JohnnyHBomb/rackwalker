@@ -391,11 +391,12 @@ def test_a_line_fixed_in_netbox_itself_is_confirmed_by_a_read_of_its_site(tmp_pa
 @pytest.mark.parametrize("permissions,can_write,board_says,line_says", [
     ([], False, "Your NetBox user may not change anything a quest writes", "Your NetBox user may not add dcim.cable."),
     ([{"id": 1, "enabled": True, "object_types": ["dcim.device"], "actions": ["change"], "constraints": None}], True,
-     "Your NetBox user may not add dcim.cable, add circuits.circuit", "Your NetBox user may not add dcim.cable."),
+     "Your NetBox user may not add cables, add circuits, add circuit ends, add addresses, add prefixes, change racks or change sites. "
+     "Lines that need that run as practice, with no XP; ask a NetBox admin for the permission.", "Your NetBox user may not add dcim.cable."),
     ([{"id": 1, "enabled": False, "object_types": ["dcim.cable"], "actions": ["add"], "constraints": None}], False,
      "Your NetBox user may not change anything", "Your NetBox user may not add dcim.cable."),
     ([{"id": 1, "enabled": True, "object_types": ["dcim.cable"], "actions": ["add"], "constraints": None}], True,
-     "Your NetBox user may not add circuits.circuit", None),
+     "Your NetBox user may not add circuits, add circuit ends, add addresses, add prefixes, change devices, change racks or change sites.", None),
 ])
 def test_the_quest_log_says_up_front_what_the_players_netbox_user_may_not_write(tmp_path, monkeypatch, permissions, can_write, board_says, line_says):
     fake = FakeNetBox(tiny())

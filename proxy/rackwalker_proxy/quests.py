@@ -27,6 +27,7 @@ from typing import Any
 
 from .estate import Estate, is_network, is_passive, is_physical, is_router, natural
 from .findings import Analysis
+from .findings import _some as some
 
 XP = {"connectivity": 120, "identity": 50, "layout": 30}
 MINUTES = {"connectivity": 4, "identity": 5, "layout": 3}
@@ -678,7 +679,8 @@ def flow_port(ctx: Ctx) -> list[dict[str, Any]]:
     cands = (cands + [choice(f"device:{d['id']}", _dev_label(e, d)) for d in servers])[:MAX_CANDIDATES]
     note = f" (described as {port['description'].strip()[:40]!r})" if port["description"].strip() else ""
     peer = ctx.choice("peer", f"What is on the other end of {dev['name']} {port['name']}{note}?",
-                      cands + [OTHER, choice("none", "Nothing: the port is not in use", "not_applicable")], look_checklist(e, dev))
+                      cands + [OTHER, choice("none", "Nothing: the port is not in use", "not_applicable")],
+                      [f"Find {dev['name']}: {e.where(dev)}.", f"Follow the lead in port {port['name']} to its far end."] + look_checklist(e, dev)[2:])
     if peer == "other":
         raise Stop("parked", None, ["Add the far-end device to NetBox (Devices > Add).", "Come back: it will then be one of the choices."])
     if peer.startswith("circuit:"):
@@ -732,12 +734,6 @@ WORDS: dict[str, tuple[str, str, str]] = {
                                   "You can now send someone to the exact unit in rack {subject}."),
     "room_layout": ("The floor plan", "Someone new cannot find a rack that is not on the plan. Let's put that right.", "You can now point to {names} on the floor plan."),
 }
-
-
-def some(names: list[str]) -> str:
-    from .findings import _some
-
-    return _some(names)
 
 
 def words_of(e: Estate, f: dict[str, Any]) -> tuple[str, str, str]:

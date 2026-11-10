@@ -133,9 +133,21 @@ def refusal(missing: list[dict[str, Any]]) -> ApiError:
     return ApiError("forbidden", NOT_WRITTEN + text[0].lower() + text[1:], {"reason": "player_lacks_permission", "missing": missing})
 
 
-# Every (object type, action) a quest line may need for its change.
-QUEST_NEEDS = [("dcim.cable", "add"), ("circuits.circuit", "add"), ("circuits.circuittermination", "add"), ("ipam.ipaddress", "add"),
-               ("ipam.prefix", "add"), ("dcim.device", "change"), ("dcim.rack", "change"), ("dcim.site", "change")]
+# Every (object type, action) a quest line may need for its change, with the words the quest log uses for it.
+QUEST_WORDS = {("dcim.cable", "add"): "add cables", ("circuits.circuit", "add"): "add circuits",
+               ("circuits.circuittermination", "add"): "add circuit ends", ("ipam.ipaddress", "add"): "add addresses",
+               ("ipam.prefix", "add"): "add prefixes", ("dcim.device", "change"): "change devices", ("dcim.rack", "change"): "change racks",
+               ("dcim.site", "change"): "change sites"}
+QUEST_NEEDS = list(QUEST_WORDS)
+
+
+def some_missing(missing: list[dict[str, Any]]) -> str:
+    """For the quest log of a player who may write some of what quests write, and not the rest."""
+    words = [QUEST_WORDS[(m["object_type"], m["action"])] for m in missing]
+    listed = ", ".join(words[:-1]) + (" or " if len(words) > 1 else "") + words[-1]
+    extra = " A permission with constraints does not count here." if any(m["constrained"] for m in missing) else ""
+    return (f"Your NetBox user may not {listed}. Lines that need that run as practice, with no XP; ask a NetBox admin for the "
+            f"permission.{extra}")
 
 
 async def check_health(client: nb.NetBox) -> str:

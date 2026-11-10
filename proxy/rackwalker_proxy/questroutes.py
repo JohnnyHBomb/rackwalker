@@ -102,7 +102,7 @@ class Gate:
         if len(missing) == len(perms.QUEST_NEEDS):
             return False, ("Your NetBox user may not change anything a quest writes (cables, circuits, addresses, devices, racks, sites), "
                            "so every line runs as practice. Ask a NetBox admin for the permission.")
-        return True, (perms.why_not(missing) + " Lines that need it run as practice.") if missing else None
+        return True, perms.some_missing(missing) if missing else None
 
 
 def base_checks(line: dict[str, Any], row: dict[str, Any] | None) -> list[str]:
