@@ -43,7 +43,7 @@ SaveSlot        slot (auto|1|2|3), rev, updated_at, data: SaveData {scene, overw
 GapList         site_id, total, offset, limit, unlisted, items[ Gap {id, kind, object_id, field, rank, label} ], completeness
 QuestBoard      scope (netbox|practice), site_id|null, can_write, write_blocked, all_in_order, message, findings[ Finding ],
                 quests[ Quest ], queued, next_quest_id, sites[ SiteProgress {completeness, boss_ready, giver} ], rewards: Rewards
-Quest           id, kind, rank, title, purpose, outcome, status, step: QuestStep|null, proposal: ChangeSet|null, checklist[],
+Quest           id, kind, rank, title, purpose, outcome, status, step: QuestStep|null, proposal: ChangeSet|null, write_blocked, checklist[],
                 said[], target: QuestTarget|null, finding: Finding, xp, minutes, progress {total, verified}, lapsed
 QuestStep       id, prompt, input (choice|text|form), choices[ QuestChoice {id, label, kind} ], fields[ QuestField ], hint, error
 QuestAnswer     scope, quest_id, step, choice? | text? | values?          (request)

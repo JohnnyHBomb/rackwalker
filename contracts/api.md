@@ -184,19 +184,26 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   (default 100). `unlisted` counts expected-cable gaps beyond the per-site cap of 50. `completeness` is checks passed
   out of checks made at the site.
 * **`GET /api/game/quests?scope=netbox|practice&site_id=&fresh=`**: the quest log (`fresh=true` reads NetBox now, for a
-  change made in NetBox itself within the last minute). Without `site_id`, the lines open at
-  every site. At most three fresh lines are listed per site (the most valuable first: connectivity, identity,
+  change made in NetBox itself within the last minute: with `site_id` that site only, at most every 5 seconds;
+  without it the whole estate, at most every 15 seconds; asked sooner, the kept read answers). Without `site_id`,
+  the lines open at every site. At most three fresh lines are listed per site (the most valuable first: connectivity, identity,
   layout; the first line of each kind before a second line of any kind), parked and practised lines beside them, the
   rest counted in `queued`; then the last finished lines.
   `next_quest_id` is the most valuable fresh line of the scope. `can_write` is false, with `write_blocked` saying why,
-  on the practice island, in fixture mode and on a dry-run proxy.
+  on the practice island, in fixture mode, on a dry-run proxy, when the proxy cannot read the player's NetBox
+  permissions, and when those permissions cover nothing a quest writes. When they cover only some of it, `can_write`
+  stays true and `write_blocked` names what is missing. `Quest.write_blocked` says the same for one line's own
+  proposal, so the game can say "practice run" before the player presses Apply.
+  A list that was cut at its cap or that NetBox refuses to the proxy is named in `incomplete`; then no site is
+  reported above 99 %, `boss_ready` and `all_in_order` are false, and no spot check is offered.
 * **Statuses.** `offered` (not started), `active` (a question waits), `ready` (a change waits for preview and apply;
   with `proposal: null`, NetBox already shows the outcome and only `/verify` is needed), `parked` (the player
   answered "I don't know yet": `checklist` says what to look for; no penalty), `dismissed` (the player says the
   finding is how things are), `practised` (completed as a dry run), `done` (NetBox confirms it).
 * **`POST /api/game/quests/answer`** takes the answer to the step the line is waiting at: `choice` (a choice id),
   `text`, or `values` (form field id to value; blank or absent means not known). An answer to any other step
-  changes nothing and returns the line as it stands; `step: "restart"` clears the line's answers. Choice kinds:
+  changes nothing and returns the line as it stands; `step: "restart"` clears the line's answers and
+  `step: "back"` takes back one answer (the question a parked line waits at, else the last one answered). Choice kinds:
   `candidate` (an object of the estate), `other` (not listed, or a typed value follows), `unknown` ("I don't know
   yet"), `not_applicable`, `confirm`, `skip`. A typed value or a form value that does not fit comes back as the same
   step with `error`.
@@ -204,15 +211,22 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
 * **`POST /api/game/quests/apply`**: on the practice island the proposal changes the player's island (game store
   only). On the player's NetBox it is written through the same code as `/api/changes/apply`, only when the proxy is
   write-enabled and the player's NetBox permissions cover it; otherwise it is a dry run (`mode: "dry_run"`, the line
-  becomes `practised`, no XP, the message says why). After a write the proxy reads the estate again and analyses it
+  becomes `practised`, no XP, the message says why). The player's answers are kept by a dry run, by a refused write
+  and by a check that confirms nothing; when part of an errand is confirmed, only the answers about that part go.
+  After a write the proxy reads the sites the change reached again (not the whole estate) and analyses the estate
   again: `verified` and `complete` come from that read, never from the request. `trace` quotes NetBox's own
   `/trace/` from the first interface the proposal cabled.
-* **`POST /api/game/quests/verify`** does the read and the settlement without a write (scope `netbox` only).
+* **`POST /api/game/quests/verify`** does the read and the settlement without a write (scope `netbox` only): the
+  line's own site is read again, at most every 5 seconds. A spot check is refused (400): it is answered by the
+  player. A spot-check id is also refused by `/answer` (409 `conflict`) at a site that still has something open.
 * **Rewards.** XP per settlement: the line's rank XP (120, 50, 30) times the share of the line's checks newly
   confirmed, times 1, 0.8, 0.6 or 0.4 for the first, second, third and later XP award of that quest kind at that
   site. Only `mode: "real"` pays. A potion with each new level (250 XP). `label_maker` with the first completed
   identity line, `cable_tracer` with the first completed connectivity line. A line that was done and whose checks
-  are open again in NetBox is `lapsed`: nothing is reopened or taken away; `Rewards.lapsed` counts them.
+  are open again in NetBox is `lapsed`: nothing is reopened or taken away; `Rewards.lapsed` counts them. A finished
+  errand that gains an object it never covered (a new device with no serial in an audited rack) is offered again
+  for that object. A check the player answered with "it has none" (a device nobody logs in to) counts as answered
+  in that player's completeness and pays nothing.
 * **Site boss.** `SiteProgress.boss_ready` is true when the site has no open check (dismissed findings count as
   answered for that player). `POST /api/game/boss/ack` records that the player has seen it (409 `conflict` when the
   site is not ready).

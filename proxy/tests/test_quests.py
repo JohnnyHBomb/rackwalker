@@ -281,6 +281,19 @@ def rack_audit():
     return b.e
 
 
+def platform_survey():
+    b = Build()
+    s = b.site()
+    room = b.room(s)
+    rack = b.rack(s, room)
+    r, sw = linked_pair(b, s, room, rack)
+    b.e.platforms[1] = {"id": 1, "name": "Example OS"}
+    b.e.devices[r].update(platform="Example OS", model="R")
+    sw2 = b.dev(s, "sw2", "switch", room, rack)
+    b.cable(b.p(sw, "eth2"), b.p(sw2, "eth1"))
+    return b.e
+
+
 def shelf_audit():
     b = Build()
     s = b.site()
@@ -319,7 +332,7 @@ def room_layout():
 
 CASES = [device_unconnected, switch_no_uplink, site_island, locations_not_linked, sites_not_linked, site_no_way_out, circuit_unterminated,
          provider_unused, router_no_address, device_unreachable, device_no_power, address_no_prefix, interface_no_cable, rack_audit,
-         shelf_audit, site_record, rack_devices_unpositioned, room_layout]
+         shelf_audit, platform_survey, site_record, rack_devices_unpositioned, room_layout]
 
 
 def test_every_finding_kind_has_a_case():
@@ -397,8 +410,34 @@ def test_interface_gaps_only_where_netbox_says_the_port_is_in_use_and_never_a_fl
         b.e.ports[b.p(big, f"eth{k}")]["description"] = "desk"
     b.e.touch()   # the estate was changed in memory: its analysis is made again
     a = findings.analyse(b.e)
-    assert len([g for g in a.gaps if g["field"] == "cable"]) == findings.MAX_INTERFACE_GAPS and a.unlisted[s] == 119 - findings.MAX_INTERFACE_GAPS
+    # one device lists at most three such ports; every one of them still counts against the site
+    per = findings.MAX_INTERFACE_GAPS_PER_DEVICE
+    assert len([g for g in a.gaps if g["field"] == "cable"]) == 1 + per and a.unlisted[s] == 118 - per
     assert a.completeness(s)["open"] == 119
+    # many devices: the site's list stops at its cap
+    for n in range(30):
+        d = b.dev(s, f"sw{n}", "switch", room, rack, ports=4)
+        b.cable(b.p(d, "eth1"), b.p(big, f"eth{130 + n}"))
+        for k in (2, 3, 4):
+            b.e.ports[b.p(d, f"eth{k}")]["description"] = "desk"
+    b.e.touch()
+    a = findings.analyse(b.e)
+    assert len([g for g in a.gaps if g["field"] == "cable"]) == findings.MAX_INTERFACE_GAPS and a.completeness(s)["open"] == 119 + 90
+
+
+def test_an_address_on_a_management_port_does_not_ask_for_a_cable_but_a_description_does():
+    b = Build()
+    s = b.site()
+    room = b.room(s)
+    rack = b.rack(s, room)
+    r, sw = linked_pair(b, s, room, rack)
+    mgmt = b.port(sw, "interface", "mgmt0", mgmt_only=True)
+    b.ip(mgmt, "192.0.2.9/24")
+    assert not [g for g in findings.analyse(b.e).gaps if g["field"] == "cable"]
+    assert f"interface:{mgmt[1]}:cable" not in findings.analyse(b.e).checks[s]
+    b.e.ports[mgmt]["description"] = "to the out-of-band switch"
+    b.e.touch()
+    assert [g["id"] for g in findings.analyse(b.e).gaps if g["field"] == "cable"] == [f"interface:{mgmt[1]}:cable"]
 
 
 def test_a_clean_estate_is_all_in_order_and_nothing_is_invented():
@@ -431,9 +470,11 @@ def test_the_unconnected_example_gives_the_expected_findings_in_order():
                                          {"kind": "provider", "id": 9000001, "name": "Example Fibre"}]
     lines = quests.lines(e, a)
     assert [x["purpose"] for x in lines[:3]] == [
-        "Nobody can tell how Practice Island reaches the internet. Let's find out.",
-        "If the link between these rooms fails, nobody knows which cable to check. Let's record it.",
-        "If sw-quay-1 drops off the network, nobody can tell which port to check. Let's record its uplink."]
+        "Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.",
+        "Loft and Quay Room at Practice Island have no link between them. If that link fails, nobody knows which cable to check. Let's record it.",
+        "sw-quay-1 has 26 ports and nothing recorded on any of them. If it drops off the network, nobody can tell which port to check. "
+        "Let's record its uplink."]
+    assert lines[1]["title"] == "The link between Loft and Quay Room" and lines[1]["outcome"] == "You can now trace from Loft to Quay Room."
     q = quests.evaluate(e, lines[2], {})["step"]
     assert q["prompt"] == "sw-quay-1 has 26 ports and nothing recorded on any of them. What does it uplink to?"
     assert [c["label"] for c in q["choices"]] == ["sw-quay-2 (switch)", "sw-loft-1 (switch)", "Something not listed",
@@ -490,9 +531,9 @@ def test_a_typed_value_that_does_not_fit_is_asked_again_with_the_reason():
 def test_an_answer_that_no_longer_fits_the_estate_is_asked_again():
     e = practice.example_estate()
     line = one(e, "device_unconnected")
-    answers = {"peer": {"choice": "device:9000002"}, "local_port": {"choice": "interface:9000001"}}
+    answers = {"peer": {"choice": "device:9000002"}, "local_port": {"choice": "interface:9000026"}}
     assert quests.evaluate(e, line, answers)["step"]["id"] == "peer_port"
-    e.ports[("interface", 9000001)]["enabled"] = False   # the port is no longer one of the choices
+    e.ports[("interface", 9000026)]["enabled"] = False   # the port is no longer one of the choices
     e.touch()
     assert quests.evaluate(e, line, answers)["step"]["id"] == "local_port"
 
@@ -504,12 +545,12 @@ def test_an_audit_takes_what_the_player_read_and_leaves_the_rest_open():
     assert step["input"] == "form" and step["prompt"].startswith("Walk rack R1 top to bottom")
     ids = [f["id"] for f in step["fields"]]
     sw = next(i for i, d in e.devices.items() if d["name"] == "sw1")
-    assert ids == [f"device:{sw}:serial", f"device:{sw}:asset_tag", f"device:{sw}:platform"]
+    assert ids == [f"device:{sw}:serial", f"device:{sw}:asset_tag"]   # what it runs is a question of its own, per model
     blank = quests.evaluate(e, line, {"labels": {"values": {}}})
     assert blank["status"] == "parked" and blank["checklist"][1] == "Start at the top unit and work down, one device at a time."
     state = quests.evaluate(e, line, {"labels": {"values": {ids[0]: "SN-77", ids[1]: "  "}}})
     assert state["proposal"]["ops"] == [{"op": "update_fields", "target": {"kind": "device", "id": sw}, "fields": {"serial": "SN-77"}}]
-    assert settle(e, line, state) == [f"device:{sw}:asset_tag", f"device:{sw}:platform"]
+    assert settle(e, line, state) == [f"device:{sw}:asset_tag"]
 
 
 def test_the_label_maker_suggests_the_next_tag_of_the_sites_pattern_and_never_fills_it_in():
@@ -551,3 +592,95 @@ def test_a_large_estate_is_analysed_in_one_pass_not_once_per_device():
     t1 = time.perf_counter()
     assert findings.analyse(b.e) is a and quests.lines(b.e, a) is lines
     assert time.perf_counter() - t1 < 0.01
+
+
+def test_every_opening_line_names_what_is_missing_and_where():
+    """A quest never opens with "a port" or "these rooms": its first sentence is the finding, with the names NetBox has."""
+    for case in CASES:
+        e = case()
+        line = one(e, case.__name__)
+        f = line["finding"]
+        assert line["purpose"].startswith(f["title"]), line["purpose"]
+        named = [r["name"] for r in f["evidence"]]
+        assert any(n in f["title"] for n in named), (case.__name__, f["title"], named)
+        assert not any(vague in line["purpose"] for vague in ("A port is", "these rooms", "These devices", "this rack")), line["purpose"]
+    b = Build()
+    s = b.site("Mill Lane", facility=None)
+    linked_pair(b, s)
+    line = one(b.e, "site_record")
+    assert line["purpose"] == "Mill Lane has no facility name on record, so it cannot be named to a carrier. Let's fill that in."
+    b.e.sites[s].update(latitude=None, country=None)
+    b.e.touch()
+    assert one(b.e, "site_record")["finding"]["title"] == ("Mill Lane has no GPS position, facility name or country on record, so it cannot be "
+                                                          "put on a map or named to a carrier.")
+    port = one(interface_no_cable(), "interface_no_cable")
+    assert port["purpose"].startswith("sw1 eth4 has a description (uplink to the annex) but no cable.")
+
+
+def test_ports_are_offered_likeliest_uplink_first():
+    e = practice.example_estate()
+    line = one(e, "device_unconnected")
+    step = quests.evaluate(e, line, {"peer": {"choice": "device:9000002"}})["step"]
+    # the fibre cages before the copper ports, the highest-numbered first; the rest behind "Another port"
+    assert [c["label"] for c in step["choices"]] == ["Te1/1/2", "Te1/1/1", "Gi1/0/24", "Gi1/0/23", "Gi1/0/22", "Gi1/0/21", "Another port",
+                                                     "I don't know yet"]
+    b = Build()
+    s = b.site()
+    d = b.dev(s, "sw", ports=3)
+    b.port(d, "interface", "mgmt0", mgmt_only=True)
+    assert [p["name"] for p in quests.likely_uplinks(b.e.free_ports(d))] == ["eth3", "eth2", "eth1", "mgmt0"]
+
+
+def test_one_answer_says_what_every_device_of_a_model_runs_unless_they_differ():
+    e = platform_survey()
+    line = one(e, "platform_survey")
+    ids = line["finding"]["data"]["device_ids"]
+    assert line["title"] == "What the M devices run" and line["finding"]["title"] == "NetBox does not say what sw1 and sw2 (M) at Mill run."
+    step = quests.evaluate(e, line, {})["step"]
+    assert step["prompt"] == "2 M devices have no platform on record: sw1 and sw2. What do they run?"
+    assert [c["label"] for c in step["choices"]] == ["Example OS", "They do not all run the same", "Something not listed", "I don't know yet"]
+    state = quests.evaluate(e, line, {"platform": {"choice": "platform:1"}})
+    assert state["proposal"]["ops"] == [{"op": "update_fields", "target": {"kind": "device", "id": i}, "fields": {"platform_id": 1}} for i in ids]
+    assert state["changes"] == ["sw1: platform Example OS.", "sw2: platform Example OS."] and settle(e, line, state) == []
+    # where they differ, each device is asked about; a blank is left open
+    each = quests.evaluate(e, line, {"platform": {"choice": "mixed"}})["step"]
+    assert each["input"] == "form" and [f["id"] for f in each["fields"]] == [f"device:{i}:platform" for i in ids]
+    state = quests.evaluate(e, line, {"platform": {"choice": "mixed"}, "each": {"values": {f"device:{ids[0]}:platform": "1"}}})
+    assert settle(e, line, state) == [f"device:{ids[1]}:platform"]
+    # a platform NetBox does not have yet is never invented
+    other = quests.evaluate(e, line, {"platform": {"choice": "other"}})
+    assert other["status"] == "parked" and other["checklist"][0] == "Add the platform to NetBox (Devices > Platforms > Add)."
+
+
+def test_a_device_nobody_logs_in_to_is_said_once_and_never_asked_or_paid():
+    e = device_unreachable()
+    line = one(e, "device_unreachable")
+    ids = line["finding"]["data"]["device_ids"]
+    first = quests.evaluate(e, line, {})["step"]
+    assert first["choices"][-2] == {"id": "none", "label": "It has none: nobody logs in to it", "kind": "not_applicable"}
+    answers = {f"ip_{ids[0]}": {"choice": "none"}}
+    state = quests.evaluate(e, line, answers)
+    assert state["waived"] == [f"device:{ids[0]}:primary_ip"] == quests.waived(line, answers)
+    if len(ids) == 1:
+        assert state["status"] == "dismissed" and state["proposal"] is None
+    else:
+        assert state["status"] == "asking" and state["step"]["id"] == f"ip_{ids[1]}"
+    # a router's address is not something to wave away
+    router = one(router_no_address(), "router_no_address")
+    assert "none" not in [c["id"] for c in quests.evaluate(router_no_address(), router, {})["step"]["choices"]]
+    assert quests.waived(router, {"ip_1": {"choice": "none"}}) == []
+
+
+def test_answers_about_what_netbox_confirms_are_dropped_and_the_rest_are_kept():
+    answers = {"labels": {"values": {"device:5:serial": "S5", "device:6:serial": "S6", "device:6:asset_tag": "T6"}},
+               "ip_7": {"choice": "typed"}, "addr_7": {"text": "192.0.2.7/24"}, "port_7": {"choice": "interface:70"},
+               "ip_17": {"choice": "ip:3"}, "ip_8": {"choice": "none"}, "pdu_9": {"choice": "device:2"}, "outlet_9": {"choice": "power_outlet:4"},
+               "floor": {"values": {"room:3": "1", "x:3": 2, "y:3": 4, "x:4": 1, "y:4": 1}}, "units": {"values": {"u:5": 3, "u:6": 4}},
+               "record": {"values": {"latitude": 52.1, "longitude": 4.3, "facility": "F"}}, "peer": {"choice": "device:2"}}
+    assert quests.prune(answers, []) == answers
+    left = quests.prune(answers, ["device:5:serial", "device:7:primary_ip", "device:8:primary_ip", "device:9:power", "rack:3:iso", "site:1:gps"])
+    assert left == {"labels": {"values": {"device:6:serial": "S6", "device:6:asset_tag": "T6"}}, "ip_17": {"choice": "ip:3"},
+                    "ip_8": {"choice": "none"},                                   # "it has none" is remembered
+                    "floor": {"values": {"room:3": "1", "x:4": 1, "y:4": 1}}, "units": {"values": {"u:6": 4}},
+                    "record": {"values": {"facility": "F"}}, "peer": {"choice": "device:2"}}
+    assert quests.prune({"labels": {"values": {"device:5:serial": "S5"}}}, ["device:5:serial"]) == {}

@@ -25,7 +25,7 @@ import ipaddress
 import re
 from typing import Any
 
-from .estate import Estate, is_network, is_passive, is_router, natural
+from .estate import Estate, is_network, is_passive, is_physical, is_router, natural
 from .findings import Analysis
 
 XP = {"connectivity": 120, "identity": 50, "layout": 30}
@@ -61,6 +61,8 @@ class Ctx:
         self.target: dict[str, Any] | None = None  # the object the marker points at
         self.error: str | None = None
         self.skipped: list[str] = []               # checklist lines for bundle items the player did not know
+        self.answered: list[str] = []              # ids of the steps answered so far, in the order they were asked
+        self.waived: list[str] = []                # checks the player answered with "there is none, on purpose"
 
     def at(self, device_id: int | None = None, rack_id: int | None = None, site_id: int | None = None) -> None:
         e = self.e
@@ -92,9 +94,11 @@ class Ctx:
             raise Stop("asking", step)
         if found["kind"] == "unknown":
             if soft:
+                self.answered.append(sid)
                 self.skipped.extend(checklist)
                 return "unknown"
             raise Stop("parked", step, checklist)
+        self.answered.append(sid)
         if found["kind"] == "not_applicable":
             raise Stop("dismissed", None, note=found["label"])
         self.said.append({"step": sid, "question": prompt, "answer": found["label"]})
@@ -109,6 +113,7 @@ class Ctx:
         if isinstance(raw, str) and raw.strip():
             value, err = check(raw.strip())
             if err is None:
+                self.answered.append(sid)
                 self.said.append({"step": sid, "question": prompt, "answer": raw.strip()})
                 return value
             self.error = err
@@ -138,6 +143,7 @@ class Ctx:
             raise Stop("asking", self._step(sid, prompt, "form", [UNKNOWN], fields, hint))
         if not out:
             raise Stop("parked", step, checklist)
+        self.answered.append(sid)
         self.said.append({"step": sid, "question": prompt, "answer": f"{len(out)} of {len(fields)} filled in"})
         return out
 
@@ -206,10 +212,7 @@ def ask_port(ctx: Ctx, sid: str, dev: dict[str, Any], prompt: str, kinds: tuple[
     e = ctx.e
     if kinds == ("interface",):
         free = e.free_ports(dev["id"])
-        # the likeliest uplinks: the last ports of the fastest kind, then the rest in order
-        speed = lambda p: 0 if "10g" in (p["type"] or "") or "sfp" in (p["type"] or "") else 1  # noqa: E731
-        short = sorted(free, key=lambda p: (p["mgmt_only"], speed(p)))[:MAX_PORTS]
-        short.sort(key=lambda p: natural(p["name"]))
+        short = likely_uplinks(free)[:MAX_PORTS]
     else:
         free = [p for p in e.device_ports(dev["id"], kinds) if p["cable_id"] is None]
         short = free[:MAX_PORTS]
@@ -229,6 +232,17 @@ def ask_port(ctx: Ctx, sid: str, dev: dict[str, Any], prompt: str, kinds: tuple[
         return p["kind"], p["id"]
     kind, _, oid = picked.rpartition(":")
     return kind, int(oid)
+
+
+FAST_PORT = ("sfp", "base-x", "10g", "25g", "40g", "50g", "100g", "200g", "400g")
+
+
+def likely_uplinks(free: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Free ports, the likeliest carrier of a link between devices first: fibre cages and fast ports before copper
+    access ports, the highest-numbered first inside each kind (uplinks sit at the end of the front panel), and a
+    management-only port last."""
+    by_name = sorted(free, key=lambda p: (natural(p["name"]), p["id"]), reverse=True)
+    return sorted(by_name, key=lambda p: (p["mgmt_only"], not any(w in (p["type"] or "") for w in FAST_PORT)))
 
 
 def ask_cable_type(ctx: Ctx, sid: str = "cable_type") -> str | None:
@@ -307,7 +321,7 @@ def flow_link(ctx: Ctx) -> list[dict[str, Any]]:
     else:
         dev = e.devices[ids[0]]
     ctx.at(device_id=dev["id"])
-    n = sum(1 for _ in e.device_ports(dev["id"], ("interface",)))
+    n = sum(1 for p in e.device_ports(dev["id"], ("interface",)) if is_physical(p))
     question = {
         "device_unconnected": f"{dev['name']} has {n} ports and nothing recorded on any of them. What does it uplink to?",
         "switch_no_uplink": f"{dev['name']} has devices plugged in, but no uplink. What does it uplink to?",
@@ -401,7 +415,9 @@ def flow_way_out(ctx: Ctx) -> list[dict[str, Any]]:
 def flow_address(ctx: Ctx) -> list[dict[str, Any]]:
     """How to reach a device: one of the addresses it already has, or one the player types, on a port they pick."""
     e, f = ctx.e, ctx.line["finding"]
-    ids = (f["data"].get("device_ids") or [f["data"]["device_id"]])[:MAX_BUNDLE]
+    ctx.waived = waived(ctx.line, ctx.answers)   # devices nobody logs in to: said once, not asked again
+    ctx.answered += [f"ip_{cid.split(':')[1]}" for cid in ctx.waived]
+    ids = [i for i in (f["data"].get("device_ids") or [f["data"]["device_id"]]) if f"device:{i}:primary_ip" not in ctx.waived][:MAX_BUNDLE]
     ops: list[dict[str, Any]] = []
     for did in ids:
         dev = e.devices[did]
@@ -410,9 +426,10 @@ def flow_address(ctx: Ctx) -> list[dict[str, Any]]:
         have = e.device_ips(did)
         checklist = [f"Ask whoever looks after {dev['name']} which address they use to log in to it.",
                      "Or read it from the device: its management interface, or the label on the front."]
+        none = [choice("none", "It has none: nobody logs in to it", "not_applicable")] if f["kind"] == "device_unreachable" else []
         picked = ctx.choice(f"ip_{did}", f"How do you reach {dev['name']} to manage it?",
                             [choice(f"ip:{ip['id']}", ip["address"]) for ip in have[:MAX_PORTS]]
-                            + [choice("typed", "An address not in NetBox yet", "other")], checklist, soft=len(ids) > 1)
+                            + [choice("typed", "An address not in NetBox yet", "other")] + none, checklist, soft=len(ids) > 1)
         if picked == "unknown":
             continue
         if picked != "typed":
@@ -438,6 +455,8 @@ def flow_address(ctx: Ctx) -> list[dict[str, Any]]:
         ops.append({"op": "assign_ip", "target": {"kind": "device", "id": did},
                     "fields": {"address": addr, "interface_id": int(port.split(":")[1]), "primary": True}})
     if not ops:
+        if ctx.waived and not ctx.skipped:
+            raise Stop("dismissed", None, note="None of these devices is managed over the network.")
         raise Stop("parked", None, ctx.skipped)
     return ops
 
@@ -523,7 +542,6 @@ def flow_audit(ctx: Ctx) -> list[dict[str, Any]]:
         prompt = "Read the label of each device on the shelf. Leave blank what you cannot see."
     fields: list[dict[str, Any]] = []
     suggestion = name_pattern(e, f["site_id"]) if "label_maker" in ctx.tools else None
-    platforms = [{"id": str(p["id"]), "label": p["name"]} for _, p in sorted(e.platforms.items())][:40]
     for did in ids:
         d = e.devices[did]
         where = f"U{d['position']:g}" if d["position"] is not None else "not in a unit"
@@ -536,18 +554,48 @@ def flow_audit(ctx: Ctx) -> list[dict[str, Any]]:
                            "hint": "your own sticker" + (f"; label maker: the next free tag here is {suggestion}" if suggestion else ""),
                            "suggestion": suggestion, "options": []})
             suggestion = None  # one suggestion per form: the player confirms each tag they stick on
-        if f"device:{did}:platform" in open_ and platforms:
-            fields.append({"id": f"device:{did}:platform", "label": f"{head}: platform (operating system)", "type": "select",
-                           "hint": "what it runs", "suggestion": None, "options": platforms})
     checklist = [f"Go to {ctx.target['label'] if ctx.target else 'the rack'}.", "Start at the top unit and work down, one device at a time.",
                  "Serial numbers are on a pull-out tag at the front or a label at the rear; photograph them if the light is poor.",
                  "An asset tag is your own sticker: if a device has none, that is worth knowing too."]
     values = ctx.form("labels", prompt, fields, checklist)
+    return _per_device(values)
+
+
+def _per_device(values: dict[str, Any]) -> list[dict[str, Any]]:
+    """Form values keyed `device:<id>:<field>` as one update per device."""
     per_dev: dict[int, dict[str, Any]] = {}
     for fid, v in values.items():
         _, did, fld = fid.split(":")
         per_dev.setdefault(int(did), {})["platform_id" if fld == "platform" else fld] = int(v) if fld == "platform" else v
     return [{"op": "update_fields", "target": {"kind": "device", "id": did}, "fields": fs} for did, fs in sorted(per_dev.items())]
+
+
+def flow_platform(ctx: Ctx) -> list[dict[str, Any]]:
+    """What the devices of one model run: one answer for all of them, or one each where they differ."""
+    e, f = ctx.e, ctx.line["finding"]
+    ids, model = f["data"]["device_ids"], f["data"]["model"]
+    ctx.at(device_id=ids[0])
+    names = some([e.device_name(i) for i in ids])
+    # platforms that devices of this model already run come first, then the most used
+    used: dict[str, int] = {}
+    for d in e.devices.values():
+        if d["platform"]:
+            used[d["platform"]] = used.get(d["platform"], 0) + (1000 if d["model"] == model else 1)
+    plats = sorted(e.platforms.values(), key=lambda p: (-used.get(p["name"], 0), natural(p["name"]), p["id"]))
+    checklist = [f"Log in to {e.device_name(ids[0])}, or read its login banner.", "Note the operating system's name (\"show version\" says)."]
+    question = (f"What does {names} run?" if len(ids) == 1 else f"{len(ids)} {model} devices have no platform on record: {names}. What do they run?")
+    picked = ctx.choice("platform", question, [choice(f"platform:{p['id']}", p["name"]) for p in plats[:2 * MAX_CANDIDATES]]
+                        + ([choice("mixed", "They do not all run the same", "other")] if len(ids) > 1 else []) + [OTHER], checklist)
+    if picked == "other":
+        raise Stop("parked", None, ["Add the platform to NetBox (Devices > Platforms > Add).", "Come back: it will then be one of the choices."],
+                   note=f"You said {names} run{'s' if len(ids) == 1 else ''} something that is not in NetBox yet.")
+    if picked == "mixed":
+        options = [{"id": str(p["id"]), "label": p["name"]} for p in plats[:40]]
+        fields = [{"id": f"device:{i}:platform", "label": f"{e.device_name(i)}: platform (operating system)", "type": "select",
+                   "hint": "what it runs", "suggestion": None, "options": options} for i in ids[:MAX_BUNDLE]]
+        return _per_device(ctx.form("each", "What does each of them run? Leave blank what you do not know.", fields, checklist))
+    pid = int(picked.split(":")[1])
+    return [{"op": "update_fields", "target": {"kind": "device", "id": i}, "fields": {"platform_id": pid}} for i in ids]
 
 
 def flow_site(ctx: Ctx) -> list[dict[str, Any]]:
@@ -628,8 +676,8 @@ def flow_port(ctx: Ctx) -> list[dict[str, Any]]:
     cands = peer_candidates(e, dev, linked_too=True)
     servers = [d for d in e.site_devices(dev["site_id"]) if d["id"] != dev["id"] and not is_network(d) and not is_passive(d) and e.free_ports(d["id"])]
     cands = (cands + [choice(f"device:{d['id']}", _dev_label(e, d)) for d in servers])[:MAX_CANDIDATES]
-    why = f"described as {port['description'].strip()[:40]!r}" if port["description"].strip() else "carrying an address"
-    peer = ctx.choice("peer", f"{dev['name']} port {port['name']} is {why}, but has no cable on record. What is on the other end?",
+    note = f" (described as {port['description'].strip()[:40]!r})" if port["description"].strip() else ""
+    peer = ctx.choice("peer", f"What is on the other end of {dev['name']} {port['name']}{note}?",
                       cands + [OTHER, choice("none", "Nothing: the port is not in use", "not_applicable")], look_checklist(e, dev))
     if peer == "other":
         raise Stop("parked", None, ["Add the far-end device to NetBox (Devices > Add).", "Come back: it will then be one of the choices."])
@@ -645,54 +693,75 @@ FLOWS = {
     "device_unconnected": flow_link, "switch_no_uplink": flow_link, "site_island": flow_link, "locations_not_linked": flow_link,
     "sites_not_linked": flow_link, "site_no_way_out": flow_way_out, "circuit_unterminated": flow_way_out, "provider_unused": flow_way_out,
     "router_no_address": flow_address, "device_unreachable": flow_address, "device_no_power": flow_power, "address_no_prefix": flow_prefix,
-    "rack_audit": flow_audit, "shelf_audit": flow_audit, "site_record": flow_site, "rack_devices_unpositioned": flow_units,
+    "rack_audit": flow_audit, "shelf_audit": flow_audit, "platform_survey": flow_platform, "site_record": flow_site, "rack_devices_unpositioned": flow_units,
     "room_layout": flow_layout, "interface_no_cable": flow_port,
 }
 
-# Plain-words purpose (why it matters) and what the admin can do once it is true, per finding kind.
+# Per finding kind: the quest's title, why it matters (said after the finding's own sentence, which names the objects),
+# and what the admin can do once it is true.
 WORDS: dict[str, tuple[str, str, str]] = {
-    # kind: (quest title, purpose, what you can now do)
-    "site_no_way_out": ("The way out of {site}", "Nobody can tell how {site} reaches the internet. Let's find out.",
-                        "You can now trace {site} to the carrier's hand-off."),
-    "sites_not_linked": ("{site} and the other sites", "NetBox cannot say how {site} reaches your other sites. Let's find the link.",
-                         "You can now trace from {site} to another site."),
-    "locations_not_linked": ("The link between two rooms", "If the link between these rooms fails, nobody knows which cable to check. Let's record it.",
-                             "You can now trace from one room to the other."),
-    "site_island": ("Cut off from the rest", "These devices are cabled to each other, but NetBox cannot say how they reach the rest of {site}.",
-                    "You can now trace from these devices to the rest of {site}."),
-    "switch_no_uplink": ("An uplink for {subject}", "When {subject} goes quiet, nobody can tell what sits above it. Let's record its uplink.",
+    "site_no_way_out": ("The way out of {site}", "Let's find out.", "You can now trace {site} to the carrier's hand-off."),
+    "sites_not_linked": ("{site} and the other sites", "Let's find the link.", "You can now trace from {site} to another site."),
+    "locations_not_linked": ("The link between {room} and {main_room}", "If that link fails, nobody knows which cable to check. Let's record it.",
+                             "You can now trace from {room} to {main_room}."),
+    "site_island": ("Cut off from the rest", "Let's find the link to the rest.", "You can now trace from {names} to the rest of {site}."),
+    "switch_no_uplink": ("An uplink for {subject}", "When it goes quiet, nobody can tell what sits above it. Let's record its uplink.",
                          "You can now trace {subject} towards the core."),
-    "circuit_unterminated": ("Where {subject} lands", "A circuit you pay for ends nowhere in NetBox. Let's record where it lands.",
+    "circuit_unterminated": ("Where {subject} lands", "A circuit you pay for should end somewhere. Let's record where it lands.",
                              "You can now trace circuit {subject} to the device it plugs into."),
-    "provider_unused": ("{subject}'s line", "{subject} is on record as a provider, with nothing of theirs recorded. Let's find their line.",
-                        "You can now look up which circuit {subject} delivers, and where."),
-    "device_unconnected": ("What {subject} plugs into", "If {subject} drops off the network, nobody can tell which port to check. Let's record its uplink.",
+    "provider_unused": ("{subject}'s line", "Let's find their line.", "You can now look up which circuit {subject} delivers, and where."),
+    "device_unconnected": ("What {subject} plugs into", "If it drops off the network, nobody can tell which port to check. Let's record its uplink.",
                            "You can now trace {subject} to what it plugs into."),
-    "router_no_address": ("An address for {subject}", "{subject} routes traffic, but NetBox cannot say on which address. Let's record one.",
-                          "You can now look up how to reach {subject}."),
+    "router_no_address": ("An address for {subject}", "Let's record one.", "You can now look up how to reach {subject}."),
     "device_unreachable": ("How to reach the kit at {site}", "When something breaks, the first question is how to log in. Let's record that.",
-                           "You can now look up the management address of these devices."),
-    "device_no_power": ("What powers rack {subject}", "If a power strip trips, nobody can tell what goes dark with it. Let's record what feeds this rack.",
-                        "You can now see what loses power when a strip in rack {subject} trips."),
-    "address_no_prefix": ("A home for stray addresses", "Addresses with no prefix cannot be planned around. Let's record their subnet.",
+                           "You can now look up the management address of {names}."),
+    "device_no_power": ("What powers {where}", "If a power strip trips, nobody can tell what goes dark with it. Let's record the power feeds.",
+                        "You can now see what loses power when a strip in {where} trips."),
+    "address_no_prefix": ("A home for {subject}", "Addresses with no prefix cannot be planned around. Let's record their subnet.",
                           "You can now see how full that subnet is and pick a free address in it."),
-    "interface_no_cable": ("The other end of {subject}", "A port is marked as in use, but nobody recorded what it connects to.",
-                           "You can now trace that port to its far end."),
+    "interface_no_cable": ("The other end of {subject}", "A port in use with no far end on record cannot be traced. Let's find its far end.",
+                           "You can now trace {subject} to its far end."),
     "rack_audit": ("Audit rack {subject}", "A device with no serial or tag cannot be matched to a support contract or found after a move. Let's walk the rack.",
                    "You can now match every device you read in rack {subject} to its paperwork."),
     "shelf_audit": ("Audit the shelf", "Spare kit with no serial is kit nobody can prove you own. Let's read the labels.",
-                    "You can now match those devices to their paperwork."),
-    "site_record": ("Put {site} on the map", "{site} has no position or facility name, so it cannot be put on a map or named to a carrier.",
-                    "You can now find {site} on the map and name it to a carrier."),
-    "rack_devices_unpositioned": ("Rack units in {subject}", "Devices in rack {subject} have no unit, so nobody can be sent to the right one.",
+                    "You can now match {names} to their paperwork."),
+    "platform_survey": ("What {runs}", "{one_answer}Let's record it.",
+                        "You can now list every device that runs it when an advisory or an upgrade comes out."),
+    "site_record": ("The record of {site}", "Let's fill that in.", "You can now look up where {site} is and what its building is called."),
+    "rack_devices_unpositioned": ("Rack units in {subject}", "Nobody can be sent to the right unit. Let's note where each one sits.",
                                   "You can now send someone to the exact unit in rack {subject}."),
-    "room_layout": ("The floor plan", "Racks with no place on the floor plan cannot be found by someone new. Let's place them.",
-                    "You can now point to those racks on the floor plan."),
+    "room_layout": ("The floor plan", "Someone new cannot find a rack that is not on the plan. Let's put that right.", "You can now point to {names} on the floor plan."),
 }
+
+
+def some(names: list[str]) -> str:
+    from .findings import _some
+
+    return _some(names)
+
+
+def words_of(e: Estate, f: dict[str, Any]) -> tuple[str, str, str]:
+    """A line's title, purpose and outcome. The purpose opens with the finding's own sentence, so it always says what
+    is missing and where, with the names NetBox has; then why that matters."""
+    d = f["data"]
+    refs = [r["name"] for r in f["evidence"] if r["kind"] in ("device", "rack", "ip_address")]
+    rack = e.racks.get(d.get("rack_id") or 0)
+    site = e.sites[f["site_id"]]["name"] if f["site_id"] in e.sites else "the estate"
+    ctx = {"site": site, "subject": subject_of(e, f), "names": some(refs) or "them",
+           "room": e.locations.get(d.get("location_id") or 0, {}).get("name", "one room"),
+           "main_room": e.locations.get(d.get("main_location_id") or 0, {}).get("name", "the other"),
+           "where": f"rack {rack['name']}" if rack else f"the kit outside any rack at {site}"}
+    if f["kind"] == "platform_survey":
+        many = len(d["device_ids"]) > 1
+        ctx.update(runs=f"the {d['model']} devices run" if many else f"{refs[0]} runs", one_answer="One answer covers them all. " if many else "")
+    title, why, outcome = (t.format(**ctx) for t in WORDS[f["kind"]])
+    return title, f"{f['title']} {why}", outcome
 
 
 def subject_of(e: Estate, f: dict[str, Any]) -> str:
     d = f["data"]
+    if "model" in d:
+        return d["model"]
     if "rack_id" in d and d["rack_id"] in e.racks:
         return e.racks[d["rack_id"]]["name"]
     if "device_id" in d:
@@ -733,8 +802,7 @@ def _lines(e: Estate, a: Analysis) -> list[dict[str, Any]]:
     from .findings import _sort_key
 
     for f in sorted(findings, key=_sort_key):
-        site = e.sites[f["site_id"]]["name"] if f["site_id"] in e.sites else "the estate"
-        title, purpose, outcome = (t.format(site=site, subject=subject_of(e, f)) for t in WORDS[f["kind"]])
+        title, purpose, outcome = words_of(e, f)
         out.append({"id": f"q:{f['id']}", "kind": f["kind"], "rank": f["rank"], "site_id": f["site_id"], "title": clip(title, 80),
                     "purpose": purpose, "outcome": outcome, "finding": f, "xp": XP[f["rank"]], "minutes": MINUTES[f["rank"]]})
     return out
@@ -855,8 +923,49 @@ def evaluate(e: Estate, line: dict[str, Any], answers: dict[str, Any], tools: fr
         state = {**base, "status": s.status, "step": s.step, "checklist": s.checklist, "note": s.note}
     except KeyError:
         # the estate changed under the line (an object it named is gone): start the line again from its first question
-        return evaluate(e, line, {}, tools) if answers else {**base, "status": "parked", "said": [], "target": None,
+        return evaluate(e, line, {}, tools) if answers else {**base, "status": "parked", "said": [], "target": None, "answered": [], "waived": [],
                                                            "checklist": ["This changed in NetBox while you were away; look again later."]}
     if ctx.target is None and line["site_id"] in e.sites:
         ctx.at(site_id=line["site_id"])
-    return {**state, "said": ctx.said, "target": ctx.target}
+    return {**state, "said": ctx.said, "target": ctx.target, "answered": ctx.answered, "waived": ctx.waived}
+
+
+def waived(line: dict[str, Any], answers: dict[str, Any]) -> list[str]:
+    """Checks of a line the player answered with "there is none, on purpose" (a device nobody logs in to): they are
+    not asked again, count as answered in the site's completeness, and pay nothing."""
+    if line["kind"] != "device_unreachable":
+        return []
+    return [f"device:{k[3:]}:primary_ip" for k, v in sorted(answers.items())
+            if k.startswith("ip_") and k[3:].isdigit() and isinstance(v, dict) and v.get("choice") == "none"]
+
+
+def prune(answers: dict[str, Any], confirmed: list[str]) -> dict[str, Any]:
+    """The answers of a line without those whose check NetBox now confirms: an errand that goes on (three of six labels
+    read) keeps what the player said about the rest and does not ask again about what is done. Check ids are
+    `<object type>:<object id>:<field>`; answers about one object are keyed `<step>_<object id>`, and form values by the
+    check id itself or by `<key>:<object id>` (rack units, floor tiles, room)."""
+    form_keys: set[str] = set()
+    step_ends: set[str] = set()
+    site_fields: set[str] = set()
+    for cid in confirmed:
+        kind, _, rest = cid.partition(":")
+        oid, _, fld = rest.partition(":")
+        form_keys.add(cid)
+        if kind == "device":
+            step_ends.add(f"_{oid}")
+            form_keys.add(f"u:{oid}")
+        elif kind == "rack":
+            form_keys.update({"location": [f"room:{oid}"], "iso": [f"x:{oid}", f"y:{oid}"]}.get(fld, []))
+        elif kind == "site":
+            site_fields.update({"gps": ["latitude", "longitude"]}.get(fld, [fld]))
+    out: dict[str, Any] = {}
+    for sid, ans in answers.items():
+        if any(sid.endswith(end) for end in step_ends) and not (isinstance(ans, dict) and ans.get("choice") == "none"):
+            continue
+        if isinstance(ans, dict) and isinstance(ans.get("values"), dict):
+            values = {k: v for k, v in ans["values"].items() if k not in form_keys and not (sid == "record" and k in site_fields)}
+            if not values:
+                continue
+            ans = {**ans, "values": values}
+        out[sid] = ans
+    return out

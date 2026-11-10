@@ -681,6 +681,8 @@ export class GameShell {
     if (a === 'hints_low' || a === 'hints_off') this.saveSettings({ ...this.settings, hint_level: a === 'hints_low' ? 'low' : 'off' });
     if (a === 'open_menu') this.openMenu();
     if (a === 'open_settings') this.openMenu('settings');
+    // after the talk that offered it has closed: the island's own first line follows
+    if (a === 'open_practice') window.setTimeout(() => this.goToPractice(), 0);
   }
 
   private stuckCheck(): void {

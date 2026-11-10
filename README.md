@@ -132,9 +132,10 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   them; inside the building they have a button of their own. They say why the thing matters, then ask: the choices are
   objects from your NetBox, plus "something not listed" and "I don't know yet". "I don't know yet" parks the quest as
   a field task with a short list of what to look for on site; it costs nothing and picks up at the same question
-  later. The last answer leads to a **preview** of the change in plain words and field by field; **Apply** writes it
-  (only on a write-enabled proxy, and only what your own NetBox permissions allow; otherwise it is a practice run,
-  said so, with no XP), NetBox is read again, and the reward says what you can now do that you could not before.
+  later. The last answer leads to a **preview** of the change in plain words and field by field, where one answer
+  can still be changed; **Apply** writes it (only on a write-enabled proxy, and only what your own NetBox permissions
+  allow; otherwise it is a practice run with no XP, and the quest log and the preview say so beforehand), NetBox is
+  read again, and the reward says what you can now do that you could not before.
   ![A quest giver asks what a switch port connects to](docs/screenshots/quests/giver-question.png)
 * **Quest log and marker.** The box at the bottom ("Quests", or the menu) opens the log: open lines, lines waiting for
   you, done lines, XP, tools, and each site's completeness. The line below "Quests" is always the next small step;
@@ -144,7 +145,7 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   again. Two tools: the **cable tracer** (first confirmed connectivity quest) opens cable tracing inside buildings;
   the **label maker** (first confirmed audit) suggests the next free asset tag of the site's own pattern. No
   penalties, no streaks, no timers.
-* **Practice island** (menu, or the airfield pad): a made-up site with a first quest of every kind. Nothing there is
+* **Practice island** (Ilatea's first line, the menu, or the airfield pad): a made-up site with a first quest of every kind. Nothing there is
   read from or written to NetBox; it pays no XP and can be started afresh from the quest log.
 * **Menu** (`M` or the button in the corner): the quest log, the practice island, talk to Ilatea, the field-guide pages of her owls Byte (commands and
   hardening) and Nocti (hardware and best practice) as placeholders, settings, sign out.
@@ -177,8 +178,9 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   `netbox.permission_check` when the proxy's token cannot read users or object permissions (then no write is made).
 * No other site may frame the game, the editor or the proxy (`X-Frame-Options: DENY`, CSP `frame-ancestors 'none'`).
 * Reads are cached per route for `RACKWALKER_CACHE_TTL` seconds (default 10, `0` = off); an apply clears the cache.
-  The quest scanner's read of the whole estate is kept for `RACKWALKER_ESTATE_TTL` seconds (default 60) and is
-  dropped by any write as well.
+  The quest scanner's read of the whole estate is kept for `RACKWALKER_ESTATE_TTL` seconds (default 60). After a
+  quest writes, only the sites it changed are read again; a read on a player's request is granted at most every 5
+  seconds for one site and every 15 seconds for the whole estate (`docs/quests.md`).
 * The proxy talks to NetBox as its own user (in the dev stacks `rackwalker-proxy`, created by
   `devnetbox/proxy_tokens.py`), which needs: **view** on the object types it reads (sites, locations, racks, devices,
   device types and roles, platforms, cables, interfaces, front, rear, console, console server, power ports and outlets,

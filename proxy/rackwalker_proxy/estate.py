@@ -308,13 +308,14 @@ class Components:
 
 
 # ---------------------------------------------------------------- reading NetBox
-async def _rows(client: nb.NetBox, e: Estate, name: str, path: str, fields: str, cap: int) -> list[dict[str, Any]]:
-    """A whole list with a slim field selection, up to `cap` rows. A list the proxy's token may not view is recorded
-    in `e.unreadable` and read as empty."""
+async def _rows(client: nb.NetBox, e: Estate, name: str, path: str, fields: str, cap: int,
+                where: tuple[tuple[str, Any], ...] = ()) -> list[dict[str, Any]]:
+    """A whole list (or the part of it `where` selects) with a slim field selection, up to `cap` rows. A list the
+    proxy's token may not view is recorded in `e.unreadable` and read as empty."""
     out: list[dict[str, Any]] = []
     try:
         while True:
-            page = await client.request("GET", path + "/", params=[("fields", fields), ("limit", nb.PAGE), ("offset", len(out))])
+            page = await client.request("GET", path + "/", params=[("fields", fields), *where, ("limit", nb.PAGE), ("offset", len(out))])
             out.extend(page["results"])
             if not page["results"] or len(out) >= page["count"]:
                 return out
@@ -342,10 +343,22 @@ def _cf(row: dict[str, Any], name: str) -> Any:
     return _val((row.get("custom_fields") or {}).get(name))
 
 
-async def read_estate(client: nb.NetBox) -> Estate:
-    """One bounded read of everything the scanner looks at."""
+# Lists NetBox can select by site (`site_id=`); every other list is small and is always read whole.
+BY_SITE = ("locations", "racks", "devices", "cables", "feeds", "ports")
+# Addresses have no site filter: for a few sites they are read by device, this many devices to a request.
+IP_CHUNK = 100
+
+
+async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> Estate:
+    """One bounded read of everything the scanner looks at. With `site_ids`, the lists NetBox can select by site are
+    read for those sites only (the answer is a part to `splice` into an estate read earlier): what a quest at one
+    site changed is read again without reading every other site again."""
     await client.version()
     e = Estate()
+    here = tuple(("site_id", s) for s in site_ids or [])
+
+    def where(name: str) -> tuple[tuple[str, Any], ...]:
+        return here if name in BY_SITE else ()
     port_fields = {
         "interface": ("dcim/interfaces", "id,name,device,type,enabled,mgmt_only,cable,description,mark_connected"),
         "front_port": ("dcim/front-ports", "id,name,device,cable,rear_ports,description"),
@@ -368,11 +381,17 @@ async def read_estate(client: nb.NetBox) -> Estate:
         "ips": ("ipam/ip-addresses", "id,address,assigned_object_type,assigned_object_id", CAPS["ips"]),
         "prefixes": ("ipam/prefixes", "id,prefix", CAPS["prefixes"]),
     }
-    names = list(jobs)
-    got = await asyncio.gather(*(_rows(client, e, n, *jobs[n]) for n in names),
-                               *(_rows(client, e, "ports", p, f, CAPS["ports"]) for p, f in port_fields.values()))
+    names = [n for n in jobs if not (site_ids is not None and n == "ips")]
+    got = await asyncio.gather(*(_rows(client, e, n, *jobs[n], where(n)) for n in names),
+                               *(_rows(client, e, "ports", p, f, CAPS["ports"], here) for p, f in port_fields.values()))
     raw = dict(zip(names, got[:len(names)]))
     raw_ports = dict(zip(port_fields, got[len(names):]))
+    if site_ids is not None:
+        ids = [d["id"] for d in raw["devices"]]
+        path, fields, cap = jobs["ips"]
+        parts = await asyncio.gather(*(_rows(client, e, "ips", path, fields, cap, tuple(("device_id", i) for i in ids[n:n + IP_CHUNK]))
+                                       for n in range(0, len(ids), IP_CHUNK)))
+        raw["ips"] = [row for part in parts for row in part]
 
     for s in raw["sites"]:
         e.sites[s["id"]] = {
@@ -439,6 +458,41 @@ async def read_estate(client: nb.NetBox) -> Estate:
                            "interface_id": ip.get("assigned_object_id") if ip.get("assigned_object_type") == "dcim.interface" else None}
     for p in raw["prefixes"]:
         e.prefixes[p["id"]] = {"id": p["id"], "prefix": p["prefix"]}
+    return e
+
+
+def splice(base: Estate, part: Estate, site_ids: list[int]) -> Estate:
+    """A new estate: `base` with everything of `site_ids` replaced by `part` (a `read_estate` of those sites), and
+    the small estate-wide lists (sites, circuits and their ends, providers, platforms, prefixes) taken from `part`.
+    `base` itself is not changed. A cable between one of the sites and another site is kept right at both ends."""
+    here = set(site_ids)
+    e = Estate(truncated=sorted(set(base.truncated) | set(part.truncated)), unreadable=sorted(set(base.unreadable) | set(part.unreadable)))
+    for t in ("sites", "circuits", "providers", "circuit_types", "cterms", "platforms", "prefixes"):
+        setattr(e, t, dict(getattr(part, t)))
+    for t in ("locations", "racks", "devices"):
+        setattr(e, t, {i: r for i, r in getattr(base, t).items() if r["site_id"] not in here} | getattr(part, t))
+    old_devices = {i for i, d in base.devices.items() if d["site_id"] in here}
+    old_ports = {k for k, p in base.ports.items() if p["device_id"] in old_devices}
+    e.ports = {k: p for k, p in base.ports.items() if k not in old_ports} | part.ports
+    e.feeds = {i: f for i, f in base.feeds.items() if base.racks.get(f["rack_id"] or 0, {}).get("site_id") not in here} | part.feeds
+    old_ifaces = {k[1] for k in old_ports if k[0] == "interface"}
+    e.ips = {i: ip for i, ip in base.ips.items() if ip["interface_id"] not in old_ifaces} | part.ips
+    touched = old_ports | set(part.ports)
+    gone = {i: c for i, c in base.cables.items() if any(k in touched for k in c["a"] + c["b"])}
+    e.cables = {i: c for i, c in base.cables.items() if i not in gone} | part.cables
+
+    def far_end(key: PortKey, cable_id: int | None, only_if: int | None = None) -> None:
+        """The end of a cable on a port of another site: that port's row says which cable it has."""
+        port = e.ports.get(key)
+        if port is not None and key not in part.ports and (only_if is None or port["cable_id"] == only_if):
+            e.ports[key] = {**port, "cable_id": cable_id}
+    for i, c in gone.items():
+        if i not in part.cables:
+            for k in c["a"] + c["b"]:
+                far_end(k, None, only_if=i)
+    for i, c in part.cables.items():
+        for k in c["a"] + c["b"]:
+            far_end(k, i)
     return e
 
 

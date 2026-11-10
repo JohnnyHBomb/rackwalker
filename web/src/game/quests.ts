@@ -291,15 +291,17 @@ export class Quests {
         if (q.status === 'ready' || q.status === 'practised') {
           const v = await this.preview(q);
           if (!v) break;
-          if (v === 'restart') {
-            q = await this.api.questAnswer({ scope: q.scope, quest_id: q.id, step: 'restart' });
+          if (v === 'restart' || v === 'back') {
+            q = await this.api.questAnswer({ scope: q.scope, quest_id: q.id, step: v });
             continue;
           }
           await this.reward(v);
           q = v.quest;
-          // what NetBox (or the island) confirmed is done; the rest of an errand goes on at once. A dry run changed nothing.
-          if (v.complete || v.mode === 'dry_run' || q.status !== 'active') break;
-          continue;
+          // what NetBox (or the island) confirmed is done; the rest of an errand goes on at once. A dry run and a
+          // check that confirmed nothing changed nothing: the line waits where it stood.
+          if (v.complete || v.mode === 'dry_run') break;
+          if (q.status === 'active' || (q.status === 'ready' && v.verified)) continue;
+          break;
         }
         const step = q.step;
         if (!step) {
@@ -455,14 +457,17 @@ export class Quests {
       p.append(ul);
     }
     const row = el('div', undefined, 'row');
-    row.append(btn('OK, I will look', 'quest-field-ok', close), btn("Nocti's hardware notes", 'quest-field-nocti', () => (close(), this.hooks.openGuide('nocti'))));
+    row.append(btn('OK, I will look', 'quest-field-ok', close));
+    // the next small step has a place: the marker follows this line, and the button opens the level it is on
+    if (q.target) row.append(btn(`Show me ${q.target.label}`, 'quest-field-go', () => (close(), this.hooks.goTo(q.target!))));
+    row.append(btn("Nocti's hardware notes", 'quest-field-nocti', () => (close(), this.hooks.openGuide('nocti'))));
     p.append(row);
     (p.querySelector('#quest-field-ok') as HTMLElement).focus();
     await done;
   }
 
   /** The change a ready line proposes, as the proxy previews it; Apply writes it (or runs it as practice). */
-  private async preview(q: Quest): Promise<QuestVerdict | 'restart' | null> {
+  private async preview(q: Quest): Promise<QuestVerdict | 'restart' | 'back' | null> {
     const board = this.boards[q.scope];
     let res: ChangeResult;
     try {
@@ -472,7 +477,7 @@ export class Quests {
       return null;
     }
     const { el: p, done, close } = this.open('quest-preview', `Preview: ${q.title}`);
-    let out: QuestVerdict | 'restart' | null = null;
+    let out: QuestVerdict | 'restart' | 'back' | null = null;
     if (q.said.length) {
       p.append(el('h3', 'You said'));
       const ul = el('ul', undefined, 'said');
@@ -501,10 +506,11 @@ export class Quests {
       table.append(tr);
     }
     p.append(table);
-    const real = !!board?.can_write && q.scope === 'netbox';
+    // the proxy has already checked this change against the player's own NetBox permissions: said before Apply, not after
+    const real = !!board?.can_write && q.scope === 'netbox' && !q.write_blocked;
     const mode = el('p', real
       ? `Apply writes this to NetBox; its changelog will name you (${this.hooks.player()}). NetBox is then read again to check the outcome.`
-      : `${board?.write_blocked ?? 'Nothing is written.'} This is a practice run: no XP.`, 'mode');
+      : `${q.write_blocked ?? board?.write_blocked ?? 'Nothing is written.'} This is a practice run: no XP.`, 'mode');
     mode.id = 'quest-mode';
     mode.dataset.mode = real ? 'real' : q.scope === 'practice' ? 'practice' : 'dry_run';
     p.append(mode);
@@ -526,7 +532,9 @@ export class Quests {
       );
     });
     if (bad) apply.disabled = true;
-    row.append(apply, btn('Answer again from the start', 'quest-restart', () => ((out = 'restart'), close())), btn('Close', 'quest-preview-close', close));
+    row.append(apply);
+    if (q.said.length) row.append(btn('Change my last answer', 'quest-back', () => ((out = 'back'), close())));
+    row.append(btn('Answer again from the start', 'quest-restart', () => ((out = 'restart'), close())), btn('Close', 'quest-preview-close', close));
     p.append(row);
     (bad ? (p.querySelector('#quest-restart') as HTMLElement) : apply).focus();
     await done;
@@ -622,6 +630,13 @@ export class Quests {
       p.append(counts);
     }
     if (this.lastError) p.append(el('p', this.lastError, 'error'));
+    const blocked = this.boards.netbox?.write_blocked;
+    if (blocked) {
+      // said up front: whether answers would really be written for this player, and if not, why
+      const note = el('p', this.boards.netbox?.can_write ? blocked : `${blocked} Lines you finish count as practice: no XP.`, 'mode');
+      note.id = 'quest-write-note';
+      p.append(note);
+    }
     const sites = [...(this.boards.netbox?.sites ?? []), ...(this.boards.practice?.sites ?? [])];
     const quests = [...(this.boards.netbox?.quests ?? []), ...(this.boards.practice?.quests ?? [])];
     const section = (title: string, list: Quest[], id: string) => {

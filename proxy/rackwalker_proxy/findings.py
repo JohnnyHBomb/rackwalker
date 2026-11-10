@@ -31,12 +31,15 @@ LIVE = ("active", "staged")
 # Order of finding kinds inside one rank: the most valuable unknown first.
 KIND_ORDER = ["site_no_way_out", "sites_not_linked", "locations_not_linked", "site_island", "switch_no_uplink",
               "circuit_unterminated", "provider_unused", "device_unconnected", "router_no_address", "interface_no_cable",
-              "device_no_power", "device_unreachable", "address_no_prefix", "rack_audit", "shelf_audit", "site_record",
-              "rack_devices_unpositioned", "room_layout"]
+              "device_no_power", "device_unreachable", "address_no_prefix", "rack_audit", "shelf_audit", "platform_survey",
+              "site_record", "rack_devices_unpositioned", "room_layout"]
 KIND_RANK = {**{k: "connectivity" for k in KIND_ORDER[:13]}, "rack_audit": "identity", "shelf_audit": "identity",
-             "site_record": "identity", "rack_devices_unpositioned": "layout", "room_layout": "layout"}
-# At most this many expected-cable interface gaps are listed per site (the total is still counted).
+             "platform_survey": "identity", "site_record": "identity", "rack_devices_unpositioned": "layout", "room_layout": "layout"}
+# At most this many devices of one model are covered by one platform line.
+MAX_SURVEY = 20
+# At most this many expected-cable interface gaps are listed per site, and per device (the total is still counted).
 MAX_INTERFACE_GAPS = 50
+MAX_INTERFACE_GAPS_PER_DEVICE = 3
 
 
 def ref(kind: str, oid: int, name: str | None) -> dict[str, Any]:
@@ -66,6 +69,16 @@ class Analysis:
         passed = sum(1 for cid, ok in checks.items() if ok or cid in resolved)
         percent = 100 if total == 0 else (100 * passed) // total
         return {"percent": percent, "total": total, "open": total - passed}
+
+
+def expects_cable(port: dict[str, Any], has_address: bool) -> bool:
+    """A port NetBox already says is in use: enabled, physical, and carrying a description or an address. An address
+    on a management-only port does not count: it says how the device is reached, not that a lead in that port goes
+    anywhere NetBox should know (management networks are often left out of NetBox on purpose), and the line "how do you
+    reach it" has just put that address there. A management port someone described is still expected to have a cable."""
+    if not (port["enabled"] and is_physical(port)):
+        return False
+    return bool(port["description"].strip()) or (has_address and not port["mgmt_only"])
 
 
 def _sort_key(f: dict[str, Any]) -> tuple[Any, ...]:
@@ -243,17 +256,19 @@ def _analyse(e: Estate) -> Analysis:
             for d in devs:
                 if d["status"] not in LIVE or d["rack_id"] is None or comp.degree(d["id"]) == 0:
                     continue
+                on_device = 0
                 for p in e.device_ports(d["id"], ("interface",)):
-                    if not (p["enabled"] and is_physical(p) and (iface_ips.get(p["id"]) or p["description"].strip())):
+                    if not expects_cable(p, bool(iface_ips.get(p["id"]))):
                         continue
                     if p["cable_id"] is not None or p["mark_connected"]:
                         a.checks[site_id][f"interface:{p['id']}:cable"] = True
                         continue
                     a.checks[site_id][f"interface:{p['id']}:cable"] = False
-                    if listed >= MAX_INTERFACE_GAPS:
+                    if listed >= MAX_INTERFACE_GAPS or on_device >= MAX_INTERFACE_GAPS_PER_DEVICE:
                         a.unlisted[site_id] += 1
                         continue
                     listed += 1
+                    on_device += 1
                     why = "an address" if iface_ips.get(p["id"]) else f"a description ({p['description'].strip()[:40]})"
                     a.gaps.append({"id": f"interface:{p['id']}:cable", "kind": "interface", "object_id": p["id"], "field": "cable",
                                    "site_id": site_id, "rank": "connectivity",
@@ -318,25 +333,40 @@ def _analyse(e: Estate) -> Analysis:
                     a.gaps.append({"id": gid, "kind": "device", "object_id": d["id"], "field": fld, "site_id": site_id,
                                    "rank": "identity", "label": f"{d['name'] or 'A device'} has no {label}.", "device_id": d["id"]})
         id_gaps: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
+        by_model: dict[str, list[dict[str, Any]]] = defaultdict(list)
         for g in a.gaps:
             if g["site_id"] == site_id and g["rank"] == "identity" and g["kind"] == "device":
                 d = e.devices[g["object_id"]]
-                id_gaps[("rack", d["rack_id"]) if d["rack_id"] else ("location", d["location_id"] or 0)].append(g)
+                if g["field"] == "platform":
+                    # what a model runs is one question for all of them, not a field to read off each label
+                    by_model[d["model"] or "unknown model"].append(g)
+                else:
+                    id_gaps[("rack", d["rack_id"]) if d["rack_id"] else ("location", d["location_id"] or 0)].append(g)
+        for model, gaps in sorted(by_model.items()):
+            ids = [g["object_id"] for g in gaps][:MAX_SURVEY]
+            more = f" ({len(gaps) - len(ids)} more after these)" if len(gaps) > len(ids) else ""
+            a.findings.append({"id": f"platform_survey:site:{site_id}:{_slug(model)}", "kind": "platform_survey", "rank": "identity",
+                               "site_id": site_id,
+                               "title": f"NetBox does not say what {_some([e.device_name(i) for i in ids])} ({model}) at {site['name']} "
+                                        f"run{'s' if len(ids) == 1 else ''}{more}.",
+                               "evidence": [ref("device", i, e.device_name(i)) for i in ids],
+                               "data": {"model": model, "device_ids": ids, "gap_ids": [f"device:{i}:platform" for i in ids]}})
         for (kind, oid), gaps in sorted(id_gaps.items()):
             dev_ids = sorted({g["object_id"] for g in gaps}, key=lambda i: (-(e.devices[i]["position"] or 0), i))
+            lacking = _some([w for fld, w in (("serial", "serial number"), ("asset_tag", "asset tag")) if any(g["field"] == fld for g in gaps)], "or")
             if kind == "rack":
                 rack = e.racks[oid]
                 a.findings.append({"id": f"rack_audit:rack:{oid}", "kind": "rack_audit", "rank": "identity", "site_id": site_id,
-                                   "title": f"{len(dev_ids)} device{'s' if len(dev_ids) != 1 else ''} in rack {rack['name']} cannot be told apart on paper "
-                                            "(serial, asset tag or platform missing).",
+                                   "title": f"{_some([e.device_name(i) for i in dev_ids])} in rack {rack['name']} "
+                                            f"{'have' if len(dev_ids) != 1 else 'has'} no {lacking} on record.",
                                    "evidence": [ref("rack", oid, rack["name"])] + [ref("device", i, e.device_name(i)) for i in dev_ids],
                                    "data": {"rack_id": oid, "device_ids": dev_ids, "gap_ids": [g["id"] for g in gaps]}})
             else:
                 where = e.locations[oid]["name"] if oid in e.locations else site["name"]
                 a.findings.append({"id": f"shelf_audit:{'location' if oid else 'site'}:{oid or site_id}", "kind": "shelf_audit",
                                    "rank": "identity", "site_id": site_id,
-                                   "title": f"{len(dev_ids)} device{'s' if len(dev_ids) != 1 else ''} outside any rack in {where} "
-                                            f"{'have' if len(dev_ids) != 1 else 'has'} no serial, asset tag or platform on record.",
+                                   "title": f"{_some([e.device_name(i) for i in dev_ids])}, outside any rack in {where}, "
+                                            f"{'have' if len(dev_ids) != 1 else 'has'} no {lacking} on record.",
                                    "evidence": [ref("device", i, e.device_name(i)) for i in dev_ids],
                                    "data": {"location_id": oid or None, "device_ids": dev_ids, "gap_ids": [g["id"] for g in gaps]}})
         site_gaps = []
@@ -350,8 +380,12 @@ def _analyse(e: Estate) -> Analysis:
                 a.gaps.append(g)
                 site_gaps.append(g)
         if site_gaps:
+            missing = [g["field"] for g in site_gaps]
+            cannot = _some((["put on a map"] if "gps" in missing or "country" in missing else [])
+                           + (["named to a carrier"] if "facility" in missing else []), "or")
+            words = {"gps": "GPS position", "facility": "facility name", "country": "country"}
             a.findings.append({"id": f"site_record:site:{site_id}", "kind": "site_record", "rank": "identity", "site_id": site_id,
-                               "title": f"{site['name']} cannot be put on a map or named to a carrier ({_some([g['field'] for g in site_gaps])} missing).",
+                               "title": f"{site['name']} has no {_some([words[m] for m in missing], 'or')} on record, so it cannot be {cannot}.",
                                "evidence": [sref], "data": {"gap_ids": [g["id"] for g in site_gaps], "fields": [g["field"] for g in site_gaps]}})
         # ---- layout: devices in a rack with no unit; racks with no room or no place on the floor plan
         for rid, rack in sorted(e.racks.items()):
@@ -360,7 +394,7 @@ def _analyse(e: Estate) -> Analysis:
             loose = [d for d in devs if d["rack_id"] == rid and d["position"] is None and d["u_height"] > 0]
             if loose:
                 add("rack_devices_unpositioned", ("rack", rid), site_id,
-                    f"{len(loose)} device{'s' if len(loose) != 1 else ''} in rack {rack['name']} {'have' if len(loose) != 1 else 'has'} no rack unit.",
+                    f"{_some([d['name'] or '?' for d in loose])} in rack {rack['name']} {'have' if len(loose) != 1 else 'has'} no rack unit on record.",
                     [ref("rack", rid, rack["name"])] + [dref(d) for d in loose], rack_id=rid, device_ids=[d["id"] for d in loose])
             elif any(d["rack_id"] == rid for d in devs):
                 passed("rack_devices_unpositioned", ("rack", rid), site_id)
@@ -380,8 +414,9 @@ def _analyse(e: Estate) -> Analysis:
             where = e.locations[loc]["name"] if loc in e.locations else site["name"]
             a.findings.append({"id": f"room_layout:{'location' if loc else 'site'}:{loc or site_id}", "kind": "room_layout", "rank": "layout",
                                "site_id": site_id,
-                               "title": f"{len(rack_ids)} rack{'s' if len(rack_ids) != 1 else ''} in {where} "
-                                        f"{'have' if len(rack_ids) != 1 else 'has'} no room or no place on the floor plan.",
+                               "title": f"Rack{'s' if len(rack_ids) != 1 else ''} {_some([e.racks[r]['name'] for r in rack_ids])} in {where} "
+                                        f"{'have' if len(rack_ids) != 1 else 'has'} "
+                                        f"{_some([w for fld, w in (('location', 'no room'), ('iso', 'no place on the floor plan')) if any(g['field'] == fld for g in gaps)], 'or')} on record.",
                                "evidence": [ref("rack", r, e.racks[r]["name"]) for r in rack_ids],
                                "data": {"location_id": loc or None, "rack_ids": rack_ids, "gap_ids": [g["id"] for g in gaps]}})
 
@@ -411,8 +446,14 @@ def _analyse(e: Estate) -> Analysis:
     return a
 
 
-def _some(names: list[str]) -> str:
+def _some(names: list[str], joint: str = "and") -> str:
     names = [n for n in names if n]
     if len(names) <= 3:
-        return ", ".join(names[:-1]) + (" and " if len(names) > 1 else "") + (names[-1] if names else "")
+        return ", ".join(names[:-1]) + (f" {joint} " if len(names) > 1 else "") + (names[-1] if names else "")
     return f"{names[0]}, {names[1]} and {len(names) - 2} more"
+
+
+def _slug(text: str) -> str:
+    import re
+
+    return re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-") or "model"

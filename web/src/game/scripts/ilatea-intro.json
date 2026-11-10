@@ -11,6 +11,7 @@
       "choices": [
         {"label": "On my way", "next": null},
         {"label": "How do I walk?", "next": "keys"},
+        {"label": "Let me practise first", "do": "open_practice", "next": null},
         {"label": "Fewer hints, please", "do": "hints_low", "next": "fewer"}
       ]
     },

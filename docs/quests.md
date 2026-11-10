@@ -9,6 +9,24 @@ from NetBox today ("how does this site reach the internet?"). It then asks you w
 with real names from your own NetBox as the choices. A quest line ends in one change to NetBox that you see before
 it is written. It is complete only when NetBox, read again, shows the result.
 
+## A worked example
+
+Say your NetBox has one site, Mill Lane, with two rooms and a rack in each, three switches, and a provider (Northlight
+Telecom) with no circuit on record. Nothing is cabled. NetBox looks tidy, and it cannot answer a single question about
+how anything connects. The game finds, in this order:
+
+| The game says | It asks | It ends in |
+|---|---|---|
+| "Nobody can tell from NetBox how Mill Lane reaches the outside world." | Which device does the line to the outside plug into? What is the circuit ID on the bill? What kind of service? Which port? What cable? | a circuit, its end at Mill Lane, a cable; the reward quotes NetBox's own trace from the port to the circuit |
+| "Comms Room and Store Room at Mill Lane have no link between them." | Which device in the Store Room has the link? What does it connect to in the Comms Room? Which ports? | a cable; you can trace from one room to the other |
+| "ml-sw2 has 24 ports and nothing recorded on any of them." | What does it uplink to? Which port (the fibre cages and the highest-numbered ports are offered first)? | a cable |
+| "NetBox does not say how to reach ml-sw1, ml-sw2 and ml-sw3 to manage them." | For each: one of its addresses, a typed one and its interface, "I don't know yet", or "It has none: nobody logs in to it" | each device's primary IP |
+| "ml-sw1 and ml-sw2 in rack ML-C1 have no serial number on record." | One form for the rack; blank is "could not read it" | the serials you read |
+
+Every answer you do not have is a field task with a checklist ("Find ml-sw2: rack ML-C1 U20 in Comms Room. Follow the
+cable from its uplink port..."). When the lines are done, NetBox can answer what it could not: the trace from a switch
+port reaches the carrier's circuit.
+
 ## What the game reads
 
 One bounded read of NetBox with the proxy's own token (view permission only):
@@ -24,10 +42,19 @@ One bounded read of NetBox with the proxy's own token (view permission only):
 | power feeds, platforms | choices offered in a question |
 
 Each list is read with a small field selection, page by page, up to a cap (20,000 devices, 200,000 ports, 100,000
-cables, 100,000 addresses). The result is kept for 60 seconds (`RACKWALKER_ESTATE_TTL`) and dropped at once by any
-write made through the proxy. If a list hits its cap, or NetBox refuses it to the proxy's token, the rules that need
-it say nothing: the game never calls something missing only because it could not look. The gap list and the quest
-log name such lists in `incomplete`.
+cables, 100,000 addresses). The result is kept for 60 seconds (`RACKWALKER_ESTATE_TTL`).
+
+**How often NetBox is read.** The whole estate is read at most once per 60 seconds, and never twice at the same time.
+After a quest writes, only the sites that change reached are read again (their devices, ports, cables, racks and
+addresses, plus the small estate-wide lists: sites, circuits and their ends, providers, platforms, prefixes) and put
+into the kept estate. "Check NetBox" on a line reads that line's site, at most every 5 seconds; "Read NetBox again"
+in the quest log reads the whole estate, at most every 15 seconds. Asked sooner, the game answers from what it has. A
+change made in the room editor drops the kept estate, so the next look reads it whole.
+
+**When the game could not look.** If a list hits its cap, or NetBox refuses it to the proxy's token, the rules that
+need it say nothing: the game never calls something missing only because it could not look. The gap list and the
+quest log name such lists in `incomplete`. While any list is incomplete, no site is shown above 99 %, no site's
+Confusion is ready, nothing is "all in order", and no spot check is offered: the picture is not whole.
 
 **The connectivity graph.** Every interface belongs to its device. A patch panel's front port joins the rear port
 it maps to. A cable joins its two ends. A circuit joins its terminations. Two devices are "connected" when a path of
@@ -58,17 +85,22 @@ which quests are offered: **connectivity** (can it be reached, and how) before *
 | `router_no_address` | connectivity | a router or firewall has no IP address on any interface | NetBox cannot say on which address it routes | how you reach it: an address it already has, or one you type, and its interface | an IP address on the interface, set as primary |
 | `interface_no_cable` | connectivity | see "Expected cables" below | a port is marked as in use, with no record of its far end | what is on the other end, the far port, the cable. "The port is not in use" is an answer | a cable |
 | `device_no_power` | connectivity | devices with power ports have no power cable, while other devices at the site do (one finding per rack) | if a power strip trips, nobody can tell what goes dark | which power strip each device is plugged into, and which outlet | a power cable per device |
-| `device_unreachable` | connectivity | live devices that are not passive have no primary IP (one finding per site) | when something breaks, the first question is how to log in | for each device (at most four per quest): one of its addresses, or a typed one and its interface | the primary IP of each device you knew |
+| `device_unreachable` | connectivity | live devices that are not passive have no primary IP (one finding per site) | when something breaks, the first question is how to log in | for each device (at most four per quest): one of its addresses, or a typed one and its interface. "It has none: nobody logs in to it" is an answer per device | the primary IP of each device you knew |
 | `address_no_prefix` | connectivity | addresses on a site's interfaces lie in no prefix (one finding per implied subnet) | addresses with no prefix cannot be planned around | "their mask says the subnet is 192.0.2.0/24. Is that right?" or the right one, typed | a prefix |
-| `rack_audit` | identity | devices in one rack lack a serial, an asset tag or a platform | a device with no serial cannot be matched to a support contract | one form for the rack, top to bottom; leave blank what you cannot read | the fields you filled in, per device |
+| `rack_audit` | identity | devices in one rack lack a serial or an asset tag | a device with no serial cannot be matched to a support contract | one form for the rack, top to bottom; leave blank what you cannot read | the fields you filled in, per device |
 | `shelf_audit` | identity | the same, for devices that are in no rack (per room) | spare kit with no serial is kit nobody can prove you own | one form for the shelf | the fields you filled in |
+| `platform_survey` | identity | devices of one model at a site have no platform (one finding per model, at most 20 devices each) | when an advisory or an upgrade comes out, nobody can list what runs it | "4 EX-A2400 devices have no platform on record: ... What do they run?" One answer covers them all; "They do not all run the same" asks about each | the platform of each device |
 | `site_record` | identity | a site lacks GPS, a facility name or a country | it cannot be put on a map or named to a carrier | one form: latitude and longitude, facility, country code | the site fields you filled in |
 | `rack_devices_unpositioned` | layout | devices are in a rack with no rack unit | nobody can be sent to the right unit | one form: the lowest unit of each device | each device's unit |
 | `room_layout` | layout | racks have no room, or no place on the floor plan (`iso_x`, `iso_y`) | someone new cannot find the rack | one form: the room, and the floor tile (or drag the rack in the room view) | each rack's room and floor position |
 
+A quest opens with the finding's own sentence, so the first thing a quest giver says is what is missing and where,
+with the names NetBox has ("Comms Room and Store Room at Mill Lane have no link between them."), then why it matters.
+
 A site with none of these gets a short, honest "All in order": the game does not invent work. The only thing its
 quest giver then offers is a **spot check** of one device at a time ("is sw-quay-1 still in rack PI-Q1 U10, serial
 ...?"). "Yes" closes it with nothing written and no XP; "no" is a field task: correct the record, then say it matches.
+A spot check exists only at a site with nothing open; asked for anywhere else it is refused.
 
 Not in this version: a VLAN check (a prefix with no VLAN behind it), and console ports.
 
@@ -98,25 +130,34 @@ have a cable only when NetBox already says it is in use:
 
 * it is enabled and physical (not virtual, bridge, LAG or wireless), on a live device that is in a rack and already
   has at least one cable; **and**
-* it carries an IP address, **or** it has a description; **and**
+* it has a description, **or** it carries an IP address and is not a management-only port; **and**
 * it has no cable and is not marked as connected (`mark_connected`).
 
-At most 50 such gaps are listed per site; the rest are counted (`unlisted`) and still count against the site's
-completeness. A device with no cable at all is the finding `device_unconnected` instead.
+An address on a management-only port does not ask for a cable. It says how the device is reached, not that a lead in
+that port goes somewhere NetBox should know: management networks are often left out of NetBox on purpose, and the
+line "how do you reach it" has just put that address there. Describe the port ("to the out-of-band switch") and the
+game asks where it goes.
+
+At most three such gaps are listed per device and 50 per site; the rest are counted (`unlisted`) and still count
+against the site's completeness. A device with no cable at all is the finding `device_unconnected` instead.
 
 ## How a quest line asks
 
 * **Real names.** Choices are built from your NetBox: for an uplink, the routers and firewalls of the site first,
   then its switches (the busiest first, the same room before other rooms), then circuits that end nowhere yet, then
-  patch panels in the same rack. For a port, the free ports of the device: a short list of the likeliest, or you
-  type the port's name as printed.
+  patch panels in the same rack. For a port, the free ports of the device, the likeliest first: fibre cages and fast
+  ports before copper access ports, the highest-numbered first, a management port last. Six are offered; any other
+  port you type by its name as printed.
 * **"Something not listed."** The game cannot add a device or a carrier for you. It remembers what you said, tells
   you what to add in NetBox, and offers it as a choice once it is there.
 * **"I don't know yet"** is a full answer on every question (in a form: leave the field blank). The line is parked as
   a field task with a short checklist of what to look for on site. It stays in the quest log, costs nothing, does
   not stop other quests, and asks the same question again when you come back.
 * **"That is how it is."** Where "nothing" can be true (a switch that stands alone on purpose, two sites with no
-  link), you can say so. Nothing is written; the game stops asking, and your completeness counts it as answered.
+  link, a device nobody logs in to), you can say so. Nothing is written; the game stops asking, and your completeness
+  counts it as answered. It pays no XP.
+* **"Change my last answer."** The preview takes back one answer at a time; the earlier ones stay. "Answer again from
+  the start" clears the line.
 * **Never a guess.** Every value in the proposed change is one you picked or typed. The label maker's suggested
   asset tag is shown next to the field and stays out of it until you take it. A cable type you are not sure of is
   left empty. The one convention the game applies is the side of a new circuit termination (A, then Z); the preview
@@ -139,7 +180,9 @@ A ready line proposes a change set of ordinary change ops: `connect_cable`, `cre
   NetBox object permissions (your own and those of your groups) and refuses the change unless they cover every
   object type and action it needs: for example `add` on `dcim.cable` for a cable. A permission with constraints does
   not count, because the game cannot evaluate a constraint; make that change in NetBox itself. Without the
-  permission you get a clear message and the line runs as practice. The proxy's token never widens what you may
+  permission the line runs as practice, and you are told before you start, not after your last answer: the quest log
+  says what your NetBox user may not write, and the preview of a line says "practice run" when its own change needs
+  a permission you lack. The proxy's token never widens what you may
   change. `/api/health` says in `netbox.permission_check` whether the proxy can read users and permissions at all.
 * **The changelog names you.** Each object the quest writes carries the message
   `rackwalker (<your username>): quest: <title>`.
@@ -147,7 +190,25 @@ A ready line proposes a change set of ordinary change ops: `connect_cable`, `cre
 ## When a line is complete
 
 After the write the proxy reads NetBox again and analyses it again. A line is complete when its finding is gone
-(for an errand: when its gaps are gone). After a cable is written, the reward also quotes NetBox's own cable trace
+(for an errand: when its gaps are gone). What "gone" means, per kind:
+
+| Line | It is done when a fresh read of NetBox shows |
+|---|---|
+| the way out of a site | a circuit that is cabled to a device, on a path from one of the site's network devices |
+| two sites, two rooms, a cut-off group | a path of cables (through patch panels and circuits) that joins them |
+| a device's or a switch's uplink | a cable on the device; for a switch, a path to another network device or a circuit |
+| a circuit that ends nowhere, a provider with nothing | an end of the circuit with a cable; a circuit of that provider |
+| a router's address | an address on one of its interfaces |
+| how to reach the kit | a primary IP on each device (or your "it has none") |
+| what powers a rack | a cable on a power port of each device |
+| stray addresses | a prefix that holds each address |
+| a port in use with no cable | a cable on that port, or `mark_connected` |
+| an audit, a platform, a site record | each field you were asked for is no longer empty |
+| rack units, the floor plan | a unit on each device; a room and `iso_x`/`iso_y` on each rack |
+
+An errand is confirmed part by part: what NetBox shows is done and paid, and the line goes on with the rest only.
+Your answers are never thrown away by a check: a dry run, a refused write and a "Check NetBox" that finds nothing new
+leave the line exactly where it stood. After a cable is written, the reward also quotes NetBox's own cable trace
 from the port you named. The game then says what you can do now that you could not do before, for example "You can
 now trace Harbour Office to the carrier's hand-off".
 
@@ -158,7 +219,8 @@ The game keeps its read of NetBox for a minute. "Read NetBox again" in the quest
 you have just changed in NetBox itself.
 
 If something a quest fixed is later removed in NetBox, nothing is reopened and nothing is taken away. The quest log
-counts it ("since undone in NetBox"), and the site's completeness shows the truth.
+counts it ("since undone in NetBox"), and the site's completeness shows the truth. A finished errand that gains
+something it never covered (a new device with no serial in a rack you audited) is offered again, for the new object.
 
 ## XP, tools and potions
 
@@ -182,6 +244,7 @@ It is optional and only acknowledged in this version; the fight comes later.
 ## The practice island
 
 A made-up site ("Practice Island": three switches, an internet provider, two rooms with a rack each, nothing
-connected) that the proxy serves itself. It is reached from the menu at any time, or by the airfield pad. Nothing on
+connected) that the proxy serves itself. Ilatea offers it in her first line ("Let me practise first"); it is also
+reached from the menu at any time, or by the airfield pad. Nothing on
 it is read from or written to NetBox: your practice changes are kept in the game's own store, and the island can be
 reset from the quest log. It has a first quest of every kind, and both tools on loan. It pays no XP.

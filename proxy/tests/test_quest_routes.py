@@ -60,10 +60,11 @@ def test_the_gap_scanner_is_paged_ordered_and_stable(cl):
     full = r.json()
     schema_validator("GapList").validate(full)
     ids = [g["id"] for g in full["items"]]
-    # the seed's management ports carry an address and have no cable; the site has no facility name
-    assert full["total"] == len(ids) == 8 and ids[0] == "interface:1:cable" and ids[-1] == "site:1:facility" and full["source"] == "fixture"
-    assert full["items"][0] == {"id": "interface:1:cable", "kind": "interface", "object_id": 1, "field": "cable", "site_id": 1,
-                                "rank": "connectivity", "label": "nd-core1 mgmt0 has an address but no cable."}
+    # two of the seed's ports carry an address and have no cable (an address on a management port does not count);
+    # the site has no facility name
+    assert full["total"] == len(ids) == 3 and ids[0] == "interface:26:cable" and ids[-1] == "site:1:facility" and full["source"] == "fixture"
+    assert full["items"][0] == {"id": "interface:26:cable", "kind": "interface", "object_id": 26, "field": "cable", "site_id": 1,
+                                "rank": "connectivity", "label": "nd-rtr1 ge-0/0/0 has an address but no cable."}
     assert full["completeness"]["open"] >= 1 and 0 < full["completeness"]["percent"] < 100
     page = cl.get("/api/quests/gaps/3", params={"offset": 0, "limit": 1}).json()
     assert (page["offset"], page["limit"], len(page["items"])) == (0, 1, 1)
@@ -89,9 +90,10 @@ def test_the_practice_board_offers_a_few_lines_the_most_valuable_first(cl):
     assert b["write_blocked"] == "The practice island is made up: nothing you do here reaches NetBox."
     assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "locations_not_linked", "device_unconnected"]
     assert all(q["status"] == "offered" and q["step"] and 2 <= q["minutes"] <= 5 for q in b["quests"])
-    assert b["queued"] == 6 and b["next_quest_id"] == b["quests"][0]["id"]
+    assert b["queued"] == 7 and b["next_quest_id"] == b["quests"][0]["id"]
+    assert all(q["write_blocked"] is None for q in b["quests"])   # nothing is proposed yet
     assert b["sites"] == [{"site_id": ISLAND, "name": "Practice Island", "completeness": {"percent": 60, "total": 30, "open": 12},
-                           "open_quests": 9, "boss_ready": False, "boss_acknowledged": False, "giver": {"name": "Tansy"}}]
+                           "open_quests": 10, "boss_ready": False, "boss_acknowledged": False, "giver": {"name": "Tansy"}}]
     # on the island both tools are on loan, so a player meets them before earning them
     assert b["rewards"] == {"xp": 0, "level": 1, "next_level_xp": 250, "potions": 0, "tools": ["label_maker", "cable_tracer"],
                             "completed": 0, "practised": 0, "lapsed": 0}
@@ -116,7 +118,7 @@ def test_a_practice_line_from_offer_to_preview_to_verified_and_no_xp(cl):
     after = board(cl)
     assert after["rewards"]["xp"] == 0 and after["rewards"]["practised"] == 1 and after["rewards"]["completed"] == 0
     assert qid not in [q["id"] for q in after["quests"] if q["status"] != "done"]
-    assert after["sites"][0]["completeness"]["open"] == 11
+    assert after["sites"][0]["completeness"]["open"] == 10   # the site has a way out, and sw-quay-1 a cable
     # applying it twice is refused: the line is no longer open
     assert cl.post("/api/game/quests/apply", json={"scope": "practice", "quest_id": qid}).status_code == 404
 
@@ -164,7 +166,9 @@ def test_on_real_data_a_dry_run_completion_is_marked_practice_and_pays_nothing(c
     b = board(cl, "netbox", site_id=1)
     assert (b["can_write"], b["write_blocked"]) == (False, "This proxy serves canned fixture data: nothing is written.")
     q = b["quests"][0]
-    assert q["kind"] == "interface_no_cable" and q["title"] == "The other end of nd-core1 mgmt0"
+    assert q["kind"] == "interface_no_cable" and q["title"] == "The other end of nd-rtr1 ge-0/0/0"
+    assert q["purpose"] == ("nd-rtr1 ge-0/0/0 has an address but no cable. A port in use with no far end on record cannot be traced. "
+                            "Let's find its far end.")
     for _ in range(10):
         if q["status"] == "ready":
             break
@@ -422,7 +426,161 @@ def test_a_site_offers_different_kinds_of_line_before_a_second_of_one_kind(cl):
     # most valuable first, one of each kind; never more than three
     assert [x["id"] for x in offer(mixed)] == ["interface_no_cable:1", "device_no_power:1", "site_record:1"]
     assert [x["id"] for x in offer(mixed[:3])] == ["interface_no_cable:1", "interface_no_cable:2", "device_no_power:1"]
-    # the seed's North Depot has seven management ports with no cable and three unpowered racks: it offers one of each
+    # the seed's North Depot has two addressed ports with no cable and four unpowered racks: it offers one of each
     b = board(cl, "netbox", site_id=1)
     assert [q["kind"] for q in b["quests"]] == ["interface_no_cable", "device_no_power", "address_no_prefix"]
-    assert b["next_quest_id"] == b["quests"][0]["id"] and b["queued"] == len(b["findings"]) + 7 - 3
+    assert b["next_quest_id"] == b["quests"][0]["id"] and b["queued"] == len(b["findings"]) + 2 - 3
+
+
+def play_first(cl, q: dict, scope: str, knows: int = 1) -> dict:
+    """Answers a bundle line as a player who knows its first `knows` items and says "I don't know yet" to the rest."""
+    known: set[str] = set()
+    for _ in range(20):
+        if q["status"] not in ("offered", "active"):
+            return q
+        step = q["step"]
+        item = step["id"].rsplit("_", 1)[-1]
+        if item not in known and len(known) < knows:
+            known.add(item)
+        pick = next(x for x in step["choices"] if x["kind"] == ("candidate" if item in known else "unknown"))
+        q = answer(cl, q["id"], step["id"], scope=scope, choice=pick["id"])
+    raise AssertionError("the line never came to an end")
+
+
+def test_a_dry_run_of_part_of_an_errand_keeps_every_answer(cl):
+    b = board(cl, "netbox", site_id=1)
+    q = play_first(cl, next(x for x in b["quests"] if x["kind"] == "device_no_power"), "netbox")
+    assert q["status"] == "ready" and len(q["proposal"]["ops"]) == 1 and len(q["said"]) == 2
+    assert q["write_blocked"] == "This proxy serves canned fixture data: nothing is written."
+    v = apply(cl, q["id"], "netbox")
+    # nothing was written, so the line stands exactly where it stood: same answers, same change ready
+    assert (v["mode"], v["verified"], v["complete"], v["xp_awarded"]) == ("dry_run", False, False, 0)
+    assert v["message"] == "Practice run, nothing was written: This proxy serves canned fixture data: nothing is written. No XP for a practice run."
+    assert (v["quest"]["status"], v["quest"]["said"], v["quest"]["proposal"]) == ("ready", q["said"], q["proposal"])
+    again = next(x for x in board(cl, "netbox", site_id=1)["quests"] if x["id"] == q["id"])
+    assert (again["status"], again["said"], again["proposal"]) == ("ready", q["said"], q["proposal"])
+
+
+def test_part_of_an_errand_confirmed_on_the_island_goes_on_with_the_rest_only(cl):
+    put_island_in_order_until(cl, "site_record")
+    q = next(x for x in board(cl)["quests"] if x["kind"] == "site_record")
+    assert [f["id"] for f in q["step"]["fields"]] == ["latitude", "longitude", "facility"]
+    q = answer(cl, q["id"], "record", values={"facility": "PI-1"})
+    v = apply(cl, q["id"])
+    assert (v["complete"], v["quest"]["status"], v["quest"]["progress"]) == (False, "active", {"total": 2, "verified": 1})
+    # the facility is confirmed and not asked again; the position is still to be found out
+    assert [f["id"] for f in v["quest"]["step"]["fields"]] == ["latitude", "longitude"]
+    assert v["quest"]["purpose"] == "Practice Island has no GPS position on record, so it cannot be put on a map. Let's fill that in."
+
+
+def put_island_in_order_until(cl, kind: str) -> None:
+    for _ in range(12):
+        b = board(cl)
+        if any(q["kind"] == kind for q in b["quests"]):
+            return
+        q = next(x for x in b["quests"] if x["status"] in ("offered", "active"))
+        for _ in range(10):
+            step = q["step"]
+            if q["status"] not in ("offered", "active"):
+                break
+            if step["input"] == "choice":
+                pick = next((x for x in step["choices"] if x["kind"] in ("candidate", "confirm", "skip")), None) or \
+                    next(x for x in step["choices"] if x["id"] in ("new", "typed"))
+                q = answer(cl, q["id"], step["id"], choice=pick["id"])
+            elif step["input"] == "text":
+                q = answer(cl, q["id"], step["id"], text="EXF-1")
+            else:
+                q = answer(cl, q["id"], step["id"], values={f["id"]: f"PI-{i:04d}" for i, f in enumerate(step["fields"], 7)})
+        apply(cl, q["id"])
+    raise AssertionError(f"no {kind} line was offered")
+
+
+def test_a_spot_check_is_refused_at_a_site_that_still_has_something_open(cl):
+    spot = {"scope": "practice", "quest_id": "q:spot_check:device:9000001:0", "step": "same", "choice": "yes"}
+    r = cl.post("/api/game/quests/answer", json=spot)
+    assert r.status_code == 409 and r.json()["error"]["code"] == "conflict"
+    assert r.json()["error"]["message"] == "A spot check is offered only at a site with nothing open; this site still has things to find out."
+    b = board(cl)
+    assert b["rewards"]["completed"] == 0 and b["rewards"]["practised"] == 0 and not [q for q in b["quests"] if q["kind"] == "spot_check"]
+    # at a site in order the same request is the spot check the giver offers
+    put_island_in_order(cl)
+    assert cl.post("/api/game/quests/answer", json=spot).json()["status"] == "done"
+    # a spot check is answered by the player; "Check NetBox" never settles one
+    assert cl.post("/api/game/quests/verify", json={"scope": "netbox", "quest_id": spot["quest_id"]}).status_code == 400
+
+
+def test_one_answer_can_be_taken_back(cl):
+    qid = board(cl)["next_quest_id"]
+    for step, a in WAY_OUT:
+        q = answer(cl, qid, step, **a)
+    assert q["status"] == "ready"
+    q = answer(cl, qid, "back")
+    assert (q["status"], q["step"]["id"], [s["step"] for s in q["said"]]) == ("active", "cable_type", ["device", "circuit_id", "circuit_type", "local_port"])
+    q = answer(cl, qid, "back")
+    assert q["step"]["id"] == "local_port" and len(q["said"]) == 3
+    # a parked line: the question it waits at is opened again, the answers before it stay
+    q = answer(cl, qid, "local_port", choice="unknown")
+    assert q["status"] == "parked"
+    q = answer(cl, qid, "back")
+    assert (q["status"], q["step"]["id"], len(q["said"])) == ("active", "local_port", 3)
+    # with nothing answered there is nothing to take back
+    fresh = answer(cl, qid, "restart")
+    assert answer(cl, qid, "back")["step"] == fresh["step"]
+
+
+def test_a_closed_line_is_offered_again_only_for_something_it_never_covered():
+    from rackwalker_proxy import findings, quests
+    from rackwalker_proxy.questroutes import Standing, base_checks
+
+    from .test_quests import Build, linked_pair
+
+    b = Build()
+    s = b.site()
+    room = b.room(s)
+    rack = b.rack(s, room)
+    r, sw = linked_pair(b, s, room, rack)
+    b.e.devices[sw]["serial"] = ""
+    a = findings.analyse(b.e)
+    line = next(x for x in quests.lines(b.e, a) if x["kind"] == "rack_audit")
+    snap = {"kind": line["kind"]}
+    done = {line["id"]: {"status": "done", "checks": quests.check_ids(line), "verified": quests.check_ids(line), "answers": {}, "snapshot": snap}}
+    # the serial the player once recorded was removed in NetBox: counted elsewhere as undone, never reopened
+    st = Standing(a, done)
+    assert st.closed(line) and st.open_lines(quests.lines(b.e, a), s) == [] and not st.in_order(quests.lines(b.e, a), s)
+    # a new device with no serial is put in the audited rack: the line is offered again, and stands for both devices
+    new = b.dev(s, "sw-new", "switch", room, rack, serial="")
+    b.cable(b.p(sw, "eth2"), b.p(new, "eth1"))
+    b.e.touch()
+    a = findings.analyse(b.e)
+    line = next(x for x in quests.lines(b.e, a) if x["kind"] == "rack_audit")
+    assert not Standing(a, done).closed(line)
+    assert base_checks(line, done[line["id"]]) == [f"device:{sw}:serial", f"device:{new}:serial"]
+
+
+def test_a_device_nobody_logs_in_to_counts_as_answered_for_that_player():
+    from rackwalker_proxy import findings, quests
+    from rackwalker_proxy.questroutes import Standing
+
+    from .test_quests import device_unreachable
+
+    e = device_unreachable()
+    a = findings.analyse(e)
+    line = next(x for x in quests.lines(e, a) if x["kind"] == "device_unreachable")
+    ids = line["finding"]["data"]["device_ids"]
+    site = line["site_id"]
+    before = a.completeness(site)
+    rows = {line["id"]: {"status": "active", "checks": quests.check_ids(line), "verified": [], "snapshot": {"kind": line["kind"]},
+                         "answers": {f"ip_{ids[0]}": {"choice": "none"}}}}
+    st = Standing(a, rows)
+    assert st.resolved == {f"device:{ids[0]}:primary_ip"}
+    assert a.completeness(site, st.resolved)["open"] == before["open"] - 1
+
+
+def test_every_finding_kind_is_in_the_admin_docs_table():
+    from pathlib import Path
+
+    from rackwalker_proxy import findings
+
+    text = (Path(__file__).resolve().parents[2] / "docs" / "quests.md").read_text()
+    for kind in findings.KIND_ORDER:
+        assert f"| `{kind}` |" in text, f"docs/quests.md does not describe {kind}"

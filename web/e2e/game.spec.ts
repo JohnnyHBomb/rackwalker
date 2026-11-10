@@ -42,7 +42,7 @@ test('first run: sign in, Ilatea once, door in and out, reload puts you back', a
   await typed(page);
   g = await game(page);
   expect(g.dialogue!.text).toContain('Small things matter');
-  expect(g.dialogue!.choices).toEqual(['On my way', 'How do I walk?', 'Fewer hints, please']);
+  expect(g.dialogue!.choices).toEqual(['On my way', 'How do I walk?', 'Let me practise first', 'Fewer hints, please']);
   // The selected choice is marked by a shape and an attribute, not by colour alone.
   await page.keyboard.press('ArrowDown');
   await expect(page.locator('#dialogue-choices button[aria-selected=true]')).toContainText('▶ 2. How do I walk?');

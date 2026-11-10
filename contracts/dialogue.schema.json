@@ -39,7 +39,7 @@
         "label": {"type": "string", "minLength": 1, "maxLength": 48},
         "next": {"$ref": "#/$defs/Next"},
         "set": {"$ref": "#/$defs/Set"},
-        "do": {"enum": ["hints_low", "hints_off", "open_settings", "open_menu"]},
+        "do": {"enum": ["hints_low", "hints_off", "open_settings", "open_menu", "open_practice"]},
         "if": {"$ref": "#/$defs/Flag"},
         "unless": {"$ref": "#/$defs/Flag"}
       }

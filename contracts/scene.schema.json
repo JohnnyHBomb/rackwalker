@@ -3049,6 +3049,7 @@
         "status",
         "step",
         "proposal",
+        "write_blocked",
         "changes",
         "checklist",
         "note",
@@ -3120,6 +3121,13 @@
               "type": "null"
             }
           ]
+        },
+        "write_blocked": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "description": "Why applying this line's proposal would run as practice for this player (the proxy's mode, or what the player's own NetBox permissions lack); null when it would be written, and when nothing is proposed."
         },
         "changes": {
           "type": "array",

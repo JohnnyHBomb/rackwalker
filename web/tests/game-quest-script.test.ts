@@ -95,8 +95,8 @@ describe('quest questions as dialogue scripts', () => {
     const offer = offerScript(b, 'Practice Island');
     expect(validateScript(offer)).toEqual([]);
     const first = Object.values(offer.nodes).find((n) => n.choices)!;
-    expect(first.text).toBe("Nobody can tell how Practice Island reaches the internet. Let's find out.");
-    expect(first.choices!.map((c) => c.label)).toEqual(["Let's find out", 'Or: The link between two rooms', 'Show me the quest log', 'Not now']);
+    expect(first.text).toBe("Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.");
+    expect(first.choices!.map((c) => c.label)).toEqual(["Let's find out", 'Or: The link between Loft and Quay Room', 'Show me the quest log', 'Not now']);
     expect(first.choices![0]!.set![PICK]).toBe(b.quests[0]!.id);
     for (const q of b.quests) if (q.step?.input === 'choice') expect(validateScript(stepScript(q.step))).toEqual([]);
     const q = quest as unknown as Quest;

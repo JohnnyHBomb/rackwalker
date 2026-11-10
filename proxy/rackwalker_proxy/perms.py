@@ -98,6 +98,8 @@ class PermissionReader:
             grants: set[tuple[str, str]] = set()
             constrained: set[tuple[str, str]] = set()
             for r in rows:
+                if not r.get("enabled", True):
+                    continue  # asked of NetBox with enabled=true as well; never trust the filter alone
                 pairs = {(t, a) for t in r.get("object_types") or [] for a in r.get("actions") or []}
                 (constrained if r.get("constraints") else grants).update(pairs)
             perms = Permissions(False, grants, constrained - grants)
@@ -105,21 +107,35 @@ class PermissionReader:
         return perms
 
 
+NOT_WRITTEN = "Nothing was written: "
+
+
 def _blocked(e: ApiError, reason: str, what: str) -> ApiError:
     if e.code == "netbox_error" and (e.details or {}).get("status") in (401, 403):
-        return ApiError("netbox_error", f"Nothing was written: RackWalker cannot check what you may change, because NetBox refuses the "
+        return ApiError("netbox_error", f"{NOT_WRITTEN}RackWalker cannot check what you may change, because NetBox refuses the "
                         f"proxy's own token the view of {what}. Whoever runs RackWalker adds that view permission to the proxy's NetBox user.",
                         {"reason": reason})
     return e
 
 
-def refusal(missing: list[dict[str, Any]]) -> ApiError:
-    """The 403 a player gets for a change their own NetBox permissions do not cover."""
+def why_not(missing: list[dict[str, Any]]) -> str:
+    """In a sentence: what the player's NetBox user may not do, and what to do about it."""
     words = ", ".join(f"{m['action']} {m['object_type']}" for m in missing)
     extra = (" A permission with constraints does not count here: the game cannot evaluate constraints, so make that change in NetBox itself."
              if any(m["constrained"] for m in missing) else "")
-    return ApiError("forbidden", f"Nothing was written: your NetBox user may not {words}. Ask a NetBox admin for that permission; "
-                    f"until then you can still play in practice mode.{extra}", {"reason": "player_lacks_permission", "missing": missing})
+    return (f"Your NetBox user may not {words}. Ask a NetBox admin for that permission; until then you can still play in practice "
+            f"mode.{extra}")
+
+
+def refusal(missing: list[dict[str, Any]]) -> ApiError:
+    """The 403 a player gets for a change their own NetBox permissions do not cover."""
+    text = why_not(missing)
+    return ApiError("forbidden", NOT_WRITTEN + text[0].lower() + text[1:], {"reason": "player_lacks_permission", "missing": missing})
+
+
+# Every (object type, action) a quest line may need for its change.
+QUEST_NEEDS = [("dcim.cable", "add"), ("circuits.circuit", "add"), ("circuits.circuittermination", "add"), ("ipam.ipaddress", "add"),
+               ("ipam.prefix", "add"), ("dcim.device", "change"), ("dcim.rack", "change"), ("dcim.site", "change")]
 
 
 async def check_health(client: nb.NetBox) -> str:

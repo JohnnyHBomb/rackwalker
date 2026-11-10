@@ -62,7 +62,7 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
     expect([g.x, g.y]).toEqual([d.x + 2, d.y + 1]);
   }
   expect(await shell(page, 'return [...s.overworld.marks]')).toEqual([[1, 'offer'], [2, 'offer'], [3, 'offer'], [ISLAND, 'offer']]);
-  await expect(page.locator('#quest-next')).toContainText('Next: The other end of nd-core1 mgmt0');
+  await expect(page.locator('#quest-next')).toContainText('Next: The other end of nd-rtr1 ge-0/0/0');
   await page.screenshot({ path: `${SHOTS}/giver-overworld.png` });
 
   // Tap the giver: the player walks up and they say why it matters, in plain words, with the lines on offer.
@@ -74,7 +74,8 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 10_000 }).toBe('quest-offer');
   await typed(page);
   let d = (await game(page)).dialogue!;
-  expect(d.text).toBe('A port is marked as in use, but nobody recorded what it connects to.');
+  // the first thing they say is what is missing and where, with the names NetBox has
+  expect(d.text).toBe("nd-rtr1 ge-0/0/0 has an address but no cable. A port in use with no far end on record cannot be traced. Let's find its far end.");
   expect(d.choices).toEqual(["Let's find out", 'Or: What powers rack ND-R2', 'Show me the quest log', 'Not now']);
   await expect(page.locator('#dialogue .name')).toHaveText('Tansy');
   await expect(page.locator('#dialogue .portrait-giver')).toBeVisible();
@@ -85,14 +86,15 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('quest-step');
   await typed(page);
   d = (await game(page)).dialogue!;
-  expect(d.text).toBe('nd-core1 port mgmt0 is carrying an address, but has no cable on record. What is on the other end?');
-  expect(d.choices).toEqual(['nd-fw1 (firewall)', 'nd-rtr1 (router)', 'More choices', "I don't know yet"]);
+  expect(d.text).toBe('What is on the other end of nd-rtr1 ge-0/0/0?');
+  expect(d.choices).toEqual(['nd-fw1 (firewall)', 'nd-core1 (switch)', 'More choices', "I don't know yet"]);
   await page.screenshot({ path: `${SHOTS}/giver-question.png` });
   await choose(page, "I don't know yet");
 
   // A field task: what to look for on site. Nothing is lost, nothing is charged.
   await expect(page.locator('#quest-field-task')).toBeVisible();
-  await expect(page.locator('#quest-checklist li').first()).toHaveText('Find nd-core1: rack ND-R1 U38 in Server Room.');
+  await expect(page.locator('#quest-checklist li').first()).toHaveText('Find nd-rtr1: rack ND-R1 U36 in Server Room.');
+  await expect(page.locator('#quest-field-go')).toHaveText('Show me nd-rtr1 (rack ND-R1 U36 in Server Room)');
   await page.screenshot({ path: `${SHOTS}/field-task.png` });
   await page.click('#quest-field-ok');
   await expect(page.locator('#quest-field-task')).toHaveCount(0);
@@ -104,18 +106,30 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await expect(page.locator('#quest-waiting .q')).toContainText('waiting for you (field task)');
   await expect(page.locator('#quest-open .q[data-status=offered]').first()).toBeVisible();
   await expect(page.locator('#quest-rewards')).toContainText('Level 1 · 0 / 250 XP');
-  await expect(page.locator('#quest-sites [data-site="1"]')).toContainText('North Depot: 8');
+  await expect(page.locator('#quest-sites [data-site="1"]')).toContainText('North Depot: 87%');
+  // said up front, not after the last answer: on this proxy nothing would be written
+  await expect(page.locator('#quest-write-note')).toHaveText('This proxy serves canned fixture data: nothing is written. Lines you finish count as practice: no XP.');
   await page.screenshot({ path: `${SHOTS}/quest-log.png` });
 
   // "I know more now": the same question again, then the far port, the cable, and a preview of the change.
   await page.locator('#quest-waiting .q button', { hasText: 'I know more now' }).click();
-  await choose(page, 'nd-acc-nd-r2');
-  await choose(page, 'Gi1/0/7');
+  await choose(page, 'nd-fw1');
+  // the likeliest ports first: the highest-numbered free ones
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('Which port on nd-fw1 does it land on?');
+  await typed(page);
+  expect((await game(page)).dialogue!.choices.slice(0, 2)).toEqual(['port8', 'port7']);
+  await choose(page, 'port8');
+  await choose(page, 'Multimode fibre');
+  await expect(page.locator('#quest-preview')).toBeVisible();
+  await expect(page.locator('#quest-changes li')).toHaveText(['New cable: nd-rtr1 ge-0/0/0 to nd-fw1 port8 (multimode fibre).']);
+  // one answer can be changed without starting again: the last question comes back, the earlier answers stay
+  await page.click('#quest-back');
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('What kind of cable is it?');
   await choose(page, 'Copper patch lead');
   await expect(page.locator('#quest-preview')).toBeVisible();
-  await expect(page.locator('#quest-preview .said li').first()).toContainText('What is on the other end? → nd-acc-nd-r2 (switch)');
+  await expect(page.locator('#quest-preview .said li').first()).toContainText('What is on the other end of nd-rtr1 ge-0/0/0? → nd-fw1 (firewall)');
   await expect(page.locator('#quest-preview .said li')).toHaveCount(3);
-  await expect(page.locator('#quest-changes li')).toHaveText(['New cable: nd-core1 mgmt0 to nd-acc-nd-r2 Gi1/0/7 (copper patch lead (Cat 6)).']);
+  await expect(page.locator('#quest-changes li')).toHaveText(['New cable: nd-rtr1 ge-0/0/0 to nd-fw1 port8 (copper patch lead (Cat 6)).']);
   await expect(page.locator('#quest-diff')).toContainText('connect cable');
   await expect(page.locator('#quest-diff')).toContainText('type: (empty) → cat6');
   await expect(page.locator('#quest-mode')).toContainText('nothing is written');
@@ -132,14 +146,21 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await page.click('#quest-reward-ok');
   await expect.poll(() => shell(page, 'return s.quests.rewards()')).toMatchObject({ xp: 0, practised: 1, completed: 0 });
   expect(await shell(page, 'return s.lastJingle')).toBeNull();
+  // a practice run changes nothing: the line still stands with every answer and its change ready
+  await page.click('#quest-next');
+  const kept = page.locator('#quest-waiting .q', { hasText: 'The other end of nd-rtr1 ge-0/0/0' });
+  await expect(kept).toContainText('practised (not written)');
+  await kept.locator('button', { hasText: 'Show the change' }).click();
+  await expect(page.locator('#quest-preview .said li')).toHaveCount(3);
+  await expect(page.locator('#quest-changes li')).toHaveText(['New cable: nd-rtr1 ge-0/0/0 to nd-fw1 port8 (copper patch lead (Cat 6)).']);
 });
 
 test('the marker: an arrow towards a building off screen, then the object inside it', async ({ page }) => {
   await signIn(page, 27);
   // Track a line at East Exchange from the log: the arrow at the edge of the view points towards its quest giver.
   await page.click('#quest-next');
-  await page.locator('#quest-open .q', { hasText: 'ee-core1 mgmt0' }).locator('button', { hasText: 'Point me there' }).click();
-  await expect(page.locator('#quest-next')).toContainText('ee-core1 (rack EE-A1 U38 in Hall A)');
+  await page.locator('#quest-open .q', { hasText: 'ee-rtr1 ge-0/0/0' }).locator('button', { hasText: 'Point me there' }).click();
+  await expect(page.locator('#quest-next')).toContainText('ee-rtr1 (rack EE-A1 U36 in Hall A)');
   const far = await shell<boolean>(page, `const g = s.map.giverOf(3), v = s.overworld.view;
     const x = g.x * 16 + 8 - v.x, y = g.y * 16 + 8 - v.y; return x < 0 || y < 0 || x >= 256 || y >= 224;`);
   expect(far).toBe(true);
@@ -164,11 +185,11 @@ test('the marker: an arrow towards a building off screen, then the object inside
   await page.keyboard.press('Escape');
   await expect(page.locator('#quest-giver')).toContainText('things to find out');
   await page.click('#quest-next');
-  await page.locator('#quest-open .q', { hasText: 'ee-core1 mgmt0' }).locator('button', { hasText: 'Point me there' }).click();
+  await page.locator('#quest-open .q', { hasText: 'ee-rtr1 ge-0/0/0' }).locator('button', { hasText: 'Point me there' }).click();
   await expect.poll(async () => (await game(page)).view).toContain('"rackId":9');
-  await expect.poll(() => shell(page, 'return s.quests.pinShown')).toBe('device:43');
+  await expect.poll(() => shell(page, 'return s.quests.pinShown')).toBe('device:44');
   const pin = await page.locator('#quest-pin').boundingBox();
-  const dev = await page.evaluate(() => window.__iso!.screenOf('device:43'));
+  const dev = await page.evaluate(() => window.__iso!.screenOf('device:44'));
   expect(Math.abs(pin!.x + pin!.width / 2 - dev!.x)).toBeLessThan(3);
   await page.screenshot({ path: `${SHOTS}/marker-iso.png` });
   await page.click('#quest-giver');
@@ -210,7 +231,7 @@ test('the practice island: a whole quest from giver to verified outcome, one lin
   await page.keyboard.press('KeyE');
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('quest-offer');
   await typed(page);
-  expect((await game(page)).dialogue!.text).toBe("Nobody can tell how Practice Island reaches the internet. Let's find out.");
+  expect((await game(page)).dialogue!.text).toBe("Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.");
   await choose(page, "Let's find out");
   await choose(page, 'sw-quay-1');
   // A typed value: the circuit ID from the bill. An empty answer would park the line; a real one goes on.
@@ -280,24 +301,23 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
   await page.click('#quest-next');
   await page.locator('#quest-open .q', { hasText: 'Audit rack PI-Q1' }).locator('button', { hasText: 'Start' }).click();
   await expect(page.locator('#quest-step')).toContainText('Walk rack PI-Q1 top to bottom and read each label. Leave blank what you cannot see.');
-  await expect(page.locator('#quest-step label.f')).toHaveText(['sw-quay-2 (U8): serial number', 'sw-quay-2 (U8): asset tag', 'sw-quay-2 (U8): platform (operating system)']);
+  await expect(page.locator('#quest-step label.f')).toHaveText(['sw-quay-2 (U8): serial number', 'sw-quay-2 (U8): asset tag']);
   // The label maker (on loan on the island) proposes the next tag of the site's pattern; the field stays empty until the player takes it.
   await expect(page.locator('#quest-field-1')).toHaveValue('');
   await expect(page.locator('#quest-field-1-suggest')).toHaveText('Use PI-0004');
   await page.screenshot({ path: `${SHOTS}/audit-errand.png` });
-  await page.click('#quest-field-1-suggest');
-  await expect(page.locator('#quest-field-1')).toHaveValue('PI-0004');
   await page.fill('#quest-field-0', 'SYN-PI-0002');
   await page.click('#quest-step-send');
   await expect(page.locator('#quest-diff')).toContainText('serial: (empty) → SYN-PI-0002');
   await page.click('#quest-apply');
-  // Two of three labels: the island confirms what was read, the rest of the errand stays open.
+  // One of two labels: the island confirms what was read, and the errand goes on with the rest only.
   await expect(page.locator('#quest-reward h2')).toHaveText('Practice run');
   await expect(page.locator('#quest-reward .sparkle')).toHaveCount(0);
   expect(await page.evaluate(() => document.body.classList.contains('quest-shake'))).toBe(false);
   await page.click('#quest-reward-ok');
-  await expect(page.locator('#quest-step label.f')).toHaveText(['sw-quay-2 (U8): platform (operating system)']);
-  await page.selectOption('#quest-field-0', { label: 'Example OS' });
+  await expect(page.locator('#quest-step label.f')).toHaveText(['sw-quay-2 (U8): asset tag']);
+  await page.click('#quest-field-0-suggest');
+  await expect(page.locator('#quest-field-0')).toHaveValue('PI-0004');
   await page.click('#quest-step-send');
   await page.click('#quest-apply');
   await expect(page.locator('#quest-reward h2')).toHaveText('Practice complete');
@@ -305,6 +325,19 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
   await page.click('#quest-reward-ok');
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-practice-identity');
   await page.keyboard.press('Escape');
+
+  // What a device runs is one question (one answer for every device of a model), not a field to read off a label.
+  await page.click('#quest-next');
+  await page.locator('#quest-open .q', { hasText: 'What sw-quay-2 runs' }).locator('button', { hasText: 'Start' }).click();
+  await expect.poll(async () => (await game(page)).dialogue?.text).toBe('What does sw-quay-2 run?');
+  await typed(page);
+  expect((await game(page)).dialogue!.choices).toEqual(['Example OS', 'Something not listed', "I don't know yet"]);
+  await choose(page, 'Example OS');
+  await expect(page.locator('#quest-changes li')).toHaveText(['sw-quay-2: platform Example OS.']);
+  await page.click('#quest-apply');
+  await expect(page.locator('#quest-reward h2')).toHaveText('Practice complete');
+  await expect(page.locator('#quest-reward')).toContainText('Practice Island is now');
+  await page.click('#quest-reward-ok');
 
   // Everything else on the island, then: 100 %, all in order, and its Confusion shows by the hut. Optional, visible.
   await play(['site_record', 'rack_devices_unpositioned', 'room_layout']);
@@ -335,4 +368,19 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
   await page.click('#quest-boss-9000001');
   await expect(page.locator('#quest-sites [data-site="9000001"]')).toContainText('Its Confusion waits for you.');
   expect(await shell(page, 'return [...s.overworld.bosses]')).toEqual([]);
+});
+
+test('the practice island is offered at the very start, in Ilatea\'s first line', async ({ page }) => {
+  await boot(page);
+  await page.fill('#signin-token', players[30]!.token);
+  await page.click('#signin-submit');
+  await page.evaluate(() => window.__game!.ready);
+  await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-intro');
+  await typed(page);
+  expect((await game(page)).dialogue!.choices).toContain('Let me practise first');
+  await page.click('#dialogue-choices button:has-text("Let me practise first")');
+  // the player stands in front of the island's hut, and Ilatea says what the island is
+  await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-practice');
+  const hut = await page.evaluate((id) => window.__game!.shell.map!.doorOf(id)!, ISLAND);
+  expect((await game(page)).pos).toEqual({ x: hut.x, y: hut.y + 2 });
 });

@@ -1836,6 +1836,12 @@ class Quest(BaseModel):
     ]
     step: QuestStep | None
     proposal: ChangeSet | None
+    write_blocked: Annotated[
+        str | None,
+        Field(
+            description="Why applying this line's proposal would run as practice for this player (the proxy's mode, or what the player's own NetBox permissions lack); null when it would be written, and when nothing is proposed."
+        ),
+    ]
     changes: Annotated[
         list[str],
         Field(

@@ -48,8 +48,11 @@ def example_estate(base: int = 9_000_000, site_name: str = SITE_NAME, complete: 
             e.ports[("interface", port_id)] = {"kind": "interface", "id": port_id, "device_id": did, "name": pname,
                                                "type": "1000base-t" if i <= 24 else "10gbase-x-sfpp", "enabled": True, "mgmt_only": False,
                                                "cable_id": None, "description": "", "mark_connected": False, "rear_ids": []}
-            if i == 1:
-                e.ips[base + n] = {"id": base + n, "address": f"192.0.2.{10 + n}/24", "interface_id": port_id}
+        # managed in-band, as switches are: the address sits on a VLAN interface, which takes no cable
+        vlan = base + 100 + n
+        e.ports[("interface", vlan)] = {"kind": "interface", "id": vlan, "device_id": did, "name": "Vlan10", "type": "virtual", "enabled": True,
+                                        "mgmt_only": True, "cable_id": None, "description": "", "mark_connected": False, "rear_ids": []}
+        e.ips[base + n] = {"id": base + n, "address": f"192.0.2.{10 + n}/24", "interface_id": vlan}
     e.prefixes[base + 1] = {"id": base + 1, "prefix": "192.0.2.0/24"}
     return e
 

@@ -6,7 +6,7 @@
   "can_write": false,
   "write_blocked": "The practice island is made up: nothing you do here reaches NetBox.",
   "all_in_order": false,
-  "message": "9 things to find out at the practice island; the most useful one comes first.",
+  "message": "10 things to find out at the practice island; the most useful one comes first.",
   "findings": [
     {
       "id": "site_no_way_out:site:9000001",
@@ -98,7 +98,7 @@
       "kind": "rack_audit",
       "rank": "identity",
       "site_id": 9000001,
-      "title": "1 device in rack PI-Q1 cannot be told apart on paper (serial, asset tag or platform missing).",
+      "title": "sw-quay-2 in rack PI-Q1 has no serial number or asset tag on record.",
       "evidence": [
         {
           "kind": "rack",
@@ -113,11 +113,25 @@
       ]
     },
     {
+      "id": "platform_survey:site:9000001:ex-a2400",
+      "kind": "platform_survey",
+      "rank": "identity",
+      "site_id": 9000001,
+      "title": "NetBox does not say what sw-quay-2 (EX-A2400) at Practice Island runs.",
+      "evidence": [
+        {
+          "kind": "device",
+          "id": 9000002,
+          "name": "sw-quay-2"
+        }
+      ]
+    },
+    {
       "id": "site_record:site:9000001",
       "kind": "site_record",
       "rank": "identity",
       "site_id": 9000001,
-      "title": "Practice Island cannot be put on a map or named to a carrier (gps and facility missing).",
+      "title": "Practice Island has no GPS position or facility name on record, so it cannot be put on a map or named to a carrier.",
       "evidence": [
         {
           "kind": "site",
@@ -131,7 +145,7 @@
       "kind": "rack_devices_unpositioned",
       "rank": "layout",
       "site_id": 9000001,
-      "title": "1 device in rack PI-L1 has no rack unit.",
+      "title": "sw-loft-1 in rack PI-L1 has no rack unit on record.",
       "evidence": [
         {
           "kind": "rack",
@@ -150,7 +164,7 @@
       "kind": "room_layout",
       "rank": "layout",
       "site_id": 9000001,
-      "title": "1 rack in Loft has no room or no place on the floor plan.",
+      "title": "Rack PI-L1 in Loft has no place on the floor plan on record.",
       "evidence": [
         {
           "kind": "rack",
@@ -168,7 +182,7 @@
       "rank": "connectivity",
       "site_id": 9000001,
       "title": "The way out of Practice Island",
-      "purpose": "Nobody can tell how Practice Island reaches the internet. Let's find out.",
+      "purpose": "Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.",
       "outcome": "You can now trace Practice Island to the carrier's hand-off.",
       "status": "offered",
       "step": {
@@ -209,6 +223,7 @@
       "proposal": null,
       "changes": [],
       "checklist": [],
+      "write_blocked": null,
       "note": null,
       "said": [],
       "target": {
@@ -251,9 +266,9 @@
       "kind": "locations_not_linked",
       "rank": "connectivity",
       "site_id": 9000001,
-      "title": "The link between two rooms",
-      "purpose": "If the link between these rooms fails, nobody knows which cable to check. Let's record it.",
-      "outcome": "You can now trace from one room to the other.",
+      "title": "The link between Loft and Quay Room",
+      "purpose": "Loft and Quay Room at Practice Island have no link between them. If that link fails, nobody knows which cable to check. Let's record it.",
+      "outcome": "You can now trace from Loft to Quay Room.",
       "status": "offered",
       "step": {
         "id": "peer",
@@ -293,6 +308,7 @@
       "proposal": null,
       "changes": [],
       "checklist": [],
+      "write_blocked": null,
       "note": null,
       "said": [],
       "target": {
@@ -341,7 +357,7 @@
       "rank": "connectivity",
       "site_id": 9000001,
       "title": "What sw-quay-1 plugs into",
-      "purpose": "If sw-quay-1 drops off the network, nobody can tell which port to check. Let's record its uplink.",
+      "purpose": "sw-quay-1 has 26 ports and nothing recorded on any of them. If it drops off the network, nobody can tell which port to check. Let's record its uplink.",
       "outcome": "You can now trace sw-quay-1 to what it plugs into.",
       "status": "offered",
       "step": {
@@ -382,6 +398,7 @@
       "proposal": null,
       "changes": [],
       "checklist": [],
+      "write_blocked": null,
       "note": null,
       "said": [],
       "target": {
@@ -414,7 +431,7 @@
       "updated_at": null
     }
   ],
-  "queued": 6,
+  "queued": 7,
   "next_quest_id": "q:site_no_way_out:site:9000001",
   "sites": [
     {
@@ -425,7 +442,7 @@
         "total": 30,
         "open": 12
       },
-      "open_quests": 9,
+      "open_quests": 10,
       "boss_ready": false,
       "boss_acknowledged": false,
       "giver": {

@@ -5,7 +5,7 @@
   "rank": "connectivity",
   "site_id": 9000001,
   "title": "The way out of Practice Island",
-  "purpose": "Nobody can tell how Practice Island reaches the internet. Let's find out.",
+  "purpose": "Nobody can tell from NetBox how Practice Island reaches the outside world. Let's find out.",
   "outcome": "You can now trace Practice Island to the carrier's hand-off.",
   "status": "active",
   "step": {
@@ -26,6 +26,7 @@
   "proposal": null,
   "changes": [],
   "checklist": [],
+  "write_blocked": null,
   "note": null,
   "said": [
     {

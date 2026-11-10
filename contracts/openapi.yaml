@@ -222,7 +222,7 @@ paths:
         default: {$ref: "#/components/responses/Error"}
   /api/game/quests/answer:
     post:
-      summary: Answer the question a quest line is waiting at (step "restart" starts the line again). "I don't know yet" parks the line.
+      summary: Answer the question a quest line is waiting at (step "restart" starts the line again, step "back" takes back the last answer). "I don't know yet" parks the line.
       security: [{session: []}]
       parameters: [{$ref: "#/components/parameters/Csrf"}]
       requestBody:

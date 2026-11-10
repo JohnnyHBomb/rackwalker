@@ -1456,6 +1456,10 @@ export interface Quest {
   step: QuestStep | null;
   proposal: ChangeSet | null;
   /**
+   * Why applying this line's proposal would run as practice for this player (the proxy's mode, or what the player's own NetBox permissions lack); null when it would be written, and when nothing is proposed.
+   */
+  write_blocked: string | null;
+  /**
    * The proposal in plain words, one line per op, with the names an admin knows. Empty when nothing is proposed.
    */
   changes: string[];

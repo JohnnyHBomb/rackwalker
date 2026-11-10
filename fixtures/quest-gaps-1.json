@@ -1,20 +1,11 @@
 {
   "contract_version": "2.3.0",
   "site_id": 1,
-  "total": 8,
+  "total": 3,
   "offset": 0,
   "limit": 5,
   "unlisted": 0,
   "items": [
-    {
-      "id": "interface:1:cable",
-      "kind": "interface",
-      "object_id": 1,
-      "field": "cable",
-      "site_id": 1,
-      "rank": "connectivity",
-      "label": "nd-core1 mgmt0 has an address but no cable."
-    },
     {
       "id": "interface:26:cable",
       "kind": "interface",
@@ -34,28 +25,19 @@
       "label": "nd-fw1 port8 has an address but no cable."
     },
     {
-      "id": "interface:64:cable",
-      "kind": "interface",
-      "object_id": 64,
-      "field": "cable",
+      "id": "site:1:facility",
+      "kind": "site",
+      "object_id": 1,
+      "field": "facility",
       "site_id": 1,
-      "rank": "connectivity",
-      "label": "nd-acc-nd-r2 mgmt0 has an address but no cable."
-    },
-    {
-      "id": "interface:100:cable",
-      "kind": "interface",
-      "object_id": 100,
-      "field": "cable",
-      "site_id": 1,
-      "rank": "connectivity",
-      "label": "nd-acc-nd-r3 mgmt0 has an address but no cable."
+      "rank": "identity",
+      "label": "North Depot has no facility name."
     }
   ],
   "completeness": {
-    "percent": 84,
-    "total": 134,
-    "open": 21
+    "percent": 87,
+    "total": 129,
+    "open": 16
   },
   "source": "fixture",
   "incomplete": []
