@@ -1,0 +1,429 @@
+{
+ "pack": "providers",
+ "id": "providers-es",
+ "version": "1.0.0",
+ "country": "ES",
+ "title": "Common providers: Spain",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed and mobile operators, the regional cable operators and the main wholesale fibre networks; local fibre operators and business ISPs are partial.",
+ "missing": [
+  "Local cable and fibre operators (the regulator's register holds several thousand)",
+  "Smaller business ISPs",
+  "Regional research networks",
+  "AS numbers for Onivia and Reintel (none confirmed: they sell no internet service)",
+  "A website for Aire Networks (it did not answer)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "CNMC: Registro de Operadores",
+   "url": "https://numeracionyoperadores.cnmc.es/operadores",
+   "read": "2026-11-11",
+   "terms": "The register is a search form with no list to read and no reuse terms on the page; the legal notice did not answer on the read date: nothing is copied.",
+   "use": "cited",
+   "result": "The search page answered on the read date; no list was read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Spain",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Spain",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 19 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Spain",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Spain",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 19 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "18 of 19 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "20 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "TelcoTitans: Orange and the MasOrange joint venture",
+   "url": "https://www.telcotitans.com/orangewatch/orange-gets-spanish-green-light-to-absorb-masorange/10383.article",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above (article of 21 April 2026): Orange was cleared to take over the whole of the MasOrange joint venture. Whether that is complete was not confirmed."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Movistar",
+   "slug": "movistar",
+   "kind": "national_carrier",
+   "aka": [
+    "Telefónica",
+    "Telefónica de España",
+    "Telefónica Empresas",
+    "Movistar Empresas"
+   ],
+   "asns": [
+    {
+     "asn": 3352,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.movistar.es/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile. Telefónica Empresas for business."
+  },
+  {
+   "name": "Orange",
+   "slug": "orange-es",
+   "kind": "national_carrier",
+   "aka": [
+    "Orange España",
+    "Orange Espagne",
+    "MasOrange",
+    "Jazztel",
+    "Amena"
+   ],
+   "asns": [
+    {
+     "asn": 12479,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange.es/",
+   "support_url": null,
+   "notes": "Fixed and mobile; part of MasOrange. AS12715 (Jazztel) is registered to it and was not announced on the read date."
+  },
+  {
+   "name": "Vodafone España",
+   "slug": "vodafone-es",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "Vodafone Ono",
+    "Ono",
+    "Lowi",
+    "Zegona"
+   ],
+   "asns": [
+    {
+     "asn": 12430,
+     "rir": "ripe"
+    },
+    {
+     "asn": 6739,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.es/",
+   "support_url": null,
+   "notes": "Fixed, cable and mobile; owned by Zegona. AS6739 was Ono's."
+  },
+  {
+   "name": "MásMóvil",
+   "slug": "masmovil",
+   "kind": "national_carrier",
+   "aka": [
+    "Yoigo",
+    "Xfera Móviles",
+    "Xtra Telecom",
+    "MasOrange",
+    "Pepephone"
+   ],
+   "asns": [
+    {
+     "asn": 16299,
+     "rir": "ripe"
+    },
+    {
+     "asn": 15704,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.masmovil.es/",
+   "support_url": null,
+   "notes": "Fixed and mobile under several names (Yoigo, Pepephone); part of MasOrange."
+  },
+  {
+   "name": "DIGI",
+   "slug": "digi-es",
+   "kind": "cable_fibre",
+   "aka": [
+    "Digi Spain Telecom",
+    "DIGI mobil"
+   ],
+   "asns": [
+    {
+     "asn": 57269,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.digimobil.es/",
+   "support_url": null,
+   "notes": "Fibre and mobile."
+  },
+  {
+   "name": "Euskaltel",
+   "slug": "euskaltel",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12338,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.euskaltel.com/",
+   "support_url": null,
+   "notes": "Cable and fibre in the Basque Country; part of MasOrange."
+  },
+  {
+   "name": "R",
+   "slug": "r-cable",
+   "kind": "cable_fibre",
+   "aka": [
+    "R Cable",
+    "mundo-R"
+   ],
+   "asns": [
+    {
+     "asn": 12334,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.mundo-r.com/",
+   "support_url": null,
+   "notes": "Cable and fibre in Galicia; part of MasOrange."
+  },
+  {
+   "name": "Telecable",
+   "slug": "telecable",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12946,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telecable.es/",
+   "support_url": null,
+   "notes": "Cable and fibre in Asturias; part of MasOrange."
+  },
+  {
+   "name": "Adamo",
+   "slug": "adamo",
+   "kind": "cable_fibre",
+   "aka": [
+    "Adamo Telecom Iberia"
+   ],
+   "asns": [
+    {
+     "asn": 35699,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.adamo.es/",
+   "support_url": null,
+   "notes": "Fibre, largely rural; retail and wholesale."
+  },
+  {
+   "name": "Avatel",
+   "slug": "avatel",
+   "kind": "cable_fibre",
+   "aka": [
+    "Avatel Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 200845,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.avatel.es/",
+   "support_url": null,
+   "notes": "A group of local fibre operators."
+  },
+  {
+   "name": "lyntia",
+   "slug": "lyntia",
+   "kind": "wholesale",
+   "aka": [
+    "Lyntia Networks"
+   ],
+   "asns": [
+    {
+     "asn": 12541,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.lyntia.com/",
+   "support_url": null,
+   "notes": "Wholesale fibre and dark fibre."
+  },
+  {
+   "name": "Onivia",
+   "slug": "onivia",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.onivia.com/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; never the name on the bill."
+  },
+  {
+   "name": "Reintel",
+   "slug": "reintel",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.reintel.es/",
+   "support_url": null,
+   "notes": "Dark fibre along the power grid and the railways."
+  },
+  {
+   "name": "Aire Networks",
+   "slug": "aire-networks",
+   "kind": "wholesale",
+   "aka": [
+    "Grupo Aire"
+   ],
+   "asns": [
+    {
+     "asn": 29119,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Wholesale to local operators."
+  },
+  {
+   "name": "Evolutio",
+   "slug": "evolutio",
+   "kind": "business_isp",
+   "aka": [
+    "Evolutio Cloud Enabler",
+    "BT España"
+   ],
+   "asns": [
+    {
+     "asn": 12462,
+     "rir": "ripe"
+    },
+    {
+     "asn": 13186,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.evolutio.com/",
+   "support_url": null,
+   "notes": "Formerly BT's Spanish unit."
+  },
+  {
+   "name": "Sarenet",
+   "slug": "sarenet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 3262,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sarenet.es/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q127785902"
+  },
+  {
+   "name": "RedIRIS",
+   "slug": "rediris",
+   "kind": "research_education",
+   "aka": [
+    "Red.es"
+   ],
+   "asns": [
+    {
+     "asn": 766,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.rediris.es/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

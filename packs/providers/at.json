@@ -1,0 +1,277 @@
+{
+ "pack": "providers",
+ "id": "providers-at",
+ "version": "1.0.0",
+ "country": "AT",
+ "title": "Common providers: Austria",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Complete for the three national operators (fixed and mobile); covers the largest regional cable and utility networks and a few business ISPs. The regulator's provider directory was not read.",
+ "missing": [
+  "Regional utility and municipal fibre networks (many; only the largest are listed)",
+  "Smaller cable operators",
+  "Smaller business ISPs",
+  "An AS number for öGIG (none confirmed)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "RTR (Rundfunk und Telekom Regulierungs-GmbH)",
+   "url": "https://www.rtr.at/",
+   "read": "2026-11-11",
+   "terms": "Impressum: all rights reserved to RTR; texts may be downloaded for personal, non-commercial use only: nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date; the provider directory was not found at its former address. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Austria",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Austria",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 12 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "12 of 12 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "13 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  }
+ ],
+ "providers": [
+  {
+   "name": "A1",
+   "slug": "a1",
+   "kind": "national_carrier",
+   "aka": [
+    "A1 Telekom Austria",
+    "Telekom Austria",
+    "A1 Business"
+   ],
+   "asns": [
+    {
+     "asn": 8447,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.a1.net/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile."
+  },
+  {
+   "name": "Magenta",
+   "slug": "magenta",
+   "kind": "national_carrier",
+   "aka": [
+    "Magenta Telekom",
+    "Magenta Business",
+    "T-Mobile Austria",
+    "UPC"
+   ],
+   "asns": [
+    {
+     "asn": 8412,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.magenta.at/",
+   "support_url": null,
+   "notes": "Cable, fibre and mobile; part of Deutsche Telekom. AS8412 is registered to T-Mobile Austria."
+  },
+  {
+   "name": "Drei",
+   "slug": "drei",
+   "kind": "national_carrier",
+   "aka": [
+    "3",
+    "Hutchison Drei Austria",
+    "Drei Business",
+    "Tele2",
+    "UTA"
+   ],
+   "asns": [
+    {
+     "asn": 25255,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8437,
+     "rir": "ripe"
+    },
+    {
+     "asn": 12635,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.drei.at/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS8437 carries the former name UTA in the registry."
+  },
+  {
+   "name": "LIWEST",
+   "slug": "liwest",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12605,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.liwest.at/",
+   "support_url": null,
+   "notes": "Cable and fibre in Upper Austria."
+  },
+  {
+   "name": "kabelplus",
+   "slug": "kabelplus",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8339,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.kabelplus.at/",
+   "support_url": null,
+   "notes": "Cable in Lower Austria and Burgenland."
+  },
+  {
+   "name": "Salzburg AG",
+   "slug": "salzburg-ag",
+   "kind": "cable_fibre",
+   "aka": [
+    "CableLink"
+   ],
+   "asns": [
+    {
+     "asn": 8445,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.salzburg-ag.at/",
+   "support_url": null,
+   "notes": "Utility; cable and fibre in Salzburg."
+  },
+  {
+   "name": "spusu",
+   "slug": "spusu",
+   "kind": "mobile",
+   "aka": [
+    "Mass Response"
+   ],
+   "asns": [
+    {
+     "asn": 51265,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.spusu.at/",
+   "support_url": null,
+   "notes": "Mobile, and fixed over other networks. AS51265 is registered to Mass Response Service, the company behind the name."
+  },
+  {
+   "name": "Citycom",
+   "slug": "citycom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 29056,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://citycom.at/",
+   "support_url": null,
+   "notes": "Business fibre in Graz and Styria."
+  },
+  {
+   "name": "next layer",
+   "slug": "next-layer",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 1764,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nextlayer.at/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "öGIG",
+   "slug": "oegig",
+   "kind": "wholesale",
+   "aka": [
+    "oeGIG",
+    "Österreichische Glasfaser-Infrastrukturgesellschaft"
+   ],
+   "asns": [],
+   "website": "https://oegig.at/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; retail through other providers."
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "ACOnet",
+   "slug": "aconet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 1853,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.aco.net/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

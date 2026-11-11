@@ -1,0 +1,312 @@
+{
+ "pack": "providers",
+ "id": "providers-pt",
+ "version": "1.0.0",
+ "country": "PT",
+ "title": "Common providers: Portugal",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the four network operators (fixed and mobile) and the cable operator; wholesale rural fibre networks and business ISPs are partial.",
+ "missing": [
+  "Operators that serve only Madeira or the Azores",
+  "Smaller business ISPs",
+  "Rural wholesale fibre networks other than dstelecom",
+  "An AS number for DIGI (none confirmed)",
+  "A website for Claranet Portugal (it did not answer)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "ANACOM: registered providers of electronic communications",
+   "url": "https://www.anacom.pt/",
+   "read": "2026-11-11",
+   "terms": "The site did not answer an automated read on the read date and its terms were not read: nothing is copied.",
+   "use": "cited",
+   "result": "Not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Portugal",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Portugal",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 12 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Portugal",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Portugal",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 12 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "11 of 12 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "14 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "Total Telecom: Digi Portugal and Nowo",
+   "url": "https://totaltele.com/digi-portugal-acquires-nowo-communications-for-e150m/",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above (article of 5 August 2024): Digi agreed to buy Nowo. The completion date was not read."
+  }
+ ],
+ "providers": [
+  {
+   "name": "MEO",
+   "slug": "meo",
+   "kind": "national_carrier",
+   "aka": [
+    "Altice Portugal",
+    "MEO Empresas",
+    "PT Comunicações",
+    "Portugal Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 3243,
+     "rir": "ripe"
+    },
+    {
+     "asn": 15525,
+     "rir": "ripe"
+    },
+    {
+     "asn": 42863,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.meo.pt/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile. AS15525 is its business network and AS42863 its mobile network."
+  },
+  {
+   "name": "NOS",
+   "slug": "nos",
+   "kind": "national_carrier",
+   "aka": [
+    "NOS Comunicações",
+    "NOS Empresas",
+    "ZON",
+    "Optimus"
+   ],
+   "asns": [
+    {
+     "asn": 2860,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nos.pt/",
+   "support_url": null,
+   "notes": "Cable, fibre and mobile."
+  },
+  {
+   "name": "Vodafone Portugal",
+   "slug": "vodafone-pt",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone"
+   ],
+   "asns": [
+    {
+     "asn": 12353,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.pt/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "DIGI",
+   "slug": "digi-pt",
+   "kind": "national_carrier",
+   "aka": [
+    "Digi Portugal"
+   ],
+   "asns": [],
+   "website": "https://www.digi.pt/",
+   "support_url": null,
+   "notes": "Fibre and mobile; the fourth network operator."
+  },
+  {
+   "name": "NOWO",
+   "slug": "nowo",
+   "kind": "cable_fibre",
+   "aka": [
+    "Cabovisão",
+    "Nowo Communications"
+   ],
+   "asns": [
+    {
+     "asn": 13156,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nowo.pt/",
+   "support_url": null,
+   "notes": "Cable. DIGI agreed to buy it in August 2024; it still traded under its own name on the read date."
+  },
+  {
+   "name": "Ar Telecom",
+   "slug": "ar-telecom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12926,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.artelecom.pt/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "ONI",
+   "slug": "oni",
+   "kind": "business_isp",
+   "aka": [
+    "Onitelecom"
+   ],
+   "asns": [
+    {
+     "asn": 9186,
+     "rir": "ripe"
+    },
+    {
+     "asn": 5626,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.oni.pt/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Claranet Portugal",
+   "slug": "claranet-pt",
+   "kind": "business_isp",
+   "aka": [
+    "Claranet"
+   ],
+   "asns": [
+    {
+     "asn": 8426,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Uses the AS number of Claranet (registered in the United Kingdom)."
+  },
+  {
+   "name": "dstelecom",
+   "slug": "dstelecom",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 202170,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.dstelecom.pt/",
+   "support_url": null,
+   "notes": "Wholesale rural fibre network; retail through other providers."
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q127785902"
+  },
+  {
+   "name": "FCCN",
+   "slug": "fccn",
+   "kind": "research_education",
+   "aka": [
+    "RCTS",
+    "FCT",
+    "Fundação para a Ciência e a Tecnologia"
+   ],
+   "asns": [
+    {
+     "asn": 1930,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.fccn.pt/",
+   "support_url": null,
+   "notes": "Runs RCTS, the national research and education network."
+  }
+ ]
+}

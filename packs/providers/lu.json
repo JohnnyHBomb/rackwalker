@@ -1,0 +1,239 @@
+{
+ "pack": "providers",
+ "id": "providers-lu",
+ "version": "1.0.0",
+ "country": "LU",
+ "title": "Common providers: Luxembourg",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the incumbent, the three mobile network operators, cable, and the business ISPs with a network of their own that were confirmed; the regulator's list of notified operators was not read.",
+ "missing": [
+  "Operators on the regulator's list that are not named here (the list was not found on the pages read)",
+  "Local cable networks of the communes",
+  "A website for LuxNetwork (it did not answer)",
+  "An announced AS number for LuxConnect (AS44818 is registered to it and was not announced on the read date)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "ILR (Institut Luxembourgeois de Régulation)",
+   "url": "https://www.ilr.lu/",
+   "read": "2026-11-11",
+   "terms": "No reuse terms were found on the front page or on the legal information page on the read date: nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date; the list of notified operators was not found. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Luxembourg",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Luxembourg",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 10 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "9 of 10 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "10 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  }
+ ],
+ "providers": [
+  {
+   "name": "POST Luxembourg",
+   "slug": "post-luxembourg",
+   "kind": "national_carrier",
+   "aka": [
+    "POST",
+    "POST Telecom",
+    "P&T Luxembourg",
+    "EPT"
+   ],
+   "asns": [
+    {
+     "asn": 6661,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.post.lu/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile."
+  },
+  {
+   "name": "Tango",
+   "slug": "tango",
+   "kind": "national_carrier",
+   "aka": [
+    "Proximus Luxembourg",
+    "Proximus NXT",
+    "Telindus"
+   ],
+   "asns": [
+    {
+     "asn": 56665,
+     "rir": "ripe"
+    },
+    {
+     "asn": 25367,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tango.lu/",
+   "support_url": null,
+   "notes": "Fixed and mobile; Proximus Luxembourg trades as Tango, and as Proximus NXT (formerly Telindus) for business."
+  },
+  {
+   "name": "Orange Luxembourg",
+   "slug": "orange-lu",
+   "kind": "mobile",
+   "aka": [
+    "Orange",
+    "Orange Communications Luxembourg"
+   ],
+   "asns": [
+    {
+     "asn": 34769,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange.lu/",
+   "support_url": null,
+   "notes": "Mobile, and fixed over the wholesale network."
+  },
+  {
+   "name": "Luxembourg Online",
+   "slug": "luxembourg-online",
+   "kind": "business_isp",
+   "aka": [
+    "LOL",
+    "internet.lu"
+   ],
+   "asns": [
+    {
+     "asn": 8632,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.internet.lu/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Eltrona",
+   "slug": "eltrona",
+   "kind": "cable_fibre",
+   "aka": [
+    "Eltrona Interdiffusion"
+   ],
+   "asns": [
+    {
+     "asn": 204279,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eltrona.lu/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "Cegecom",
+   "slug": "cegecom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 15965,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cegecom.lu/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Visual Online",
+   "slug": "visual-online",
+   "kind": "business_isp",
+   "aka": [
+    "VO"
+   ],
+   "asns": [
+    {
+     "asn": 9008,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vo.lu/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "LuxNetwork",
+   "slug": "luxnetwork",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 29467,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "LuxConnect",
+   "slug": "luxconnect",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.luxconnect.lu/",
+   "support_url": null,
+   "notes": "Dark fibre and data centres."
+  },
+  {
+   "name": "RESTENA",
+   "slug": "restena",
+   "kind": "research_education",
+   "aka": [
+    "Fondation RESTENA"
+   ],
+   "asns": [
+    {
+     "asn": 2602,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.restena.lu/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

@@ -1,0 +1,261 @@
+{
+ "pack": "providers",
+ "id": "providers-gr",
+ "version": "1.0.0",
+ "country": "GR",
+ "title": "Common providers: Greece",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Complete for the three national operators (fixed and mobile) and the research network; fibre newcomers, regional operators and business ISPs are thin, and the regulator's register was not read.",
+ "missing": [
+  "Smaller and regional ISPs (the regulator's register of providers was not found on the pages read)",
+  "The fibre networks of the power utility PPC (no trading name or AS number was confirmed)",
+  "An AS number for HCN (none confirmed), so it is not listed",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "EETT (Hellenic Telecommunications and Post Commission)",
+   "url": "https://www.eett.gr/",
+   "read": "2026-11-11",
+   "terms": "Terms of use: reproduction is allowed for personal or non-commercial use with the source named: nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date; the register of providers was not found on it. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Greece",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Greece",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 9 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Greece",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Greece",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "1 of 9 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "9 of 9 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "11 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "2 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "Deutsche Telekom: COSMOTE TELEKOM becomes Telekom",
+   "url": "https://www.telekom.com/en/newsroom/latest-updates/media-information/2026/09/cosmote-telekom-becomes-telekom",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above (release of 3 September 2026): the trading name of the OTE group became Telekom, complete on 8 September 2026."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telekom",
+   "slug": "telekom-gr",
+   "kind": "national_carrier",
+   "aka": [
+    "COSMOTE",
+    "COSMOTE TELEKOM",
+    "OTE",
+    "ΟΤΕ",
+    "OTEnet",
+    "Hellenic Telecommunications Organisation"
+   ],
+   "asns": [
+    {
+     "asn": 6799,
+     "rir": "ripe"
+    },
+    {
+     "asn": 29247,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telekom.gr/",
+   "support_url": null,
+   "notes": "The incumbent (OTE); fixed and mobile. COSMOTE until September 2026. AS29247 is the mobile network."
+  },
+  {
+   "name": "Vodafone Greece",
+   "slug": "vodafone-gr",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "Vodafone-Panafon",
+    "Hellas Online",
+    "HOL"
+   ],
+   "asns": [
+    {
+     "asn": 3329,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.gr/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS3329 was Hellas Online's number."
+  },
+  {
+   "name": "Nova",
+   "slug": "nova-gr",
+   "kind": "national_carrier",
+   "aka": [
+    "Wind Hellas",
+    "WIND",
+    "Forthnet"
+   ],
+   "asns": [
+    {
+     "asn": 25472,
+     "rir": "ripe"
+    },
+    {
+     "asn": 1241,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nova.gr/",
+   "support_url": null,
+   "notes": "Fixed and mobile; formed from Wind Hellas (AS25472) and Forthnet (AS1241)."
+  },
+  {
+   "name": "Inalan",
+   "slug": "inalan",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 200736,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://inalan.gr/",
+   "support_url": null,
+   "notes": "Fibre to the home. AS200736 is registered to Medianet Invest, the company behind the name."
+  },
+  {
+   "name": "OTEGlobe",
+   "slug": "oteglobe",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12713,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.oteglobe.gr/",
+   "support_url": null,
+   "notes": "International wholesale arm of OTE."
+  },
+  {
+   "name": "Grid Telecom",
+   "slug": "grid-telecom",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 215804,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.grid-telecom.com/",
+   "support_url": null,
+   "notes": "Wholesale fibre along the power transmission grid."
+  },
+  {
+   "name": "Synapsecom",
+   "slug": "synapsecom",
+   "kind": "business_isp",
+   "aka": [
+    "Synapsecom Telecoms"
+   ],
+   "asns": [
+    {
+     "asn": 8280,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.synapsecom.gr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q127785902"
+  },
+  {
+   "name": "GRNET",
+   "slug": "grnet",
+   "kind": "research_education",
+   "aka": [
+    "ΕΔΥΤΕ",
+    "EDYTE",
+    "National Infrastructures for Research and Technology"
+   ],
+   "asns": [
+    {
+     "asn": 5408,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://grnet.gr/",
+   "support_url": null,
+   "notes": "The national research and education network.",
+   "wikidata": "Q5601873"
+  }
+ ]
+}

@@ -1,0 +1,336 @@
+{
+ "pack": "providers",
+ "id": "providers-be",
+ "version": "1.0.0",
+ "country": "BE",
+ "title": "Common providers: Belgium",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed-line carrier, the cable operators, the mobile network operators and the wholesale access networks; business ISPs are partial.",
+ "missing": [
+  "Smaller business ISPs",
+  "AS numbers for the wholesale access networks, Scarlet and DIGI (none confirmed)",
+  "A website for Citymesh (it refused an automated request)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "BIPT (Belgian Institute for Postal Services and Telecommunications)",
+   "url": "https://www.bipt.be/operators",
+   "read": "2026-11-11",
+   "terms": "Conditions of use: information may be used free of charge with the source named, for strictly personal use only: nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date; no list of notified operators was found on it. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Belgium",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Belgium",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 16 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Belgium",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Belgium",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 16 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "15 of 16 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "12 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "4 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "ITdaily: Orange Belgium and VOO merge",
+   "url": "https://itdaily.com/news/network/orange-belgium-voo-merge",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: the merger was completed on 1 October 2025; the VOO name stays on some products."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Proximus",
+   "slug": "proximus",
+   "kind": "national_carrier",
+   "aka": [
+    "Belgacom",
+    "Proximus NXT",
+    "Skynet"
+   ],
+   "asns": [
+    {
+     "asn": 5432,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.proximus.be/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile.",
+   "wikidata": "Q2005282"
+  },
+  {
+   "name": "Telenet",
+   "slug": "telenet",
+   "kind": "cable_fibre",
+   "aka": [
+    "Telenet Business",
+    "BASE"
+   ],
+   "asns": [
+    {
+     "asn": 6848,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telenet.be/",
+   "support_url": null,
+   "notes": "Cable in Flanders and Brussels, and mobile (BASE); owned by Liberty Global."
+  },
+  {
+   "name": "Orange Belgium",
+   "slug": "orange-be",
+   "kind": "national_carrier",
+   "aka": [
+    "Orange",
+    "Mobistar",
+    "VOO"
+   ],
+   "asns": [
+    {
+     "asn": 47377,
+     "rir": "ripe"
+    },
+    {
+     "asn": 12392,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange.be/",
+   "support_url": null,
+   "notes": "Mobile, and cable in Wallonia and Brussels. VOO merged into it on 1 October 2025; AS12392 was VOO's.",
+   "wikidata": "Q24038997"
+  },
+  {
+   "name": "Scarlet",
+   "slug": "scarlet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.scarlet.be/",
+   "support_url": null,
+   "notes": "Low-cost name of Proximus; it runs on the Proximus network."
+  },
+  {
+   "name": "DIGI",
+   "slug": "digi-be",
+   "kind": "mobile",
+   "aka": [
+    "DIGI Belgium",
+    "Digi Communications Belgium"
+   ],
+   "asns": [],
+   "website": "https://www.digi-belgium.be/",
+   "support_url": null,
+   "notes": "The fourth mobile network operator; fibre in some areas."
+  },
+  {
+   "name": "edpnet",
+   "slug": "edpnet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 9031,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.edpnet.be/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Citymesh",
+   "slug": "citymesh",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 199095,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Business mobile and private networks."
+  },
+  {
+   "name": "Dstny",
+   "slug": "dstny",
+   "kind": "business_isp",
+   "aka": [
+    "Destiny"
+   ],
+   "asns": [
+    {
+     "asn": 8368,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.dstny.be/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Win",
+   "slug": "win",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 9208,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.win.be/",
+   "support_url": null,
+   "notes": "Business ISP in Wallonia."
+  },
+  {
+   "name": "Wyre",
+   "slug": "wyre",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.wyre.be/",
+   "support_url": null,
+   "notes": "Wholesale cable and fibre network in Flanders (Telenet and Fluvius)."
+  },
+  {
+   "name": "Fiberklaar",
+   "slug": "fiberklaar",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.fiberklaar.be/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network in Flanders; retail through Proximus and others."
+  },
+  {
+   "name": "Unifiber",
+   "slug": "unifiber",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.unifiber.be/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network in Wallonia; retail through Proximus and others."
+  },
+  {
+   "name": "Eurofiber",
+   "slug": "eurofiber",
+   "kind": "business_isp",
+   "aka": [
+    "Eurofiber Belgium"
+   ],
+   "asns": [
+    {
+     "asn": 39686,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eurofiber.com/",
+   "support_url": null,
+   "notes": "Uses the AS number of Eurofiber (Netherlands pack): where NetBox already holds Eurofiber, this entry resolves to it.",
+   "wikidata": "Q2072496"
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "euNetworks",
+   "slug": "eunetworks",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13237,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://eunetworks.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Belnet",
+   "slug": "belnet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2611,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.belnet.be/",
+   "support_url": null,
+   "notes": "The national research and education network.",
+   "wikidata": "Q2226397"
+  }
+ ]
+}
