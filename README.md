@@ -18,7 +18,11 @@ site reach the internet?"), and a quest giver at each site asks you what you kno
 choices. Quests about one subject form a chain (what is plugged into what, then its addresses and how it is managed,
 then whose it is, who to call and what it costs) that ends in a whole record read back from NetBox. A quest ends in one
 change you preview first, and is complete only when NetBox confirms it
-([`docs/quests.md`](docs/quests.md) says exactly what the game looks for and why). All of it sits on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
+([`docs/quests.md`](docs/quests.md) says exactly what the game looks for and why). The game is also a **setup companion**: in a NetBox
+with nothing in it, Ilatea offers your first site, and the quests that follow add its first rack, its first boxes (found by what is printed
+on them in the NetBox community device-type library, and imported with their ports) and its carrier (from the provider pack of the site's
+country), each as one change you preview first. Part numbers and serials are checked, and what cannot be checked is marked unverified
+([`docs/packs.md`](docs/packs.md)). All of it sits on top of the engine: an isometric pixel-art view of a NetBox 4.7 instance (sites placed by GPS,
 rooms, racks, devices, cables and cable traces) in four original art themes plus a plain debug theme, with
 drag-and-drop edits written back to NetBox after a diff preview.
 
@@ -48,8 +52,10 @@ token never reaches the browser, a response body or a log line.
 
 | Path | What |
 |---|---|
+| `docs/packs.md` | For NetBox admins and contributors: the packs the game ships with (providers per country, the pinned device-type library, serial rules), where each fact came from, the checks, and how to add or correct a pack |
+| `packs/` | The packs themselves: data only, with their schemas, a validator (`make packs-check`) and the script that builds the device index |
 | `docs/quests.md` | For NetBox admins: what the quest scanner reads, every finding and gap it reports, the questions it asks, what it writes and who may write |
-| `contracts/` | Contract 2.4.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
+| `contracts/` | Contract 2.5.0 between the two halves: scene JSON Schema, OpenAPI, API rules, iso conventions, theme manifest (read `contracts/README.md` first) |
 | `web/` | The game in the browser: TypeScript + Vite + PixiJS 8, Vitest and Playwright; npm with a pinned `package-lock.json` |
 | `proxy/` | FastAPI proxy (`rackwalker_proxy`): typed NetBox client, scene bodies, change preview/apply, read cache, sign-in, the game store (SQLite), and quests (`estate.py` reads the estate, `findings.py` the rules, `quests.py` the questions, `chains.py` the chains, `questroutes.py` the log, checks and rewards, `perms.py` the player's own NetBox permissions, `practice.py` the practice island); pytest; pinned `requirements.lock` |
 | `fixtures/` | Canned responses for every route, rendered from the synthetic seed model; the web side can run on them alone |
@@ -84,6 +90,8 @@ several stacks can run side by side.
 
 | Command | Does |
 |---|---|
+| `make packs-check` | validates every pack under `packs/` (schemas, sources, no phone numbers, the device index against its SHA-256); part of `make test` |
+| `make test-live-empty` | the onboarding chain on a dev NetBox that was started and never seeded (`make netbox-destroy netbox-up`), from no site to a traced way out, timed |
 | `make test` | proxy pytest + web `tsc --noEmit` + vitest. Validates every fixture against the schema on both sides and checks that generated code is fresh |
 | `make e2e` (or `make test-e2e`) | Playwright, headless chromium: golden screenshot per zoom level, pixel-crispness check, interaction, editor, perf (1,000 devices at room level >= 50 fps), and the game shell on a fixture-mode proxy with a fresh game store (screenshots to `docs/screenshots/game/`) |
 | `make e2e-themes` | the interaction and editor e2e once per theme (`RACKWALKER_E2E_THEME=<id>` adds `?theme=<id>`; the goldens stay on `debug`) |
@@ -152,7 +160,14 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   penalties, no streaks, no timers.
 * **Practice island** (Ilatea's first line, the menu, or the airfield pad): a made-up site with a first quest of every kind. Nothing there is
   read from or written to NetBox; it pays no XP and can be started afresh from the quest log.
-* **Menu** (`M` or the button in the corner): the quest log, the practice island, talk to Ilatea, the field-guide pages of her owls Byte (commands and
+* **Setting NetBox up.** In a NetBox with no site, Ilatea's first line offers to make one. A new site then asks for its first rack, its
+  first boxes and its carrier ("Setting up <site>" in the quest log). "What is this box?" searches the device-type library by model or
+  part number, also offline; importing a model needs the internet or a local copy of the library (`RACKWALKER_LIBRARY_DIR`), and says so
+  when it has neither.
+  ![Searching the device-type library by what is printed on the box](docs/screenshots/setup/device-search.png)
+* **Device catalogue** (menu): the manufacturers and models of your own NetBox as a collection, with a tick where the device-type library
+  confirms them. Derived from NetBox each time; no targets, no timers.
+* **Menu** (`M` or the button in the corner): the quest log, the device catalogue, the practice island, talk to Ilatea, the field-guide pages of her owls Byte (commands and
   hardening) and Nocti (hardware and best practice) as placeholders, settings, sign out.
 * **Settings**: Ilatea's hint level (off, low, normal, high), sound (mute, volume; for the music to come), reduce
   motion (text at once, scene changes and zooms cut), and every overworld and menu key remappable (up to three keys

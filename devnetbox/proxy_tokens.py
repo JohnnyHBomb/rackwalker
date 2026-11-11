@@ -29,6 +29,10 @@ import requests
 
 USER = "rackwalker-proxy"
 TOKEN_DAYS = 30
+TEMPLATES = ["dcim.consoleporttemplate", "dcim.consoleserverporttemplate", "dcim.powerporttemplate", "dcim.poweroutlettemplate",
+             "dcim.interfacetemplate", "dcim.rearporttemplate", "dcim.frontporttemplate", "dcim.modulebaytemplate", "dcim.devicebaytemplate"]
+COMPONENTS = ["dcim.consoleport", "dcim.consoleserverport", "dcim.powerport", "dcim.poweroutlet", "dcim.interface", "dcim.rearport",
+              "dcim.frontport", "dcim.modulebay", "dcim.devicebay"]
 VIEW = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.devicetype", "dcim.devicerole", "dcim.cable",
         "dcim.interface", "dcim.frontport", "dcim.rearport", "dcim.consoleport", "dcim.consoleserverport",
         "dcim.powerport", "dcim.poweroutlet", "dcim.powerfeed", "circuits.circuit", "circuits.circuittermination",
@@ -40,15 +44,24 @@ VIEW = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.devicety
         # and it rechecks the token a player signed in with (still there, still write-enabled, not expired):
         "users.token",
         # a circuit's administrative record (estate.py): the provider's accounts and networks, contacts and their roles
-        "circuits.provideraccount", "circuits.providernetwork", "tenancy.contact", "tenancy.contactrole", "tenancy.contactassignment"]
+        "circuits.provideraccount", "circuits.providernetwork", "tenancy.contact", "tenancy.contactrole", "tenancy.contactassignment",
+        # the setup companion (setupops.py): what it matches before it makes anything, a device's bays, a model's templates
+        "dcim.region", "dcim.manufacturer", "dcim.moduletype", "dcim.modulebay", "dcim.devicebay", "dcim.module", "extras.tag", "ipam.asn", "ipam.rir",
+        *TEMPLATES]
 # changes.ENDPOINT, and what the management and circuit-record ops change: a circuit, a device type's default
 CHANGE = ["dcim.site", "dcim.location", "dcim.rack", "dcim.device", "dcim.cable", "dcim.interface", "circuits.circuit", "dcim.devicetype"]
+# a model whose templates NetBox refused half-way is taken out again, so a later import starts clean
+DELETE = ["dcim.devicetype", "dcim.moduletype"]
 # what a quest line may create: a cable, a circuit and its end at a site, an address, a prefix, and for a circuit's
 # record a provider account, a provider network, a contact and its assignment (changes.NET_OPS)
 ADD = ["dcim.rack", "dcim.cable", "circuits.circuit", "circuits.circuittermination", "ipam.ipaddress", "ipam.prefix",
-       "circuits.provideraccount", "circuits.providernetwork", "tenancy.contact", "tenancy.contactassignment"]
+       "circuits.provideraccount", "circuits.providernetwork", "tenancy.contact", "tenancy.contactassignment",
+       # the setup companion: a site and its country's region, a provider with its AS numbers, a circuit type, a model with
+       # its manufacturer and templates, a device with its role and the components its model adds, a module, the tag
+       "dcim.site", "dcim.region", "circuits.provider", "circuits.circuittype", "ipam.asn", "ipam.rir", "dcim.manufacturer", "dcim.devicetype",
+       "dcim.moduletype", "dcim.devicerole", "dcim.device", "dcim.module", "extras.tag", *TEMPLATES, *COMPONENTS]
 PERMS = [("rackwalker-proxy view", VIEW, ["view"]), ("rackwalker-proxy write", CHANGE, ["change"]),
-         ("rackwalker-proxy add rack", ADD, ["add"])]
+         ("rackwalker-proxy add rack", ADD, ["add"]), ("rackwalker-proxy undo import", DELETE, ["delete"])]
 
 
 def main() -> None:
@@ -58,7 +71,7 @@ def main() -> None:
     url, admin, secrets = os.environ["NETBOX_URL"].rstrip("/"), os.environ["NETBOX_TOKEN"], Path(os.environ["SECRETS"])
     var = f"PROXY_{which.upper()}_TOKEN"
     stored = dict(re.findall(r"^(PROXY_R[OW]_TOKEN)=(\S+)$", secrets.read_text(), re.M)).get(var)
-    if stored and works(url, stored) and sees(url, stored, "users/permissions") and granted(url, stored, "tenancy.contactassignment"):
+    if stored and works(url, stored) and sees(url, stored, "users/permissions") and granted(url, stored, "dcim.modulebaytemplate"):
         print(stored)
         return
     s = requests.Session()

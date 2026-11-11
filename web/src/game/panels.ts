@@ -1,7 +1,7 @@
 // Game panels (DOM): sign-in, the menu, the settings page and the owls' field-guide pages. One look for all of them:
 // dark ink on parchment, thick pixel borders, focus shown by a dashed outline and the selected state by a marker and
 // underline as well as colour. Nothing here flashes or animates.
-import type { GameSettings, HintLevel } from '../contracts/scene.gen';
+import type { Catalogue, CatalogueItem, GameSettings, HintLevel, PackList } from '../contracts/scene.gen';
 import { HINT_LEVELS } from './dialogue';
 import { ACTION_LABELS, DEFAULT_KEYS, KEY_ACTIONS, keyName, rebind, type KeyAction } from './keys';
 import { drawPortrait } from './portraits';
@@ -26,6 +26,12 @@ const CSS = `
 .game-panel td{padding:3px 4px;border-bottom:1px solid #c8bc9c}
 .game-panel .guide{display:flex;gap:12px;align-items:flex-start}
 .game-panel kbd{border:1px solid #1d1a14;padding:0 4px;background:#fffaf0}
+.game-panel .cat h3{font-size:14px;margin:10px 0 2px;border-bottom:2px solid #1d1a14}
+.game-panel .cat .mark{display:inline-block;width:1.4em;font-weight:bold;text-align:center}
+.game-panel .cat .note{font-size:13px;color:#4a4335}
+.game-panel .cat tr[data-status=verified] td:first-child{font-weight:bold}
+.game-panel details{margin:8px 0}
+.game-panel details summary{cursor:pointer;font-weight:bold}
 #game-button{position:fixed;right:8px;bottom:8px;z-index:15;font:14px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:6px 10px;min-height:40px;cursor:pointer}
 #game-notice{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:35;width:min(620px,calc(100vw - 24px));box-sizing:border-box;
   background:#f6efd9;color:#1d1a14;border:4px solid #8a1c12;box-shadow:0 0 0 2px #f6efd9;padding:8px 12px;font:14px/1.4 ui-monospace,monospace;
@@ -173,6 +179,8 @@ export interface MenuActions {
   quests(): void;
   /** Go to the practice island (made-up data; nothing reaches NetBox). */
   practice(): void;
+  /** The device catalogue: the models of the player's own NetBox. */
+  catalogue(): void;
 }
 
 /** `saveProblem` is null while saving works; otherwise why progress is not being saved right now. */
@@ -188,6 +196,7 @@ export function menuPanel(host: HTMLElement, player: string, a: MenuActions, sav
   list.append(
     button('▶ Back to the game', a.close, 'menu-resume'),
     button('Quest log', a.quests, 'menu-quests'),
+    button('Device catalogue', a.catalogue, 'menu-catalogue'),
     button('Practice island (made up: never touches NetBox)', a.practice, 'menu-practice'),
     button('Talk to Ilatea', a.talk, 'menu-ilatea'),
     button('Byte: commands and hardening', () => a.guide('byte'), 'menu-byte'),
@@ -225,6 +234,99 @@ export function guidePanel(host: HTMLElement, who: 'byte' | 'nocti', back: () =>
   el.append(row, button('◀ Back to the menu', back, 'guide-back'));
   host.append(el);
   (el.querySelector('#guide-back') as HTMLButtonElement).focus();
+  return el;
+}
+
+// Each state has its own mark and word, so it does not rest on colour.
+const CAT_MARK: Readonly<Record<CatalogueItem['status'], [string, string]>> = {
+  verified: ['✔', 'confirmed by the device-type library'],
+  unverified: ['?', 'not confirmed'],
+  mismatch: ['≠', 'part number differs from the library'],
+};
+
+/**
+ * The device catalogue: the manufacturers and models of the player's own NetBox, as a collection. What the device-type
+ * library confirms carries a tick; the rest is kept as recorded. It counts only what the player's NetBox holds: there
+ * is no target to chase and nothing is lost by leaving it. The packs the game ships with are listed below it, with
+ * what each is complete for and where it came from.
+ */
+export function cataloguePanel(host: HTMLElement, load: (fresh: boolean) => Promise<Catalogue>, packs: () => Promise<PackList>, back: () => void): HTMLElement {
+  const el = panel('game-catalogue', 'Device catalogue');
+  const body = document.createElement('div');
+  body.className = 'cat';
+  body.id = 'catalogue-body';
+  body.append(para('Reading your NetBox...'));
+  const show = (c: Catalogue) => {
+    body.replaceChildren();
+    const head = para(c.message);
+    head.id = 'catalogue-message';
+    body.append(head);
+    for (const m of c.manufacturers) {
+      const h = document.createElement('h3');
+      h.textContent = `${m.name || '(no manufacturer)'}: ${m.verified} of ${m.total} confirmed`;
+      const table = document.createElement('table');
+      for (const it of c.items.filter((i) => i.manufacturer === m.name)) {
+        const tr = document.createElement('tr');
+        tr.dataset.status = it.status;
+        tr.dataset.model = it.model;
+        const [mark, word] = CAT_MARK[it.status];
+        const name = document.createElement('td');
+        const sign = document.createElement('span');
+        sign.className = 'mark';
+        sign.textContent = mark;
+        sign.setAttribute('aria-hidden', 'true');
+        name.append(sign, it.model + (it.part_number && it.part_number !== it.model ? ` (${it.part_number})` : ''));
+        const state = document.createElement('td');
+        state.textContent = `${word} · ${it.devices} device${it.devices === 1 ? '' : 's'}`;
+        if (it.note) {
+          const note = document.createElement('div');
+          note.className = 'note';
+          note.textContent = it.note;
+          state.append(note);
+        }
+        tr.append(name, state);
+        table.append(tr);
+      }
+      body.append(h, table);
+    }
+  };
+  const fail = (e: unknown) => {
+    const p = para(`The catalogue could not be read: ${e instanceof Error ? e.message : String(e)}`);
+    p.className = 'error';
+    body.replaceChildren(p);
+  };
+  const about = document.createElement('details');
+  about.id = 'catalogue-packs';
+  const sum = document.createElement('summary');
+  sum.textContent = 'The packs this game ships with';
+  about.append(sum);
+  void packs().then((list) => {
+    for (const e of list.errors) {
+      const p = para(e);
+      p.className = 'error';
+      about.append(p);
+    }
+    for (const p of list.packs) {
+      const row = para(`${p.title} (${p.entries} entries, read ${p.read}${p.partial ? ', partial' : ''}). ${p.coverage}`);
+      row.dataset.pack = p.id;
+      about.append(row);
+      if (p.missing.length) {
+        const miss = para(`Missing: ${p.missing.join('; ')}.`);
+        miss.className = 'note';
+        about.append(miss);
+      }
+    }
+    if (list.library) about.append(para(list.library.import_from === 'none'
+      ? 'A model cannot be imported right now: this game has no copy of the device-type library and may not fetch it. Searching still works.'
+      : `A model is imported from ${list.library.import_from === 'local' ? 'a local copy of' : 'the pinned commit of'} the device-type library (${list.library.commit.slice(0, 10)}), checked by SHA-256.`));
+  }).catch(() => about.append(para('The list of packs could not be read.')));
+  const row = document.createElement('div');
+  row.className = 'row';
+  row.append(button('◀ Back to the menu', back, 'catalogue-back'), button('Read NetBox again', () => void load(true).then(show, fail), 'catalogue-fresh'));
+  el.append(body, about, row);
+  host.append(el);
+  void load(false).then(show, fail);
+  (el.querySelector('#catalogue-back') as HTMLButtonElement).focus();
   return el;
 }
 

@@ -19,13 +19,15 @@ export NB_PROJECT NB_PORT NB_HOST
 PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.ms-playwright
 export PLAYWRIGHT_BROWSERS_PATH
 
-.PHONY: help bootstrap test test-proxy test-live test-web test-e2e e2e e2e-live e2e-themes theme-shots gen dev dev-fixtures build \
+.PHONY: help bootstrap test packs-check test-proxy test-live test-live-empty test-web test-e2e e2e e2e-live e2e-themes theme-shots gen dev dev-fixtures build \
         netbox-up netbox-down netbox-destroy netbox-seed netbox-reset netbox-status netbox-check-fixtures netbox-env netbox-tunnel
 
 help:
 	@echo "bootstrap        create .venv (Python 3.15 venv + pinned proxy/requirements.lock) and web/node_modules (npm ci)"
 	@echo "test             proxy pytest + web typecheck + vitest (fixture/schema validation on both sides)"
+	@echo "packs-check      validate every pack under packs/ (schema, sources, the device index and its checksum); part of make test"
 	@echo "test-live        proxy contract tests against the dev NetBox (NB_PROJECT/NB_PORT; RACKWALKER_RECORD=1 re-records)"
+	@echo "test-live-empty  the onboarding chain on a dev NetBox that was started and never seeded (netbox-destroy netbox-up), timed"
 	@echo "test-e2e (e2e)   web golden screenshots per zoom level + interaction + perf (headless chromium; installs it on first use)"
 	@echo "e2e-themes       interaction + edit e2e once per theme (?theme=<id>), all five themes"
 	@echo "e2e-live         while make dev runs: chromium walks world->site->room->rack->device on the live proxy, screenshots to docs/screenshots/"
@@ -50,7 +52,11 @@ bootstrap: $(VENV_OK) web/node_modules/.package-lock.json
 
 test: test-proxy test-web
 
-test-proxy: $(VENV_OK)
+# Every pack under packs/ against its schema and the rules a schema cannot say (docs/packs.md). No network.
+packs-check: $(VENV_OK)
+	$(PY) -m rackwalker_proxy.packs
+
+test-proxy: $(VENV_OK) packs-check
 	$(PY) -m pytest proxy -p no:cacheprovider
 
 # Contract tests against the live dev NetBox $(NB_PROJECT) (fresh seed: make netbox-reset). RACKWALKER_RECORD=1 also
@@ -59,7 +65,14 @@ test-proxy: $(VENV_OK)
 # changelog and undoes the test writes.
 test-live: $(VENV_OK)
 	@eval "$$(PY=$(PY) devnetbox/nb.sh env rw | sed 's/^/export /')"; \
-	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 $(PY) -m pytest proxy/tests/test_live_netbox.py proxy/tests/test_live_quests.py proxy/tests/test_live_settlement.py -p no:cacheprovider
+	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 $(PY) -m pytest proxy/tests/test_live_netbox.py proxy/tests/test_live_quests.py proxy/tests/test_live_settlement.py proxy/tests/test_live_setup.py -p no:cacheprovider
+
+# The onboarding chain on a NetBox with nothing in it: a stack that was started and never seeded
+# (make netbox-destroy netbox-up). It leaves a site, a rack, two devices, a carrier and a circuit behind and prints how
+# long it took; destroy or reset the stack afterwards.
+test-live-empty: $(VENV_OK)
+	@eval "$$(PY=$(PY) devnetbox/nb.sh env rw | sed 's/^/export /')"; \
+	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 RACKWALKER_LIVE_EMPTY=1 $(PY) -m pytest proxy/tests/test_live_setup.py -k empty_live -p no:cacheprovider -s
 
 test-web: web/node_modules/.package-lock.json
 	cd web && npx tsc --noEmit -p . && npx vitest run

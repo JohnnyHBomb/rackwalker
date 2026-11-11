@@ -1,7 +1,7 @@
 // The proxy's game routes (contracts/openapi.yaml, /api/game/*): who is playing, and the game's own state (save
 // slots, settings, dialogue flags). The session is an HttpOnly cookie the page never sees; every write carries the
 // session's CSRF token in the X-RackWalker-CSRF header. Game state lives in the proxy's SQLite file, never in NetBox.
-import type { ChangeResult, Flags, FlagsPatch, GameSession, GameSettings, GameState, GapList, Quest, QuestAnswer, QuestBoard, QuestScope, QuestVerdict, SaveData, SaveSlot, SaveSlotId } from '../contracts/scene.gen';
+import type { Catalogue, ChangeResult, Flags, FlagsPatch, GameSession, GameSettings, GameState, GapList, PackList, Quest, QuestAnswer, QuestBoard, QuestScope, QuestVerdict, SaveData, SaveSlot, SaveSlotId } from '../contracts/scene.gen';
 import { SceneSourceError, errorFrom } from '../engine/source';
 
 export const CSRF_HEADER = 'X-RackWalker-CSRF';
@@ -23,6 +23,10 @@ export interface GameApi {
   practiceReset(): Promise<QuestBoard>;
   bossAck(scope: QuestScope, siteId: number): Promise<QuestBoard>;
   gaps(siteId: number, offset?: number, limit?: number): Promise<GapList>;
+  /** The device catalogue (contract 2.5.0): the models of the player's own NetBox, verified where the device-type library confirms them. */
+  catalogue(fresh?: boolean): Promise<Catalogue>;
+  /** The packs the game ships with: what each is complete for, and where it came from. */
+  packs(): Promise<PackList>;
 }
 
 export class HttpGameApi implements GameApi {
@@ -104,5 +108,11 @@ export class HttpGameApi implements GameApi {
   }
   gaps(siteId: number, offset = 0, limit = 100): Promise<GapList> {
     return this.call('GET', `/api/quests/gaps/${siteId}?offset=${offset}&limit=${limit}`);
+  }
+  catalogue(fresh = false): Promise<Catalogue> {
+    return this.call('GET', `/api/game/catalogue${fresh ? '?fresh=true' : ''}`);
+  }
+  packs(): Promise<PackList> {
+    return this.call('GET', '/api/packs');
   }
 }

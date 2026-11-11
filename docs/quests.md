@@ -50,6 +50,7 @@ One bounded read of NetBox with the proxy's own token (view permission only):
 | provider accounts, provider networks, contacts, contact roles, and the contact assignments of providers and circuits | a circuit's administrative record |
 | IP addresses, prefixes, each with its VRF | which interface has an address, and whether a prefix of the same VRF holds it |
 | power feeds, platforms (with the manufacturer a platform is tied to) | choices offered in a question |
+| every device type (manufacturer, model, part number, tags) and device role, the tags of each device, each provider's AS numbers, and the module bays of the devices with what is fitted in them | the setup lines below, the device catalogue, and matching what NetBox already holds so nothing is made twice |
 
 It also reads when NetBox last changed each site, rack and device (`last_updated`). A change a quest proposes to one
 of them carries that time, so NetBox refuses it if someone has changed the object since the question was asked: a
@@ -113,6 +114,10 @@ which quests are offered: **connectivity** (can it be reached, and how) before *
 
 | Kind | Rank | The game reports it when | Why it matters to you | The question it asks | The change it ends in |
 |---|---|---|---|---|---|
+| `estate_no_site` | connectivity | NetBox has no site at all (the line is about the estate, not a site: Ilatea asks it, and the quest log lists it) | everything in NetBox hangs off a site | the country, then the site's name | a site, with the region of its country (created when missing) |
+| `site_no_rack` | connectivity | a site has no rack and no device | devices need somewhere to stand | what the kit stands in (a rack of which height), and what is written on it. "No rack: it stands on a shelf or on the wall" is an answer | a rack |
+| `site_no_devices` | connectivity | a site has no device | nothing can be cabled or traced before the boxes are on record | for each box, up to three in one pass: what is printed on it (searched in the device-type library), what it does, its name, its unit and its serial | the device type, imported from the library with its ports if NetBox lacks it; the device, and its role if NetBox lacks it |
+| `site_no_provider` | connectivity | the estate is just starting (no provider, no circuit and no cable on record, at most 12 devices): reported at each site | nobody can tell whose line the site is on | "Whose line is it?", from the provider pack of the site's country (see "Whose line is it?" below). "We do not keep carriers in NetBox" is an answer | a provider, with its AS numbers |
 | `site_no_way_out` | connectivity | a site has network devices, a provider or circuit is on record, and no finished circuit to the outside that is cabled to a device can be reached from the site (a circuit with an end recorded at a site and no cable on it is not finished; a private line between two of your own sites is a link between them, not a way out; a decommissioned circuit is nothing). Not reported while a circuit end is on record at this site with no cable: `circuit_unterminated` asks that, once | nobody can tell how the site reaches the internet | which device the carrier's line plugs into, whose line (asked even with one provider on record), which circuit (or its ID, typed from the bill), which port, what cable. "No line out, on purpose" is an answer | a circuit if it is new, its termination at the site, a cable |
 | `sites_not_linked` | connectivity | the estate has two or more sites with network devices, and no path joins this site to any other (a path may run through a provider network both sites have a circuit on). Not reported at the sites of a circuit between them that has an end with no cable: `circuit_unterminated` asks that, once | nobody can tell how the sites reach each other | which device has the link, what it connects to, both ports, the cable. "No link, on purpose" is an answer | a cable (and a circuit termination, for a circuit) |
 | `locations_not_linked` | connectivity | two rooms of one site each hold network devices, and no path joins them | if the link between the rooms fails, nobody knows which cable to check | the same, between the two rooms | a cable |
@@ -128,8 +133,10 @@ which quests are offered: **connectivity** (can it be reached, and how) before *
 | `device_no_power` | connectivity | devices with power ports have no power cable, while other devices at the site do (one finding per rack) | if a power strip trips, nobody can tell what goes dark | which power strip each device is plugged into, and which outlet | a power cable per device |
 | `device_unreachable` | connectivity | a live device that is not passive has no primary IP, and NetBox does not say that a cloud or controller service manages it or that it is not managed (one finding per device; see "How a device is managed") | when something breaks, the first question is how to get at it | first how it is managed; only for a locally managed device: one of its addresses, or a typed one and its interface | how the device is managed (and optionally its model's default), and the primary IP if it has one |
 | `address_no_prefix` | connectivity | addresses on a site's interfaces lie in no prefix of their own VRF (one finding per implied subnet and VRF; all host addresses, /32 or /128, of one VRF are one finding) | addresses with no prefix cannot be planned around | "their mask says the subnet is 192.0.2.0/24. Is that right?" or the right one, typed. For host addresses the range is asked for, never guessed. For an address in a VRF the game does not write: it says which prefix to add to which VRF, and "Check NetBox" completes the line | a prefix (global table only) |
+| `device_type_unknown` | identity | a live device's model or manufacturer is a placeholder ("Unknown", "Generic", "TBD", "Placeholder", "Other" and the like) | without its model nobody knows its ports, its height or its support contract | "What is this box?": what is printed on it, searched in the device-type library. "It really is a generic box: leave it" is an answer | the device type (imported if NetBox lacks it) and the device's change to it, only where nothing recorded is lost (`docs/packs.md`) |
 | `rack_audit` | identity | devices in one rack lack a serial or an asset tag | a device with no serial cannot be matched to a support contract | one form for the rack, top to bottom; leave blank what you cannot read | the fields you filled in, per device |
 | `shelf_audit` | identity | the same, for devices that are in no rack (per room) | the same | one form for the devices outside the racks of that room | the fields you filled in |
+| `module_bays_unrecorded` | identity | a live device has module bays and NetBox shows nothing in any of them | power supplies, fans and line cards fail one at a time | which bay has something fitted, what is printed on the module (searched in the library's module types), its serial. "Nothing is fitted: the bays are empty" is an answer | the module type (imported if NetBox lacks it) and the module in that bay |
 | `platform_survey` | identity | devices of one model at a site have no platform (one finding per model, at most 20 devices each) | when an advisory or an upgrade comes out, nobody can list what runs it | "4 EX-A2400 devices have no platform on record: ... What do they run?" One answer covers them all; "They do not all run the same" asks about each. Only platforms NetBox allows for the model's manufacturer are offered | the platform of each device |
 | `site_record` | identity | a site lacks GPS, a facility name or a country | it cannot be put on a map or named to a carrier | one form: latitude and longitude, facility, country code | the site fields you filled in |
 | `rack_devices_unpositioned` | layout | devices are in a rack with no rack unit | nobody can be sent to the right unit | one form: the lowest unit of each device | each device's unit |
@@ -149,6 +156,61 @@ A spot check exists only at a site with nothing open; asked for anywhere else it
 
 Not in this version: a VLAN check (a prefix with no VLAN behind it; the logical stage of a chain records addresses and
 prefixes, not VLANs), and console ports.
+
+## Setting a NetBox up
+
+The game also helps where NetBox is empty or nearly so. The first four rows of the table above are a chain,
+"Setting up <site>": a new admin gets a usable NetBox by playing it. What it offers comes from the packs the game
+ships with ([`docs/packs.md`](packs.md) says what is in them, where each fact came from and how to add a country).
+
+| Stage | Line | It asks | It ends in |
+|---|---|---|---|
+| (before any site) | `estate_no_site` | the country, the site's name | the site |
+| 1 room | `site_no_rack` | what the kit stands in | a rack |
+| 2 kit | `site_no_devices` | what is printed on each box, what it does, its name, unit and serial | the boxes, each with the ports of its model |
+| 3 carrier | `site_no_provider` | whose line the site is on | the provider |
+
+After that the game goes on to what it has always asked ("how does this site reach the outside?"), with the carrier
+now on record. In a live empty NetBox 4.7.4 the whole way, from no site to a circuit that NetBox traces from the
+router's port, is 21 answers and five previewed changes; the proxy's own share of that is a few seconds, and reading
+the labels is the rest (`make test-live-empty` plays and times it).
+
+![Ilatea offers the first site in a NetBox that has none](screenshots/setup/onboarding.png)
+
+**"Whose line is it?"** The choices are, in this order: the providers NetBox already holds; the providers of the
+pack of the site's country that NetBox does not hold yet, by name; "Another provider: search by name", which looks
+in NetBox and in every pack by name, by another name the provider goes by, or by AS number; "My provider is not
+listed", which takes the name as you type it; and "I don't know yet". A provider is created only when you apply the
+previewed change, with its AS numbers as NetBox ASN objects. A pack entry that NetBox already holds, under the same
+name or with the same AS number, is that provider: it is used, and never made twice. A site with no country on
+record, or in a country with no pack yet, says so and offers the search.
+
+![The provider pack of the site's country offers its providers by name](screenshots/setup/provider-choice.png)
+
+**"What is this box?"** You type what is printed on the box: the model, the part number, or part of either. The
+choices are the matches in the device-type library (and matching models your NetBox holds that the library does
+not), then "None of these: search again", "It is not in the library: record it by hand" and "I don't know yet". A
+model from the library is imported with its interface, console, power and module-bay templates, so the device gets
+its ports. A model recorded by hand is marked unverified and earns no bonus. The search works offline; the import
+itself needs the internet or a local copy of the library, and says so when it has neither.
+
+![Searching the device-type library by what is printed on the box](screenshots/setup/device-search.png)
+![The import, previewed before anything is written](screenshots/setup/import-preview.png)
+
+**Serials and part numbers are checked.** A part number that contradicts the library's for that model is refused,
+with what was expected. A serial that is another device's is refused. A serial that does not look like its vendor's
+(only where the vendor itself publishes the format) is asked about once and, if you confirm it, recorded and marked
+unverified. `docs/packs.md` has the rules and their sources.
+
+![A serial that does not look like the vendor's is asked about, never refused](screenshots/setup/serial-warning.png)
+
+**The device catalogue** (Menu > Device catalogue) lists the manufacturers and models of your own NetBox as a
+collection: a tick where the device-type library confirms the maker, the model and the part number, a question mark
+where it does not, and a "differs" mark where the part numbers disagree. It is derived from NetBox each time it is
+opened; the game only remembers when it first saw each model. It counts what your NetBox holds and nothing else:
+there is no target to reach, no timer, and nothing is lost by ignoring it.
+
+![The device catalogue](screenshots/setup/catalogue.png)
 
 ## Gaps: single empty fields
 
@@ -284,8 +346,13 @@ a complete record.
 | a device | `device_unconnected`, `switch_no_uplink`, `interface_no_cable` | `device_unreachable`, `router_no_address` | |
 | a rack | `rack_devices_unpositioned`, `room_layout`, `device_no_power` | | `rack_audit` |
 
+Setting a site up is a chain of its own, with its own three stages: room (`site_no_rack`), kit (`site_no_devices`)
+and carrier (`site_no_provider`). It exists only while one of them is open, and pays stage by stage with no bonus:
+the way out, which follows it, has its own.
+
 The other lines (`site_island`, `provider_unused`, `address_no_prefix`, `shelf_audit`, `platform_survey`,
-`site_record`) belong to no chain and are offered as before.
+`site_record`, `estate_no_site`, `device_type_unknown`, `module_bays_unrecorded`) belong to no chain and are offered
+as before.
 
 ![The quest log lists the chains in play, stage by stage](screenshots/quests/chain-overview.png)
 
@@ -365,7 +432,9 @@ times). Parked lines wait beside them.
 A ready line proposes a change set of ordinary change ops: `connect_cable`, `create_circuit`,
 `create_circuit_termination`, `assign_ip`, `create_prefix`, `update_fields`, `place_device`, `move_rack`, and for
 chains `set_management`, `record_circuit`, `create_provider_account`, `create_provider_network`, `create_contact`,
-`assign_contact` (`contracts/api.md`). The game previews it against NetBox, and writes it only when you press Apply.
+`assign_contact`, and for setting NetBox up `create_site`, `create_rack`, `create_provider`, `create_circuit_type`,
+`add_device_type`, `add_module_type`, `create_device`, `set_device_type`, `install_module`, `mark_unverified`
+(`contracts/api.md`, `docs/packs.md`). The game previews it against NetBox, and writes it only when you press Apply.
 
 * **Dry run is the default.** Unless the proxy runs with `WRITE_ENABLED=1`, nothing is written. The line is marked
   "practised", says so, and pays no XP.
@@ -399,6 +468,8 @@ line's checks and they pass. What that means, per kind:
 | a router's address | an address on one of its interfaces |
 | how a device is managed | a primary IP on it, or `rw_mgmt_mode` saying a cloud or controller service manages it or that it is not managed |
 | the address on a circuit | an address on the interface the circuit reaches (through any patch panels) |
+| the first site; a site's first rack, first boxes, carrier | a site in NetBox; a rack (or a device) at the site; a device at the site; a provider in NetBox. These checks do not count into a site's completeness once they pass: a site is not "more complete" for having a rack |
+| what a box really is; what is fitted in a device | a model on the device that is no placeholder; a module in one of its bays |
 | a circuit that stops at a patch panel | a path from the panel to an interface of one of your devices |
 | a circuit's record | each fact you were asked for: a far end on a provider network, a provider account, a contact assignment, the install date, the commit rate, the charges |
 | what powers a rack | a cable on a power port of each device |
@@ -445,6 +516,12 @@ something it never covered (a new device with no serial in a rack you audited) i
   by the share of the chain's stages you had confirmed yourself (at least two: one stage is a loose stage, and a
   chain NetBox showed complete all along pays nobody), once per player, with the same repeat rule per site. A fact
   you answered "none" or "I don't know yet" is no part of a verified record: the bonus waits for NetBox to hold it.
+* **The setup lines** pay 60 XP for the first site, 40 for a rack, 80 for the first boxes, 50 for the carrier, and
+  40 each for a placeholder device's real model and for a module in a bay. They bring no tool: a tool is earned by
+  recording a connection or reading labels.
+* **A bonus only for what passes a check.** On top of a line's XP, 20 XP for each box whose model the device-type
+  library confirms, and 10 XP for each serial that fits its vendor's published pattern, decided from NetBox as it
+  reads after the write. Anything marked unverified earns no bonus (`docs/packs.md`).
 * Practice and dry runs pay nothing. Nothing is ever taken away: no penalties, no streaks, no timers.
 * **Cable tracer**: yours after the first connectivity line NetBox confirms. Inside a building, tracing a cable
   waits for it, but only while you can earn it: your changes would be written (not a dry-run proxy, not a read-only

@@ -7,10 +7,22 @@
   "nodes": {
     "hello": {
       "speaker": "ilatea",
-      "text": "I am Ilatea. Small things matter, and the first one is yours: add one site in NetBox, then reload. Its building will stand here.",
+      "text": "I am Ilatea. Small things matter, and the first one is yours: this NetBox has no site yet. Shall we make the first one together?",
       "choices": [
-        {"label": "I will add a site", "next": null},
-        {"label": "Fewer hints, please", "do": "hints_low", "next": null}
+        {
+          "label": "Yes: my first site",
+          "do": "open_first_site",
+          "next": null
+        },
+        {
+          "label": "Not now",
+          "next": null
+        },
+        {
+          "label": "Fewer hints, please",
+          "do": "hints_low",
+          "next": null
+        }
       ]
     }
   }

@@ -1,4 +1,4 @@
-# HTTP API (contract 2.4.0)
+# HTTP API (contract 2.5.0)
 
 The browser talks only to the proxy. The proxy talks to NetBox with its token; the token never reaches the
 browser, a response body, or a log line. Routes are in `openapi.yaml`; bodies are `$defs` in
@@ -56,6 +56,7 @@ Every non-2xx response is an `ErrorResponse`:
 | `not_found` | 404 | object or route does not exist |
 | `validation_failed` | 422 | request body does not match the schema (FastAPI body validation is mapped to this) |
 | `conflict` | 409 | reserved for whole-request conflicts; per-op conflicts go inside `ChangeResult.ops[].error` |
+| `library_unavailable` | 503 | a full definition of the device-type library could not be had (2.5.0); usually inside `ChangeResult.ops[].error` |
 | `write_disabled` | 403 | `POST /api/changes/apply` while `WRITE_ENABLED` is not `1` |
 | `unauthorized` | 401 | a game route without a valid session; a sign-in token NetBox does not accept (or that holds characters no NetBox token has); a change route of a write-enabled proxy without a signed-in player |
 | `forbidden` | 403 | a game write, or a change request to a write-enabled proxy, without the session's `X-RackWalker-CSRF` header or with a foreign `Origin` |
@@ -196,7 +197,56 @@ objects concerned: `circuits.circuit`, `circuits.provideraccount`, `tenancy.cont
 `details.reason` `player_lacks_permission`, `details.missing` as for a refused apply). The single-user local mode has
 no NetBox user to ask about. Fixture mode answers with its canned preview as before.
 
-## Quests (2.3.0; chains 2.4.0)
+## Change ops added in 2.5.0: setting NetBox up
+
+What the setup lines end in (`docs/quests.md` "Setting a NetBox up", `docs/packs.md`). Each write carries the changelog
+message. Nothing is created twice: an object NetBox already holds is matched and the op answers `no_change`, with the
+existing object's id as its target, so a later op that refers to it (`"@ref"`) gets the existing one.
+
+| Op | Target | Fields | Matched instead (`no_change`) | Refused when |
+|---|---|---|---|---|
+| `create_site` | `{kind: "site", id: null}` | `name`, optional `country` (`^[A-Z]{2}$`: the site gets the region whose slug is that code in lower case, created when missing) | | a site of that name or slug exists (`conflict`) |
+| `create_provider` | `{kind: "provider", id: null}` | `name`, optional `slug`, `asns` (`[{asn, rir}]`, `rir` one of `ripe`, `arin`, `apnic`, `lacnic`, `afrinic`), `aka` (other names, for matching only), `pack` (the pack's id) | a provider with the same name or slug, with one of the AS numbers, or named as one of `aka` | |
+| `create_circuit_type` | `{kind: "circuit_type", id: null}` | `name` | a circuit type of that name or slug | |
+| `add_device_type` | `{kind: "device_type", id: null}` | either `library_file` (the file of a row of the device index), or `manufacturer` and `model` with optional `part_number`, `u_height` | a device type of that manufacturer and model | the file is not in the index (`not_found`); its definition cannot be had or is not the indexed file (`library_unavailable`); by hand: the part number contradicts the library's for that model (`validation_failed`, `details.expected`), or the library holds the model |
+| `add_module_type` | `{kind: "module_type", id: null}` | `library_file` | a module type of that manufacturer and model | as `add_device_type` |
+| `create_device` | `{kind: "device", id: null}` | `name`, `site_id`, `role` (a role's name: used if it exists, else created), `device_type_id` (id or `@ref`), optional `rack_id`, `position`, `face`, `serial`, `unverified` | | the site, rack or type does not exist; the name is taken at the site or the serial by any device (`conflict`); the unit is taken or outside the rack; the type's part number contradicts the library's |
+| `set_device_type` | `{kind: "device", id}` | `device_type_id` (id or `@ref`) | the device already has that type | a component of the device is not in the type (`conflict`, `details.orphans`); the type does not fit where the device is racked; the type's part number contradicts the library's; the optimistic lock |
+| `install_module` | `{kind: "module", id: null}` | `device_id`, `module_bay_id`, `module_type_id` (id or `@ref`), optional `serial` | | the bay does not exist, is not a bay of that device, or holds a module (`conflict`) |
+| `mark_unverified` | `{kind: "device" or "device_type", id}` | `reason` | the object already carries the tag | the object does not exist |
+
+`create_circuit` (2.3.0) takes `provider_id` and `type_id` as an id or an `@ref` to a `create_provider` or
+`create_circuit_type` op of the same change set.
+
+`add_device_type` with `library_file` writes the device type and then its templates. If NetBox refuses a template the
+device type is deleted again and the op fails; if the delete is refused too, the message names the device type that
+is left. `set_device_type` changes the device's type and then adds, from the type's templates as NetBox holds them,
+the components the device lacks; it never removes or changes one.
+
+The error code `library_unavailable` (503 as a whole-request error; inside `ChangeResult.ops[].error` for an op) says
+that a full definition of the device-type library could not be had: there is no local copy and the pinned commit
+could not be reached, or the file is not the one the index was built from.
+
+## Packs and the catalogue (2.5.0)
+
+* `GET /api/packs` (no sign-in) answers a `PackList`: every pack the game ships with (`kind` `providers`, `devices`
+  or `serials`) with its version, read date, coverage, what it lacks, how many entries it has and its sources;
+  `errors` when the pack folder did not validate (then nothing of it is offered); and `library`: the pinned
+  repository and commit, and `import_from` (`local`, `https` or `none`).
+* `GET /api/game/catalogue` (signed in; `fresh=true` reads NetBox now, as for the quest log) answers a `Catalogue`:
+  one `CatalogueItem` per device type of the player's NetBox with `status` `verified` (the device-type library holds
+  the maker and model and the part numbers agree, and the type is not tagged `rw-unverified`), `mismatch` (it holds
+  the model with another part number; `note` says which) or `unverified`; totals per manufacturer; and a message.
+  It is derived from NetBox on every read. The game store keeps one row per model and player (`first_seen`, and the
+  status as last derived); deleting those rows loses nothing but the first sightings.
+
+## Quests (2.3.0; chains 2.4.0; setup 2.5.0)
+
+* **Setup lines (2.5.0).** `Quest.site_id`, `Finding.site_id` and `Chain.site_id` are `SiteOrEstateId`: a site's id,
+  or 0 for the estate itself. The only line with 0 is `estate_no_site` (a NetBox with no site): it is in
+  `QuestBoard.quests` of the whole-estate log (`site_id` absent), has `target: null`, and is `next_quest_id` while it
+  is open. `Chain.kind` gains `setup`, and `ChainStage.stage` gains `room`, `kit` and `carrier`. `QuestVerdict.bonus_xp`
+  is the part of `xp_awarded` paid for values that passed a check against the packs.
 
 `docs/quests.md` describes the rules for a NetBox admin; this section fixes what the routes do.
 

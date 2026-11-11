@@ -1,6 +1,6 @@
 // Quests in the browser: the conversation with a site's quest giver, the quest log, the marker to the next small step,
 // the preview-and-apply panel, and the reward moment. Everything a quest says, asks and proposes comes from the proxy
-// (contract 2.4.0: QuestBoard, Quest, QuestStep, QuestVerdict, Chain), which builds it from the player's own NetBox; this
+// (contract 2.5.0: QuestBoard, Quest, QuestStep, QuestVerdict, Chain), which builds it from the player's own NetBox; this
 // module only shows it and sends the player's answers back. A line is never completed here: the proxy reads NetBox
 // again after the write and says what it found.
 //
@@ -227,6 +227,17 @@ export class Quests {
     const name = this.board(siteId)?.sites.find((s) => s.site_id === siteId)?.giver.name ?? 'Quest giver';
     return { name, sprite: this.hooks.giverSprite(siteId) };
   }
+  /** The open line about the estate itself (site 0: a NetBox with no site yet), if there is one. */
+  estateLine(): Quest | null {
+    return (this.boards.netbox?.quests ?? []).find((q) => q.site_id === 0 && q.status !== 'done' && q.status !== 'dismissed') ?? null;
+  }
+  /** A line about the estate has no quest giver: Ilatea asks it, in her own voice and with her own portrait. */
+  private byIlatea = false;
+  private say(script: Script, cast: { name: string; sprite: string }): Promise<Effects> {
+    if (!this.byIlatea) return this.hooks.talk(script, cast);
+    const nodes = Object.fromEntries(Object.entries(script.nodes).map(([k, n]) => [k, { ...n, speaker: 'ilatea' as const }]));
+    return this.hooks.talk({ ...script, nodes }, cast);
+  }
   /** Open lines of a site in the order the proxy offers them. */
   openAt(siteId: number): Quest[] {
     return (this.board(siteId)?.quests ?? []).filter((q) => q.site_id === siteId && q.status !== 'done' && q.status !== 'dismissed');
@@ -323,7 +334,7 @@ export class Quests {
       this.hooks.notice(`The quest giver cannot say what is open here: ${errText(e)}`);
       return;
     }
-    const eff = await this.hooks.talk(offer, cast);
+    const eff = await this.say(offer, cast);
     const picked = eff.set[PICK];
     if (picked === 'log') return this.openLog(siteId);
     const quest = board.quests.find((q) => q.id === picked);
@@ -334,6 +345,7 @@ export class Quests {
   /** Plays a line from where it stands until it is done, parked, closed by the player, or waits for a preview. */
   async run(start: Quest): Promise<void> {
     let q = start;
+    this.byIlatea = start.site_id === 0;
     this.tracked = q;
     this.paintNext();
     const cast = this.giver(q.site_id);
@@ -376,12 +388,12 @@ export class Quests {
           break;
         }
         if (q.status === 'dismissed') {
-          await this.hooks.talk(lineScript('Good to know: that is how it is. I will not ask about it again.'), cast);
+          await this.say(lineScript('Good to know: that is how it is. I will not ask about it again.'), cast);
           break;
         }
         if (q.status === 'done') {
           // a spot check answered "as recorded": nothing to write, nothing to pay, one device surely right
-          await this.hooks.talk(lineScript('Checked: the record and the rack agree. Thank you.'), cast);
+          await this.say(lineScript('Checked: the record and the rack agree. Thank you.'), cast);
           break;
         }
       }
@@ -392,7 +404,7 @@ export class Quests {
   }
 
   private async ask(step: QuestStep, cast: { name: string; sprite: string }): Promise<{ choice: string } | null> {
-    const eff = await this.hooks.talk(stepScript(step), cast);
+    const eff = await this.say(stepScript(step), cast);
     const picked = eff.set[PICK];
     return typeof picked === 'string' ? { choice: picked } : null;
   }

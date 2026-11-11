@@ -41,8 +41,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",
@@ -94,8 +101,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",
@@ -154,8 +168,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",
@@ -215,8 +236,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",
@@ -268,8 +296,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",
@@ -331,8 +366,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",
@@ -377,8 +419,15 @@
           "name": "RIPEstat as-overview (RIPE NCC)",
           "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
           "read": "2026-11-11",
-          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
           "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
         },
         {
           "name": "PeeringDB",

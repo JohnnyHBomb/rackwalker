@@ -19,7 +19,7 @@ import { OverworldView } from './overworld-view';
 import { buildingCard } from './world/card';
 import { PRACTICE_SITE, Quests, scopeOf, tracerLocked } from './quests';
 import type { QuestTarget, QuestVerdict } from '../contracts/scene.gen';
-import { capturingKey, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
+import { capturingKey, cataloguePanel, clearNotice, ensureCss, guidePanel, loadFailedPanel, menuPanel, settingsPanel, showNotice, signInPanel } from './panels';
 import emptyJson from './scripts/ilatea-empty.json';
 import introJson from './scripts/ilatea-intro.json';
 import firstBuildingJson from './scripts/ilatea-first-building.json';
@@ -685,6 +685,23 @@ export class GameShell {
     if (a === 'open_settings') this.openMenu('settings');
     // after the talk that offered it has closed: the island's own first line follows
     if (a === 'open_practice') window.setTimeout(() => this.goToPractice(), 0);
+    if (a === 'open_first_site') window.setTimeout(() => void this.firstSite(), 0);
+  }
+
+  /**
+   * A NetBox with no site: its first quest line is about the estate itself, so Ilatea asks it (there is no building
+   * and no quest giver yet). When NetBox then holds a site, the world is made again around it.
+   */
+  private async firstSite(): Promise<void> {
+    if (!this.quests) return;
+    await this.quests.refresh();
+    const line = this.quests.estateLine();
+    if (!line) {
+      showNotice(this.host, this.quests.boards.netbox?.sites.length ? 'NetBox has a site now: reload to see its building.' : 'The first-site quest is not on offer right now; open the quest log to see why.');
+      return;
+    }
+    await this.quests.run(line);
+    if (!this.realSites && this.quests.boards.netbox?.sites.length) location.reload();
   }
 
   private stuckCheck(): void {
@@ -752,7 +769,7 @@ export class GameShell {
     else this.openMenu();
   }
 
-  openMenu(page: 'menu' | 'settings' | 'byte' | 'nocti' = 'menu'): void {
+  openMenu(page: 'menu' | 'settings' | 'byte' | 'nocti' | 'catalogue' = 'menu'): void {
     if (this.scene === 'signin' || this.scene === 'loading') return;
     this.overworld?.stop(); // a tap-walk under the menu would walk on, and could go into a building
     this.quests?.close();
@@ -760,6 +777,7 @@ export class GameShell {
     const back = () => this.openMenu();
     if (page === 'settings') this.menu = settingsPanel(this.host, this.settings, (s) => this.saveSettings(s), back);
     else if (page === 'byte' || page === 'nocti') this.menu = guidePanel(this.host, page, back);
+    else if (page === 'catalogue') this.menu = cataloguePanel(this.host, (fresh) => this.api.catalogue(fresh), () => this.api.packs(), back);
     else {
       const p = this.state?.player;
       this.menu = menuPanel(this.host, p?.display_name ?? p?.username ?? 'player', {
@@ -769,6 +787,7 @@ export class GameShell {
         settings: () => this.openMenu('settings'),
         quests: () => (this.closeMenu(), void this.quests?.refresh().then(() => this.quests?.openLog())),
         practice: () => this.goToPractice(),
+        catalogue: () => this.openMenu('catalogue'),
         signOut: () => void this.api.signOut().then(() => location.reload()),
       }, this.failing.size ? (this.error ?? 'a write failed') : null);
     }

@@ -19,38 +19,8 @@
         "kind": "candidate"
       },
       {
-        "id": "pack:kpn",
-        "label": "KPN",
-        "kind": "candidate"
-      },
-      {
-        "id": "pack:odido",
-        "label": "Odido",
-        "kind": "candidate"
-      },
-      {
-        "id": "pack:ziggo",
-        "label": "Ziggo",
-        "kind": "candidate"
-      },
-      {
-        "id": "pack:vodafone-nl",
-        "label": "Vodafone",
-        "kind": "candidate"
-      },
-      {
-        "id": "pack:delta-fiber",
-        "label": "DELTA Fiber",
-        "kind": "candidate"
-      },
-      {
-        "id": "search",
-        "label": "Another provider: search by name",
-        "kind": "other"
-      },
-      {
-        "id": "typed",
-        "label": "My provider is not listed",
+        "id": "other",
+        "label": "A carrier that is not in NetBox yet",
         "kind": "other"
       },
       {

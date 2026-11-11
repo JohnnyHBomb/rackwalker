@@ -17,7 +17,7 @@ import { KEY_ACTIONS } from './keys';
 /** `giver` is the quest giver of the site in play: the bubble takes their name and animal from the game (dialogue-ui.ts `cast`). */
 export const SPEAKERS = ['ilatea', 'byte', 'nocti', 'giver'] as const;
 export type Speaker = (typeof SPEAKERS)[number];
-export const ACTIONS = ['hints_low', 'hints_off', 'open_settings', 'open_menu', 'open_practice'] as const;
+export const ACTIONS = ['hints_low', 'hints_off', 'open_settings', 'open_menu', 'open_practice', 'open_first_site'] as const;
 export type Action = (typeof ACTIONS)[number];
 export const HINT_LEVELS: readonly HintLevel[] = ['off', 'low', 'normal', 'high'];
 /** One line, then the player acts: text longer than this is a speech, not a hint. */

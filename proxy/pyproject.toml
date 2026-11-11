@@ -4,10 +4,10 @@ version = "0.1.0"
 description = "Thin FastAPI proxy between the RackWalker web game and NetBox (holds the token, caches reads, validates writes)."
 license = "Apache-2.0"
 requires-python = ">=3.12"
-dependencies = ["fastapi", "uvicorn", "httpx", "pydantic", "jsonschema", "rfc3339-validator"]  # rfc3339-validator: jsonschema checks format date-time only when it is installed
+dependencies = ["fastapi", "uvicorn", "httpx", "pydantic", "jsonschema", "rfc3339-validator", "pyyaml"]  # rfc3339-validator: jsonschema checks format date-time only when it is installed
 
 [project.optional-dependencies]
-dev = ["pytest", "hypothesis", "pyyaml", "requests", "datamodel-code-generator"]
+dev = ["pytest", "hypothesis", "requests", "datamodel-code-generator"]
 
 [build-system]
 requires = ["setuptools>=68"]

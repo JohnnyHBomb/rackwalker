@@ -3,3 +3,20 @@ Copyright 2026 the RackWalker contributors
 
 This product is licensed under the Apache License, Version 2.0 (see LICENSE).
 NetBox is a trademark of NetBox Labs; this project is not affiliated with it.
+
+This product includes data derived from the NetBox community device-type library
+(https://github.com/netbox-community/devicetype-library), dedicated to the public domain under CC0 1.0 Universal:
+  packs/devices/community-library.index.json.gz   an index built from the library at the commit named in
+                                                  packs/devices/community-library.json
+  proxy/tests/library/                            four definition files, unchanged, for the offline tests
+CC0 requires no attribution; the source is named here so that it can be found.
+
+The provider packs (packs/providers/) hold facts only: the names providers trade under, their AS numbers and the
+addresses of their public pages. Each pack lists its sources, the date each was read and what its terms allow. No
+text, logo or contact detail of any source is included. Provider names are the trademarks of their owners and are
+used only to identify them; this project is not affiliated with any of them.
+
+The serial-number rules (packs/serials/) quote one sentence of each vendor's own public page as the ground of a
+rule, with its address and the date it was read.
+
+PyYAML (MIT licence) reads a definition of the device-type library when a model is imported.
