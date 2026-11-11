@@ -124,6 +124,7 @@ export type ChangeOp =
   | CreateDeviceOp
   | SetDeviceTypeOp
   | InstallModuleOp
+  | SetPartNumberOp
   | MarkUnverifiedOp;
 export type CreateCircuitTerminationFields = (
   | {
@@ -1485,7 +1486,7 @@ export interface AddDeviceTypeFields {
   u_height?: number;
 }
 /**
- * A module type imported from the pinned device-type library (2.5.0), as add_device_type with `library_file`.
+ * A module type in NetBox (2.5.0), as add_device_type: imported from the pinned device-type library with `library_file`, or, for a module the library does not hold, recorded by hand with `manufacturer` and `model` (no templates) and tagged rw-unverified.
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "AddModuleTypeOp".
@@ -1508,7 +1509,10 @@ export interface AddModuleTypeTarget {
   id: null;
 }
 export interface AddModuleTypeFields {
-  library_file: string;
+  library_file?: string;
+  manufacturer?: string;
+  model?: string;
+  part_number?: string;
 }
 /**
  * A new device (2.5.0); status active. `role` is a role's name: an existing role of that name is used, else it is created. With `unverified` the device is tagged rw-unverified (its serial does not look like the vendor's and the player confirmed it).
@@ -1600,6 +1604,32 @@ export interface InstallModuleFields {
   serial?: string;
 }
 /**
+ * Sets the part number of a device type NetBox holds to the one the pinned device-type library lists for that manufacturer and model (2.5.0). `part_number` is what was read off the label; it is compared without spaces, dashes and case, and the library's own spelling is what is written. Refused when the library does not hold the model or lists no part number for it, or when `part_number` is not the library's (validation_failed, with details.expected).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SetPartNumberOp".
+ */
+export interface SetPartNumberOp {
+  op: "set_part_number";
+  target: SetPartNumberTarget;
+  fields: SetPartNumberFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface SetPartNumberTarget {
+  kind: "device_type";
+  id: Id;
+}
+export interface SetPartNumberFields {
+  part_number: string;
+}
+/**
  * Tags a device or device type rw-unverified (2.5.0): its serial or model could not be checked against the packs. The tag is created when NetBox has none.
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
@@ -1682,6 +1712,7 @@ export interface OpResult {
     | "create_device"
     | "set_device_type"
     | "install_module"
+    | "set_part_number"
     | "mark_unverified";
   client_ref: string | null;
   target: OpTarget;

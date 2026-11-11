@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-ie",
- "version": "1.0.0",
+ "version": "1.1.0",
  "country": "IE",
  "title": "Common providers: Ireland",
  "read": "2026-11-11",
@@ -10,7 +10,7 @@
  "missing": [
   "Regional fixed-wireless operators",
   "Smaller business ISPs",
-  "AS numbers for SIRO, National Broadband Ireland and Viatel (none confirmed)",
+  "AS numbers for SIRO, National Broadband Ireland, Viatel, BT Ireland, Pure Telecom and HEAnet (none confirmed)",
   "Status pages (only one answered a check on the read date)"
  ],
  "sources": [
@@ -28,7 +28,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "10 of 17 candidate names were found on the page."
+   "result": "10 of 17 candidate names were found on the page (the 16 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Wikipedia: Internet in Ireland",
@@ -36,7 +36,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "7 of 17 candidate names were found on the page."
+   "result": "7 of 17 candidate names were found on the page (the 16 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Each provider's own public website",
@@ -44,7 +44,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "15 of 16 websites and 1 support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "19 of 20 websites and 1 support or status pages answered an automated check; an address that did not answer is left empty."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -52,7 +52,7 @@
    "read": "2026-11-11",
    "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
    "use": "cross-check",
-   "result": "12 AS numbers confirmed; a number whose registered holder was another company was removed."
+   "result": "14 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
   },
   {
    "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
@@ -117,7 +117,7 @@
    ],
    "website": "https://www.virginmedia.ie/business/",
    "support_url": "https://www.virginmedia.ie/customer-support/support-by-topic/service-status/",
-   "notes": "Liberty Global network."
+   "notes": "Liberty Global network: it uses AS6830, so where NetBox already holds Liberty Global this entry resolves to it."
   },
   {
    "name": "Vodafone Ireland",
@@ -148,6 +148,10 @@
     {
      "asn": 13280,
      "rir": "ripe"
+    },
+    {
+     "asn": 34218,
+     "rir": "ripe"
     }
    ],
    "website": "https://www.three.ie/business/",
@@ -167,7 +171,7 @@
    ],
    "website": "https://www.sky.com/",
    "support_url": null,
-   "notes": null
+   "notes": "Uses the AS number of Sky (United Kingdom pack): where NetBox already holds Sky, this entry resolves to it."
   },
   {
    "name": "SIRO",
@@ -313,6 +317,51 @@
    "website": "https://www.starlink.com/",
    "support_url": null,
    "notes": null
+  },
+  {
+   "name": "Blacknight",
+   "slug": "blacknight",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 39122,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.blacknight.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "BT Ireland",
+   "slug": "bt-ireland",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.btireland.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Pure Telecom",
+   "slug": "pure-telecom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.puretelecom.ie/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "HEAnet",
+   "slug": "heanet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.heanet.ie/",
+   "support_url": null,
+   "notes": "The national research and education network."
   }
  ]
 }

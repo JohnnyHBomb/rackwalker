@@ -1635,6 +1635,9 @@
           "$ref": "#/$defs/InstallModuleOp"
         },
         {
+          "$ref": "#/$defs/SetPartNumberOp"
+        },
+        {
           "$ref": "#/$defs/MarkUnverifiedOp"
         }
       ]
@@ -1724,6 +1727,7 @@
             "create_device",
             "set_device_type",
             "install_module",
+            "set_part_number",
             "mark_unverified"
           ]
         },
@@ -4562,7 +4566,7 @@
     },
     "AddModuleTypeOp": {
       "type": "object",
-      "description": "A module type imported from the pinned device-type library (2.5.0), as add_device_type with `library_file`.",
+      "description": "A module type in NetBox (2.5.0), as add_device_type: imported from the pinned device-type library with `library_file`, or, for a module the library does not hold, recorded by hand with `manufacturer` and `model` (no templates) and tagged rw-unverified.",
       "additionalProperties": false,
       "required": [
         "op",
@@ -4593,15 +4597,27 @@
         "fields": {
           "type": "object",
           "additionalProperties": false,
-          "required": [
-            "library_file"
-          ],
+          "required": [],
           "properties": {
             "library_file": {
               "type": "string",
               "minLength": 3,
               "maxLength": 200,
               "pattern": "^[^/]+/[^/]+\\.ya?ml$"
+            },
+            "manufacturer": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "part_number": {
+              "type": "string",
+              "maxLength": 50
             }
           },
           "title": "AddModuleTypeFields"
@@ -4815,6 +4831,59 @@
             }
           },
           "title": "InstallModuleFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "SetPartNumberOp": {
+      "type": "object",
+      "description": "Sets the part number of a device type NetBox holds to the one the pinned device-type library lists for that manufacturer and model (2.5.0). `part_number` is what was read off the label; it is compared without spaces, dashes and case, and the library's own spelling is what is written. Refused when the library does not hold the model or lists no part number for it, or when `part_number` is not the library's (validation_failed, with details.expected).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "set_part_number"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device_type"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "SetPartNumberTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "part_number"
+          ],
+          "properties": {
+            "part_number": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 50
+            }
+          },
+          "title": "SetPartNumberFields"
         },
         "client_ref": {
           "$ref": "#/$defs/OpCommon/properties/client_ref"

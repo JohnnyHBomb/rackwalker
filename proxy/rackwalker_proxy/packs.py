@@ -32,14 +32,15 @@ from .errors import ApiError
 
 KINDS = {"providers": "providers.schema.json", "devices": "devices.schema.json", "serials": "serials.schema.json"}
 KIND_WORDS = {"national_carrier": "national carrier", "business_isp": "business ISP", "cable_fibre": "cable or fibre", "mobile": "mobile",
-              "wholesale": "wholesale or backbone", "satellite": "satellite"}
+              "wholesale": "wholesale or backbone", "satellite": "satellite", "research_education": "research and education network"}
 RIR_NAMES = {"ripe": ("RIPE NCC", "ripe-ncc"), "arin": ("ARIN", "arin"), "apnic": ("APNIC", "apnic"), "lacnic": ("LACNIC", "lacnic"),
              "afrinic": ("AFRINIC", "afrinic")}
 # Words a company name carries that say nothing about which company it is.
 COMPANY_WORDS = {"ltd", "limited", "plc", "inc", "llc", "corp", "corporation", "co", "bv", "nv", "gmbh", "ag", "kg", "sa", "sas", "sarl", "srl",
                  "spa", "ab", "as", "oy", "the", "group", "holdings"}
 # A model or maker name that only says "we do not know what this is".
-PLACEHOLDER_WORDS = {"unknown", "generic", "placeholder", "tbd", "tbc", "todo", "other", "misc", "none", "na", "unidentified", "unspecified", "dummy"}
+PLACEHOLDER_WORDS = {"unknown", "generic", "placeholder", "tbd", "tbc", "todo", "other", "misc", "none", "na", "unidentified", "unspecified", "dummy",
+                     "mystery", "temp", "temporary"}
 UNVERIFIED_TAG = {"name": "Unverified (RackWalker)", "slug": "rw-unverified", "color": "ff9800",
                   "description": "Recorded through RackWalker without a match in its packs: a model the device-type library does not hold, or a serial "
                                  "that does not look like the vendor's."}
@@ -63,8 +64,12 @@ def slugify(name: str) -> str:
 
 
 def is_placeholder(text: str | None) -> bool:
+    """A name that stands for "nobody knew": empty, only punctuation ("?"), or made of the words above. A model that is
+    only a number (Cisco 1721, Brocade 300) is a real name."""
     words = re.findall(r"[a-z]+", (text or "").lower())
-    return not words or words[0] in PLACEHOLDER_WORDS or all(w in PLACEHOLDER_WORDS | {"device", "model", "type", "box", "manufacturer", "vendor"} for w in words)
+    if not words:
+        return not re.search(r"[0-9]", text or "")
+    return words[0] in PLACEHOLDER_WORDS or all(w in PLACEHOLDER_WORDS | {"device", "model", "type", "box", "manufacturer", "vendor"} for w in words)
 
 
 # ---------------------------------------------------------------- validation
@@ -376,6 +381,11 @@ class DeviceIndex:
     def lookup(self, manufacturer: str | None, model: str | None, kind: str = "device") -> dict[str, Any] | None:
         """The library's entry for exactly this maker and model (as compared: case and punctuation do not count)."""
         return self._by_model.get((kind, norm(manufacturer or ""), _words(model or "")))
+
+    def by_part(self, manufacturer: str | None, part_number: str | None, kind: str = "device") -> dict[str, Any] | None:
+        """The model of that maker which carries this part number (spaces and dashes do not count), if the library holds one."""
+        maker, tight = norm(manufacturer or ""), _words(part_number or "").replace(" ", "")
+        return next((r for r in self.rows.get(kind, []) if tight and r["_tight"][1] == tight and norm(r["manufacturer"]) == maker), None)
 
     def makers(self, text: str) -> list[str]:
         t = norm(text)

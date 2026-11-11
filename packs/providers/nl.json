@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-nl",
- "version": "1.0.0",
+ "version": "1.1.0",
  "country": "NL",
  "title": "Common providers: Netherlands",
  "read": "2026-11-11",
@@ -27,7 +27,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "5 of 18 candidate names were found on the page."
+   "result": "5 of 18 candidate names were found on the page (the 17 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Each provider's own public website",
@@ -35,7 +35,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "16 of 17 websites and 3 support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "18 of 19 websites and 3 support or status pages answered an automated check; an address that did not answer is left empty."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -43,7 +43,7 @@
    "read": "2026-11-11",
    "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
    "use": "cross-check",
-   "result": "13 AS numbers confirmed; a number whose registered holder was another company was removed."
+   "result": "19 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
   },
   {
    "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
@@ -52,6 +52,14 @@
    "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
    "use": "copied",
    "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "4 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
   },
   {
    "name": "PeeringDB",
@@ -76,7 +84,8 @@
    ],
    "website": "https://www.kpn.com/zakelijk",
    "support_url": "https://www.kpn.com/service/storingen",
-   "notes": null
+   "notes": null,
+   "wikidata": "Q338633"
   },
   {
    "name": "Odido",
@@ -94,6 +103,14 @@
     },
     {
      "asn": 13127,
+     "rir": "ripe"
+    },
+    {
+     "asn": 31615,
+     "rir": "ripe"
+    },
+    {
+     "asn": 15670,
      "rir": "ripe"
     }
    ],
@@ -114,23 +131,35 @@
     {
      "asn": 33915,
      "rir": "ripe"
+    },
+    {
+     "asn": 9143,
+     "rir": "ripe"
     }
    ],
    "website": "https://www.ziggo.nl/zakelijk",
    "support_url": "https://www.ziggo.nl/klantenservice/storingen",
-   "notes": "Cable; part of VodafoneZiggo."
+   "notes": "Cable; part of VodafoneZiggo.",
+   "wikidata": "Q2382166"
   },
   {
    "name": "Vodafone",
    "slug": "vodafone-nl",
    "kind": "mobile",
    "aka": [
-    "VodafoneZiggo"
+    "VodafoneZiggo",
+    "Vodafone Nederland",
+    "Vodafone Libertel"
    ],
-   "asns": [],
+   "asns": [
+    {
+     "asn": 15480,
+     "rir": "ripe"
+    }
+   ],
    "website": "https://www.vodafone.nl/zakelijk",
    "support_url": null,
-   "notes": "Mobile; part of VodafoneZiggo, whose network (AS33915) is recorded on Ziggo."
+   "notes": "Mobile; part of VodafoneZiggo. The fixed network (AS33915, AS9143) is recorded on Ziggo."
   },
   {
    "name": "DELTA Fiber",
@@ -163,7 +192,8 @@
    ],
    "website": "https://www.eurofiber.com/nl-nl/",
    "support_url": null,
-   "notes": "Business fibre and dark fibre."
+   "notes": "Business fibre and dark fibre.",
+   "wikidata": "Q2072496"
   },
   {
    "name": "Freedom Internet",
@@ -193,7 +223,8 @@
    ],
    "website": "https://www.bit.nl/",
    "support_url": null,
-   "notes": null
+   "notes": null,
+   "wikidata": "Q2132680"
   },
   {
    "name": "Solcon",
@@ -314,6 +345,38 @@
    "website": "https://www.starlink.com/",
    "support_url": null,
    "notes": null
+  },
+  {
+   "name": "Routit",
+   "slug": "routit",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 28685,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.routit.nl/",
+   "support_url": null,
+   "notes": "Wholesale to resellers."
+  },
+  {
+   "name": "SURF",
+   "slug": "surf",
+   "kind": "research_education",
+   "aka": [
+    "SURFnet"
+   ],
+   "asns": [
+    {
+     "asn": 1103,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.surf.nl/",
+   "support_url": null,
+   "notes": "The national research and education network."
   }
  ]
 }

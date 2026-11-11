@@ -1,16 +1,20 @@
 {
  "pack": "serials",
  "id": "serials-network-vendors",
- "version": "1.0.0",
+ "version": "1.1.0",
  "title": "Serial-number rules of the most common network vendors in the device-type library",
  "read": "2026-11-11",
  "partial": true,
- "coverage": "The eight network vendors with the most device types in the library. Three have a rule with a public source of the vendor's own; five have none yet, and their serials are accepted as typed.",
+ "coverage": "The eight network vendors with the most device types in the library, and APC for its UPS units. Four have a rule with a public source of the vendor's own; five have none yet, and their serials are accepted as typed.",
  "missing": ["A sourced rule for HPE (Aruba), Juniper, Arista, Extreme Networks and Ubiquiti", "Every other vendor"],
  "vendors": [
   {"vendor": "Cisco", "manufacturers": ["Cisco"], "no_rule_reason": null, "rules": [
-   {"id": "cisco-factory-year-week", "models": null, "pattern": "[A-Z0-9]{3}[0-9]{2}(0[1-9]|[1-4][0-9]|5[0-3])[A-Z0-9]{4,5}",
-    "says": "three characters for the factory, two digits for the year, two digits for the week (01 to 53), then four or five characters",
+   {"id": "cisco-place-year-week", "models": null, "pattern": "[A-Z0-9]{3}[0-9]{2}(0[1-9]|[1-4][0-9]|5[0-3])[A-Z0-9]{4}",
+    "says": "three characters for the place it was made, two digits for the year, two digits for the week (01 to 53), then four characters (five on some products)",
+    "source": {"name": "Cisco Field Notice FN63942", "url": "https://www.cisco.com/c/en/us/support/docs/field-notices/639/fn63942.html", "read": "2026-11-11",
+               "quote": "The SN format is LLLYYWWSSSS. The YY is the year of manufacture, and the WW is the week of manufacture."}},
+   {"id": "cisco-factory-year-week", "models": null, "pattern": "[A-Z0-9]{3}[0-9]{2}(0[1-9]|[1-4][0-9]|5[0-3])[A-Z0-9]{5}",
+    "says": "three characters for the factory, two digits for the year, two digits for the week (01 to 53), then five characters",
     "source": {"name": "Cisco: product recycling, how to read when a product was made", "url": "https://www.cisco.com/c/en/us/about/takeback-and-reuse/product-recycling/weee-compliance/crossed-out-wheelie-bin.html", "read": "2026-11-11",
                "quote": "the serial number code is as follows: FFFYYWWSSSSS; FFF: Factory Code; YY: Year code; WW: Week code; SSSSS: Serial number"}}]},
   {"vendor": "Dell", "manufacturers": ["Dell", "Dell EMC"], "no_rule_reason": null, "rules": [
@@ -27,6 +31,11 @@
     "says": "a serial that starts with FS, the abbreviation of FortiSwitch",
     "source": {"name": "Fortinet Community: Technical Tip, deciphering abbreviations for Fortinet products", "url": "https://community.fortinet.com/t5/Customer-Service/Technical-Tip-Deciphering-abbreviations-for-Fortinet-products/ta-p/196062", "read": "2026-11-11",
                "quote": "Some of these will be used as prefixes for the serial number of a product such as 'FG100Dxxxxxxxxxx'."}}]},
+  {"vendor": "APC", "manufacturers": ["APC"], "no_rule_reason": null, "rules": [
+   {"id": "apc-ups-year-week", "models": "(.*(Smart-UPS|Back-UPS)|SMT|SMX|SMC|SRT|SRV|SUA|SURT|B[RXNC][0-9]|SC[0-9])", "pattern": "[A-Z0-9]{2}[0-9]{2}(0[1-9]|[1-4][0-9]|5[0-3])[A-Z0-9]{4,}",
+    "says": "two characters, then two digits for the year and two for the week (01 to 53) the UPS was made, then the rest",
+    "source": {"name": "Schneider Electric: APC UPS factory warranty information", "url": "https://www.se.com/uk/en/work/support/product-support/ups-factory-warranty-information/", "read": "2026-11-11",
+               "quote": "The third and fourth digits indicate the year your unit was manufactured, while the following 2 characters are the week your unit was manufactured."}}]},
   {"vendor": "HPE (Aruba)", "manufacturers": ["HPE", "Aruba", "HP"], "rules": [],
    "no_rule_reason": "No page of the vendor's own that states a format was found on the read date; a community example had nine digits, a reseller's guide said ten characters."},
   {"vendor": "Juniper", "manufacturers": ["Juniper"], "rules": [],

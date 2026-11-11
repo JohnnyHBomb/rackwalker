@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-gb",
- "version": "1.0.0",
+ "version": "1.1.0",
  "country": "GB",
  "title": "Common providers: United Kingdom",
  "read": "2026-11-11",
@@ -27,7 +27,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "14 of 23 candidate names were found on the page."
+   "result": "14 of 23 candidate names were found on the page (the 22 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Wikipedia: Internet in the United Kingdom",
@@ -35,7 +35,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "16 of 23 candidate names were found on the page."
+   "result": "16 of 23 candidate names were found on the page (the 22 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Each provider's own public website",
@@ -43,7 +43,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "21 of 22 websites and 5 support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "25 of 26 websites and 5 support or status pages answered an automated check; an address that did not answer is left empty."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -51,7 +51,7 @@
    "read": "2026-11-11",
    "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
    "use": "cross-check",
-   "result": "20 AS numbers confirmed; a number whose registered holder was another company was removed."
+   "result": "25 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
   },
   {
    "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
@@ -60,6 +60,14 @@
    "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
    "use": "copied",
    "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "2 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
   },
   {
    "name": "PeeringDB",
@@ -166,6 +174,10 @@
    "asns": [
     {
      "asn": 25135,
+     "rir": "ripe"
+    },
+    {
+     "asn": 5378,
      "rir": "ripe"
     }
    ],
@@ -352,7 +364,8 @@
    ],
    "website": "https://www.aa.net.uk/",
    "support_url": "https://aastatus.net/",
-   "notes": null
+   "notes": null,
+   "wikidata": "Q4759053"
   },
   {
    "name": "Neos Networks",
@@ -428,6 +441,72 @@
    "website": "https://www.starlink.com/",
    "support_url": null,
    "notes": "Satellite; common as a backup line at rural sites."
+  },
+  {
+   "name": "Plusnet UK",
+   "slug": "plusnet-uk",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6871,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.plus.net/",
+   "support_url": null,
+   "notes": "Part of BT Group. Not the German Plusnet."
+  },
+  {
+   "name": "Wavenet",
+   "slug": "wavenet",
+   "kind": "business_isp",
+   "aka": [
+    "Daisy"
+   ],
+   "asns": [
+    {
+     "asn": 5413,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.wavenet.co.uk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Gigaclear",
+   "slug": "gigaclear",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 56329,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.gigaclear.com/",
+   "support_url": null,
+   "notes": "Rural full fibre."
+  },
+  {
+   "name": "Jisc (Janet)",
+   "slug": "jisc-janet",
+   "kind": "research_education",
+   "aka": [
+    "Janet",
+    "Jisc"
+   ],
+   "asns": [
+    {
+     "asn": 786,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.jisc.ac.uk/janet",
+   "support_url": null,
+   "notes": "The national research and education network.",
+   "wikidata": "Q6269240"
   }
  ]
 }

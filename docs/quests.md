@@ -134,9 +134,10 @@ which quests are offered: **connectivity** (can it be reached, and how) before *
 | `device_unreachable` | connectivity | a live device that is not passive has no primary IP, and NetBox does not say that a cloud or controller service manages it or that it is not managed (one finding per device; see "How a device is managed") | when something breaks, the first question is how to get at it | first how it is managed; only for a locally managed device: one of its addresses, or a typed one and its interface | how the device is managed (and optionally its model's default), and the primary IP if it has one |
 | `address_no_prefix` | connectivity | addresses on a site's interfaces lie in no prefix of their own VRF (one finding per implied subnet and VRF; all host addresses, /32 or /128, of one VRF are one finding) | addresses with no prefix cannot be planned around | "their mask says the subnet is 192.0.2.0/24. Is that right?" or the right one, typed. For host addresses the range is asked for, never guessed. For an address in a VRF the game does not write: it says which prefix to add to which VRF, and "Check NetBox" completes the line | a prefix (global table only) |
 | `device_type_unknown` | identity | a live device's model or manufacturer is a placeholder ("Unknown", "Generic", "TBD", "Placeholder", "Other" and the like) | without its model nobody knows its ports, its height or its support contract | "What is this box?": what is printed on it, searched in the device-type library. "It really is a generic box: leave it" is an answer | the device type (imported if NetBox lacks it) and the device's change to it, only where nothing recorded is lost (`docs/packs.md`) |
+| `device_type_part_number` | identity | a device type that live devices are made of is a model the device-type library holds, and NetBox has another part number for it than the library lists, or none (one finding per model, at the site of its first device; not for a model marked unverified) | a spare ordered by the wrong part number is the wrong spare | "sw1 is a Juniper MX204. What part number is on its label?": the library's number, "something else" (typed; if it is the part number of another model the line says which, and that the device's type is what is wrong), or "leave it" (nothing is written, no XP) | the device type's part number, in the library's spelling; nothing else is ever written by this line |
 | `rack_audit` | identity | devices in one rack lack a serial or an asset tag | a device with no serial cannot be matched to a support contract | one form for the rack, top to bottom; leave blank what you cannot read | the fields you filled in, per device |
 | `shelf_audit` | identity | the same, for devices that are in no rack (per room) | the same | one form for the devices outside the racks of that room | the fields you filled in |
-| `module_bays_unrecorded` | identity | a live device has module bays and NetBox shows nothing in any of them | power supplies, fans and line cards fail one at a time | which bay has something fitted, what is printed on the module (searched in the library's module types), its serial. "Nothing is fitted: the bays are empty" is an answer | the module type (imported if NetBox lacks it) and the module in that bay |
+| `module_bays_unrecorded` | identity | a live device has module bays and NetBox shows nothing in any of them | power supplies, fans and line cards fail one at a time | which bay has something fitted, what is printed on the module (searched in the library's module types; one the library lacks is recorded by hand and marked unverified), its serial. "Nothing is fitted: the bays are empty" is an answer | the module type (imported if NetBox lacks it) and the module in that bay |
 | `platform_survey` | identity | devices of one model at a site have no platform (one finding per model, at most 20 devices each) | when an advisory or an upgrade comes out, nobody can list what runs it | "4 EX-A2400 devices have no platform on record: ... What do they run?" One answer covers them all; "They do not all run the same" asks about each. Only platforms NetBox allows for the model's manufacturer are offered | the platform of each device |
 | `site_record` | identity | a site lacks GPS, a facility name or a country | it cannot be put on a map or named to a carrier | one form: latitude and longitude, facility, country code | the site fields you filled in |
 | `rack_devices_unpositioned` | layout | devices are in a rack with no rack unit | nobody can be sent to the right unit | one form: the lowest unit of each device | each device's unit |
@@ -351,7 +352,7 @@ and carrier (`site_no_provider`). It exists only while one of them is open, and 
 the way out, which follows it, has its own.
 
 The other lines (`site_island`, `provider_unused`, `address_no_prefix`, `shelf_audit`, `platform_survey`,
-`site_record`, `estate_no_site`, `device_type_unknown`, `module_bays_unrecorded`) belong to no chain and are offered
+`site_record`, `estate_no_site`, `device_type_unknown`, `device_type_part_number`, `module_bays_unrecorded`) belong to no chain and are offered
 as before.
 
 ![The quest log lists the chains in play, stage by stage](screenshots/quests/chain-overview.png)
@@ -433,7 +434,8 @@ A ready line proposes a change set of ordinary change ops: `connect_cable`, `cre
 `create_circuit_termination`, `assign_ip`, `create_prefix`, `update_fields`, `place_device`, `move_rack`, and for
 chains `set_management`, `record_circuit`, `create_provider_account`, `create_provider_network`, `create_contact`,
 `assign_contact`, and for setting NetBox up `create_site`, `create_rack`, `create_provider`, `create_circuit_type`,
-`add_device_type`, `add_module_type`, `create_device`, `set_device_type`, `install_module`, `mark_unverified`
+`add_device_type`, `add_module_type`, `create_device`, `set_device_type`, `install_module`, `set_part_number`,
+`mark_unverified`
 (`contracts/api.md`, `docs/packs.md`). The game previews it against NetBox, and writes it only when you press Apply.
 
 * **Dry run is the default.** Unless the proxy runs with `WRITE_ENABLED=1`, nothing is written. The line is marked
@@ -470,6 +472,7 @@ line's checks and they pass. What that means, per kind:
 | the address on a circuit | an address on the interface the circuit reaches (through any patch panels) |
 | the first site; a site's first rack, first boxes, carrier | a site in NetBox; a rack (or a device) at the site; a device at the site; a provider in NetBox. These checks do not count into a site's completeness once they pass: a site is not "more complete" for having a rack |
 | what a box really is; what is fitted in a device | a model on the device that is no placeholder; a module in one of its bays |
+| a model's part number | the device type's part number is the one the device-type library lists for that model |
 | a circuit that stops at a patch panel | a path from the panel to an interface of one of your devices |
 | a circuit's record | each fact you were asked for: a far end on a provider network, a provider account, a contact assignment, the install date, the commit rate, the charges |
 | what powers a rack | a cable on a power port of each device |
@@ -517,7 +520,8 @@ something it never covered (a new device with no serial in a rack you audited) i
   chain NetBox showed complete all along pays nobody), once per player, with the same repeat rule per site. A fact
   you answered "none" or "I don't know yet" is no part of a verified record: the bonus waits for NetBox to hold it.
 * **The setup lines** pay 60 XP for the first site, 40 for a rack, 80 for the first boxes, 50 for the carrier, and
-  40 each for a placeholder device's real model and for a module in a bay. They bring no tool: a tool is earned by
+  40 each for a placeholder device's real model and for a module in a bay, and 30 for a model's part number put right
+  from the label. They bring no tool: a tool is earned by
   recording a connection or reading labels.
 * **A bonus only for what passes a check.** On top of a line's XP, 20 XP for each box whose model the device-type
   library confirms, and 10 XP for each serial that fits its vendor's published pattern, decided from NetBox as it

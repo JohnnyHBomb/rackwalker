@@ -41,14 +41,15 @@
    "properties": {
     "name": {"type": "string", "minLength": 1, "maxLength": 100, "description": "As the provider trades."},
     "slug": {"type": "string", "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$", "maxLength": 100},
-    "kind": {"enum": ["national_carrier", "business_isp", "cable_fibre", "mobile", "wholesale", "satellite"]},
+    "kind": {"enum": ["national_carrier", "business_isp", "cable_fibre", "mobile", "wholesale", "satellite", "research_education"]},
     "aka": {"type": "array", "items": {"type": "string", "minLength": 1, "maxLength": 100}, "description": "Other names on a bill or a hand-off box: former names, the business brand, the group."},
     "asns": {"type": "array", "items": {"type": "object", "additionalProperties": false, "required": ["asn", "rir"], "properties": {
       "asn": {"type": "integer", "minimum": 1, "maximum": 4294967295},
       "rir": {"enum": ["ripe", "arin", "apnic", "lacnic", "afrinic"]}}}},
     "website": {"oneOf": [{"$ref": "#/$defs/url"}, {"type": "null"}]},
     "support_url": {"oneOf": [{"$ref": "#/$defs/url"}, {"type": "null"}], "description": "A public support or status page, only where it answered on the read date."},
-    "notes": {"type": ["string", "null"], "maxLength": 200}
+    "notes": {"type": ["string", "null"], "maxLength": 200},
+    "wikidata": {"type": "string", "pattern": "^Q[1-9][0-9]*$", "description": "Optional. The provider's own Wikidata item (not its parent group's), where that item states one of these AS numbers: a stable cross-reference."}
    }
   }
  }

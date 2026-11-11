@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-fr",
- "version": "1.0.0",
+ "version": "1.1.0",
  "country": "FR",
  "title": "Common providers: France",
  "read": "2026-11-11",
@@ -10,7 +10,7 @@
  "missing": [
   "Smaller business ISPs",
   "Operators in the overseas departments",
-  "AS numbers for Celeste and the wholesale fibre operators (none confirmed)"
+  "AS numbers for Celeste, Linkt and the wholesale fibre operators (none confirmed)"
  ],
  "sources": [
   {
@@ -27,7 +27,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "5 of 18 candidate names were found on the page."
+   "result": "5 of 18 candidate names were found on the page (the 17 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Each provider's own public website",
@@ -35,7 +35,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "16 of 17 websites and 2 support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "20 of 22 websites and 2 support or status pages answered an automated check; an address that did not answer is left empty."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -43,7 +43,7 @@
    "read": "2026-11-11",
    "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
    "use": "cross-check",
-   "result": "14 AS numbers confirmed; a number whose registered holder was another company was removed."
+   "result": "17 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
   },
   {
    "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
@@ -52,6 +52,14 @@
    "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
    "use": "copied",
    "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "7 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
   },
   {
    "name": "PeeringDB",
@@ -79,7 +87,8 @@
    ],
    "website": "https://www.orange-business.com/fr",
    "support_url": "https://suivi-des-incidents.orange.fr/",
-   "notes": "Orange Business for business lines."
+   "notes": "Orange Business for business lines.",
+   "wikidata": "Q19698200"
   },
   {
    "name": "SFR",
@@ -93,11 +102,16 @@
     {
      "asn": 15557,
      "rir": "ripe"
+    },
+    {
+     "asn": 12626,
+     "rir": "ripe"
     }
    ],
    "website": "https://www.sfrbusiness.fr/",
    "support_url": null,
-   "notes": "SFR Business."
+   "notes": "SFR Business.",
+   "wikidata": "Q218765"
   },
   {
    "name": "Bouygues Telecom",
@@ -115,7 +129,8 @@
    ],
    "website": "https://www.bouyguestelecom-pro.fr/",
    "support_url": null,
-   "notes": "Bouygues Telecom Entreprises."
+   "notes": "Bouygues Telecom Entreprises.",
+   "wikidata": "Q581438"
   },
   {
    "name": "Free",
@@ -134,7 +149,8 @@
    ],
    "website": "https://www.free.fr/",
    "support_url": null,
-   "notes": "Iliad group."
+   "notes": "Iliad group.",
+   "wikidata": "Q2467627"
   },
   {
    "name": "Free Pro",
@@ -151,7 +167,8 @@
    ],
    "website": "https://pro.free.fr/",
    "support_url": null,
-   "notes": "Formerly Jaguar Network."
+   "notes": "Formerly Jaguar Network.",
+   "wikidata": "Q118541312"
   },
   {
    "name": "Free Mobile",
@@ -184,7 +201,8 @@
    ],
    "website": "https://www.ovhcloud.com/fr/telecom/",
    "support_url": "https://network.status-ovhcloud.com/",
-   "notes": null
+   "notes": null,
+   "wikidata": "Q568183"
   },
   {
    "name": "inherent",
@@ -327,6 +345,69 @@
    "website": "https://www.starlink.com/",
    "support_url": null,
    "notes": null
+  },
+  {
+   "name": "Sewan",
+   "slug": "sewan",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8399,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sewan.fr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Linkt",
+   "slug": "linkt",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.linkt.fr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Covage",
+   "slug": "covage",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.covage.com/",
+   "support_url": null,
+   "notes": "Public-initiative and wholesale fibre networks; sells to providers."
+  },
+  {
+   "name": "XpFibre",
+   "slug": "xpfibre",
+   "kind": "wholesale",
+   "aka": [
+    "SFR FTTH"
+   ],
+   "asns": [],
+   "website": null,
+   "support_url": null,
+   "notes": "Wholesale fibre network; sells to providers."
+  },
+  {
+   "name": "RENATER",
+   "slug": "renater",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2200,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.renater.fr/",
+   "support_url": null,
+   "notes": "The national research and education network.",
+   "wikidata": "Q3456896"
   }
  ]
 }

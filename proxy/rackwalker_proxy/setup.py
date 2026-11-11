@@ -7,6 +7,8 @@
     site_no_provider        nothing in NetBox is connected yet and no carrier is on record: whose line the site is on,
                             from the provider pack of the site's country
     device_type_unknown     a device recorded as a placeholder model: what it really is
+    device_type_part_number a model the library holds, with another part number in NetBox than the library lists (or
+                            none): what the label says
     module_bays_unrecorded  a device with module bays and nothing recorded in any of them
 
 The first four are the chain "Setting up <site>": a new admin gets a usable NetBox by playing it. Like every line,
@@ -33,7 +35,8 @@ from .setupops import COUNTRY_OF
 
 # A NetBox that is just starting: nothing is cabled, no carrier and no circuit is on record, and it holds few devices.
 STARTER_DEVICES = 12
-KINDS = ("estate_no_site", "site_no_rack", "site_no_devices", "site_no_provider", "device_type_unknown", "module_bays_unrecorded")
+KINDS = ("estate_no_site", "site_no_rack", "site_no_devices", "site_no_provider", "device_type_unknown", "device_type_part_number",
+         "module_bays_unrecorded")
 CHAIN_KINDS = ("site_no_rack", "site_no_devices", "site_no_provider")
 MAX_NEW = 3            # boxes added in one pass of "first devices"
 ROUNDS = 4             # searches in one question before the line says where to look instead
@@ -54,10 +57,13 @@ WORDS: dict[str, tuple[str, str, str]] = {
                          "You can now record the circuit that brings {site} online, under its carrier."),
     "device_type_unknown": ("What {subject} really is", "Without its model nobody knows its ports, its height or its support contract. Let's find out what it is.",
                             "You can now see {subject} with the ports of its real model."),
+    "device_type_part_number": ("The part number of the {subject}", "A spare ordered by the wrong part number is the wrong spare. Let's check the label.",
+                                "You can now order a spare for the {subject} by the part number NetBox holds."),
     "module_bays_unrecorded": ("What is fitted in {subject}", "Power supplies, fans and line cards fail one at a time. Let's record what is in the bays.",
                                "You can now look up what is fitted in {subject}, bay by bay."),
 }
-XP = {"estate_no_site": 60, "site_no_rack": 40, "site_no_devices": 80, "site_no_provider": 50, "device_type_unknown": 40, "module_bays_unrecorded": 40}
+XP = {"estate_no_site": 60, "site_no_rack": 40, "site_no_devices": 80, "site_no_provider": 50, "device_type_unknown": 40, "device_type_part_number": 30,
+      "module_bays_unrecorded": 40}
 
 
 def country_name(code: str | None) -> str:
@@ -94,6 +100,26 @@ def findings(e: Estate, a: Any, add: Any, quiet: Any, live: tuple[str, ...]) -> 
     bays: dict[int, list[dict[str, Any]]] = {}
     for b in e.module_bays.values():
         bays.setdefault(b["device_id"], []).append(b)
+    # A model the library holds whose part number in NetBox is another one, or empty: one line per model, at the site of
+    # the first live device of that model (a label has to be read). A model nothing is made of is left to the catalogue.
+    index = packs.load().index()
+    first: dict[int, dict[str, Any]] = {}
+    for d in sorted(e.devices.values(), key=lambda d: d["id"]):
+        if d["status"] in live and d.get("type_id") in e.dtypes and d["site_id"] in e.sites:
+            first.setdefault(d["type_id"], d)
+    for tid, d in sorted(first.items()) if e.can_see("devices", "dtypes") else []:
+        t = e.dtypes[tid]
+        check = index.part_check(t["manufacturer"], t["model"], t["part_number"])
+        wrong = check["status"] == "mismatch" or (check["status"] == "known" and check["expected"] and not t["part_number"])
+        if not wrong or UNVERIFIED in t["tags"] or packs.is_placeholder(t["model"]) or packs.is_placeholder(t["manufacturer"]):
+            quiet("device_type_part_number", ("device_type", tid), d["site_id"])
+            continue
+        model = f"{t['manufacturer']} {t['model']}"
+        add("device_type_part_number", ("device_type", tid), d["site_id"],
+            (f"NetBox holds the part number {t['part_number']} for the {model}; the device-type library lists {check['expected']} for that model."
+             if t["part_number"] else f"NetBox holds no part number for the {model}; the device-type library lists {check['expected']}."),
+            [{"kind": "device", "id": d["id"], "name": d["name"] or f"device {d['id']}"}],
+            type_id=tid, device_id=d["id"], model=model, have=t["part_number"] or None, expected=check["expected"])
     for sid in sorted(e.sites):
         name = e.sites[sid]["name"]
         devs = e.site_devices(sid)
@@ -137,7 +163,7 @@ def _q():
     return quests
 
 
-def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker: str | None = None, manual: bool = True,
+def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker: str | None = None,
               closing: list[dict[str, str]] | None = None) -> tuple[str, Any]:
     """"What is this box?": the player types what is printed on it; the library's matches (and matching models NetBox
     already holds) are the choices. Returns ("library", index row), ("existing", device type id) or ("manual", fields).
@@ -166,7 +192,7 @@ def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker:
                   [q.choice(f"own:{t['id']}", f"{t['manufacturer']} {t['model']} (in your NetBox)") for t in own]
         last = r == ROUNDS - 1
         more = ([] if last else [q.choice("again", "None of these: search again", "other")]) + \
-               ([q.choice("manual", "It is not in the library: record it by hand", "other")] if manual else []) + (closing or [])
+               [q.choice("manual", "It is not in the library: record it by hand", "other")] + (closing or [])
         n = len(choices)
         prompt = (f"{n} {noun}{'s' if n != 1 else ''} match{'es' if n == 1 else ''} \"{q.clip(text, 30)}\". Which is it?" if n else
                   f"Nothing in the device-type library matches \"{q.clip(text, 30)}\".")
@@ -185,15 +211,14 @@ def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker:
         break
     else:
         raise q.Stop("parked", None, look + ["If the library does not hold it, come back and choose \"record it by hand\"."])
-    if not manual:
-        raise q.Stop("parked", None, ["Add the module type in NetBox by hand (Devices > Module Types), then come back and say which bay holds it."],
-                     note="The device-type library does not hold that module.")
     fields = [{"id": "manufacturer", "label": "Manufacturer", "type": "text", "max_length": 100, "hint": "as on the label, for example Juniper", "suggestion": None, "options": []},
               {"id": "model", "label": "Model", "type": "text", "max_length": 100, "hint": "as on the label", "suggestion": None, "options": []},
               {"id": "part_number", "label": "Part number (if printed)", "type": "text", "max_length": 50, "hint": "often beside the serial", "suggestion": None, "options": []},
               {"id": "u_height", "label": "Height in rack units", "type": "number", "min": 0, "max": 100, "hint": "1 for a normal switch; 0 for a box that takes no unit", "suggestion": None, "options": []}]
+    if kind == "module":
+        fields.pop()    # a module takes no rack unit of its own
     sid = f"{key}_manual"
-    values = ctx.form(sid, "Record the model by hand. It is marked unverified in NetBox (no bonus), because the library cannot confirm it.", fields, look)
+    values = ctx.form(sid, f"Record the {noun} by hand. It is marked unverified in NetBox{'' if kind == 'module' else ' (no bonus)'}, because the library cannot confirm it.", fields, look)
     assert values is not None
     if not values.get("manufacturer") or not values.get("model"):
         raise ctx.again(sid, "The manufacturer and the model are both needed.")
@@ -205,7 +230,7 @@ def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker:
     if row is not None:   # typed by hand, and the library holds it after all: the verified model is used
         return "library", row
     have = next((t for t in e.dtypes.values() if packs.norm(t["manufacturer"] or "") == packs.norm(values["manufacturer"])
-                 and packs._words(t["model"]) == packs._words(values["model"])), None)
+                 and packs._words(t["model"]) == packs._words(values["model"])), None) if kind == "device" else None
     return ("existing", have["id"]) if have else ("manual", values)
 
 
@@ -223,8 +248,8 @@ def type_ops(picked: tuple[str, Any], ref: str, kind: str = "device", made: dict
         made[what["file"]] = f"@{ref}"
         return [{"op": f"add_{kind}_type", "target": target, "client_ref": ref, "fields": {"library_file": what["file"]}}], f"@{ref}"
     fields = {"manufacturer": what["manufacturer"], "model": what["model"], **({"part_number": what["part_number"]} if what.get("part_number") else {}),
-              **({"u_height": what["u_height"]} if what.get("u_height") is not None else {})}
-    return [{"op": "add_device_type", "target": target, "client_ref": ref, "fields": fields}], f"@{ref}"
+              **({"u_height": what["u_height"]} if kind == "device" and what.get("u_height") is not None else {})}
+    return [{"op": f"add_{kind}_type", "target": target, "client_ref": ref, "fields": fields}], f"@{ref}"
 
 
 def type_facts(e: Estate, picked: tuple[str, Any]) -> dict[str, Any]:
@@ -525,6 +550,40 @@ def flow_what_box(ctx: Any) -> list[dict[str, Any]]:
     return type_op + [{"op": "set_device_type", "target": {"kind": "device", "id": dev["id"]}, "fields": {"device_type_id": type_ref}}]
 
 
+def flow_part_number(ctx: Any) -> list[dict[str, Any]]:
+    """A model's part number against the label of one box of that model. The only number written is the library's own,
+    and only when the player reads it off the box; a label that says something else is not written, and the line says
+    which model that number belongs to when the library knows."""
+    q = _q()
+    e, f = ctx.e, ctx.line["finding"]
+    d = f["data"]
+    t, dev = e.dtypes[d["type_id"]], e.devices[d["device_id"]]
+    ctx.at(device_id=dev["id"])
+    index = packs.load().index()
+    model, have, expected = d["model"], d.get("have"), d["expected"]
+    look = [f"Find {nm(dev)}: {e.where(dev)}.", "The part number is on the same label as the serial, often after \"P/N\" or \"PID\"."]
+    other = index.by_part(t["manufacturer"], have) if have else None
+    hint = f" ({have} is the part number of the {other['model']}.)" if other is not None else ""
+    got = ctx.choice("label", q.clip(f"{nm(dev)} is a {model}. What part number is on its label?{hint}", 300),
+                     [q.choice("fix", f"{expected}: record that"), q.choice("else", "Something else", "other"),
+                      q.na(f"Leave {have} in NetBox" if have else "Leave it empty in NetBox")], look)
+    if got == "else":
+        typed = ctx.text("label_says", "What does the label say? Type the part number exactly as printed.",
+                         lambda v: (v.strip(), None) if 1 <= len(v.strip()) <= 50 else (None, "A part number of 1 to 50 characters."),
+                         "exactly as printed", look)
+        if index.part_check(t["manufacturer"], t["model"], typed)["status"] != "verified":
+            belongs = index.by_part(t["manufacturer"], typed)
+            if belongs is not None:
+                raise q.Stop("parked", None, [f"{typed} is the part number of the {belongs['manufacturer']} {belongs['model']}. If that is what the label says, "
+                                              f"{nm(dev)} is not a {model}: change its device type in NetBox (Devices > {nm(dev)} > Edit).",
+                                              "Then read NetBox again: this line closes by itself when the model and the part number agree."],
+                             note=f"The label of {nm(dev)} carries the part number of another model.")
+            raise q.Stop("parked", None, [f"The device-type library lists {expected} for the {model}, and the label says {typed}: one of them names another "
+                                          "revision or another model.", f"Check the model name on the label of {nm(dev)} against NetBox before anything is changed."],
+                         note="The label and the device-type library disagree, so nothing was written.")
+    return [{"op": "set_part_number", "target": {"kind": "device_type", "id": t["id"]}, "fields": {"part_number": expected}}]
+
+
 def flow_modules(ctx: Any) -> list[dict[str, Any]]:
     q = _q()
     e, f = ctx.e, ctx.line["finding"]
@@ -535,7 +594,7 @@ def flow_modules(ctx: Any) -> list[dict[str, Any]]:
     got = q.pick(ctx, "bay", f"Which bay of {nm(dev)} has something fitted?", [(f"bay:{b['id']}", b["name"], b["name"]) for b in bays], look,
                  [q.na("Nothing is fitted: the bays are empty")], noun="bay")
     bay = e.module_bays[int(got.split(":")[1])]
-    picked = find_type(ctx, "mod", kind="module", what=f"the module in bay {bay['name']}", manual=False)
+    picked = find_type(ctx, "mod", kind="module", what=f"the module in bay {bay['name']}")
     serial = ctx.text("mod_serial", f"What serial is on the module in bay {bay['name']}?",
                       lambda t: (t.strip(), None) if 1 <= len(t.strip()) <= 50 else (None, "At most 50 characters."), "on the module's own label", look, soft=True)
     type_op, type_ref = type_ops(picked, "mtype", kind="module")
@@ -544,7 +603,7 @@ def flow_modules(ctx: Any) -> list[dict[str, Any]]:
 
 
 FLOWS = {"estate_no_site": flow_first_site, "site_no_rack": flow_first_rack, "site_no_devices": flow_first_devices, "site_no_provider": flow_whose_line,
-         "device_type_unknown": flow_what_box, "module_bays_unrecorded": flow_modules}
+         "device_type_unknown": flow_what_box, "device_type_part_number": flow_part_number, "module_bays_unrecorded": flow_modules}
 
 
 def audit_serials(ctx: Any, form_sid: str, values: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]]]:
@@ -602,6 +661,8 @@ def describe_op(e: Estate, op: dict[str, Any], refs: dict[str, str]) -> str | No
         label = f"{row['manufacturer']} {row['model']}" if row else f"{f.get('manufacturer')} {f.get('model')}"
         if ref:
             refs[ref] = label
+        if row is None and kind == "module":
+            return f"New module type {label}, recorded by hand and marked unverified: the device-type library does not hold it."
         if row is None:
             return f"New device type {label}, recorded by hand and marked unverified: the device-type library does not hold it, so it earns no bonus."
         bits = ([f"{row['u_height']:g}U"] if kind == "device" else []) + [f"{row[k]} {w if row[k] != 1 else w[:-1]}" for k, w in (
@@ -622,6 +683,10 @@ def describe_op(e: Estate, op: dict[str, Any], refs: dict[str, str]) -> str | No
         bay = e.module_bays.get(f["module_bay_id"], {}).get("name", "a bay")
         return f"{e.device_name(f['device_id'])}, bay {bay}: a {refs.get(f['module_type_id'], 'module') if isinstance(f['module_type_id'], str) else 'module'}" + \
                (f", serial {f['serial']}." if f.get("serial") else ".")
+    if name == "set_part_number":
+        t = e.dtypes.get(target["id"], {})
+        return (f"{type_name(target['id'])}: part number {t.get('part_number') or '(none)'} becomes {f['part_number']}, as the device-type library lists it. "
+                "Every device of that model shows it.")
     if name == "mark_unverified":
         who = e.device_name(target["id"]) if target["kind"] == "device" else type_name(target["id"])
         return f"{who}: marked unverified in NetBox ({f['reason']})."
@@ -682,7 +747,7 @@ def catalogue(e: Estate) -> dict[str, Any]:
         if packs.is_placeholder(t["model"]) or packs.is_placeholder(t["manufacturer"]):
             note = "A placeholder, not a model: \"What is this box?\" asks about its devices."
         elif status == "mismatch":
-            note = f"The device-type library says part number {check['expected']}; NetBox holds {t['part_number']}."
+            note = f"The device-type library says part number {check['expected']}; NetBox holds {t['part_number']}. \"The part number of ...\" asks about it."
         elif UNVERIFIED in t["tags"]:
             note = "Recorded by hand: the device-type library does not hold this model."
         elif status == "unverified":

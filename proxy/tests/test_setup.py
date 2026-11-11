@@ -39,6 +39,7 @@ EX2300 = "Juniper/EX2300-24P.yaml"
 MX204 = "Juniper/MX204.yaml"
 C1111 = "Cisco/ISR-C1111-4P.yaml"
 PSU = "Juniper/JPSU-650W-AC-AFO.yaml"
+PANEL = "Panduit/DP24688TGY.yaml"
 
 
 @pytest.fixture(autouse=True)
@@ -64,12 +65,38 @@ def test_the_shipped_packs_are_valid_and_every_one_loads():
     pack = p.device_pack()
     assert len(index.rows["device"]) == pack["index"]["device_types"] > 10_000 and len(index.rows["module"]) == pack["index"]["module_types"] > 1_000
     assert len(pack["library"]["commit"]) == 40 and pack["library"]["raw_base"].endswith(pack["library"]["commit"] + "/")
-    assert len(p.serials[0]["vendors"]) == 8
+    assert len(p.serials[0]["vendors"]) == 9
+
+
+def test_a_provider_carries_its_own_wikidata_item_or_none_and_a_shared_as_number_says_so():
+    p = packs.load()
+    every = p.all_providers()
+    assert len(every) >= 160 and all(x.get("wikidata", "Q1").startswith("Q") for x in every)
+    assert p.provider("providers-us", "ziply-fiber")["asns"] == [{"asn": 20055, "rir": "arin"}]
+    assert p.provider("providers-gb", "jisc-janet")["kind"] == "research_education" and "research_education" in packs.KIND_WORDS
+    # one network under two trading names in two packs: the second entry says which provider it resolves to in NetBox
+    by_asn: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for x in every:
+        for a in x["asns"]:
+            by_asn[a["asn"]].append(x)
+    shared = {asn: xs for asn, xs in by_asn.items() if len({packs.norm(x["name"]) for x in xs}) > 1}
+    assert {5607, 3320, 6830} <= set(shared)
+    for asn, xs in shared.items():
+        assert any(f"AS{asn}" in (x["notes"] or "") or "resolves to it" in (x["notes"] or "") for x in xs), (asn, [x["name"] for x in xs])
+    sky = p.provider("providers-ie", "sky-ie")
+    assert packs.match_provider(sky, [{"id": 7, "name": "Sky", "slug": "sky", "asns": [5607]}])["id"] == 7
+
+
+def test_a_name_that_is_only_a_number_is_a_model_and_a_name_that_says_nobody_knew_is_not():
+    for real in ("1721", "300", "3916-900", "EX2300-24P", "Catalyst 9300", "Temperature Probe 2"):
+        assert not packs.is_placeholder(real), real
+    for nobody in ("", None, "?", "???", "Unknown", "unknown device", "TBD", "Generic box", "temp", "Temporary", "mystery box", "Other"):
+        assert packs.is_placeholder(nobody), nobody
 
 
 def test_the_library_files_the_tests_use_are_the_pinned_ones():
     index = packs.load().index()
-    for kind, file in (("device", EX2300), ("device", MX204), ("device", C1111), ("module", PSU)):
+    for kind, file in (("device", EX2300), ("device", MX204), ("device", C1111), ("device", PANEL), ("module", PSU)):
         row = index.by_file(kind, file)
         raw = (LIBRARY / packs.FOLDER[kind] / file).read_bytes()
         assert row is not None and hashlib.sha256(raw).hexdigest() == row["sha256"], file
@@ -221,6 +248,9 @@ def test_a_device_type_of_netbox_with_a_contradicting_part_number_is_not_built_o
     ("Dell", "PowerEdge R740", "ABC1234", "ok"), ("Dell EMC", "S4048", "abc1234", "ok"), ("Dell", "x", "ABC12345", "suspect"),
     ("Fortinet", "FortiGate 60F", "FGT60FTK20001234", "ok"), ("Fortinet", "FortiGate 60F", "FS60FTK20001234", "suspect"),
     ("Fortinet", "FortiSwitch 124F", "FS1E24FTF21001234", "ok"), ("Fortinet", "FortiAP 231F", "anything", "no_rule"),
+    ("Cisco", "AIR-AP2802I", "FCZ1128A0B1", "ok"), ("Cisco", "x", "FCZ1128A0B1CD", "suspect"),       # eleven or twelve characters, never thirteen
+    ("APC", "SMT1500RMI2U", "AS1915123456", "ok"), ("APC", "Smart-UPS SRT 5000VA RM 230V", "AS1960123456", "suspect"),      # week 60
+    ("APC", "AP7921", "anything", "no_rule"),                    # the vendor's page speaks of UPS units, not of power strips
     ("Juniper", "EX2300-24P", "anything at all", "no_rule"), ("HPE", "Aruba 2930F", "x", "no_rule"), ("Nobody", "n", "x", "no_rule")])
 def test_a_serial_is_checked_only_against_a_rule_with_a_source(maker, model, serial, status):
     assert packs.load().serial_check(maker, model, serial)["status"] == status
@@ -231,7 +261,7 @@ def test_every_serial_rule_names_its_source_and_a_vendor_without_one_has_no_rule
         for rule in vendor["rules"]:
             assert rule["source"]["url"].startswith("https://") and rule["source"]["quote"] and rule["source"]["read"]
         assert vendor["rules"] or vendor["no_rule_reason"]
-    assert [v["vendor"] for v in packs.load().serials[0]["vendors"] if v["rules"]] == ["Cisco", "Dell", "Fortinet"]
+    assert [v["vendor"] for v in packs.load().serials[0]["vendors"] if v["rules"]] == ["Cisco", "Dell", "Fortinet", "APC"]
 
 
 def audit_estate() -> tuple[Estate, dict[str, Any]]:
@@ -262,7 +292,7 @@ def test_a_serial_that_is_another_devices_is_refused_and_one_that_looks_wrong_is
     state = quests.evaluate(e, line, answers)
     step = state["step"]
     assert state["status"] == "asking" and step["id"].startswith(f"serial{one['id']}_sure_") and step["prompt"].startswith(
-        "Are you sure? 12345 does not look like a Cisco serial: three characters for the factory, two digits for the year")
+        "Are you sure? 12345 does not look like a Cisco serial: three characters for the place it was made, two digits for the year")
     assert [(ch["label"], ch["kind"]) for ch in step["choices"]] == [("Yes: record it, marked unverified", "confirm"), ("Leave this serial out for now", "skip")]
     yes = quests.evaluate(e, line, {**answers, step["id"]: {"choice": "yes"}})
     assert [o["op"] for o in yes["proposal"]["ops"]] == ["update_fields", "mark_unverified"]
@@ -746,7 +776,7 @@ def test_a_device_with_empty_module_bays_is_asked_what_is_fitted(tmp_path, monke
     bay = box.data["dcim/module-bays"][0]
     psu = packs.load().index().by_file("module", PSU)
     q = say(cl, line, ("bay", {"choice": f"bay:{bay['id']}"}), ("mod_find0", {"text": "JPSU-650W-AC-AFO"}))
-    assert q["step"]["choices"][0]["label"] == "Juniper JPSU-650W-AC-AFO" and "It is not in the library: record it by hand" not in [ch["label"] for ch in q["step"]["choices"]]
+    assert q["step"]["choices"][0]["label"] == "Juniper JPSU-650W-AC-AFO" and "It is not in the library: record it by hand" in [ch["label"] for ch in q["step"]["choices"]]
     q = say(cl, line, ("mod_pick0", {"choice": f"lib:{psu['n']}"}), ("mod_serial", {"text": "PSU-0001"}))
     assert [o["op"] for o in q["proposal"]["ops"]] == ["add_module_type", "install_module"]
     assert q["changes"][1] == "qh-rtr, bay Power Supply 0: a Juniper JPSU-650W-AC-AFO, serial PSU-0001."
@@ -755,6 +785,184 @@ def test_a_device_with_empty_module_bays_is_asked_what_is_fitted(tmp_path, monke
     module = box.data["dcim/modules"][0]
     assert (module["serial"], module["module_bay"]["id"], module["module_type"]["model"]) == ("PSU-0001", bay["id"], "JPSU-650W-AC-AFO")
     assert box.data["dcim/module-types"][0]["part_number"] == "JPSU-650W-AC-AFO" and box.data["dcim/power-port-templates"][0]["module_type"]["id"]
+
+
+def test_a_module_the_library_does_not_hold_is_recorded_by_hand_and_marked_unverified(tmp_path, monkeypatch):
+    box = EmptyBox()
+    site, _ = near_empty(box)
+    maker = box.create("dcim/manufacturers", {"name": "Juniper", "slug": "juniper"})
+    dtype = box.create("dcim/device-types", {"manufacturer": maker["id"], "model": "MX204", "slug": "juniper-mx204", "part_number": "MX204"})
+    box.create("dcim/module-bay-templates", {"device_type": dtype["id"], "name": "Fan Tray 0"})
+    rtr = box.create("dcim/devices", {"name": "qh-rtr", "site": site["id"], "role": box.data["dcim/device-roles"][0]["id"], "device_type": dtype["id"],
+                                      "status": "active", "serial": "S9"})
+    cl = game(tmp_path, monkeypatch, box)
+    line = f"q:module_bays_unrecorded:device:{rtr['id']}"
+    bay = box.data["dcim/module-bays"][0]
+    q = say(cl, line, ("bay", {"choice": f"bay:{bay['id']}"}), ("mod_find0", {"text": "harbour fan 9"}), ("mod_pick0", {"choice": "manual"}))
+    assert q["step"]["prompt"].startswith("Record the module by hand. It is marked unverified in NetBox,")
+    assert [f["id"] for f in q["step"]["fields"]] == ["manufacturer", "model", "part_number"]          # a module takes no rack unit
+    # a part number that contradicts the library's for a module it holds is refused, as for a device
+    bad = post(cl, "answer", line, step="mod_manual", values={"manufacturer": "Juniper", "model": "JPSU-650W-AC-AFO", "part_number": "JPSU-1"})
+    assert "with the part number JPSU-650W-AC-AFO; JPSU-1 does not match it" in bad["step"]["error"]
+    q = say(cl, line, ("mod_manual", {"values": {"manufacturer": "Harbour Works", "model": "HF-9", "part_number": "HF-9-A"}}), ("mod_serial", {"text": "F-77"}))
+    assert [o["op"] for o in q["proposal"]["ops"]] == ["add_module_type", "install_module"]
+    assert q["changes"][0] == "New module type Harbour Works HF-9, recorded by hand and marked unverified: the device-type library does not hold it."
+    need = perms.needs_of(q["proposal"]["ops"])
+    assert ("extras.tag", "add") in need and ("dcim.interfacetemplate", "add") not in need
+    v = apply(cl, line)
+    assert v["complete"] and v["xp_awarded"] == 40
+    made = box.data["dcim/module-types"][0]
+    assert (made["model"], made["part_number"], [t["slug"] for t in made["tags"]]) == ("HF-9", "HF-9-A", ["rw-unverified"])
+    assert box.data["dcim/modules"][0]["module_type"]["id"] == made["id"] and box.data["dcim/modules"][0]["serial"] == "F-77"
+
+
+# ---------------------------------------------------------------- a patch panel keeps its way through
+def test_the_front_ports_of_a_definition_lead_to_its_rear_ports():
+    import yaml
+
+    doc = yaml.safe_load((LIBRARY / "device-types" / PANEL).read_text())
+    got = setupops.port_mappings(doc)
+    assert len(got) == 24 and got["07"] == [{"position": 1, "rear": "07", "rear_position": 1}]
+    # the older form: the rear port named on the front port itself; and a splitter, several positions of one rear port
+    assert setupops.port_mappings({"front-ports": [{"name": "F1", "rear_port": "R1", "rear_port_position": 3}, {"name": "F2"}]}) == {
+        "F1": [{"position": 1, "rear": "R1", "rear_position": 3}]}
+    fan = {"front-ports": [{"name": "A"}, {"name": "B"}], "port-mappings": [{"front_port": "A", "rear_port": "T", "rear_port_position": 1},
+                                                                            {"front_port": "B", "rear_port": "T", "rear_port_position": 2}]}
+    assert [m[0]["rear_position"] for m in setupops.port_mappings(fan).values()] == [1, 2]
+    assert setupops.port_mappings({"interfaces": [{"name": "eth0"}]}) == {}
+
+
+def test_an_imported_patch_panel_is_mapped_front_to_rear_on_the_type_and_on_the_device(tmp_path, monkeypatch):
+    box = EmptyBox()
+    site, dev = placeholder_box(box)
+    cl = game(tmp_path, monkeypatch, box)
+    line = f"q:device_type_unknown:device:{dev['id']}"
+    panel = packs.load().index().by_file("device", PANEL)
+    say(cl, line, ("box_find0", {"text": "DP24688TGY"}), ("box_pick0", {"choice": f"lib:{panel['n']}"}))
+    r = cl.post("/api/game/quests/preview", json={"scope": "netbox", "quest_id": line}).json()
+    assert (r["ops"][0]["after"]["front_ports"], r["ops"][0]["after"]["rear_ports"], r["ops"][0]["after"]["port_mappings"]) == (24, 24, 24)
+    assert apply(cl, line)["complete"]
+    rear_tpl = {t["name"]: t["id"] for t in box.data["dcim/rear-port-templates"]}
+    front_tpl = {t["name"]: t for t in box.data["dcim/front-port-templates"]}
+    assert len(front_tpl) == 24 and all(t["rear_ports"] == [{"position": 1, "rear_port": rear_tpl[name], "rear_port_position": 1}]
+                                        for name, t in front_tpl.items())
+    # the device that took the model: each front port leads to the device's own rear port of the same name
+    rear = {p["name"]: p["id"] for p in box.data["dcim/rear-ports"] if p["device"]["id"] == dev["id"]}
+    front = [p for p in box.data["dcim/front-ports"] if p["device"]["id"] == dev["id"]]
+    assert len(front) == 24 and all(p["rear_ports"] == [{"position": 1, "rear_port": rear[p["name"]], "rear_port_position": 1}] for p in front)
+
+
+# ---------------------------------------------------------------- a registry NetBox already holds
+@pytest.mark.parametrize("held", [{"name": "RIPE", "slug": "ripe"}, {"name": "RIPE NCC", "slug": "ripe-ncc"}, {"name": "ripe ncc", "slug": "europe"}])
+def test_a_registry_netbox_already_holds_under_either_name_is_used_and_no_second_one_is_made(tmp_path, monkeypatch, held):
+    box = EmptyBox()
+    site, _ = near_empty(box, "nl")
+    box.create("ipam/rirs", {"name": "ARIN", "slug": "arin"})
+    mine = box.create("ipam/rirs", held)
+    cl = game(tmp_path, monkeypatch, box)
+    line = CARRIER.format(site["id"])
+    say(cl, line, ("provider", {"choice": "pack:kpn"}))
+    assert apply(cl, line)["complete"]
+    assert len(box.data["ipam/rirs"]) == 2 and box.data["ipam/asns"][0]["rir"]["id"] == mine["id"]
+
+
+# ---------------------------------------------------------------- a part number NetBox holds against the label
+def part_box(box: EmptyBox, part: str) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
+    site, _ = near_empty(box)
+    maker = box.create("dcim/manufacturers", {"name": "Juniper", "slug": "juniper"})
+    dtype = box.create("dcim/device-types", {"manufacturer": maker["id"], "model": "MX204", "slug": "juniper-mx204", "part_number": part})
+    rtr = box.create("dcim/devices", {"name": "qh-rtr", "site": site["id"], "role": box.data["dcim/device-roles"][0]["id"], "device_type": dtype["id"],
+                                      "status": "active", "serial": "S9"})
+    return site, dtype, rtr
+
+
+def test_a_wrong_part_number_in_netbox_is_put_right_from_the_label_in_the_librarys_spelling(tmp_path, monkeypatch):
+    box = EmptyBox()
+    site, dtype, rtr = part_box(box, "EX2300-24P")          # the part number of another Juniper model
+    cl = game(tmp_path, monkeypatch, box)
+    line = f"q:device_type_part_number:device_type:{dtype['id']}"
+    q = next(x for x in board(cl)["quests"] if x["id"] == line)
+    assert q["title"] == "The part number of the Juniper MX204" and q["rank"] == "identity" and q["site_id"] == site["id"]
+    assert q["purpose"].startswith("NetBox holds the part number EX2300-24P for the Juniper MX204; the device-type library lists MX204 for that model.")
+    assert q["step"]["prompt"] == "qh-rtr is a Juniper MX204. What part number is on its label? (EX2300-24P is the part number of the EX2300-24P.)"
+    assert [(ch["label"], ch["kind"]) for ch in q["step"]["choices"]] == [("MX204: record that", "candidate"), ("Something else", "other"),
+                                                                          ("Leave EX2300-24P in NetBox", "not_applicable"), ("I don't know yet", "unknown")]
+    # the label carries the number of another model: nothing is proposed, and the line says what is really wrong
+    q = say(cl, line, ("label", {"choice": "else"}), ("label_says", {"text": "ex2300 24p"}))
+    assert q["status"] == "parked" and q["proposal"] is None
+    assert q["checklist"][0].startswith("ex2300 24p is the part number of the Juniper EX2300-24P. If that is what the label says, qh-rtr is not a Juniper MX204")
+    # typed in another spelling of the library's own number: taken, and written as the library spells it
+    q = say(cl, line, ("label_says", {"text": "mx-204"}))
+    assert q["status"] == "ready" and q["proposal"]["ops"] == [{"op": "set_part_number", "target": {"kind": "device_type", "id": dtype["id"]},
+                                                                "fields": {"part_number": "MX204"}}]
+    assert q["changes"] == ["Juniper MX204: part number EX2300-24P becomes MX204, as the device-type library lists it. Every device of that model shows it."]
+    assert perms.needs_of(q["proposal"]["ops"]) == [("dcim.devicetype", "change")]
+    r = cl.post("/api/game/quests/preview", json={"scope": "netbox", "quest_id": line}).json()
+    assert (r["ops"][0]["before"], r["ops"][0]["after"]) == ({"part_number": "EX2300-24P"}, {"part_number": "MX204"}) and box.writes == []
+    v = apply(cl, line)
+    assert v["complete"] and v["xp_awarded"] == 30 and v["bonus_xp"] == 0
+    assert box.row("dcim/device-types", dtype["id"])["part_number"] == "MX204"
+    cat = cl.get("/api/game/catalogue", params={"fresh": True}).json()
+    assert next(i for i in cat["items"] if i["model"] == "MX204")["status"] == "verified"
+    assert line not in [x["id"] for x in board(cl)["quests"] if x["status"] != "done"]
+
+
+def test_an_empty_part_number_is_asked_about_and_leaving_it_writes_nothing_and_pays_nothing(tmp_path, monkeypatch):
+    box = EmptyBox()
+    site, dtype, rtr = part_box(box, "")
+    cl = game(tmp_path, monkeypatch, box)
+    line = f"q:device_type_part_number:device_type:{dtype['id']}"
+    q = next(x for x in board(cl)["quests"] if x["id"] == line)
+    assert q["purpose"].startswith("NetBox holds no part number for the Juniper MX204; the device-type library lists MX204.")
+    assert q["step"]["choices"][2] == {"id": "none", "label": "Leave it empty in NetBox", "kind": "not_applicable"}
+    # a label that says something the library knows nothing of: nothing is written
+    q = say(cl, line, ("label", {"choice": "else"}), ("label_says", {"text": "MX204-HW-BASE-7"}))
+    assert q["status"] == "parked" and q["note"] == "The label and the device-type library disagree, so nothing was written."
+    xp = board(cl)["rewards"]["xp"]
+    q = say(cl, line, ("label", {"choice": "none"}))
+    assert q["status"] == "dismissed" and box.writes == [] and board(cl)["rewards"]["xp"] == xp
+    assert box.row("dcim/device-types", dtype["id"])["part_number"] == ""
+
+
+def test_a_part_number_is_asked_about_only_where_the_library_can_answer():
+    b = Build()
+    s = b.site()
+    room = b.room(s)
+    kinds = lambda: {f["id"] for f in findings.analyse(b.e).findings if f["kind"] == "device_type_part_number"}  # noqa: E731
+    one = b.dev(s, "sw1", "switch", room, None, manufacturer="Juniper", model="EX2300-24P", tags=[])
+    tid = 50
+    t = b.e.dtypes[tid] = {"id": tid, "manufacturer": "Juniper", "model": "EX2300-24P", "slug": "juniper-ex2300-24p", "part_number": "EX2300-24P",
+                           "u_height": 1.0, "tags": []}
+    b.e.devices[one]["type_id"] = tid
+    b.e.touch()
+    assert kinds() == set()                                           # the library's own number
+    t.update(part_number="ex2300 24p")
+    b.e.touch()
+    assert kinds() == set()                                           # the same number, spelled another way
+    t.update(part_number="WRONG")
+    b.e.touch()
+    assert kinds() == {f"device_type_part_number:device_type:{tid}"}
+    t.update(tags=[setup.UNVERIFIED])
+    b.e.touch()
+    assert kinds() == set()                                           # marked unverified on purpose: not asked again
+    t.update(tags=[], manufacturer="Harbour Works", model="HX-9")
+    b.e.touch()
+    assert kinds() == set()                                           # a model the library does not hold: nothing to check against
+
+
+def test_set_part_number_writes_only_the_librarys_number():
+    st = State()
+    st.add(Rec("device_type", 5, None, {"manufacturer": "Juniper", "model": "EX2300-24P", "part_number": "WRONG", "u_height": 1.0, "full_depth": False,
+                                        "tags": [], "_names": None}))
+    st.add(Rec("device_type", 6, None, {"manufacturer": "Harbour Works", "model": "HX-9", "part_number": "", "u_height": 1.0, "full_depth": False,
+                                        "tags": [], "_names": None}))
+    op = lambda tid, part: {"op": "set_part_number", "target": {"kind": "device_type", "id": tid}, "fields": {"part_number": part}}  # noqa: E731
+    out = planned(st, op(5, "EX2300-48P"), op(6, "HX-9-A"), op(7, "X"), op(5, "ex2300 24p"), op(5, "EX2300-24P"))
+    assert out[0]["status"] == "error" and out[0]["error"]["details"]["expected"] == "EX2300-24P"
+    assert out[1]["status"] == "error" and "lists no part number for Harbour Works HX-9" in out[1]["error"]["message"]
+    assert out[2]["status"] == "error" and out[2]["error"]["code"] == "not_found"
+    assert (out[3]["status"], out[3]["before"], out[3]["after"]) == ("ok", {"part_number": "WRONG"}, {"part_number": "EX2300-24P"})
+    assert out[4]["status"] == "no_change"
 
 
 # ---------------------------------------------------------------- the catalogue and the store
@@ -769,7 +977,7 @@ def test_the_catalogue_is_derived_from_netbox_and_the_store_only_remembers_first
     schema_validator("Catalogue").validate(cat)
     by_model = {i["model"]: i for i in cat["items"]}
     assert {m: i["status"] for m, i in by_model.items()} == {"EX-S": "unverified", "Unknown": "unverified", "EX2300-24P": "verified", "MX204": "mismatch"}
-    assert by_model["MX204"]["note"] == "The device-type library says part number MX204; NetBox holds MX-204-WRONG."
+    assert by_model["MX204"]["note"] == 'The device-type library says part number MX204; NetBox holds MX-204-WRONG. "The part number of ..." asks about it.'
     assert by_model["Unknown"]["note"].startswith("A placeholder, not a model") and by_model["EX-S"]["devices"] == 1
     assert cat["manufacturers"] == [{"name": "Example", "verified": 0, "total": 1}, {"name": "Generic", "verified": 0, "total": 1},
                                     {"name": "Juniper", "verified": 1, "total": 2}]

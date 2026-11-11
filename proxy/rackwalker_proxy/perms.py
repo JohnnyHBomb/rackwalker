@@ -54,6 +54,7 @@ NEEDS: dict[str, list[tuple[str, str]]] = {
     "create_device": [("dcim.device", "add"), ("dcim.devicerole", "add")],
     "set_device_type": [("dcim.device", "change")],
     "install_module": [("dcim.module", "add")],
+    "set_part_number": [("dcim.devicetype", "change")],
     "mark_unverified": [("extras.tag", "add")],
 }
 TEMPLATE_TYPES = ["dcim.consoleporttemplate", "dcim.consoleserverporttemplate", "dcim.powerporttemplate", "dcim.poweroutlettemplate",
@@ -97,7 +98,7 @@ def needs_of(ops: list[dict[str, Any]]) -> list[tuple[str, str]]:
             need = need + [("ipam.asn", "add"), ("ipam.rir", "add")]
         if op["op"] in ("add_device_type", "add_module_type") and f.get("library_file"):
             need = need + [(t, "add") for t in TEMPLATE_TYPES]
-        if op["op"] == "add_device_type" and not f.get("library_file") or op["op"] == "create_device" and f.get("unverified"):
+        if op["op"] in ("add_device_type", "add_module_type") and not f.get("library_file") or op["op"] == "create_device" and f.get("unverified"):
             need = need + [("extras.tag", "add")]
         if op["op"] == "set_device_type":
             need = need + [(t, "add") for t in COMPONENT_TYPES]

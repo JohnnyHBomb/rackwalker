@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-us",
- "version": "1.0.0",
+ "version": "1.1.0",
  "country": "US",
  "title": "Common providers: United States",
  "read": "2026-11-11",
@@ -12,7 +12,7 @@
   "Municipal fibre networks",
   "Wireless ISPs",
   "Most regional cable operators",
-  "AS numbers for Ziply Fiber and Brightspeed (none confirmed)",
+  "AS numbers for Brightspeed and Metronet (none confirmed)",
   "Websites that refused an automated check on the read date (left empty)"
  ],
  "sources": [
@@ -30,7 +30,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "23 of 30 candidate names were found on the page."
+   "result": "23 of 30 candidate names were found on the page (the 30 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Wikipedia: Internet in the United States",
@@ -38,7 +38,7 @@
    "read": "2026-11-11",
    "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
    "use": "cross-check",
-   "result": "21 of 30 candidate names were found on the page."
+   "result": "21 of 30 candidate names were found on the page (the 30 entries of version 1.0.0; later entries were not looked up there)."
   },
   {
    "name": "Each provider's own public website",
@@ -46,7 +46,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "23 of 30 websites and 7 support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "27 of 34 websites and 7 support or status pages answered an automated check; an address that did not answer is left empty."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -54,7 +54,7 @@
    "read": "2026-11-11",
    "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
    "use": "cross-check",
-   "result": "40 AS numbers confirmed; a number whose registered holder was another company was removed."
+   "result": "44 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
   },
   {
    "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
@@ -63,6 +63,14 @@
    "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
    "use": "copied",
    "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "10 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
   },
   {
    "name": "PeeringDB",
@@ -90,7 +98,8 @@
    ],
    "website": "https://www.business.att.com/",
    "support_url": "https://www.att.com/outages/",
-   "notes": null
+   "notes": null,
+   "wikidata": "Q35476"
   },
   {
    "name": "Verizon",
@@ -127,7 +136,8 @@
    ],
    "website": "https://business.comcast.com/",
    "support_url": null,
-   "notes": "Xfinity for homes."
+   "notes": "Xfinity for homes.",
+   "wikidata": "Q5151002"
   },
   {
    "name": "Spectrum (Charter)",
@@ -289,7 +299,8 @@
    ],
    "website": "https://www.t-mobile.com/business",
    "support_url": null,
-   "notes": "Mobile and fixed wireless."
+   "notes": "Mobile and fixed wireless.",
+   "wikidata": "Q3511885"
   },
   {
    "name": "Verizon Wireless",
@@ -338,7 +349,8 @@
    ],
    "website": null,
    "support_url": null,
-   "notes": null
+   "notes": null,
+   "wikidata": "Q166561"
   },
   {
    "name": "Zayo",
@@ -353,7 +365,8 @@
    ],
    "website": "https://www.zayo.com/",
    "support_url": null,
-   "notes": null
+   "notes": null,
+   "wikidata": "Q8067574"
   },
   {
    "name": "Cogent Communications",
@@ -370,7 +383,8 @@
    ],
    "website": "https://www.cogentco.com/",
    "support_url": "https://ecogent.cogentco.com/network-status",
-   "notes": null
+   "notes": null,
+   "wikidata": "Q1106938"
   },
   {
    "name": "Crown Castle Fiber",
@@ -498,11 +512,18 @@
    "name": "Ziply Fiber",
    "slug": "ziply-fiber",
    "kind": "cable_fibre",
-   "aka": [],
-   "asns": [],
+   "aka": [
+    "Wholesail Networks"
+   ],
+   "asns": [
+    {
+     "asn": 20055,
+     "rir": "arin"
+    }
+   ],
    "website": "https://ziplyfiber.com/",
    "support_url": null,
-   "notes": "Pacific Northwest."
+   "notes": "Pacific Northwest. Its AS number is registered to Wholesail Networks, the name of its network."
   },
   {
    "name": "Brightspeed",
@@ -527,7 +548,8 @@
    ],
    "website": "https://www.he.net/",
    "support_url": null,
-   "notes": null
+   "notes": null,
+   "wikidata": "Q1346687"
   },
   {
    "name": "GTT",
@@ -592,7 +614,8 @@
    ],
    "website": "https://www.viasat.com/",
    "support_url": null,
-   "notes": null
+   "notes": null,
+   "wikidata": "Q7924358"
   },
   {
    "name": "Hughesnet",
@@ -608,6 +631,65 @@
     }
    ],
    "website": null,
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q282161"
+  },
+  {
+   "name": "altafiber",
+   "slug": "altafiber",
+   "kind": "cable_fibre",
+   "aka": [
+    "Cincinnati Bell"
+   ],
+   "asns": [
+    {
+     "asn": 6181,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.altafiber.com/",
+   "support_url": null,
+   "notes": "Cincinnati area."
+  },
+  {
+   "name": "Hawaiian Telcom",
+   "slug": "hawaiian-telcom",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 36149,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.hawaiiantel.com/",
+   "support_url": null,
+   "notes": "Hawaii."
+  },
+  {
+   "name": "GCI",
+   "slug": "gci",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8047,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.gci.com/",
+   "support_url": null,
+   "notes": "Alaska.",
+   "wikidata": "Q5512990"
+  },
+  {
+   "name": "Metronet",
+   "slug": "metronet",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.metronet.com/",
    "support_url": null,
    "notes": null
   }

@@ -48,11 +48,12 @@ any country). Each provider has:
 |---|---|
 | `name` | as the provider trades ("BT", not the registered company name) |
 | `slug` | the NetBox slug it gets |
-| `kind` | `national_carrier`, `business_isp`, `cable_fibre`, `mobile`, `wholesale` or `satellite` |
+| `kind` | `national_carrier`, `business_isp`, `cable_fibre`, `mobile`, `wholesale`, `satellite` or `research_education` (a national research and education network) |
 | `aka` | other names on a bill or a hand-off box: former names, the business brand, the group. Used for search and to match a provider NetBox already holds |
 | `asns` | AS numbers, each with the regional registry that holds it (`ripe`, `arin`, `apnic`, `lacnic`, `afrinic`). NetBox needs the registry to make an ASN object |
 | `website`, `support_url` | public pages, or `null`. A status page is listed only where it answered a check on the read date |
 | `notes` | one line a site admin would want ("Wholesale only: seldom the name on the bill") |
+| `wikidata` | optional: the provider's own Wikidata item (`Q...`), a stable cross-reference for a name that changes. Recorded only where the item states one of the entry's AS numbers; a parent group's item is not used |
 
 How the first sweep was made, on the read date in each file:
 
@@ -67,6 +68,11 @@ How the first sweep was made, on the read date in each file:
   joint delegated statistics, which are published for public use). A number whose registered holder was another
   company was removed, and `missing` says for which providers no number was confirmed. PeeringDB's acceptable use
   policy forbids reproducing its data outside approved operational use: nothing was taken from it.
+* **One network, two names.** An AS number is used once per pack, but two packs may list it under two trading names
+  (Sky in the United Kingdom and Sky Ireland). Such an entry says so in its `notes`: in NetBox both resolve to one
+  provider, because a provider that holds the AS number is matched before a new one is made.
+* **Wikidata ids.** Wikidata is CC0. An id is recorded only after the item was read and found to state one of the
+  entry's AS numbers (property P3797).
 * **Web addresses.** Each address was requested on the read date. One that did not answer (a site that refuses
   automated requests, a certificate that did not validate) is left empty rather than guessed.
 
@@ -82,7 +88,8 @@ Choosing a provider proposes one op, `create_provider` (name, slug, AS numbers).
 1. looks for a provider NetBox already holds with the same name or slug, with one of the AS numbers, or under a name
    the pack says the provider also goes by. If there is one, it is used as it is and **nothing is created**;
 2. otherwise finds or creates each AS number as an `ipam.ASN` object (NetBox 4.7 requires a registry for an ASN, so
-   the registry is found or created as an `ipam.RIR`), then creates the provider with those ASNs.
+   the registry is found or created as an `ipam.RIR`; one NetBox already holds is found under either of its names,
+   "RIPE" or "RIPE NCC", slug `ripe` or `ripe-ncc`), then creates the provider with those ASNs.
 
 In the way-out quest the provider is created in the same previewed change as its circuit (`create_circuit` may name
 `"@provider"`), and a NetBox with no circuit type yet gets one the same way (`create_circuit_type`).
@@ -133,10 +140,13 @@ the rest of the game is as it was. `GET /api/packs` says in `library.import_from
 
 `add_device_type` with `library_file` creates the manufacturer if NetBox lacks it, the device type (model, slug, part
 number, height, depth, airflow, weight), and its templates: console ports, console server ports, power ports, power
-outlets (each tied to its power port), interfaces (type, management-only, PoE), rear ports, front ports (each mapped
-to its rear port and position), module bays and device bays. If NetBox refuses a template, the device type is
+outlets (each tied to its power port), interfaces (type, management-only, PoE), rear ports, front ports with the
+library's `port-mappings` (which rear port, and which position of it, each front port leads to, so a cable trace
+goes through a patch panel), module bays and device bays. The preview shows how many mappings come with the model. If NetBox refuses a template, the device type is
 removed again, so a later import starts clean. A device type NetBox already holds (same manufacturer and model) is
-matched and used; it is never created twice. `add_module_type` does the same for a module type.
+matched and used; it is never created twice. `add_module_type` does the same for a module type. A module the
+library does not hold can be recorded by hand (manufacturer, model, part number), like a device type: it gets no
+templates and is marked unverified.
 
 Inventory-item templates, images and rack types of the library are not imported.
 
@@ -166,17 +176,25 @@ The game does not take a value just because it was typed.
 | The index says | Then |
 |---|---|
 | the same part number | the model is **verified** |
-| another part number for that model | **refused**, with what was expected: "The device-type library knows Juniper EX2300-24P with the part number EX2300-24P; EX2300-48P does not match it." This applies to a part number you type, and to a device type already in NetBox that a quest would build on (correct it in NetBox first) |
+| another part number for that model | **refused**, with what was expected: "The device-type library knows Juniper EX2300-24P with the part number EX2300-24P; EX2300-48P does not match it." This applies to a part number you type, and to a device type already in NetBox that a quest would build on |
 | it does not hold the model | **accepted**, recorded by hand, and marked unverified |
 
+**A part number NetBox already holds.** Where a device type in use is a model the library holds and its part number
+in NetBox is another one, or empty, the line "The part number of ..." sends you to the label of one box of that model.
+If the label carries the library's number, `set_part_number` writes it (in the library's spelling) and the model
+becomes verified. If it carries something else, nothing is written: the line says which model that number belongs to
+when the library knows, because then the device's type is what is wrong. "Leave it" closes the line with no XP.
+
 **Serial numbers.** `packs/serials/network-vendors.json` lists the eight network vendors with the most device types
-in the library. A rule is written only when a public page of the vendor's own states it; the rule quotes that page.
+in the library, and APC for its UPS units. A rule is written only when a public page of the vendor's own states it; the rule quotes that page.
 
 | Vendor | Rule | Source |
 |---|---|---|
-| Cisco | three characters for the factory, two digits for the year, two digits for the week (01 to 53), then four or five characters | Cisco's product-recycling page, which gives the pattern `FFFYYWWSSSSS` |
+| Cisco | three characters for the place it was made, two digits for the year, two digits for the week (01 to 53), then four characters | Cisco Field Notice FN63942, which gives the pattern `LLLYYWWSSSS` |
+| Cisco | the same with five characters at the end | Cisco's product-recycling page, which gives the pattern `FFFYYWWSSSSS` |
 | Dell | a Service Tag of seven letters and digits | Dell knowledge base article 000196860 |
 | Fortinet | a FortiGate serial starts with `FG`, a FortiSwitch serial with `FS` | Fortinet Community technical tip on product abbreviations |
+| APC (UPS models only) | two characters, then two digits for the year and two for the week the unit was made, then the rest | Schneider Electric's page on APC UPS factory warranty. The page speaks of UPS units, so the rule is not applied to APC's power strips |
 | HPE (Aruba), Juniper, Arista, Extreme Networks, Ubiquiti | none | no page of the vendor's own that states a format was found (each entry says what was looked at) |
 
 The rules fail soft:
@@ -238,10 +256,11 @@ the errors.
 | `create_provider` | a provider with its ASNs (and their registry when missing) | add provider, add ASN, add RIR |
 | `create_circuit_type` | a circuit type | add circuit type |
 | `add_device_type` | a device type with its manufacturer and templates | add device type, manufacturer and each template kind (by hand: also add tag) |
-| `add_module_type` | a module type with its templates | add module type, manufacturer and each template kind |
+| `add_module_type` | a module type with its templates | add module type, manufacturer and each template kind (by hand: also add tag) |
 | `create_device` | a device, and its role when missing | add device, add device role |
 | `set_device_type` | a device's type, and the components it lacks | change device, add each component kind |
 | `install_module` | a module in an empty bay | add module |
+| `set_part_number` | a device type's part number, to the library's | change device type |
 | `mark_unverified` | the tag on a device or device type | add tag, change the object |
 
 As with every op, the proxy checks the player's own NetBox permissions before it writes, and a write-disabled proxy

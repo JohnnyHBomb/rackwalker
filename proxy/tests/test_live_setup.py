@@ -163,10 +163,10 @@ def clear_annex(nbx) -> None:
         drop("dcim/racks/", site_id=site["id"])
     drop("dcim/sites/", slug="quay-annex")
     drop("dcim/regions/", slug="ie")
-    for slug in ("juniper-ex2300-24p", "juniper-mx204", "annex-placeholder", "harbour-works-hx-9"):
+    for slug in ("juniper-ex2300-24p", "juniper-mx204", "annex-placeholder", "annex-panel", "harbour-works-hx-9", "panduit-dp24688tgy"):
         drop("dcim/device-types/", slug=slug)
     drop("dcim/module-types/", model="JPSU-650W-AC-AFO")
-    for slug in ("juniper", "generic", "harbour-works"):
+    for slug in ("juniper", "generic", "harbour-works", "panduit"):
         for maker in rows(nbx, "dcim/manufacturers/", slug=slug):      # only one that nothing else uses
             if not rows(nbx, "dcim/device-types/", manufacturer_id=maker["id"]) and not rows(nbx, "dcim/module-types/", manufacturer_id=maker["id"]):
                 drop("dcim/manufacturers/", slug=slug)
@@ -291,3 +291,43 @@ def test_a_model_the_library_does_not_hold_and_a_module_in_a_bay_live(nbx, annex
     cat = player.cl.get("/api/game/catalogue", params={"fresh": True}).json()
     by_model = {i["model"]: i["status"] for i in cat["items"]}
     assert by_model["EX2300-24P"] == "verified" and by_model["HX-9"] == "unverified" and by_model["MX204"] == "verified"
+
+
+def test_an_imported_patch_panel_lets_a_trace_through_and_a_wrong_part_number_is_put_right_live(nbx, annex, player):
+    make, sid = annex["make"], annex["site"]["id"]
+    # ---- a placeholder that is really a patch panel: imported with the library's front-to-rear mappings
+    generic = rows(nbx, "dcim/manufacturers/", slug="generic")[0]
+    dtype = make("dcim/device-types/", {"manufacturer": generic["id"], "model": "Unknown panel", "slug": "annex-panel"})
+    role = rows(nbx, "dcim/device-roles/", slug="annex-kit")[0]
+    panel = make("dcim/devices/", {"name": "qa-pp1", "site": sid, "role": role["id"], "device_type": dtype["id"], "status": "active", "serial": "QA-P1"})
+    player.cl.get("/api/game/quests", params={"scope": "netbox", "fresh": True})
+    line = f"q:device_type_unknown:device:{panel['id']}"
+    player.say(line, ("box_find0", {"text": "DP24688TGY"}), ("box_pick0", {"choice": lib("Panduit/DP24688TGY.yaml")}))
+    pre = player.cl.post("/api/game/quests/preview", json={"scope": "netbox", "quest_id": line}).json()
+    assert pre["ops"][0]["after"]["port_mappings"] == 24, pre["ops"][0]
+    assert player.apply(line)["complete"]
+    made = rows(nbx, "dcim/device-types/", slug="panduit-dp24688tgy")[0]
+    templates = rows(nbx, "dcim/front-port-templates/", device_type_id=made["id"])
+    assert len(templates) == 24 and all(len(t["rear_ports"]) == 1 for t in templates)
+    front = {p["name"]: p for p in rows(nbx, "dcim/front-ports/", device_id=panel["id"])}
+    rear = {p["name"]: p for p in rows(nbx, "dcim/rear-ports/", device_id=panel["id"])}
+    assert len(front) == 24 and all(p["rear_ports"] == [{"position": 1, "rear_port": rear[name]["id"], "rear_port_position": 1}] for name, p in front.items())
+    # a lead from the switch into the front of the panel: NetBox's own trace now comes out of the rear port behind it
+    sw = rows(nbx, "dcim/devices/", name="qa-sw1")[0]
+    port = rows(nbx, "dcim/interfaces/", device_id=sw["id"], name="ge-0/0/5")[0]
+    make("dcim/cables/", {"a_terminations": [{"object_type": "dcim.interface", "object_id": port["id"]}],
+                          "b_terminations": [{"object_type": "dcim.frontport", "object_id": front["03"]["id"]}]})
+    trace = nbx.get(f"dcim/interfaces/{port['id']}/trace/").json()
+    assert [t["id"] for t in trace[-1][0]] == [rear["03"]["id"]], trace[-1]
+    # ---- a part number in NetBox that the library contradicts: the label decides, and the library's spelling is written
+    mx = rows(nbx, "dcim/device-types/", slug="juniper-mx204")[0]
+    assert nbx.patch(f"dcim/device-types/{mx['id']}/", json={"part_number": "MX-204-OLD"}).status_code == 200
+    player.cl.get("/api/game/quests", params={"scope": "netbox", "fresh": True})
+    line = f"q:device_type_part_number:device_type:{mx['id']}"
+    q = player.say(line, ("label", {"choice": "else"}), ("label_says", {"text": "mx 204"}))
+    assert q["proposal"]["ops"][0]["fields"] == {"part_number": "MX204"}
+    v = player.apply(line)
+    assert v["complete"] and v["xp_awarded"] == 30, v["message"]
+    assert nbx.get(f"dcim/device-types/{mx['id']}/").json()["part_number"] == "MX204"
+    change = rows(nbx, "core/object-changes/", changed_object_type="dcim.devicetype", changed_object_id=mx["id"])[0]
+    assert change["message"].endswith("quest: The part number of the Juniper MX204")

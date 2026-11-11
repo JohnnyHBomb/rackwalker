@@ -5,6 +5,7 @@
                                                             (or, for a model it does not hold, recorded by hand and
                                                             tagged rw-unverified)
     create_device, set_device_type, install_module          kit of that model
+    set_part_number                                         a device type's part number, put right from the library
     mark_unverified                                         the tag for what could not be checked against the packs
 
 They run through the same path as every other op (changes.py: gather what they can touch, plan them without writing,
@@ -33,8 +34,8 @@ from .country import NAMES as COUNTRY_NAMES
 from .errors import ApiError
 
 SETUP_OPS = ("create_site", "create_provider", "create_circuit_type", "add_device_type", "add_module_type", "create_device",
-             "set_device_type", "install_module", "mark_unverified")
-SETUP_UPDATES = ("set_device_type", "mark_unverified")
+             "set_device_type", "install_module", "set_part_number", "mark_unverified")
+SETUP_UPDATES = ("set_device_type", "set_part_number", "mark_unverified")
 # A device's components, in the order they must be written (an outlet names its power port, a front port its rear
 # port): the key of the library's YAML, the template list, the component list, and the word for a player.
 COMPONENTS = (("console-ports", "dcim/console-port-templates", "dcim/console-ports", "console port"),
@@ -50,7 +51,7 @@ MODULE_COMPONENTS = tuple(c for c in COMPONENTS if c[0] != "device-bays")
 # What a template entry of the library carries over to NetBox, per kind (name, label and description always).
 TEMPLATE_KEYS = {"console-ports": ("type",), "console-server-ports": ("type",), "power-ports": ("type", "maximum_draw", "allocated_draw"),
                  "power-outlets": ("type", "feed_leg"), "interfaces": ("type", "mgmt_only", "enabled", "poe_mode", "poe_type", "rf_role"),
-                 "rear-ports": ("type", "positions", "color"), "front-ports": ("type", "color"), "module-bays": ("position",), "device-bays": ()}
+                 "rear-ports": ("type", "positions", "color"), "front-ports": ("type", "positions", "color"), "module-bays": ("position",), "device-bays": ()}
 COUNT_WORDS = {"interfaces": "interfaces", "console-ports": "console_ports", "console-server-ports": "console_server_ports",
                "power-ports": "power_ports", "power-outlets": "power_outlets", "front-ports": "front_ports", "rear-ports": "rear_ports",
                "module-bays": "module_bays", "device-bays": "device_bays"}
@@ -162,6 +163,10 @@ async def gather(client: nb.NetBox, ops: list[Any], st: Any) -> None:
                 if row:
                     st.add(Rec("module_type", row["id"], None, {"manufacturer": (row.get("manufacturer") or {}).get("name"), "model": row["model"],
                                                                 "part_number": row.get("part_number") or ""}))
+        elif op.op == "set_part_number" and isinstance(tid, int):
+            row = await _one(client, "dcim/device-types", tid)
+            if row:
+                st.add(_type_rec(row))
         elif op.op == "mark_unverified" and isinstance(tid, int):
             path = "dcim/devices" if op.target.kind == "device" else "dcim/device-types"
             row = await _one(client, path, tid)
@@ -245,7 +250,7 @@ def _plan_type(pl: Any, p: Any, op: Any, f: dict[str, Any], kind: str) -> None:
                        f"{f.get('part_number')} does not match it. Read the label again, or pick the model from the search.",
                        field="part_number", expected=check["expected"])
         if check["status"] != "unknown":
-            raise _err("validation_failed", f"The device-type library holds {maker} {model}: pick it from the search, so its ports come with it.",
+            raise _err("validation_failed", f"The device-type library holds {maker} {model}: pick it from the search, so its {'ports' if kind == 'device' else 'details'} come with it.",
                        field="model")
     hit = next((r for r in pl.st.of(rec_kind) if _same_type(r, maker, model)), None)
     if hit is not None:
@@ -264,6 +269,7 @@ def _plan_type(pl: Any, p: Any, op: Any, f: dict[str, Any], kind: str) -> None:
         shown = {"manufacturer": maker, "model": model, "part_number": str(doc.get("part_number") or ""),
                  **({"u_height": float(doc.get("u_height", 1))} if kind == "device" else {}),
                  **{COUNT_WORDS[key]: len(v) for key, v in names.items() if v},
+                 **({"port_mappings": sum(len(v) for v in port_mappings(doc).values())} if port_mappings(doc) else {}),
                  "source": f"device-type library at {pack['library']['commit'][:10]}" if pack else "device-type library"}
         values = {"manufacturer": maker, "model": model, "part_number": shown["part_number"], "u_height": float(doc.get("u_height", 1)),
                   "full_depth": bool(doc.get("is_full_depth", True)), "tags": [], "_names": names}
@@ -271,7 +277,8 @@ def _plan_type(pl: Any, p: Any, op: Any, f: dict[str, Any], kind: str) -> None:
         p.write = {"doc": doc, "manufacturer": maker, "manufacturer_id": made.id if made else None, "verified": True}
         return
     height = float(f.get("u_height", 1))
-    shown = {"manufacturer": maker, "model": model, "part_number": (f.get("part_number") or "").strip(), "u_height": height, "unverified": True}
+    shown = {"manufacturer": maker, "model": model, "part_number": (f.get("part_number") or "").strip(),
+             **({"u_height": height} if kind == "device" else {}), "unverified": True}
     pl._new(p, op, rec_kind, {"manufacturer": maker, "model": model, "part_number": shown["part_number"], "u_height": height, "full_depth": True,
                               "tags": [packs.UNVERIFIED_TAG["slug"]], "_names": {key: [] for key, *_ in COMPONENTS}}, shown)
     p.write = {"doc": {"manufacturer": maker, "model": model, "slug": packs.slugify(f"{maker} {model}"), "part_number": shown["part_number"],
@@ -401,6 +408,29 @@ def plan_install_module(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
     p.write = {**shown, "module_type_id": mtype.id}
 
 
+def plan_set_part_number(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
+    """A device type's part number is only ever set to what the library lists for that maker and model, in the
+    library's own spelling: a number nothing can confirm is not written through the game."""
+    dtype = pl.st.recs.get(("device_type", p.target_id))
+    if dtype is None:
+        raise _err("not_found", f"Device type {p.target_id} does not exist.", kind="device_type", id=p.target_id)
+    name = f"{dtype.v['manufacturer']} {dtype.v['model']}"
+    check = packs.load().index().part_check(dtype.v["manufacturer"], dtype.v["model"], f["part_number"])
+    if check["status"] == "unknown" or not check["expected"]:
+        raise _err("validation_failed", f"The device-type library lists no part number for {name}, so there is nothing to check one against.",
+                   field="part_number")
+    if check["status"] != "verified":
+        raise _err("validation_failed", f"The device-type library lists {name} with the part number {check['expected']}; {f['part_number']} does not match it.",
+                   field="part_number", expected=check["expected"])
+    p.key = dtype.key
+    if dtype.v["part_number"] == check["expected"]:
+        p.status = "no_change"
+        return
+    p.before, p.after = {"part_number": dtype.v["part_number"]}, {"part_number": check["expected"]}
+    dtype.v["part_number"] = check["expected"]
+    p.write = {"part_number": check["expected"]}
+
+
 def plan_mark_unverified(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
     rec = pl.st.recs.get((f"x:tags:{p.kind}", p.target_id))
     if rec is None:
@@ -432,13 +462,40 @@ async def _tag(client: nb.NetBox, message: str) -> int:
     return await _find_or_make(client, "extras/tags", {"slug": t["slug"]}, dict(t), message)
 
 
-def _template(key: str, entry: dict[str, Any], owner: dict[str, int], by_name: dict[str, dict[str, int]]) -> dict[str, Any]:
+def port_mappings(doc: dict[str, Any]) -> dict[str, list[dict[str, Any]]]:
+    """Which rear port (and which position of it) each front port of a definition leads to, by the front port's name.
+    The library keeps this in a `port-mappings` section; older files name one `rear_port` on the front port itself.
+    Without it a patch panel is two rows of ports that lead nowhere, and a cable trace stops at the panel."""
+    out: dict[str, list[dict[str, Any]]] = {}
+    for m in doc.get("port-mappings") or []:
+        if isinstance(m, dict) and m.get("front_port") is not None and m.get("rear_port") is not None:
+            out.setdefault(str(m["front_port"]), []).append({"position": int(m.get("front_port_position") or 1), "rear": str(m["rear_port"]),
+                                                             "rear_position": int(m.get("rear_port_position") or 1)})
+    for e in doc.get("front-ports") or []:
+        if e.get("rear_port") is not None and str(e["name"]) not in out:
+            out[str(e["name"])] = [{"position": 1, "rear": str(e["rear_port"]), "rear_position": int(e.get("rear_port_position") or 1)}]
+    return out
+
+
+async def _registry(client: nb.NetBox, key: str, message: str) -> int:
+    """The registry of an AS number as NetBox holds it, under whichever of its names it was given there ("RIPE" or
+    "RIPE NCC", slug `ripe` or `ripe-ncc`); made only when NetBox has none of them."""
+    name, slug = packs.RIR_NAMES[key]
+    names, slugs = {name.lower(), key}, {slug, key}
+    for row in await client.list_raw("ipam/rirs", {"fields": "id,name,slug"}):
+        if str(row.get("name", "")).strip().lower() in names or row.get("slug") in slugs:
+            return row["id"]
+    return (await client.request("POST", "ipam/rirs/", json={"name": name, "slug": slug, "changelog_message": message}))["id"]
+
+
+def _template(key: str, entry: dict[str, Any], owner: dict[str, int], by_name: dict[str, dict[str, int]],
+              mappings: dict[str, list[dict[str, Any]]]) -> dict[str, Any]:
     body = {**owner, "name": str(entry["name"]), **{k: entry[k] for k in ("label", "description", *TEMPLATE_KEYS[key]) if entry.get(k) is not None}}
     if key == "power-outlets" and entry.get("power_port") is not None:
         body["power_port"] = by_name["power-ports"].get(str(entry["power_port"]))
-    if key == "front-ports" and entry.get("rear_port") is not None:
-        body["rear_ports"] = [{"position": 1, "rear_port": by_name["rear-ports"].get(str(entry["rear_port"])),
-                               "rear_port_position": entry.get("rear_port_position") or 1}]
+    if key == "front-ports" and mappings.get(str(entry["name"])):
+        body["rear_ports"] = [{"position": m["position"], "rear_port": by_name["rear-ports"].get(m["rear"]), "rear_port_position": m["rear_position"]}
+                              for m in mappings[str(entry["name"])]]
     return body
 
 
@@ -461,12 +518,13 @@ async def _write_type(client: nb.NetBox, w: dict[str, Any], kind: str, message: 
     obj = await client.request("POST", path + "/", json={**body, "changelog_message": message})
     owner = {"device_type" if kind == "device" else "module_type": obj["id"]}
     by_name: dict[str, dict[str, int]] = {}
+    mappings = port_mappings(doc)
     try:
         for key, tpl, _, _ in (COMPONENTS if kind == "device" else MODULE_COMPONENTS):
             entries = doc.get(key) or []
             if not entries:
                 continue
-            made = await client.request("POST", tpl + "/", json=[{**_template(key, e, owner, by_name), "changelog_message": message} for e in entries])
+            made = await client.request("POST", tpl + "/", json=[{**_template(key, e, owner, by_name, mappings), "changelog_message": message} for e in entries])
             by_name[key] = {m["name"]: m["id"] for m in made}
     except ApiError as err:
         # a model with half its ports is worse than no model: take it out again, so a later import starts clean
@@ -533,8 +591,7 @@ async def write(client: nb.NetBox, p: Any, real: dict[Any, int], message: str) -
             if rows:
                 asn_ids.append(rows[0]["id"])
                 continue
-            rir_name, rir_slug = packs.RIR_NAMES[a["rir"]]
-            rir = await _find_or_make(client, "ipam/rirs", {"slug": rir_slug}, {"name": rir_name, "slug": rir_slug}, message)
+            rir = await _registry(client, a["rir"], message)
             asn_ids.append((await client.request("POST", "ipam/asns/", json={"asn": a["asn"], "rir": rir, **note}))["id"])
         return await client.request("POST", "circuits/providers/", json={"name": w["name"], "slug": w["slug"], "asns": asn_ids, **note})
     if p.op == "create_circuit_type":
@@ -568,6 +625,9 @@ async def write(client: nb.NetBox, p: Any, real: dict[Any, int], message: str) -
         return await client.request("POST", "dcim/modules/", json={
             "device": w["device_id"], "module_bay": w["module_bay_id"], "module_type": rid("module_type", w["module_type_id"]), "status": "active",
             **({"serial": w["serial"]} if w.get("serial") else {}), **note})
+    if p.op == "set_part_number":
+        await client.request("PATCH", f"dcim/device-types/{p.key[1]}/", json={"part_number": w["part_number"], **note})
+        return {"id": p.key[1]}
     if p.op == "mark_unverified":
         tag = await _tag(client, message)
         path = "dcim/devices" if p.key[0] == "device" else "dcim/device-types"
@@ -690,6 +750,18 @@ def simulate(e: Any, op: dict[str, Any], f: dict[str, Any], res: dict[str, Any],
         bay["module_id"] = 1 + max((b["module_id"] or 0 for b in e.module_bays.values()), default=0)
         res["after"] = {k: v for k, v in f.items()}
         res["target"]["id"] = bay["module_id"]
+    elif name == "set_part_number":
+        t = e.dtypes.get(target["id"])
+        if t is None:
+            raise SimError("That device type does not exist.")
+        check = index.part_check(t["manufacturer"], t["model"], f["part_number"])
+        if check["status"] != "verified":
+            raise SimError(f"The device-type library does not list {f['part_number']} for {t['manufacturer']} {t['model']}.")
+        if t["part_number"] == check["expected"]:
+            res["status"] = "no_change"
+        else:
+            res["before"], res["after"] = {"part_number": t["part_number"]}, {"part_number": check["expected"]}
+            t["part_number"] = check["expected"]
     elif name == "mark_unverified":
         row = (e.devices if target["kind"] == "device" else e.dtypes).get(target["id"])
         if row is None:

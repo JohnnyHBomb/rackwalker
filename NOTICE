@@ -8,12 +8,13 @@ This product includes data derived from the NetBox community device-type library
 (https://github.com/netbox-community/devicetype-library), dedicated to the public domain under CC0 1.0 Universal:
   packs/devices/community-library.index.json.gz   an index built from the library at the commit named in
                                                   packs/devices/community-library.json
-  proxy/tests/library/                            four definition files, unchanged, for the offline tests
+  proxy/tests/library/                            five definition files, unchanged, for the offline tests
 CC0 requires no attribution; the source is named here so that it can be found.
 
 The provider packs (packs/providers/) hold facts only: the names providers trade under, their AS numbers and the
 addresses of their public pages. Each pack lists its sources, the date each was read and what its terms allow. No
-text, logo or contact detail of any source is included. Provider names are the trademarks of their owners and are
+text, logo or contact detail of any source is included. Some entries carry the id of the provider's Wikidata item
+(https://www.wikidata.org/, CC0 1.0) as a cross-reference. Provider names are the trademarks of their owners and are
 used only to identify them; this project is not affiliated with any of them.
 
 The serial-number rules (packs/serials/) quote one sentence of each vendor's own public page as the ground of a

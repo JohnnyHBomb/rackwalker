@@ -4,7 +4,7 @@
     {
       "id": "providers-de",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Common providers: Germany",
       "country": "DE",
       "read": "2026-11-11",
@@ -14,7 +14,7 @@
         "Smaller city carriers (Stadtwerke networks; over a hundred)",
         "Smaller business ISPs"
       ],
-      "entries": 20,
+      "entries": 25,
       "sources": [
         {
           "name": "Bundesnetzagentur: telecommunications market data",
@@ -52,6 +52,13 @@
           "use": "copied"
         },
         {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
           "name": "PeeringDB",
           "url": "https://www.peeringdb.com/aup",
           "read": "2026-11-11",
@@ -63,7 +70,7 @@
     {
       "id": "providers-fr",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Common providers: France",
       "country": "FR",
       "read": "2026-11-11",
@@ -72,9 +79,9 @@
       "missing": [
         "Smaller business ISPs",
         "Operators in the overseas departments",
-        "AS numbers for Celeste and the wholesale fibre operators (none confirmed)"
+        "AS numbers for Celeste, Linkt and the wholesale fibre operators (none confirmed)"
       ],
-      "entries": 17,
+      "entries": 22,
       "sources": [
         {
           "name": "Arcep: maps and data",
@@ -112,6 +119,13 @@
           "use": "copied"
         },
         {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
           "name": "PeeringDB",
           "url": "https://www.peeringdb.com/aup",
           "read": "2026-11-11",
@@ -123,7 +137,7 @@
     {
       "id": "providers-gb",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Common providers: United Kingdom",
       "country": "GB",
       "read": "2026-11-11",
@@ -134,7 +148,7 @@
         "Resellers that own no network",
         "AS numbers for Openreach, CityFibre and Neos Networks (none confirmed)"
       ],
-      "entries": 22,
+      "entries": 26,
       "sources": [
         {
           "name": "Ofcom: Connected Nations",
@@ -179,6 +193,13 @@
           "use": "copied"
         },
         {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
           "name": "PeeringDB",
           "url": "https://www.peeringdb.com/aup",
           "read": "2026-11-11",
@@ -190,7 +211,7 @@
     {
       "id": "providers-ie",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Common providers: Ireland",
       "country": "IE",
       "read": "2026-11-11",
@@ -199,10 +220,10 @@
       "missing": [
         "Regional fixed-wireless operators",
         "Smaller business ISPs",
-        "AS numbers for SIRO, National Broadband Ireland and Viatel (none confirmed)",
+        "AS numbers for SIRO, National Broadband Ireland, Viatel, BT Ireland, Pure Telecom and HEAnet (none confirmed)",
         "Status pages (only one answered a check on the read date)"
       ],
-      "entries": 16,
+      "entries": 20,
       "sources": [
         {
           "name": "ComReg: Quarterly Key Data Report",
@@ -258,7 +279,7 @@
     {
       "id": "providers-nl",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Common providers: Netherlands",
       "country": "NL",
       "read": "2026-11-11",
@@ -269,7 +290,7 @@
         "Smaller business ISPs",
         "AS numbers for the wholesale-only fibre networks (they sell no internet service)"
       ],
-      "entries": 17,
+      "entries": 19,
       "sources": [
         {
           "name": "ACM (Authority for Consumers and Markets): telecom market publications",
@@ -307,6 +328,13 @@
           "use": "copied"
         },
         {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
           "name": "PeeringDB",
           "url": "https://www.peeringdb.com/aup",
           "read": "2026-11-11",
@@ -318,7 +346,7 @@
     {
       "id": "providers-us",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Common providers: United States",
       "country": "US",
       "read": "2026-11-11",
@@ -329,10 +357,10 @@
         "Municipal fibre networks",
         "Wireless ISPs",
         "Most regional cable operators",
-        "AS numbers for Ziply Fiber and Brightspeed (none confirmed)",
+        "AS numbers for Brightspeed and Metronet (none confirmed)",
         "Websites that refused an automated check on the read date (left empty)"
       ],
-      "entries": 30,
+      "entries": 34,
       "sources": [
         {
           "name": "FCC: Communications Marketplace Reports",
@@ -377,6 +405,13 @@
           "use": "copied"
         },
         {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
           "name": "PeeringDB",
           "url": "https://www.peeringdb.com/aup",
           "read": "2026-11-11",
@@ -388,7 +423,7 @@
     {
       "id": "providers-international",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Backbone and international wholesale providers",
       "country": null,
       "read": "2026-11-11",
@@ -399,7 +434,7 @@
         "Submarine cable consortia",
         "Internet exchanges (they are not providers)"
       ],
-      "entries": 18,
+      "entries": 19,
       "sources": [
         {
           "name": "Wikipedia: Tier 1 network",
@@ -427,6 +462,13 @@
           "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
           "read": "2026-11-11",
           "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
           "use": "copied"
         },
         {
@@ -465,18 +507,25 @@
     {
       "id": "serials-network-vendors",
       "kind": "serials",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "title": "Serial-number rules of the most common network vendors in the device-type library",
       "country": null,
       "read": "2026-11-11",
       "partial": true,
-      "coverage": "The eight network vendors with the most device types in the library. Three have a rule with a public source of the vendor's own; five have none yet, and their serials are accepted as typed.",
+      "coverage": "The eight network vendors with the most device types in the library, and APC for its UPS units. Four have a rule with a public source of the vendor's own; five have none yet, and their serials are accepted as typed.",
       "missing": [
         "A sourced rule for HPE (Aruba), Juniper, Arista, Extreme Networks and Ubiquiti",
         "Every other vendor"
       ],
-      "entries": 4,
+      "entries": 6,
       "sources": [
+        {
+          "name": "Cisco Field Notice FN63942",
+          "url": "https://www.cisco.com/c/en/us/support/docs/field-notices/639/fn63942.html",
+          "read": "2026-11-11",
+          "terms": "Quoted in one sentence as the ground of a rule.",
+          "use": "cited"
+        },
         {
           "name": "Cisco: product recycling, how to read when a product was made",
           "url": "https://www.cisco.com/c/en/us/about/takeback-and-reuse/product-recycling/weee-compliance/crossed-out-wheelie-bin.html",
@@ -501,6 +550,13 @@
         {
           "name": "Fortinet Community: Technical Tip, deciphering abbreviations for Fortinet products",
           "url": "https://community.fortinet.com/t5/Customer-Service/Technical-Tip-Deciphering-abbreviations-for-Fortinet-products/ta-p/196062",
+          "read": "2026-11-11",
+          "terms": "Quoted in one sentence as the ground of a rule.",
+          "use": "cited"
+        },
+        {
+          "name": "Schneider Electric: APC UPS factory warranty information",
+          "url": "https://www.se.com/uk/en/work/support/product-support/ups-factory-warranty-information/",
           "read": "2026-11-11",
           "terms": "Quoted in one sentence as the ground of a rule.",
           "use": "cited"

@@ -529,7 +529,7 @@ def test_what_each_change_needs_of_the_player():
         "create_site": [("dcim.site", "add")], "create_provider": [("circuits.provider", "add")], "create_circuit_type": [("circuits.circuittype", "add")],
         "add_device_type": [("dcim.devicetype", "add"), ("dcim.manufacturer", "add")], "add_module_type": [("dcim.moduletype", "add"), ("dcim.manufacturer", "add")],
         "create_device": [("dcim.device", "add"), ("dcim.devicerole", "add")], "set_device_type": [("dcim.device", "change")],
-        "install_module": [("dcim.module", "add")], "mark_unverified": [("extras.tag", "add")]}
+        "install_module": [("dcim.module", "add")], "set_part_number": [("dcim.devicetype", "change")], "mark_unverified": [("extras.tag", "add")]}
     # a model's default lives on the device type: recording it needs that permission too
     op = {"op": "set_management", "target": {"kind": "device", "id": 1}, "fields": {"mode": "cloud", "model_default": "cloud"}}
     assert perms.needs_of([op]) == [("dcim.device", "change"), ("dcim.devicetype", "change")]

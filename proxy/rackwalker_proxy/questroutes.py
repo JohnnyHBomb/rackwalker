@@ -347,8 +347,9 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
 
     def reaches_every_site(ops: list[dict[str, Any]]) -> bool:
         """A model's default sits on the devices of that model at every site: only a whole read shows it everywhere.
-        A new site is at no site that was read before, and a tag on a device type shows on its devices everywhere."""
-        return any(op["op"] == "set_management" and "model_default" in (op.get("fields") or {}) or op["op"] == "create_site"
+        A new site is at no site that was read before, and a tag or a part number on a device type shows on its devices
+        everywhere."""
+        return any(op["op"] == "set_management" and "model_default" in (op.get("fields") or {}) or op["op"] in ("create_site", "set_part_number")
                    or op["op"] == "mark_unverified" and op["target"]["kind"] == "device_type" for op in ops)
 
     async def may_write(uid: int | None, fresh: bool = False) -> perms.Permissions | None:

@@ -1645,8 +1645,11 @@ class AddModuleTypeFields(BaseModel):
         extra='forbid',
     )
     library_file: Annotated[
-        str, Field(max_length=200, min_length=3, pattern='^[^/]+/[^/]+\\.ya?ml$')
-    ]
+        str | None, Field(max_length=200, min_length=3, pattern='^[^/]+/[^/]+\\.ya?ml$')
+    ] = None
+    manufacturer: Annotated[str | None, Field(max_length=100, min_length=1)] = None
+    model: Annotated[str | None, Field(max_length=100, min_length=1)] = None
+    part_number: Annotated[str | None, Field(max_length=50)] = None
 
 
 class CreateDeviceTarget(BaseModel):
@@ -1703,6 +1706,21 @@ class InstallModuleFields(BaseModel):
     module_bay_id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
     module_type_id: Id | Ref
     serial: Annotated[str | None, Field(max_length=50)] = None
+
+
+class SetPartNumberTarget(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    kind: Literal['device_type']
+    id: Annotated[int, Field(description='NetBox primary key.', ge=1)]
+
+
+class SetPartNumberFields(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    part_number: Annotated[str, Field(max_length=50, min_length=1)]
 
 
 class MarkUnverifiedTarget(BaseModel):
@@ -1969,6 +1987,7 @@ class OpResult(BaseModel):
         'create_device',
         'set_device_type',
         'install_module',
+        'set_part_number',
         'mark_unverified',
     ]
     client_ref: str | None
@@ -2667,6 +2686,28 @@ class InstallModuleOp(BaseModel):
     ] = None
 
 
+class SetPartNumberOp(BaseModel):
+    model_config = ConfigDict(
+        extra='forbid',
+    )
+    op: Literal['set_part_number']
+    target: Annotated[SetPartNumberTarget, Field(title='SetPartNumberTarget')]
+    fields: Annotated[SetPartNumberFields, Field(title='SetPartNumberFields')]
+    client_ref: Annotated[
+        str | None,
+        Field(
+            description="Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.",
+            pattern='^[A-Za-z0-9_-]{1,64}$',
+        ),
+    ] = None
+    if_unmodified_since: Annotated[
+        AwareDatetime | None,
+        Field(
+            description="Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'."
+        ),
+    ] = None
+
+
 class MarkUnverifiedOp(BaseModel):
     model_config = ConfigDict(
         extra='forbid',
@@ -2694,7 +2735,7 @@ class ChangeSet(BaseModel):
         extra='forbid',
     )
     ops: Annotated[
-        list[MoveRackOp | PlaceDeviceOp | UnplaceDeviceOp | CreateRackOp | UpdateFieldsOp | ConnectCableOp | CreateCircuitOp | CreateCircuitTerminationOp | AssignIpOp | CreatePrefixOp | SetManagementOp | RecordCircuitOp | CreateProviderAccountOp | CreateProviderNetworkOp | CreateContactOp | AssignContactOp | CreateSiteOp | CreateProviderOp | CreateCircuitTypeOp | AddDeviceTypeOp | AddModuleTypeOp | CreateDeviceOp | SetDeviceTypeOp | InstallModuleOp | MarkUnverifiedOp],
+        list[MoveRackOp | PlaceDeviceOp | UnplaceDeviceOp | CreateRackOp | UpdateFieldsOp | ConnectCableOp | CreateCircuitOp | CreateCircuitTerminationOp | AssignIpOp | CreatePrefixOp | SetManagementOp | RecordCircuitOp | CreateProviderAccountOp | CreateProviderNetworkOp | CreateContactOp | AssignContactOp | CreateSiteOp | CreateProviderOp | CreateCircuitTypeOp | AddDeviceTypeOp | AddModuleTypeOp | CreateDeviceOp | SetDeviceTypeOp | InstallModuleOp | SetPartNumberOp | MarkUnverifiedOp],
         Field(max_length=100, min_length=1),
     ]
     reason: Annotated[
