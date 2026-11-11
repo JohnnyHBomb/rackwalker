@@ -289,6 +289,19 @@ def test_a_new_circuit_gets_an_end_at_a_site_and_a_cable_in_one_set():
     assert [p.error.code for p in planned[3:]] == ["conflict", "validation_failed", "not_found"]
 
 
+def test_the_same_host_address_in_another_vrf_is_another_address_not_a_clash():
+    own = changes.Rec("ip_address", 5, None, {"address": "10.99.0.1/24", "assigned_type": "dcim.interface", "assigned_id": 1, "vrf_id": 7})
+    twin = changes.Rec("ip_address", 6, None, {"address": "10.99.0.1/24", "assigned_type": "dcim.interface", "assigned_id": 2, "vrf_id": 8})
+    st = state(site(1), device(1), end("interface", 1), end("interface", 2, dev=2), own, twin)
+    op = {"op": "assign_ip", "target": {"kind": "device", "id": 1}, "fields": {"address": "10.99.0.1/24", "interface_id": 1}}
+    # the device's own address is made its primary IP although another VRF holds the same host on another device
+    got = changes.plan(ops(op), st)[0]
+    assert (got.status, got.write["ip_id"]) == ("ok", 5)
+    # in one table the same host on another interface is still refused
+    twin.v["vrf_id"] = 7
+    assert changes.plan(ops(op), st)[0].error.code == "conflict"
+
+
 def test_assign_ip_reuses_the_address_on_that_port_and_refuses_one_held_elsewhere():
     ip = changes.Rec("ip_address", 5, None, {"address": "192.0.2.9/24", "assigned_type": "dcim.interface", "assigned_id": 1})
     st = state(site(1), device(1), end("interface", 1), end("interface", 2, dev=2), ip)

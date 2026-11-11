@@ -67,7 +67,8 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
     expect([g.x, g.y]).toEqual([d.x + 2, d.y + 1]);
   }
   expect(await shell(page, 'return [...s.overworld.marks]')).toEqual([[1, 'offer'], [2, 'offer'], [3, 'offer'], [ISLAND, 'offer']]);
-  await expect(page.locator('#quest-next')).toContainText('Next: The other end of nd-rtr1 ge-0/0/0');
+  // the seed's circuits are private lines between its own sites: how a site reaches the outside world comes first
+  await expect(page.locator('#quest-next')).toContainText('Next: The way out of North Depot');
   await page.screenshot({ path: `${SHOTS}/giver-overworld.png` });
 
   // Tap the giver: the player walks up and they say why it matters, in plain words, with the lines on offer.
@@ -80,14 +81,14 @@ test('a quest giver by every door: a real question, "I don\'t know yet" as a fie
   await typed(page);
   let d = (await game(page)).dialogue!;
   // the first thing they say is what is missing and where, with the names NetBox has
-  expect(d.text).toBe("nd-rtr1 ge-0/0/0 has an address but no cable. A port in use with no far end on record cannot be traced. Let's find its far end.");
-  expect(d.choices).toEqual(["Let's find out", 'Or: What powers rack ND-R2', 'Show me the quest log', 'Not now']);
+  expect(d.text).toBe("Nobody can tell from NetBox how North Depot reaches the outside world. Let's find out.");
+  expect(d.choices).toEqual(["Let's find out", 'Or: The other end of nd-rtr1 ge-0/0/0', 'Show me the quest log', 'Not now']);
   await expect(page.locator('#dialogue .name')).toHaveText('Tansy');
   await expect(page.locator('#dialogue .portrait-giver')).toBeVisible();
   await page.screenshot({ path: `${SHOTS}/giver-dialogue.png` });
 
   // The question names real objects; its choices are plausible far ends from NetBox, and "I don't know yet".
-  await choose(page, "Let's find out");
+  await choose(page, 'Or: The other end of nd-rtr1 ge-0/0/0');
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('quest-step');
   await typed(page);
   d = (await game(page)).dialogue!;
@@ -306,7 +307,7 @@ test('an errand bundles labels; with reduce motion nothing moves; the island in 
         const s = line.step;
         const a = s.input === 'choice' ? { choice: (s.choices.find((c: any) => ['candidate', 'confirm', 'skip'].includes(c.kind)) ?? s.choices.find((c: any) => c.id === 'new' || c.id === 'typed')).id }
           : s.input === 'text' ? { text: s.id === 'addr' ? '203.0.113.2/30' : 'EXF-1' }
-          : { values: Object.fromEntries(s.fields.map((f: any, k: number) => [f.id, f.type === 'select' ? f.options[0].id : f.type === 'number' ? 5 : f.id === 'install_date' ? '2025-01-15' : `PI-${k}`])) };
+          : { values: Object.fromEntries(s.fields.map((f: any, k: number) => [f.id, f.type === 'select' ? f.options[0].id : f.type === 'number' ? 5 : `PI-${k}`])) };
         line = await api(page, '/api/game/quests/answer', { scope: 'practice', quest_id: line.id, step: s.id, ...a });
       }
       await api(page, '/api/game/quests/apply', { scope: 'practice', quest_id: line.id });
@@ -471,14 +472,13 @@ test('a chain: the island\'s way out from the cable to the bill, "I don\'t know 
   await choose(page, 'The bill says PI-ACC-0042');
   await choose(page, 'For everything from Example Fibre');
   await choose(page, 'Those the bill names');
-  await expect(page.locator('#quest-step')).toContainText('What does the contract for circuit EXF-20417 say? Leave blank what you do not know.');
-  await page.fill('#quest-field-0', '2025-01-15');
-  await page.fill('#quest-field-1', '500');
-  await page.click('#quest-step-send');
+  // the contract's date and speed are on the bill too: the island never asks for a figure to be made up
+  await expect.poll(async () => (await game(page)).dialogue?.text).toContain("The island's bill says: installed 2024-03-01 and 100 Mbps committed.");
+  await choose(page, 'What the bill says');
   // the cost is not known yet: said, and the rest is still written
   await expect.poll(async () => (await game(page)).dialogue?.text).toContain('What does circuit EXF-20417 cost?');
   await choose(page, "I don't know yet");
-  await expect(page.locator('#quest-changes li').last()).toHaveText('Circuit EXF-20417: account PI-ACC-0042, installed 2025-01-15, commit rate 500 Mbps.');
+  await expect(page.locator('#quest-changes li').last()).toHaveText('Circuit EXF-20417: account PI-ACC-0042, installed 2024-03-01, commit rate 100 Mbps.');
   await page.click('#quest-apply');
   await expect(page.locator('#quest-reward')).toContainText('stays open at 3 of 3: administrative (not known yet: the monthly charge and the one-off charge).');
   await page.click('#quest-reward-ok');
@@ -499,7 +499,7 @@ test('a chain: the island\'s way out from the cable to the bill, "I don\'t know 
   await expect(page.locator('#quest-reward')).toContainText('That completes the chain "The way out of Practice Island". Practice Island: sw-quay-1 Te1/1/2 -> circuit EXF-20417 (Internet), '
     + 'Example Fibre, network Example Fibre Internet, your address 203.0.113.2/30, account PI-ACC-0042, Support / NOC: Example Fibre NOC +00 555 0100, '
     + 'Account manager: Example Fibre Accounts accounts@fibre.example, Billing: Example Fibre Billing billing@fibre.example, 45.00 XTS a month, '
-    + '120.00 XTS once, installed 2025-01-15, 500 Mbps committed.');
+    + '120.00 XTS once, installed 2024-03-01, 100 Mbps committed.');
   await expect(page.locator('#quest-reward-chain')).toHaveAttribute('data-status', 'complete');
   await page.screenshot({ path: `${SHOTS}/chain-summary.png` });
   await page.click('#quest-reward-ok');

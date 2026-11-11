@@ -406,7 +406,7 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
             # matches every mask when none is given
             for ip in await client.list_raw("ipam/ip-addresses", {"address": str(f["address"]).split("/")[0]}):
                 st.add(Rec("ip_address", ip["id"], None, {"address": ip["address"], "assigned_type": ip.get("assigned_object_type"),
-                                                          "assigned_id": ip.get("assigned_object_id")}))
+                                                          "assigned_id": ip.get("assigned_object_id"), "vrf_id": (ip.get("vrf") or {}).get("id")}))
         if op.op == "create_prefix":
             for pf in await client.list_raw("ipam/prefixes", {"prefix": f["prefix"]}):
                 st.add(Rec("prefix", pf["id"], None, {"prefix": pf["prefix"]}))
@@ -839,13 +839,15 @@ class Planner:
         iface = self.st.recs.get(("end:interface", f["interface_id"]))
         if iface is None or iface.v.get("device_id") != dev.id:
             raise OpError("validation_failed", f"Interface {f['interface_id']} is not an interface of {dev.v['name'] or 'that device'}.", {"field": "interface_id"})
-        existing = None
-        for ip in self.st.of("ip_address"):
-            if ipaddress.ip_interface(ip.v["address"]).ip != addr.ip:
-                continue
-            if ip.v.get("assigned_type") == "dcim.interface" and ip.v.get("assigned_id") == iface.id and ip.v["address"] == str(addr):
-                existing = ip
-            else:
+        holders = [ip for ip in self.st.of("ip_address") if ipaddress.ip_interface(ip.v["address"]).ip == addr.ip]
+        existing = next((ip for ip in holders if ip.v.get("assigned_type") == "dcim.interface" and ip.v.get("assigned_id") == iface.id
+                         and ip.v["address"] == str(addr)), None)
+        # NetBox keeps one address table per VRF (and the global one): the same host address in another VRF is another
+        # address, not a clash. An address already on this interface is used in the table it is in; a new one goes to
+        # the global table.
+        table = existing.v.get("vrf_id") if existing is not None else None
+        for ip in holders:
+            if ip is not existing and ip.v.get("vrf_id") == table:
                 raise OpError("conflict", f"{addr.ip} is already in NetBox as {ip.v['address']}"
                               + (", on another interface." if ip.v.get("assigned_id") else ", not assigned to an interface."),
                               {"field": "address", "ip_address_id": ip.id})

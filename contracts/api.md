@@ -186,8 +186,15 @@ over a value NetBox already holds.
 `create_circuit_termination` (2.3.0) takes `provider_network_id` (id or `@ref`) instead of `site_id`: the end is on a
 network of the circuit's own provider. Exactly one of the two fields is given.
 
-Ids above 9,000,000 belong to the practice island, which is not in NetBox: both change routes refuse them with 400
-`bad_request` (`details.reason` `practice_island`).
+Ids above 9,000,000 belong to the practice island (its own objects, and what its quests create), which is not in
+NetBox: both change routes refuse them with 400 `bad_request` (`details.reason` `practice_island`).
+
+A plan answers with what NetBox holds (an account that exists, a contact's name, a charge already on record). So a
+change set that holds `record_circuit`, `create_provider_account`, `create_contact` or `assign_contact` is previewed
+only for a signed-in player (401 `unauthorized` otherwise, on a dry-run proxy too) whose own NetBox user may view the
+objects concerned: `circuits.circuit`, `circuits.provideraccount`, `tenancy.contact` (403 `forbidden`,
+`details.reason` `player_lacks_permission`, `details.missing` as for a refused apply). The single-user local mode has
+no NetBox user to ask about. Fixture mode answers with its canned preview as before.
 
 ## Quests (2.3.0; chains 2.4.0)
 
@@ -197,7 +204,12 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
   a few per site), those waiting on a fact the player does not know yet (`status` `open_questions`), and those the
   player completed; other chains with something open are counted in `chains_queued`. A chain is derived from the
   estate on every read and is never stored. A line that belongs to a later stage of a chain is not offered while an
-  earlier stage is `open`, `not_known` or `locked` (a line the player has already begun stays listed). `Quest.chain`
+  earlier stage is `open` or `locked` (a line the player has already begun stays listed). A stage that is `not_known`
+  (its open facts, or its parked line, were answered "I don't know yet") locks nothing after it; `position` and
+  `label` then name the first stage in play, and `label` lists what is not known.
+  `Chain.summary`, and the choices of a `circuit_record` line, say an account number, a contact's details, a charge,
+  an install date or a commit rate only to a player whose own NetBox user may view provider accounts, contacts and
+  circuits; otherwise the summary says that NetBox holds it ("an account on record"). `Quest.chain`
   names the line's chain and stage; `QuestVerdict.chain` is the chain after the check, with `summary` read from the
   estate that was read back, and `chain_xp` the part of `xp_awarded` that is the bonus for a chain NetBox now shows
   complete. `Chain.bonus_xp` is the most that bonus can be (0 for a chain of one stage, and wherever nothing is paid: the practice island, a dry-run proxy, a player whose
@@ -207,7 +219,8 @@ Ids above 9,000,000 belong to the practice island, which is not in NetBox: both 
 * **Private answers (2.4.0).** A typed answer to the steps `account_no`, `contact` and `cost` of a `circuit_record`
   line is kept in the proxy's memory until the line is applied, never in the game store; "I don't know yet" on them is
   stored like any answer, and of a form only which facts it left blank (they are "not known yet" at once, and are not
-  asked for again after the rest is written). After a proxy restart such a question is asked again. On the practice island these steps
+  asked for again after the rest is written) and which contacts it answered "there is none" (the select fields
+  `contact:<role>:none`; a contact is filled in or there is none, not both). After a proxy restart such a question is asked again. On the practice island these steps
   are choices from a made-up bill and take no typed value.
 
 * **The estate.** The quest routes analyse one bounded read of NetBox (slim field selections, capped lists), kept for

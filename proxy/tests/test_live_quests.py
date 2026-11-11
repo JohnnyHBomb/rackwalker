@@ -42,13 +42,12 @@ def _first(nbx, path: str, **params) -> dict:
 
 @pytest.fixture(scope="module")
 def harbour(nbx):
-    """Three switches, an ISP, two rooms with a rack each; nothing interconnected. Removed again afterwards."""
-    made: list[tuple[str, int]] = []
+    """Three switches, an ISP, two rooms with a rack each; nothing interconnected. Removed again afterwards, and
+    before: a run that was cut short leaves it behind, and the suite can then simply be started again."""
+    _clear(nbx)
 
     def make(path: str, body: dict) -> dict:
-        obj = _post(nbx, path, body)
-        made.append((path, obj["id"]))
-        return obj
+        return _post(nbx, path, body)
 
     role, dtype = _first(nbx, "dcim/device-roles/", slug="switch"), _first(nbx, "dcim/device-types/", slug="ex-a2400")
     site = make("dcim/sites/", {"name": "Harbour Office", "slug": "harbour-office", "status": "active", "latitude": 53.4, "longitude": -3.0,
@@ -67,29 +66,47 @@ def harbour(nbx):
     provider = make("circuits/providers/", {"name": "Example Fibre", "slug": "example-fibre"})
     ctype = make("circuits/circuit-types/", {"name": "Internet", "slug": "internet"})
     yield {"site": site, "rooms": rooms, "racks": racks, "devs": devs, "provider": provider, "ctype": ctype}
-    # what the quests created first (cables, then circuits with their ends), then the estate itself, newest first
-    dev_ids = [d["id"] for d in devs.values()]
-    for c in nbx.get("dcim/cables/", params=[("device_id", i) for i in dev_ids] + [("limit", 100)]).json()["results"]:
-        nbx.delete(f"dcim/cables/{c['id']}/")
-    for c in nbx.get("circuits/circuits/", params={"provider_id": provider["id"]}).json()["results"]:
-        nbx.delete(f"circuits/circuits/{c['id']}/")
-    for ip in nbx.get("ipam/ip-addresses/", params=[("device_id", i) for i in dev_ids] + [("limit", 100)]).json()["results"]:
-        nbx.delete(f"ipam/ip-addresses/{ip['id']}/")
-    # what the chain's later stages created: the hand-off prefix, the provider's account and network, the contact
+    _clear(nbx)
+
+
+def _clear(nbx) -> None:
+    """Removes Harbour Office and everything the tests put around it, found by name: what the quests created first
+    (cables, circuits with their ends, addresses, the hand-off prefix, the provider's account and network, the
+    contacts), then the estate itself."""
+    def rows(path: str, *params: tuple[str, object]) -> list[dict]:
+        return nbx.get(path, params=[*params, ("limit", 200)]).json()["results"]
+
+    def drop(path: str, *params: tuple[str, object]) -> None:
+        for row in rows(path, *params):
+            r = nbx.delete(f"{path}{row['id']}/")
+            assert r.status_code in (204, 404), (path, r.text)
+
+    sites = rows("dcim/sites/", ("slug", "harbour-office"))
+    providers = rows("circuits/providers/", ("slug", "example-fibre"))
+    for site in sites:
+        devices = [("device_id", d["id"]) for d in rows("dcim/devices/", ("site_id", site["id"]))]
+        if devices:
+            drop("dcim/cables/", *devices)
+            drop("ipam/ip-addresses/", *devices)
+    for provider in providers:
+        drop("circuits/circuits/", ("provider_id", provider["id"]))
     for name in (CONTACT[0], BILLING[0]):
-        for c in nbx.get("tenancy/contacts/", params={"name": name}).json()["results"]:
-            for a in nbx.get("tenancy/contact-assignments/", params={"contact_id": c["id"]}).json()["results"]:
-                nbx.delete(f"tenancy/contact-assignments/{a['id']}/")
-    for path, params in (("ipam/prefixes/", {"prefix": HANDOFF_PREFIX}), ("circuits/provider-accounts/", {"provider_id": provider["id"]}),
-                         ("circuits/provider-networks/", {"provider_id": provider["id"]}), ("tenancy/contacts/", {"name": CONTACT[0]}),
-                         ("tenancy/contacts/", {"name": BILLING[0]})):
-        for row in nbx.get(path, params=params).json()["results"]:
-            assert nbx.delete(f"{path}{row['id']}/").status_code == 204, (path, row)
+        for contact in rows("tenancy/contacts/", ("name", name)):
+            drop("tenancy/contact-assignments/", ("contact_id", contact["id"]))
+        drop("tenancy/contacts/", ("name", name))
+    drop("ipam/prefixes/", ("prefix", HANDOFF_PREFIX))
+    for provider in providers:
+        drop("circuits/provider-accounts/", ("provider_id", provider["id"]))
+        drop("circuits/provider-networks/", ("provider_id", provider["id"]))
+    for site in sites:
+        for path in ("dcim/devices/", "dcim/racks/", "dcim/locations/"):
+            drop(path, ("site_id", site["id"]))
+    drop("dcim/sites/", ("slug", "harbour-office"))
+    drop("circuits/providers/", ("slug", "example-fibre"))
+    drop("circuits/circuit-types/", ("slug", "internet"))
     # the model's default the management line wrote goes back to "nothing on record"
-    assert nbx.patch(f"dcim/device-types/{dtype['id']}/", json={"custom_fields": {"rw_mgmt_default": None}}).status_code == 200
-    for path, oid in reversed(made):
-        r = nbx.delete(f"{path}{oid}/")
-        assert r.status_code in (204, 404), (path, r.text)
+    for dtype in rows("dcim/device-types/", ("slug", "ex-a2400")):
+        assert nbx.patch(f"dcim/device-types/{dtype['id']}/", json={"custom_fields": {"rw_mgmt_default": None}}).status_code == 200
 
 
 # made-up figures for the circuit's record (the phone number is from a range reserved for fiction)
