@@ -1,0 +1,249 @@
+{
+ "pack": "providers",
+ "id": "providers-lv",
+ "version": "1.0.0",
+ "country": "LV",
+ "title": "Common providers: Latvia",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national fixed-line carrier, the three mobile network operators, the state broadcast and backbone operator and the research network; cable, regional and business ISPs are thin.",
+ "missing": [
+  "Regional and local ISPs outside Riga",
+  "Smaller business ISPs and data-centre operators",
+  "The regulator's register of electronic communications merchants (not read)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "SPRK (Public Utilities Commission): electronic communications",
+   "url": "https://www.sprk.gov.lv/lv/elektronisko-sakaru-nozare",
+   "read": "2026-11-11",
+   "terms": "The site says all rights to its published content are reserved: nothing is copied.",
+   "use": "cited",
+   "result": "Page read for its address only, in Latvian; the register of merchants was not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Latvia",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Latvia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 8 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "8 of 8 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "13 AS numbers confirmed, each announced on the read date; a number registered to the provider but not announced was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+   "use": "cross-check",
+   "result": "Used to find candidate numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+   "use": "copied",
+   "result": "1 ids recorded; an item of a parent group was not used."
+  },
+  {
+   "name": "Wikipedia: Tet (company)",
+   "url": "https://en.wikipedia.org/wiki/Tet_(company)",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "States that Lattelecom took the name Tet in 2019."
+  },
+  {
+   "name": "Wikipedia: SigmaNet",
+   "url": "https://en.wikipedia.org/wiki/SigmaNet",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "States that SigmaNet is the Latvian research and education network and was called LATNET until 2008."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Tet",
+   "slug": "tet",
+   "kind": "national_carrier",
+   "aka": [
+    "Lattelecom",
+    "Lattelekom",
+    "Apollo"
+   ],
+   "asns": [
+    {
+     "asn": 12578,
+     "rir": "ripe"
+    },
+    {
+     "asn": 6747,
+     "rir": "ripe"
+    },
+    {
+     "asn": 5518,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tet.lv/biznesam",
+   "support_url": null,
+   "notes": "The fixed-line carrier; Lattelecom until 2019."
+  },
+  {
+   "name": "LMT",
+   "slug": "lmt",
+   "kind": "mobile",
+   "aka": [
+    "Latvijas Mobilais Telefons"
+   ],
+   "asns": [
+    {
+     "asn": 12847,
+     "rir": "ripe"
+    },
+    {
+     "asn": 24921,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.lmt.lv/",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Tele2 Latvija",
+   "slug": "tele2-lv",
+   "kind": "mobile",
+   "aka": [
+    "Tele2"
+   ],
+   "asns": [
+    {
+     "asn": 60066,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tele2.lv/",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Bite Latvija",
+   "slug": "bite-lv",
+   "kind": "national_carrier",
+   "aka": [
+    "Bite",
+    "Baltcom",
+    "Latnet",
+    "Unistar"
+   ],
+   "asns": [
+    {
+     "asn": 20910,
+     "rir": "ripe"
+    },
+    {
+     "asn": 2588,
+     "rir": "ripe"
+    },
+    {
+     "asn": 28699,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.bite.lv/",
+   "support_url": null,
+   "notes": "Mobile, and cable and fibre under the former Baltcom. AS20910 was Baltcom's number, AS2588 Latnet's, AS28699 Unistar's."
+  },
+  {
+   "name": "Balticom",
+   "slug": "balticom",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 24651,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://balticom.lv/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Telenet",
+   "slug": "telenet-lv",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 24589,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telenet.lv/",
+   "support_url": null,
+   "notes": "Internet and TV in Riga."
+  },
+  {
+   "name": "LVRTC",
+   "slug": "lvrtc",
+   "kind": "wholesale",
+   "aka": [
+    "Latvijas Valsts radio un televīzijas centrs"
+   ],
+   "asns": [
+    {
+     "asn": 8194,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.lvrtc.lv/",
+   "support_url": null,
+   "notes": "State broadcast and optical backbone operator.",
+   "wikidata": "Q116265936"
+  },
+  {
+   "name": "SigmaNet",
+   "slug": "sigmanet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 5538,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sigmanet.lv/",
+   "support_url": null,
+   "notes": "The national research and education network, at the University of Latvia. It was called LATNET until 2008; the Latnet name on a bill is Bite Latvija."
+  }
+ ]
+}

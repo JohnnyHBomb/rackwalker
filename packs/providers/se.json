@@ -1,0 +1,329 @@
+{
+ "pack": "providers",
+ "id": "providers-se",
+ "version": "1.0.0",
+ "country": "SE",
+ "title": "Common providers: Sweden",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the mobile network operators and the largest broadband and business ISPs; open-fibre network owners and the municipal city networks are partial.",
+ "missing": [
+  "The municipal city networks (stadsnät): well over a hundred, only Stokab is listed",
+  "Smaller business ISPs and regional broadband providers",
+  "AS numbers for Stokab and Open Infra (none confirmed as announced)",
+  "Satellite providers",
+  "Status pages other than the three that answered a check on the read date"
+ ],
+ "sources": [
+  {
+   "name": "PTS (Swedish Post and Telecom Authority)",
+   "url": "https://www.pts.se/",
+   "read": "2026-11-11",
+   "terms": "The start page answered; the pages under it, the operator list among them, returned a bot-check page to an automated read, so the register and the terms were not read: nothing is copied.",
+   "use": "cited",
+   "result": "Register not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Sweden",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Sweden",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 14 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Sweden",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Sweden",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 14 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "14 of 14 websites and 3 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "15 AS numbers confirmed, each announced on the read date; a number registered to the provider but not announced was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+   "use": "cross-check",
+   "result": "Used to find candidate numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: Com Hem",
+   "url": "https://en.wikipedia.org/wiki/Com_Hem",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "States that Tele2 bought Com Hem and that the Com Hem brand became Tele2."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telia",
+   "slug": "telia",
+   "kind": "national_carrier",
+   "aka": [
+    "Telia Company",
+    "Telia Sverige",
+    "TeliaSonera",
+    "Skanova",
+    "Telia Företag"
+   ],
+   "asns": [
+    {
+     "asn": 3301,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telia.se/foretag",
+   "support_url": "https://www.telia.se/foretag/support/driftinformation",
+   "notes": "Fixed and mobile. Its international backbone is Arelion (international pack)."
+  },
+  {
+   "name": "Tele2",
+   "slug": "tele2",
+   "kind": "national_carrier",
+   "aka": [
+    "Com Hem",
+    "Tele2 Företag",
+    "TDC Sverige"
+   ],
+   "asns": [
+    {
+     "asn": 1257,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tele2.se/foretag",
+   "support_url": null,
+   "notes": "Fixed, cable and mobile. Com Hem's cable network took the Tele2 name."
+  },
+  {
+   "name": "Telenor Sverige",
+   "slug": "telenor-se",
+   "kind": "national_carrier",
+   "aka": [
+    "Telenor",
+    "Bredbandsbolaget",
+    "Glocalnet",
+    "Ownit",
+    "Telenor Företag"
+   ],
+   "asns": [
+    {
+     "asn": 8642,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8434,
+     "rir": "ripe"
+    },
+    {
+     "asn": 33885,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telenor.se/foretag/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS33885 is the Ownit broadband brand."
+  },
+  {
+   "name": "Tre",
+   "slug": "tre",
+   "kind": "mobile",
+   "aka": [
+    "3",
+    "Hi3G",
+    "Hi3G Access",
+    "Tre Företag"
+   ],
+   "asns": [
+    {
+     "asn": 44034,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tre.se/treforetag",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Bahnhof",
+   "slug": "bahnhof",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8473,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://bahnhof.se/",
+   "support_url": "https://driftinfo.bahnhof.se/",
+   "notes": null
+  },
+  {
+   "name": "Bredband2",
+   "slug": "bredband2",
+   "kind": "business_isp",
+   "aka": [
+    "A3",
+    "AllTele"
+   ],
+   "asns": [
+    {
+     "asn": 29518,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.bredband2.com/",
+   "support_url": null,
+   "notes": "Broadband over the open city networks, homes and business."
+  },
+  {
+   "name": "GlobalConnect",
+   "slug": "globalconnect",
+   "kind": "business_isp",
+   "aka": [
+    "IP-Only"
+   ],
+   "asns": [
+    {
+     "asn": 12552,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://globalconnect.se/",
+   "support_url": "https://globalconnect.se/driftinformation/",
+   "notes": "Nordic fibre group, also in the Denmark and Finland packs. AS12552 was IP-Only's number."
+  },
+  {
+   "name": "Obenet",
+   "slug": "obenet",
+   "kind": "business_isp",
+   "aka": [
+    "Obenetwork"
+   ],
+   "asns": [
+    {
+     "asn": 44394,
+     "rir": "ripe"
+    },
+    {
+     "asn": 3399,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.obe.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Iver",
+   "slug": "iver",
+   "kind": "business_isp",
+   "aka": [
+    "DGC"
+   ],
+   "asns": [
+    {
+     "asn": 21195,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.iver.com/",
+   "support_url": null,
+   "notes": "IT and network services for business. AS21195 was DGC's number."
+  },
+  {
+   "name": "Net at Once",
+   "slug": "net-at-once",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 35706,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.netatonce.se/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Junet",
+   "slug": "junet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 59702,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.junet.se/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Stokab",
+   "slug": "stokab",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://stokab.se/",
+   "support_url": null,
+   "notes": "City of Stockholm's dark-fibre network; wholesale only."
+  },
+  {
+   "name": "Open Infra",
+   "slug": "open-infra",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://openinfra.com/",
+   "support_url": null,
+   "notes": "Open fibre access network; retail through other providers."
+  },
+  {
+   "name": "Sunet",
+   "slug": "sunet",
+   "kind": "research_education",
+   "aka": [
+    "Swedish University Computer Network"
+   ],
+   "asns": [
+    {
+     "asn": 1653,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sunet.se/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

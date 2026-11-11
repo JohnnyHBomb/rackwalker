@@ -1,0 +1,277 @@
+{
+ "pack": "providers",
+ "id": "providers-lt",
+ "version": "1.0.0",
+ "country": "LT",
+ "title": "Common providers: Lithuania",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national fixed-line carrier, the three mobile network operators, the main cable and fibre operators and the research network; business ISPs and regional operators are thin.",
+ "missing": [
+  "An AS number for Tele2 Lietuva and for Skaidula (none confirmed)",
+  "A website for Telia Lietuva (it refused an automated read on the read date)",
+  "Regional cable and fibre operators",
+  "Smaller business ISPs and data-centre operators",
+  "The regulator's list of service providers (not read)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "RRT (Communications Regulatory Authority): electronic communications providers",
+   "url": "https://rrt.lt/veiklos-sritys/elektroniniai-rysiai/paslaugu-teikejai",
+   "read": "2026-11-11",
+   "terms": "The page answered on the read date, in Lithuanian; no reuse licence was found on it, so nothing is copied.",
+   "use": "cited",
+   "result": "Page read for its address only; the list of providers was not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Lithuania",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Lithuania",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "1 of 12 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "11 of 12 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "12 AS numbers confirmed, each announced on the read date; a number registered to the provider but not announced was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+   "use": "cross-check",
+   "result": "Used to find candidate numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: Telia Lietuva",
+   "url": "https://en.wikipedia.org/wiki/Telia_Lietuva",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "Names Teo LT and Omnitel as the companies Telia Lietuva was formed from."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telia Lietuva",
+   "slug": "telia-lt",
+   "kind": "national_carrier",
+   "aka": [
+    "Telia",
+    "Teo LT",
+    "TEO",
+    "Omnitel"
+   ],
+   "asns": [
+    {
+     "asn": 8764,
+     "rir": "ripe"
+    },
+    {
+     "asn": 5522,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed and mobile; formed from Teo LT and Omnitel."
+  },
+  {
+   "name": "Bitė Lietuva",
+   "slug": "bite-lt",
+   "kind": "mobile",
+   "aka": [
+    "Bitė",
+    "Bite",
+    "Mezon"
+   ],
+   "asns": [
+    {
+     "asn": 13194,
+     "rir": "ripe"
+    },
+    {
+     "asn": 212046,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.bite.lt/verslui",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless. AS212046 is the Mezon fixed-wireless brand."
+  },
+  {
+   "name": "Tele2 Lietuva",
+   "slug": "tele2-lt",
+   "kind": "mobile",
+   "aka": [
+    "Tele2"
+   ],
+   "asns": [],
+   "website": "https://tele2.lt/",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Cgates",
+   "slug": "cgates",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 21412,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cgates.lt/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Init",
+   "slug": "init",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 24877,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://init.lt/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Balticum",
+   "slug": "balticum",
+   "kind": "cable_fibre",
+   "aka": [
+    "Balticum TV"
+   ],
+   "asns": [
+    {
+     "asn": 39007,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.balticum.lt/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Splius",
+   "slug": "splius",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 25406,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://splius.lt/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Penki",
+   "slug": "penki",
+   "kind": "cable_fibre",
+   "aka": [
+    "Penki kontinentai"
+   ],
+   "asns": [
+    {
+     "asn": 21211,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://penki.lt/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Telecentras",
+   "slug": "telecentras",
+   "kind": "business_isp",
+   "aka": [
+    "LRTC",
+    "Lietuvos radijo ir televizijos centras"
+   ],
+   "asns": [
+    {
+     "asn": 15419,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://telecentras.lt/",
+   "support_url": null,
+   "notes": "State broadcast operator; also data-centre and business lines."
+  },
+  {
+   "name": "Baltneta",
+   "slug": "baltneta",
+   "kind": "business_isp",
+   "aka": [
+    "Baltnetos komunikacijos"
+   ],
+   "asns": [
+    {
+     "asn": 15440,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.balt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Skaidula",
+   "slug": "skaidula",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://skaidula.lt/",
+   "support_url": null,
+   "notes": "Carrier-neutral fibre network; wholesale."
+  },
+  {
+   "name": "LITNET",
+   "slug": "litnet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2847,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://litnet.lt/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}
