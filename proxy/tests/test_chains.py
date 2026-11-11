@@ -595,7 +595,7 @@ def test_the_example_estate_plays_the_way_out_from_nothing_to_the_complete_recor
     b = board(cl)
     chain = next(c for c in b["chains"] if c["id"] == CHAIN)
     assert chain["bonus_xp"] == chains.CHAIN_XP["way_out"]                    # this player's changes are written: the whole record can pay
-    assert chain["label"] == "1 of 3: physical" and [q["kind"] for q in b["quests"]] == ["site_no_way_out", "locations_not_linked", "device_unconnected"]
+    assert chain["label"] == "1 of 3: physical" and [q["kind"] for q in b["quests"]] == ["site_no_way_out", "locations_not_linked", "device_unconnected", "site_more_devices"]
     assert b["quests"][0]["chain"]["label"] == "1 of 3: physical"
     # ---- physical: the device, the port, the circuit's end, the cable
     q = say(cl, WAY_OUT, ("device", {"choice": "device:1"}), ("provider", {"choice": "provider:1"}), ("circuit_id", {"text": "NLT-7001"}),
@@ -740,7 +740,8 @@ def test_netbox_without_the_custom_fields_is_told_so_and_nothing_is_asked_that_i
     q = say(cl, "q:device_unreachable:device:1", ("mode_1", {"choice": "cloud"}), ("service_1", {"choice": "unknown"}))
     # remembered by the game for this player; nothing is written
     assert q["status"] == "dismissed" and "the game remembers your answer" in q["note"] and box.writes == []
-    left = {c for c, ok in findings.analyse(questroutes_estate(cl)).checks[1].items() if not ok}
+    now = findings.analyse(questroutes_estate(cl))
+    left = {c for c, ok in now.checks[1].items() if not ok and c not in now.quiet}        # (an optional line is no part of completeness)
     assert "device:1:primary_ip" in left and board(cl)["sites"][0]["completeness"]["open"] == len(left) - 1
 
 

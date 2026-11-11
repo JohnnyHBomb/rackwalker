@@ -39,6 +39,10 @@ class EmptyBox:
         self.ticks = 0
         self.superuser = True
         self.refuse: tuple[str, ...] = ()
+        # object permissions of the player when not a superuser: [{"object_types": [...], "actions": [...]}]
+        self.permissions: list[dict[str, Any]] = []
+        # list paths whose POST NetBox refuses with a 400 (a template it will not take)
+        self.refuse_post: tuple[str, ...] = ()
 
     def stamp(self) -> str:
         self.ticks += 1
@@ -100,7 +104,8 @@ class EmptyBox:
         if path == "users/users":
             return httpx.Response(200, json={"count": 1 if self.superuser else 0, "results": [{"id": 9}] if self.superuser else []})
         if path == "users/permissions":
-            return httpx.Response(200, json={"count": 0, "results": []})
+            rows = [{"id": n + 1, "enabled": True, "constraints": None, **p} for n, p in enumerate(self.permissions)] if "user_id" in req.url.params else []
+            return httpx.Response(200, json={"count": len(rows), "results": rows})
         if path.endswith("/trace"):
             return httpx.Response(200, json=[])
         if req.method == "GET":
@@ -110,6 +115,10 @@ class EmptyBox:
             rows = self.data[path]
             for key in {k for k in q.keys() if k not in ("limit", "offset", "fields", "brief")}:
                 rows = [r for r in rows if self.matches(path, r, key, q.get_list(key))]
+            if path == "dcim/device-types":
+                # NetBox counts a type's templates itself
+                rows = [{**r, **{f"{tpl.split('/')[1].removesuffix('-templates').replace('-', '_')}_template_count":
+                                 sum(1 for t in self.data[tpl] if (t.get("device_type") or {}).get("id") == r["id"]) for tpl in TEMPLATES}} for r in rows]
             offset, limit = int(q.get("offset", 0)), int(q.get("limit", 50))
             return httpx.Response(200, json={"count": len(rows), "results": rows[offset:offset + limit]})
         body = json.loads(req.content) if req.content else {}
@@ -127,6 +136,8 @@ class EmptyBox:
             row["custom_fields"] = {**row.get("custom_fields", {}), **fields.pop("custom_fields", {})}
             row.update(fields, last_updated=self.stamp())
             return httpx.Response(200, json=row)
+        if path in self.refuse_post:
+            return httpx.Response(400, json={"__all__": ["NetBox does not take this."]})
         made = [self.create(path, b) for b in (body if isinstance(body, list) else [body])]
         bad = next((m for m in made if "id" not in m), None)
         if bad is not None:
@@ -134,11 +145,15 @@ class EmptyBox:
         return httpx.Response(201, json=made if isinstance(body, list) else made[0])
 
     def create(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
-        unique = {"dcim/sites": ("name",), "dcim/regions": ("slug",), "circuits/providers": ("name",), "ipam/asns": ("asn",), "extras/tags": ("slug",),
+        unique = {"dcim/sites": ("name",), "dcim/regions": ("slug", "name"), "circuits/providers": ("name",), "ipam/asns": ("asn",), "extras/tags": ("slug",),
                   "dcim/manufacturers": ("slug",), "dcim/device-roles": ("slug",), "circuits/circuit-types": ("slug",)}.get(path, ())
         for field in unique:
             if any(str(r.get(field)).lower() == str(body.get(field)).lower() for r in self.data[path]):
                 return {field: [f"{path} with this {field} already exists."]}
+        if path in ("dcim/device-types", "dcim/module-types") and any(
+                (r.get("manufacturer") or {}).get("id") == body.get("manufacturer") and str(r.get("model")).lower() == str(body.get("model")).lower()
+                for r in self.data[path]):
+            return {"__all__": ["Device type with this Manufacturer and Model already exists."]}
         if path == "ipam/asns" and body.get("rir") is None:
             return {"rir": ["This field cannot be null."]}
         new = {"id": 1 + max((r["id"] for rows in self.data.values() for r in rows), default=0),

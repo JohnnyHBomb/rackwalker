@@ -38,10 +38,10 @@ KIND_ORDER = ["estate_no_site", "site_no_rack", "site_no_devices", "site_no_prov
               "site_no_way_out", "sites_not_linked", "locations_not_linked", "site_island", "switch_no_uplink",
               "circuit_unterminated", "provider_unused", "circuit_handoff", "circuit_record", "device_unconnected", "router_no_address",
               "interface_no_cable", "device_no_power", "device_unreachable", "address_no_prefix", "device_type_unknown", "device_type_part_number",
-              "rack_audit", "shelf_audit", "module_bays_unrecorded", "platform_survey", "site_record", "rack_devices_unpositioned", "room_layout"]
+              "rack_audit", "shelf_audit", "module_bays_unrecorded", "platform_survey", "site_record", "site_more_devices", "rack_devices_unpositioned", "room_layout"]
 KIND_RANK = {**{k: "connectivity" for k in KIND_ORDER[:19]}, "device_type_unknown": "identity", "device_type_part_number": "identity",
              "rack_audit": "identity", "shelf_audit": "identity", "module_bays_unrecorded": "identity",
-             "platform_survey": "identity", "site_record": "identity", "rack_devices_unpositioned": "layout", "room_layout": "layout"}
+             "platform_survey": "identity", "site_record": "identity", "site_more_devices": "identity", "rack_devices_unpositioned": "layout", "room_layout": "layout"}
 # At most this many devices of one model are covered by one platform line.
 MAX_SURVEY = 20
 # At most this many expected-cable interface gaps are listed per site, and per device (the total is still counted).

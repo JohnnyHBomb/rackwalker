@@ -129,6 +129,11 @@ def name_of(dev: dict[str, Any]) -> str:
     return f"the unnamed {what} (device {dev['id']})"
 
 
+TEMPLATE_COUNTS = ("interface_template_count", "console_port_template_count", "console_server_port_template_count", "power_port_template_count",
+                   "power_outlet_template_count", "front_port_template_count", "rear_port_template_count", "module_bay_template_count",
+                   "device_bay_template_count")
+
+
 @dataclass
 class Estate:
     sites: dict[int, dict[str, Any]] = field(default_factory=dict)
@@ -674,7 +679,7 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         "platforms": ("dcim/platforms", "id,name,manufacturer", CAPS["circuits"]),
         "ips": ("ipam/ip-addresses", "id,address,vrf,assigned_object_type,assigned_object_id", CAPS["ips"]),
         "prefixes": ("ipam/prefixes", "id,prefix,vrf", CAPS["prefixes"]),
-        "dtypes": ("dcim/device-types", "id,manufacturer,model,slug,part_number,u_height,tags", CAPS["devices"]),
+        "dtypes": ("dcim/device-types", "id,manufacturer,model,slug,part_number,u_height,tags," + ",".join(TEMPLATE_COUNTS), CAPS["devices"]),
         "roles": ("dcim/device-roles", "id,name,slug", CAPS["circuits"]),
         "module_bays": ("dcim/module-bays", "id,name,device,installed_module", CAPS["ports"]),
     }
@@ -803,7 +808,10 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
     for t in raw["dtypes"]:
         e.dtypes[t["id"]] = {"id": t["id"], "manufacturer": (t.get("manufacturer") or {}).get("name"), "model": t.get("model") or "",
                              "slug": t.get("slug") or "", "part_number": t.get("part_number") or "", "u_height": float(t.get("u_height") or 0),
-                             "tags": sorted(x.get("slug") for x in t.get("tags") or [] if isinstance(x, dict) and x.get("slug"))}
+                             "tags": sorted(x.get("slug") for x in t.get("tags") or [] if isinstance(x, dict) and x.get("slug")),
+                             # how many component templates NetBox holds for the type (None: NetBox did not say)
+                             "interfaces": t.get("interface_template_count"),
+                             "templates": sum(int(t.get(k) or 0) for k in TEMPLATE_COUNTS) if any(k in t for k in TEMPLATE_COUNTS) else None}
     for r in raw["roles"]:
         e.roles[r["id"]] = {"id": r["id"], "name": r["name"], "slug": r.get("slug") or ""}
     for b in raw["module_bays"]:

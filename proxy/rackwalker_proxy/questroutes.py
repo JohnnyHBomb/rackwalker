@@ -84,10 +84,13 @@ def offer(fresh: list[dict[str, Any]]) -> list[dict[str, Any]]:
     seen: set[str] = set()
     first, more = [], []
     for line in fresh:
+        if line["kind"] in setup.OPTIONAL_KINDS:
+            continue
         (more if line["kind"] in seen else first).append(line)
         seen.add(line["kind"])
     chosen = (first + more)[:MAX_OPEN]
-    return [line for line in fresh if any(line is c for c in chosen)]
+    # an optional line ("is there another box here?") stands beside the few, and never takes the place of one
+    return [line for line in fresh if any(line is c for c in chosen) or line["kind"] in setup.OPTIONAL_KINDS]
 
 
 # Figures of a circuit's record, and the NetBox permission a player's own user needs to be shown them. The proxy reads
@@ -114,10 +117,10 @@ class Gate:
         """(can_write, write_blocked) of a quest log: false when nothing a quest writes would be written."""
         if self.note is not None:
             return False, self.note
-        missing = self.allowed.missing(perms.QUEST_NEEDS) if self.allowed is not None else []
-        if len(missing) == len(perms.QUEST_NEEDS):
+        if self.allowed is not None and len(self.allowed.missing(perms.ANY_QUEST_NEED)) == len(perms.ANY_QUEST_NEED):
             return False, ("Your NetBox user may not change anything a quest writes (cables, circuits, addresses, devices, racks, sites), "
                            "so every line runs as practice. Ask a NetBox admin for the permission.")
+        missing = self.allowed.missing(perms.QUEST_NEEDS) if self.allowed is not None else []
         return True, perms.some_missing(missing) if missing else None
 
 

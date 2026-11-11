@@ -4,6 +4,8 @@
     site_no_rack            a site with no rack and no device: its first rack
     site_no_devices         a site with no device: its first boxes, found in the device-type library by what is printed
                             on them ("What is this box?"), each with its ports
+    site_more_devices       a site with a few devices: the boxes NetBox does not hold yet, three at a time, for as long
+                            as the player has more (optional: it never counts against a site's completeness)
     site_no_provider        nothing in NetBox is connected yet and no carrier is on record: whose line the site is on,
                             from the provider pack of the site's country
     device_type_unknown     a device recorded as a placeholder model: what it really is
@@ -17,7 +19,7 @@ complete only when NetBox, read again, shows it.
 
 Truthfulness. A model picked from the library is verified; a model the library does not hold can still be recorded,
 by hand, and is tagged rw-unverified; a part number that contradicts the library's for a model it does hold is
-refused, with what was expected. A serial that is already another device's is refused; one that does not look like
+refused, with what was expected. A serial that is already another live device's is refused; one that does not look like
 the vendor's (packs/serials: sourced rules only) is asked about once and, if the player confirms it, recorded and
 tagged rw-unverified. Only values that pass a check earn the bonus (`bonus`), and that is decided from NetBox as it
 reads after the write, never from what the player said.
@@ -29,16 +31,20 @@ import zlib
 from typing import Any
 
 from . import packs
+from .country import ISO_CODES, NAMES as COUNTRY_NAMES
 from .estate import Estate, natural
 from .estate import name_of as nm
-from .setupops import COUNTRY_OF
+from .setupops import COUNTRY_OF, RETIRED
 
 # A NetBox that is just starting: nothing is cabled, no carrier and no circuit is on record, and it holds few devices.
 STARTER_DEVICES = 12
 KINDS = ("estate_no_site", "site_no_rack", "site_no_devices", "site_no_provider", "device_type_unknown", "device_type_part_number",
-         "module_bays_unrecorded")
+         "module_bays_unrecorded", "site_more_devices")
+OPTIONAL_KINDS = ("site_more_devices",)       # offered beside a site's few open lines, never instead of one, never in its completeness
+MORE_KEY = 1000        # the check of "more boxes" is per site and per count of devices: site id * MORE_KEY + count
 CHAIN_KINDS = ("site_no_rack", "site_no_devices", "site_no_provider")
-MAX_NEW = 3            # boxes added in one pass of "first devices"
+MAX_NEW = 3            # boxes added in one pass of "first devices" or "more boxes"
+KNOWN_SHOWN = 8        # providers of NetBox listed before the pack's own names (the rest are found by the search)
 ROUNDS = 4             # searches in one question before the line says where to look instead
 ROLES = ("Router", "Switch", "Firewall", "Server", "Patch panel", "PDU", "Access point")
 RACK_HEIGHTS = (("42", "A full-height rack (42U)"), ("24", "A half-height rack (24U)"), ("12", "A wall cabinet (12U)"), ("47", "A tall rack (47U)"))
@@ -55,6 +61,8 @@ WORDS: dict[str, tuple[str, str, str]] = {
                         "You can now see the devices at {site} with their ports, ready to be cabled."),
     "site_no_provider": ("Whose line {site} is on", "When the line is down, the first thing you need is the carrier's name. Let's record it.",
                          "You can now record the circuit that brings {site} online, under its carrier."),
+    "site_more_devices": ("More boxes at {site}", "A box NetBox does not hold is a box nobody can plan around. Let's add what else stands there.",
+                          "You can now see every box you added at {site} with its ports, ready to be cabled."),
     "device_type_unknown": ("What {subject} really is", "Without its model nobody knows its ports, its height or its support contract. Let's find out what it is.",
                             "You can now see {subject} with the ports of its real model."),
     "device_type_part_number": ("The part number of the {subject}", "A spare ordered by the wrong part number is the wrong spare. Let's check the label.",
@@ -63,7 +71,7 @@ WORDS: dict[str, tuple[str, str, str]] = {
                                "You can now look up what is fitted in {subject}, bay by bay."),
 }
 XP = {"estate_no_site": 60, "site_no_rack": 40, "site_no_devices": 80, "site_no_provider": 50, "device_type_unknown": 40, "device_type_part_number": 30,
-      "module_bays_unrecorded": 40}
+      "module_bays_unrecorded": 40, "site_more_devices": 40}
 
 
 def country_name(code: str | None) -> str:
@@ -71,9 +79,19 @@ def country_name(code: str | None) -> str:
 
 
 # ---------------------------------------------------------------- findings
+def unknown_type(manufacturer: str | None, model: str | None) -> bool:
+    """A maker or model that only says "nobody knew" ("Unknown", "Generic switch", "TBD"), unless the device-type library
+    holds exactly that: "Generic" is also the maker the library files patch panels and blank kit under."""
+    if not (packs.is_placeholder(model) or packs.is_placeholder(manufacturer)):
+        return False
+    return packs.load().index().lookup(manufacturer, model) is None
+
+
 def verified_type(dt: dict[str, Any] | None) -> str:
-    """How a device type of NetBox stands against the library: verified, unverified or mismatch."""
-    if dt is None or UNVERIFIED in dt.get("tags", []) or packs.is_placeholder(dt.get("model")) or packs.is_placeholder(dt.get("manufacturer")):
+    """How a device type of NetBox stands against the library: `verified` (the library holds the maker and the model,
+    and its part number does not contradict it), `mismatch` (its part number is the library's for another model) or
+    `unverified` (tagged so, a placeholder, or a model the library does not hold)."""
+    if dt is None or UNVERIFIED in dt.get("tags", []) or unknown_type(dt.get("manufacturer"), dt.get("model")):
         return "unverified"
     status = packs.load().index().part_check(dt.get("manufacturer"), dt.get("model"), dt.get("part_number"))["status"]
     return {"unknown": "unverified", "mismatch": "mismatch"}.get(status, "verified")
@@ -111,12 +129,13 @@ def findings(e: Estate, a: Any, add: Any, quiet: Any, live: tuple[str, ...]) -> 
         t = e.dtypes[tid]
         check = index.part_check(t["manufacturer"], t["model"], t["part_number"])
         wrong = check["status"] == "mismatch" or (check["status"] == "known" and check["expected"] and not t["part_number"])
-        if not wrong or UNVERIFIED in t["tags"] or packs.is_placeholder(t["model"]) or packs.is_placeholder(t["manufacturer"]):
+        if not wrong or UNVERIFIED in t["tags"] or unknown_type(t["manufacturer"], t["model"]):
             quiet("device_type_part_number", ("device_type", tid), d["site_id"])
             continue
         model = f"{t['manufacturer']} {t['model']}"
         add("device_type_part_number", ("device_type", tid), d["site_id"],
-            (f"NetBox holds the part number {t['part_number']} for the {model}; the device-type library lists {check['expected']} for that model."
+            (f"NetBox holds the part number {t['part_number']} for the {model}; in the device-type library that is the part number of the "
+             f"{check['other']}" + (f", and the {t['model']} is listed with {check['expected']}." if check["expected"] else ".")
              if t["part_number"] else f"NetBox holds no part number for the {model}; the device-type library lists {check['expected']}."),
             [{"kind": "device", "id": d["id"], "name": d["name"] or f"device {d['id']}"}],
             type_id=tid, device_id=d["id"], model=model, have=t["part_number"] or None, expected=check["expected"])
@@ -132,6 +151,20 @@ def findings(e: Estate, a: Any, add: Any, quiet: Any, live: tuple[str, ...]) -> 
                 add("site_no_devices", ("site", sid), sid, f"NetBox holds no device at {name}.", [sref(sid)], about="site")
             else:
                 quiet("site_no_devices", ("site", sid), sid)
+            # More boxes: an optional line while the site is being set up (a few devices, none of them cabled yet),
+            # renewed each time the count of its devices changes (the check "there is more at this site than n devices"
+            # passes when there is). It is never part of a site's completeness: nobody but the admin knows whether a
+            # site's kit is all in NetBox.
+            n = len(devs)
+            if not e.synthetic and sid < 10 ** 9 and n < MORE_KEY:
+                for k in range(max(1, n - STARTER_DEVICES), n):
+                    quiet("site_more_devices", ("site", sid * MORE_KEY + k), sid)
+                if 1 <= n < STARTER_DEVICES and e.can_see("ports", "cables") and not any(
+                        p["cable_id"] is not None for d in devs for p in e.device_ports(d["id"])):
+                    add("site_more_devices", ("site", sid * MORE_KEY + n), sid,
+                        f"NetBox holds {n} device{'s' if n != 1 else ''} at {name}. Only you know whether that is all of them.", [sref(sid)],
+                        about="site", known=sorted(d["id"] for d in devs))
+                    a.quiet.add(f"site_more_devices:site:{sid * MORE_KEY + n}")
         if e.can_see("providers", "circuits", "cables", "devices"):
             if starter:
                 add("site_no_provider", ("site", sid), sid, f"NetBox holds no carrier at all, so nobody can tell from it whose line {name} is on.", [sref(sid)], about="site")
@@ -140,7 +173,7 @@ def findings(e: Estate, a: Any, add: Any, quiet: Any, live: tuple[str, ...]) -> 
         for d in devs:
             if d["status"] not in live:
                 continue
-            if e.can_see("devices") and (packs.is_placeholder(d.get("model")) or packs.is_placeholder(d.get("manufacturer"))):
+            if e.can_see("devices") and unknown_type(d.get("manufacturer"), d.get("model")):
                 add("device_type_unknown", ("device", d["id"]), sid,
                     f"{nm(d)} is recorded as \"{d.get('manufacturer') or '?'} {d.get('model') or '?'}\": NetBox does not say what box it really is.",
                     [{"kind": "device", "id": d["id"], "name": d["name"] or f"device {d['id']}"}], device_id=d["id"])
@@ -161,6 +194,23 @@ def _q():
     from . import quests
 
     return quests
+
+
+def held_type(e: Estate, index: Any, row: dict[str, Any]) -> dict[str, Any] | None:
+    """The device type of NetBox that is this library model (under any name of its maker), one with ports before one without."""
+    held = [t for t in e.dtypes.values() if index.same(row, t["manufacturer"], t["model"])]
+    return next((t for t in held if t.get("templates") != 0), held[0] if held else None)
+
+
+def _held_label(e: Estate, index: Any, row: dict[str, Any]) -> str:
+    """A library model as a choice. One NetBox already holds says so, with the ports NetBox has for it: that is what a new box gets."""
+    have = held_type(e, index, row)
+    if have is None:
+        return index.label(row)
+    if have.get("templates") == 0:
+        return f"{have['manufacturer']} {have['model']} (in NetBox: no ports)"       # the preview says they are added from the library
+    ports = have.get("interfaces")
+    return f"{have['manufacturer']} {have['model']} (in NetBox" + (f": {ports} port{'s' if ports != 1 else ''})" if ports is not None else ")")
 
 
 def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker: str | None = None,
@@ -188,7 +238,7 @@ def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker:
         own = [] if kind == "module" else [
             t for t in e.dtypes.values() if not packs.is_placeholder(t["model"]) and index.lookup(t["manufacturer"], t["model"]) is None
             and all(w in packs._words(f"{t['manufacturer']} {t['model']} {t['part_number']}") for w in words)][:2]
-        choices = [q.choice(f"lib:{row['n']}", index.label(row)) for row in hits] + \
+        choices = [q.choice(f"lib:{row['n']}", _held_label(e, index, row) if kind == "device" else index.label(row)) for row in hits] + \
                   [q.choice(f"own:{t['id']}", f"{t['manufacturer']} {t['model']} (in your NetBox)") for t in own]
         last = r == ROUNDS - 1
         more = ([] if last else [q.choice("again", "None of these: search again", "other")]) + \
@@ -203,9 +253,9 @@ def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker:
             row = index.get(kind, int(got[4:]))
             if row is None:
                 raise KeyError(got)
-            have = next((t for t in e.dtypes.values() if packs.norm(t["manufacturer"] or "") == packs.norm(row["manufacturer"])
-                         and packs._words(t["model"]) == packs._words(row["model"])), None) if kind == "device" else None
-            return ("existing", have["id"]) if have else ("library", row)
+            have = held_type(e, index, row) if kind == "device" else None
+            # a type NetBox holds with no port on it is filled from the library, so the new box gets its ports
+            return ("existing", have["id"]) if have and have.get("templates") != 0 else ("library", row)
         if got.startswith("own:"):
             return "existing", int(got[4:])
         break
@@ -224,12 +274,14 @@ def find_type(ctx: Any, key: str, kind: str = "device", what: str = "it", maker:
         raise ctx.again(sid, "The manufacturer and the model are both needed.")
     check = index.part_check(values["manufacturer"], values["model"], values.get("part_number"), kind)
     if check["status"] == "mismatch":
-        raise ctx.again(sid, f"The device-type library knows {values['manufacturer']} {values['model']} with the part number {check['expected']}; "
-                             f"{values['part_number']} does not match it. Read the label again, or go back and pick the model from the search.")
-    row = index.lookup(values["manufacturer"], values["model"], kind)
+        raise ctx.again(sid, f"The device-type library knows {values['part_number']} as the part number of the {values['manufacturer']} {check['other']}, "
+                             f"not of the {values['model']}. Read the label again, or go back and pick the model from the search.")
+    row = index.lookup(values["manufacturer"], values["model"], kind) or (index.by_part(values["manufacturer"], values.get("part_number"), kind)
+                                                                           if values.get("part_number") else None)
     if row is not None:   # typed by hand, and the library holds it after all: the verified model is used
-        return "library", row
-    have = next((t for t in e.dtypes.values() if packs.norm(t["manufacturer"] or "") == packs.norm(values["manufacturer"])
+        have = held_type(e, index, row) if kind == "device" else None
+        return ("existing", have["id"]) if have and have.get("templates") != 0 else ("library", row)
+    have = next((t for t in e.dtypes.values() if packs.maker_key(t["manufacturer"]) == packs.maker_key(values["manufacturer"])
                  and packs._words(t["model"]) == packs._words(values["model"])), None) if kind == "device" else None
     return ("existing", have["id"]) if have else ("manual", values)
 
@@ -267,7 +319,8 @@ def check_serial(ctx: Any, form_sid: str, key: str, maker: str | None, model: st
     another device's is refused: the form is asked again."""
     q = _q()
     e = ctx.e
-    twin = next((d for d in e.devices.values() if d["id"] != own_id and d["serial"] and d["serial"].lower() == serial.lower()), None)
+    twin = next((d for d in e.devices.values() if d["id"] != own_id and d["serial"] and d["serial"].lower() == serial.lower()
+                 and d["status"] not in RETIRED), None)
     if twin is not None or serial.lower() in (taken or set()):
         other = nm(twin) if twin is not None else "another box in this list"
         raise ctx.again(form_sid, f"{serial} is the serial of {other}: a serial number belongs to one device. Read the label of {who} again.")
@@ -306,9 +359,15 @@ def ask_provider(ctx: Any, site_id: int, closing: list[dict[str, str]] | None = 
         return x["id"], x["name"], []
 
     def from_pack(entry: dict[str, Any]) -> tuple[Any, str, list[dict[str, Any]]]:
-        hit = packs.match_provider(entry, known)
-        if hit is not None:
+        hits = packs.provider_matches(entry, known)
+        if len(hits) > 1 and not packs.provider_named(entry, known):
+            # NetBox holds one network under several names (they share its AS number): the player says which, the game does not guess
+            got = ctx.choice("provider_which", q.clip(f"NetBox holds {len(hits)} providers with an AS number of {entry['name']}. Which one is this line's?", 300),
+                             [q.choice(f"provider:{x['id']}", x["name"]) for x in hits[:6]], look)
+            hit = e.providers[int(got.split(":")[1])]
             return hit["id"], hit["name"], []
+        if hits:
+            return hits[0]["id"], hits[0]["name"], []
         fields = {"name": entry["name"], "slug": entry["slug"], "pack": entry["pack"], **({"asns": entry["asns"]} if entry["asns"] else {}),
                   **({"aka": entry["aka"][:12]} if entry["aka"] else {})}
         return "@provider", entry["name"], [{"op": "create_provider", "target": {"kind": "provider", "id": None}, "client_ref": "provider", "fields": fields}]
@@ -317,18 +376,19 @@ def ask_provider(ctx: Any, site_id: int, closing: list[dict[str, str]] | None = 
         hit = packs.match_provider({"name": name, "slug": packs.slugify(name), "asns": [], "aka": []}, known)
         if hit is not None:
             return hit["id"], hit["name"], []
-        exact = [x for x in p.search_providers(name, country, limit=3) if packs.norm(x["name"]) == packs.norm(name)]
+        exact = [x for x in p.search_providers(name, country, limit=3) if packs.same_name(x["name"], name)]
         if exact:
             return from_pack(exact[0])
         return "@provider", name, [{"op": "create_provider", "target": {"kind": "provider", "id": None}, "client_ref": "provider", "fields": {"name": name}}]
 
     offered = [x for x in p.providers_of(country) if packs.match_provider(x, known) is None]
-    shown_known = known[:3] if offered else known[:6]
-    room = max(0, 6 - len(shown_known))
+    # the admin's own providers first, all that fit; then names of the country's pack NetBox does not hold yet
+    shown_known = known[:KNOWN_SHOWN]
+    room = max(2, 6 - len(shown_known))
     choices = [q.choice(f"provider:{x['id']}", x["name"]) for x in shown_known] + \
               [q.choice(f"pack:{x['slug']}", x["name"]) for x in offered[:room]]
-    pack = p.provider_pack(country)
-    where = f"the provider pack of {country_name(country)}" if pack else "the provider packs"
+    pack = p.provider_pack(country) if country else None
+    where = f"the provider pack of {country_name(country)}" if pack else "the provider packs"       # no country, or none with a pack
     more = [q.choice("search", "Another provider: search by name", "other"), q.choice("typed", "My provider is not listed", "other")]
     hint = "" if pack else (f" (The game has no provider pack for {country_name(country)} yet: search the others, or type the name.)" if country else
                             " (This site has no country on record, so no country's providers are offered first: search, or type the name.)")
@@ -345,8 +405,12 @@ def ask_provider(ctx: Any, site_id: int, closing: list[dict[str, str]] | None = 
         for r in range(ROUNDS):
             text = ctx.text(f"provider_find{r}", f"Type the carrier's name, or its AS number. The game looks in NetBox and in {where}, then in every other pack.",
                             lambda t: (t, None) if len(t.strip()) >= 2 else (None, "Type at least two characters."), "for example the name on the bill", look)
-            mine = [x for x in known if packs.norm(text) in packs.norm(x["name"])][:3]
-            hits = [x for x in p.search_providers(text, country, limit=6) if packs.match_provider(x, known) is None][:6 - len(mine)]
+            listed = p.search_providers(text, country, limit=6)
+            mine = [x for x in known if packs.norm(text) and (packs.norm(text) in packs.norm(x["name"]) or packs.tight(text) in packs.tight(x["name"]))]
+            # a pack name NetBox holds under another name ("BT" as "British Telecom") is the admin's own provider, found by either
+            mine += [m for x in listed for m in packs.provider_matches(x, known)[:1] if not any(m is y for y in mine)]
+            mine = list({x["id"]: x for x in mine}.values())[:4]
+            hits = [x for x in listed if packs.match_provider(x, known) is None][:6 - len(mine)]
             found = [q.choice(f"provider:{x['id']}", f"{x['name']} (in your NetBox)") for x in mine] + \
                     [q.choice(f"hit:{x['pack']}:{x['slug']}", x["name"] + ("" if x["country"] == country else f" ({x['country'] or 'international'})")) for x in hits]
             last = r == ROUNDS - 1
@@ -387,6 +451,19 @@ def ask_circuit_type(ctx: Any, cid: str) -> tuple[Any, list[dict[str, Any]]]:
     return "@ctype", [{"op": "create_circuit_type", "target": {"kind": "circuit_type", "id": None}, "client_ref": "ctype", "fields": {"name": name}}]
 
 
+def country_typed(text: str) -> tuple[Any, str | None]:
+    """A typed country: its ISO 3166-1 code, or a name the game knows ("Belgium", "UK"). Two letters that are no
+    country's code are not taken, so no region is made for a slip of the keyboard."""
+    t = text.strip()
+    code = COUNTRY_NAMES.get(re.sub(r"[^a-z ]", "", t.lower()).strip())          # first, so "UK" reads as GB
+    if code is None and re.fullmatch(r"[A-Za-z]{2}", t) and t.upper() in ISO_CODES:
+        code = t.upper()
+    if code is None:
+        return None, ("That is not a country code the game knows. Type the two letters of its ISO code, for example BE." if len(t) == 2 else
+                      "The game does not know that name. Type the country's two-letter code, for example BE.")
+    return code, None
+
+
 # ---------------------------------------------------------------- flows
 def flow_first_site(ctx: Any) -> list[dict[str, Any]]:
     q = _q()
@@ -396,9 +473,7 @@ def flow_first_site(ctx: Any) -> list[dict[str, Any]]:
     got = ctx.choice("country", "Which country is your first site in?",
                      [q.choice(f"country:{cc}", country_name(cc)) for cc in p.countries()[:6]] + [q.choice("other", "Another country", "other")], look)
     if got == "other":
-        code = ctx.text("country_code", "Type its two-letter country code (ISO 3166-1), for example BE or JP.",
-                        lambda t: (t.upper(), None) if re.fullmatch(r"[A-Za-z]{2}", t) and t.upper() not in ("ZZ", "XX", "EU", "UN") else (None, "Two letters, for example BE."),
-                        "two letters", look)
+        code = ctx.text("country_code", "Which country? Type its name, or its two-letter code (BE, JP).", country_typed, "for example Belgium, or BE", look)
     else:
         code = got.split(":")[1]
     taken = {s["name"].lower() for s in e.sites.values()}
@@ -447,12 +522,16 @@ def _free_unit(e: Estate, rack: dict[str, Any], height: float, taken: list[tuple
 
 
 def flow_first_devices(ctx: Any) -> list[dict[str, Any]]:
-    """The first boxes of a site, one at a time: what it is (from the library), what it does, what it is called, where
-    it sits and its serial. Up to three in one pass; the line comes back for more while the player has more."""
+    """The boxes of a site, one at a time: what it is (from the library), what it does, what it is called, where it
+    sits and its serial. Up to three in one pass. While a site is small, "More boxes at <site>" offers the next pass."""
     q = _q()
     e, f = ctx.e, ctx.line["finding"]
     site = e.sites[f["site_id"]]
     ctx.at(site_id=site["id"])
+    if ctx.line["kind"] == "site_more_devices":
+        ctx.choice("more", f"NetBox holds {len(e.site_devices(site['id']))} of the boxes at {site['name']}. Is there one it does not hold yet?",
+                   [q.choice("yes", "Yes: add it", "candidate"), q.na(f"No: NetBox holds every box at {site['name']}")],
+                   [f"Walk the racks and shelves of {site['name']} with the device list of NetBox in your hand."])
     racks = sorted((r for r in e.racks.values() if r["site_id"] == site["id"]), key=lambda r: natural(r["name"]))
     ops: list[dict[str, Any]] = []
     made: dict[str, str] = {}
@@ -560,8 +639,13 @@ def flow_part_number(ctx: Any) -> list[dict[str, Any]]:
     t, dev = e.dtypes[d["type_id"]], e.devices[d["device_id"]]
     ctx.at(device_id=dev["id"])
     index = packs.load().index()
-    model, have, expected = d["model"], d.get("have"), d["expected"]
+    model, have = d["model"], d.get("have")
+    # what the library lists is read from the library now, never from the finding: only one number, never a pattern
+    expected = index.part_check(t["manufacturer"], t["model"], None)["expected"]
     look = [f"Find {nm(dev)}: {e.where(dev)}.", "The part number is on the same label as the serial, often after \"P/N\" or \"PID\"."]
+    if not expected:
+        raise q.Stop("parked", None, [f"The device-type library lists no single part number for the {model}, so the game has nothing to check a label against.",
+                                      "Record the part number in NetBox itself (Devices > Device Types) if you want it there."])
     other = index.by_part(t["manufacturer"], have) if have else None
     hint = f" ({have} is the part number of the {other['model']}.)" if other is not None else ""
     got = ctx.choice("label", q.clip(f"{nm(dev)} is a {model}. What part number is on its label?{hint}", 300),
@@ -578,9 +662,10 @@ def flow_part_number(ctx: Any) -> list[dict[str, Any]]:
                                               f"{nm(dev)} is not a {model}: change its device type in NetBox (Devices > {nm(dev)} > Edit).",
                                               "Then read NetBox again: this line closes by itself when the model and the part number agree."],
                              note=f"The label of {nm(dev)} carries the part number of another model.")
-            raise q.Stop("parked", None, [f"The device-type library lists {expected} for the {model}, and the label says {typed}: one of them names another "
-                                          "revision or another model.", f"Check the model name on the label of {nm(dev)} against NetBox before anything is changed."],
-                         note="The label and the device-type library disagree, so nothing was written.")
+            raise q.Stop("parked", None, [f"The device-type library lists {expected} for the {model}, and the label says {typed}. A model is sold under more "
+                                          "than one part number (a region, a bundle), and the library lists one: the game writes only a number it can confirm.",
+                                          f"If {typed} is right, record it in NetBox itself (Devices > Device Types > {t['model']})."],
+                         note="The label carries a part number the device-type library does not list, so the game wrote nothing.")
     return [{"op": "set_part_number", "target": {"kind": "device_type", "id": t["id"]}, "fields": {"part_number": expected}}]
 
 
@@ -603,6 +688,7 @@ def flow_modules(ctx: Any) -> list[dict[str, Any]]:
 
 
 FLOWS = {"estate_no_site": flow_first_site, "site_no_rack": flow_first_rack, "site_no_devices": flow_first_devices, "site_no_provider": flow_whose_line,
+         "site_more_devices": flow_first_devices,
          "device_type_unknown": flow_what_box, "device_type_part_number": flow_part_number, "module_bays_unrecorded": flow_modules}
 
 
@@ -668,7 +754,12 @@ def describe_op(e: Estate, op: dict[str, Any], refs: dict[str, str]) -> str | No
         bits = ([f"{row['u_height']:g}U"] if kind == "device" else []) + [f"{row[k]} {w if row[k] != 1 else w[:-1]}" for k, w in (
             ("interfaces", "interfaces"), ("console_ports", "console ports"), ("power_ports", "power ports"), ("front_ports", "front ports"),
             ("rear_ports", "rear ports"), ("module_bays", "module bays")) if row.get(k)]
-        return f"Import the {kind} type {label} from the device-type library (part number {row['part_number'] or 'not given'}; {', '.join(bits) or 'no ports'}), with its manufacturer if NetBox lacks it."
+        have = held_type(e, index, row) if kind == "device" else None
+        if have is not None and have.get("templates") == 0:
+            return (f"NetBox holds the device type {have['manufacturer']} {have['model']} with no ports: they are added from the device-type library "
+                    f"({', '.join(bits[1:]) or 'no ports'}). Nothing it has is changed; devices made from it before keep what they have.")
+        part = row["part_number"] if row["_wild"] is None else ""
+        return f"Import the {kind} type {label} from the device-type library (part number {part or 'not given'}; {', '.join(bits) or 'no ports'}), with its manufacturer if NetBox lacks it."
     if name == "create_device":
         rack = e.racks.get(f.get("rack_id") or 0)
         where = (f", rack {rack['name']}" + (f" unit {f['position']:g}" if f.get("position") is not None else " (unit not known yet)")) if rack else ", in no rack"
@@ -700,7 +791,8 @@ def words(e: Estate, f: dict[str, Any]) -> dict[str, str]:
 # ---------------------------------------------------------------- the bonus (design rule: only for values that pass the checks)
 def bonus(after: Estate, line: dict[str, Any], newly: list[str]) -> tuple[int, str | None]:
     """XP on top of a line's own for what NetBox, read after the write, shows as passing a check: a box whose model the
-    device-type library confirms, a serial that fits its vendor's sourced rule. Anything tagged unverified earns none."""
+    device-type library confirms, a serial that fits its vendor's sourced rule. `newly`: the checks this apply was paid
+    for, so nothing is counted twice. A device tagged unverified earns none, whatever else is right about it."""
     kind = line["kind"]
     p = packs.load()
     if not newly:
@@ -717,16 +809,25 @@ def bonus(after: Estate, line: dict[str, Any], newly: list[str]) -> tuple[int, s
         xp = good * SERIAL_BONUS
         return xp, (f"{good} serial{'s' if good != 1 else ''} fit{'s' if good == 1 else ''} the vendor's own pattern: +{xp} XP." if good else
                     "No bonus for a serial marked unverified." if bad else None)
-    if kind in ("site_no_devices", "device_type_unknown"):
-        devs = after.site_devices(line["site_id"])[:MAX_NEW] if kind == "site_no_devices" else \
-            [after.devices[i] for i in [line["finding"].get("data", {}).get("device_id")] if i in after.devices]
-        if not devs and kind == "device_type_unknown":
-            ids = [int(c.split(":")[2]) for c in newly if c.startswith("device_type_unknown:device:")]
-            devs = [after.devices[i] for i in ids if i in after.devices]
-        good = sum(1 for d in devs if verified_type(after.dtypes.get(d.get("type_id") or 0)) == "verified")
+    if kind in ("site_no_devices", "site_more_devices", "device_type_unknown"):
+        data = line["finding"].get("data", {})
+        if kind == "site_no_devices":
+            devs = after.site_devices(line["site_id"])[:MAX_NEW]
+        elif kind == "site_more_devices":
+            devs = [d for d in after.site_devices(line["site_id"]) if d["id"] not in set(data.get("known") or [])][:MAX_NEW]
+        else:
+            devs = [after.devices[i] for i in [data.get("device_id")] if i in after.devices]
+            if not devs:
+                ids = [int(c.split(":")[2]) for c in newly if c.startswith("device_type_unknown:device:")]
+                devs = [after.devices[i] for i in ids if i in after.devices]
+        marked = [d for d in devs if UNVERIFIED in d.get("tags", [])]
+        good = sum(1 for d in devs if d not in marked and verified_type(after.dtypes.get(d.get("type_id") or 0)) == "verified")
         xp = good * TYPE_BONUS
         if good:
-            return xp, f"{good} box{'es' if good != 1 else ''} of a model the device-type library confirms: +{xp} XP."
+            return xp, (f"{good} box{'es' if good != 1 else ''} of a model the device-type library confirms: +{xp} XP."
+                        + (" No bonus for a box marked unverified." if marked else ""))
+        if marked:
+            return 0, "No bonus for a box marked unverified."
         return 0, "No bonus: the model is not one the device-type library holds (it is marked unverified)." if devs else None
     return 0, None
 
@@ -744,16 +845,30 @@ def catalogue(e: Estate) -> dict[str, Any]:
     for t in sorted(e.dtypes.values(), key=lambda t: (natural(t["manufacturer"] or ""), natural(t["model"]))):
         status = verified_type(t)
         check = index.part_check(t["manufacturer"], t["model"], t["part_number"])
-        if packs.is_placeholder(t["model"]) or packs.is_placeholder(t["manufacturer"]):
+        row = index.lookup(t["manufacturer"], t["model"])
+        named = f"{row['manufacturer']} {row['model']}" if row else ""
+        if unknown_type(t["manufacturer"], t["model"]):
             note = "A placeholder, not a model: \"What is this box?\" asks about its devices."
         elif status == "mismatch":
-            note = f"The device-type library says part number {check['expected']}; NetBox holds {t['part_number']}. \"The part number of ...\" asks about it."
+            note = (f"NetBox holds the part number {t['part_number']}, which the device-type library lists for the {check['other']}. "
+                    "\"The part number of ...\" asks about it.")
         elif UNVERIFIED in t["tags"]:
             note = "Recorded by hand: the device-type library does not hold this model."
         elif status == "unverified":
             note = "Not in the device-type library."
         else:
-            note = None
+            # confirmed; what an admin may still want to know about it is said, never held against it
+            notes = []
+            if row is not None and packs._words(t["model"]) != row["_model"]:
+                notes.append(f"The device-type library calls this model {named} ({t['model']} is its part number there).")
+            elif row is not None and not packs.same_name(t["manufacturer"], row["manufacturer"]):
+                notes.append(f"The device-type library files this maker as {row['manufacturer']}.")
+            if check["status"] == "differs":
+                notes.append(f"NetBox holds the part number {t['part_number']}; the library lists " + (check["expected"] or "a pattern") +
+                             " for this model. A model is sold under more than one number, so neither is called wrong.")
+            if t.get("templates") == 0 and row is not None and row["interfaces"]:
+                notes.append(f"NetBox holds it without ports; the library's has {row['interfaces']}. Adding a box of this model brings them in.")
+            note = " ".join(notes) or None
         items.append({"id": t["id"], "manufacturer": t["manufacturer"] or "", "model": t["model"], "part_number": t["part_number"] or None,
                       "status": status, "note": note, "devices": counts.get(t["id"], 0)})
     makers: dict[str, dict[str, Any]] = {}

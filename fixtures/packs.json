@@ -507,17 +507,18 @@
     {
       "id": "serials-network-vendors",
       "kind": "serials",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Serial-number rules of the most common network vendors in the device-type library",
       "country": null,
       "read": "2026-11-11",
       "partial": true,
-      "coverage": "The eight network vendors with the most device types in the library, and APC for its UPS units. Four have a rule with a public source of the vendor's own; five have none yet, and their serials are accepted as typed.",
+      "coverage": "The eight network vendors with the most device types in the library, and APC for its UPS units. Four have a rule with a public source of the vendor's own, each only for the product lines its source speaks of; five have none yet, and their serials are accepted as typed.",
       "missing": [
         "A sourced rule for HPE (Aruba), Juniper, Arista, Extreme Networks and Ubiquiti",
+        "A sourced rule for Cisco Meraki, Fortinet products other than FortiGate, and Dell storage and switches (their serials are accepted as typed)",
         "Every other vendor"
       ],
-      "entries": 6,
+      "entries": 5,
       "sources": [
         {
           "name": "Cisco Field Notice FN63942",
@@ -536,13 +537,6 @@
         {
           "name": "Dell: Service Tag, Product ID Search Error, or Part Number Results (KB 000196860)",
           "url": "https://www.dell.com/support/kbdoc/en-us/000196860/service-tag-search-null-results",
-          "read": "2026-11-11",
-          "terms": "Quoted in one sentence as the ground of a rule.",
-          "use": "cited"
-        },
-        {
-          "name": "Fortinet Community: Technical Tip, deciphering abbreviations for Fortinet products",
-          "url": "https://community.fortinet.com/t5/Customer-Service/Technical-Tip-Deciphering-abbreviations-for-Fortinet-products/ta-p/196062",
           "read": "2026-11-11",
           "terms": "Quoted in one sentence as the ground of a rule.",
           "use": "cited"

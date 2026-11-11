@@ -205,6 +205,12 @@ QUEST_WORDS = {("dcim.cable", "add"): "add cables", ("circuits.circuit", "add"):
                ("tenancy.contact", "add"): "add contacts", ("tenancy.contactassignment", "add"): "assign contacts",
                ("dcim.devicetype", "change"): "change device types"}
 QUEST_NEEDS = list(QUEST_WORDS)
+# Everything any quest op may need, the setup lines and the parts of a model included: a player who holds one of these
+# can have a line really written, so the quest log never calls every line practice while one of them would write.
+# (QUEST_NEEDS above is what the log names when some are missing: the everyday lines.)
+ANY_QUEST_NEED = list(dict.fromkeys(QUEST_NEEDS + [n for needs in NEEDS.values() for n in needs] + [(t, "add") for t in TEMPLATE_TYPES + COMPONENT_TYPES]
+                                    + [(t, "change") for t in UPDATE_TYPE.values()]
+                                    + [("dcim.region", "add"), ("ipam.asn", "add"), ("ipam.rir", "add"), ("extras.tag", "add"), ("dcim.devicetype", "change")]))
 
 
 def some_missing(missing: list[dict[str, Any]]) -> str:

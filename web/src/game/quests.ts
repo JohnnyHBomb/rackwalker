@@ -584,7 +584,9 @@ export class Quests {
     }
     p.append(table);
     // the proxy has already checked this change against the player's own NetBox permissions: said before Apply, not after
-    const real = !!board?.can_write && q.scope === 'netbox' && !q.write_blocked;
+    // The line's own verdict decides, never the log's summary: a button that says "Practice run" must not write.
+    // (a line with nothing proposed has no verdict of its own; there the log's summary stands)
+    const real = q.scope === 'netbox' && q.write_blocked === null && (q.proposal !== null || !!board?.can_write);
     const mode = el('p', real
       ? `Apply writes this to NetBox; its changelog will name you (${this.hooks.player()}). NetBox is then read again to check the outcome.`
       : `${q.write_blocked ?? board?.write_blocked ?? 'Nothing is written.'} This is a practice run: no XP.`, 'mode');
