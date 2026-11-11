@@ -1,0 +1,281 @@
+{
+ "pack": "providers",
+ "id": "providers-tr",
+ "version": "1.0.0",
+ "country": "TR",
+ "title": "Common providers: Türkiye",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carrier, the three mobile network operators, the main fibre, cable and alternative broadband names and the research network; business ISPs and regional operators are thin.",
+ "missing": [
+  "Regional ISPs and smaller alternative operators",
+  "Business ISPs beyond İşNet",
+  "Websites for TurkNet and Millenicom (they did not answer an automated request on the read date)",
+  "Status pages (none was found)",
+  "The regulator's list of authorised operators is an application that needs a browser: it could not be read",
+  "Names were checked in Latin script against English-language pages only"
+ ],
+ "sources": [
+  {
+   "name": "BTK (Bilgi Teknolojileri ve İletişim Kurumu): authorisations",
+   "url": "https://kurumsal.btk.gov.tr/yetkilendirmeler",
+   "read": "2026-11-11",
+   "terms": "No reuse licence was read on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The address answered on the read date but shows its list only in a browser. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Turkey and 3 more pages",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Turkey",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "6 of 11 entries were found by a name on the 4 pages read."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "9 of 11 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+   "use": "cross-check",
+   "result": "15 AS numbers confirmed; a number whose registered holder was an unrelated name was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+   "use": "cross-check",
+   "result": "Read to find which AS numbers are registered under each provider's company names."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Türk Telekom",
+   "slug": "turk-telekom",
+   "kind": "national_carrier",
+   "aka": [
+    "Turk Telekom",
+    "TTNET",
+    "TT Mobil",
+    "Avea"
+   ],
+   "asns": [
+    {
+     "asn": 9121,
+     "rir": "ripe"
+    },
+    {
+     "asn": 47331,
+     "rir": "ripe"
+    },
+    {
+     "asn": 20978,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.turktelekom.com.tr/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS47331 is registered to TTNET, AS20978 to TT Mobil (formerly Avea)."
+  },
+  {
+   "name": "Turkcell",
+   "slug": "turkcell",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 16135,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.turkcell.com.tr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Turkcell Superonline",
+   "slug": "turkcell-superonline",
+   "kind": "cable_fibre",
+   "aka": [
+    "Superonline",
+    "Tellcom"
+   ],
+   "asns": [
+    {
+     "asn": 34984,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.superonline.net/",
+   "support_url": null,
+   "notes": "Fibre; the fixed network of Turkcell."
+  },
+  {
+   "name": "Vodafone",
+   "slug": "vodafone-tr",
+   "kind": "mobile",
+   "aka": [
+    "Vodafone Türkiye",
+    "Vodafone Turkey",
+    "Vodafone Net",
+    "Telsim",
+    "Kocnet",
+    "Borusan Telekom"
+   ],
+   "asns": [
+    {
+     "asn": 15897,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8386,
+     "rir": "ripe"
+    },
+    {
+     "asn": 15924,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.com.tr/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS8386 and AS15924 are registered to Vodafone Net."
+  },
+  {
+   "name": "TurkNet",
+   "slug": "turknet",
+   "kind": "cable_fibre",
+   "aka": [
+    "Turk.net"
+   ],
+   "asns": [
+    {
+     "asn": 12735,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "Türksat Kablo",
+   "slug": "turksat-kablo",
+   "kind": "cable_fibre",
+   "aka": [
+    "Türksat",
+    "Turksat",
+    "Kablonet",
+    "KabloNet"
+   ],
+   "asns": [
+    {
+     "asn": 47524,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.turksat.com.tr/",
+   "support_url": null,
+   "notes": "Cable; Kablonet is its internet name."
+  },
+  {
+   "name": "Millenicom",
+   "slug": "millenicom",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 34296,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "D-Smart",
+   "slug": "d-smart",
+   "kind": "cable_fibre",
+   "aka": [
+    "Dsmart"
+   ],
+   "asns": [
+    {
+     "asn": 12978,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.dsmart.com.tr/",
+   "support_url": null,
+   "notes": "Television and internet. AS12978 is registered to Andromeda TV Digital Platform."
+  },
+  {
+   "name": "Netspeed",
+   "slug": "netspeed",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 206375,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.netspeed.com.tr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "İşNet",
+   "slug": "isnet",
+   "kind": "business_isp",
+   "aka": [
+    "IsNet",
+    "İş Net"
+   ],
+   "asns": [
+    {
+     "asn": 9021,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.isnet.net.tr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "ULAKBİM",
+   "slug": "ulakbim",
+   "kind": "research_education",
+   "aka": [
+    "ULAKNET",
+    "TÜBİTAK ULAKBİM"
+   ],
+   "asns": [
+    {
+     "asn": 8517,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://ulakbim.tubitak.gov.tr/",
+   "support_url": null,
+   "notes": "Research and education network (ULAKNET)."
+  }
+ ]
+}

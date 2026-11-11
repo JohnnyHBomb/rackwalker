@@ -1,0 +1,232 @@
+{
+ "pack": "providers",
+ "id": "providers-no",
+ "version": "1.0.0",
+ "country": "NO",
+ "title": "Common providers: Norway",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the three mobile networks, the main national fibre and business networks and the research network; the many regional fibre companies are partial (two are listed).",
+ "missing": [
+  "Most regional and municipal fibre companies (many sell under the Altibox name)",
+  "Smaller business ISPs",
+  "A website for Sikt (it refused an automated request on the read date)",
+  "Status pages for Altibox, Eidsiva and NTE (none answered a check on the read date)"
+ ],
+ "sources": [
+  {
+   "name": "Nkom (Norwegian Communications Authority): list of registered providers",
+   "url": "https://nkom.no/ekom-markedet/liste-over-registrerte-tilbydere",
+   "read": "2026-11-11",
+   "terms": "No reuse licence was found on the pages read on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page and the first page of its list answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Norway and 3 more pages",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Norway",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "7 of 9 entries were found by a name on the 4 pages read."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "8 of 9 websites and 5 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+   "use": "cross-check",
+   "result": "10 AS numbers confirmed; a number whose registered holder was an unrelated name was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+   "use": "cross-check",
+   "result": "Read to find which AS numbers are registered under each provider's company names."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telenor",
+   "slug": "telenor-no",
+   "kind": "national_carrier",
+   "aka": [
+    "Telenor Norge",
+    "Telenor Bedrift"
+   ],
+   "asns": [
+    {
+     "asn": 2119,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telenor.no/bedrift/",
+   "support_url": "https://www.telenor.no/driftsmeldinger/",
+   "notes": "Fixed and mobile. AS8786 (Telenor Mobil) is registered to it and was not announced on the read date."
+  },
+  {
+   "name": "Telia",
+   "slug": "telia-no",
+   "kind": "national_carrier",
+   "aka": [
+    "Telia Norge",
+    "NetCom",
+    "Get",
+    "Phonero"
+   ],
+   "asns": [
+    {
+     "asn": 25400,
+     "rir": "ripe"
+    },
+    {
+     "asn": 198309,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telia.no/bedrift/",
+   "support_url": "https://www.telia.no/driftsmeldinger/",
+   "notes": "Mobile and cable. AS198309 is the Phonero network. AS12929 (NetCom) and AS41164 (Get) are registered to it and were not announced on the read date."
+  },
+  {
+   "name": "Ice",
+   "slug": "ice-no",
+   "kind": "mobile",
+   "aka": [
+    "ice",
+    "Icenet"
+   ],
+   "asns": [
+    {
+     "asn": 203995,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ice.no/",
+   "support_url": "https://www.ice.no/driftsmeldinger/",
+   "notes": "Mobile network; part of the Lyse group (its own site says so). AS203995 is registered to Lyse Tele AS."
+  },
+  {
+   "name": "Altibox",
+   "slug": "altibox",
+   "kind": "cable_fibre",
+   "aka": [
+    "Lyse Tele",
+    "Altibox Bedrift"
+   ],
+   "asns": [
+    {
+     "asn": 29695,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.altibox.no/bedrift/",
+   "support_url": null,
+   "notes": "Fibre sold by regional partner companies under one name. AS29695 is registered to Lyse Tele AS."
+  },
+  {
+   "name": "GlobalConnect",
+   "slug": "globalconnect-no",
+   "kind": "business_isp",
+   "aka": [
+    "Broadnet",
+    "Ventelo"
+   ],
+   "asns": [
+    {
+     "asn": 2116,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://globalconnect.no/",
+   "support_url": "https://globalconnect.no/kundeservice/kommer-ikke-pa-nett-fellesfeil/",
+   "notes": "Networks named Broadnet and Ventelo are registered to it."
+  },
+  {
+   "name": "NextGenTel",
+   "slug": "nextgentel",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 15659,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nextgentel.no/",
+   "support_url": "https://www.nextgentel.no/driftsmeldinger",
+   "notes": null
+  },
+  {
+   "name": "Eidsiva",
+   "slug": "eidsiva",
+   "kind": "cable_fibre",
+   "aka": [
+    "Eidsiva Digital"
+   ],
+   "asns": [
+    {
+     "asn": 29492,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eidsiva.no/",
+   "support_url": null,
+   "notes": "Regional fibre in inland eastern Norway."
+  },
+  {
+   "name": "NTE",
+   "slug": "nte",
+   "kind": "cable_fibre",
+   "aka": [
+    "NTE Telekom",
+    "NTE Bredbånd"
+   ],
+   "asns": [
+    {
+     "asn": 34087,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://nte.no/",
+   "support_url": null,
+   "notes": "Regional fibre."
+  },
+  {
+   "name": "Sikt",
+   "slug": "sikt",
+   "kind": "research_education",
+   "aka": [
+    "Uninett",
+    "UNINETT"
+   ],
+   "asns": [
+    {
+     "asn": 224,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Research and education network; formerly Uninett."
+  }
+ ]
+}

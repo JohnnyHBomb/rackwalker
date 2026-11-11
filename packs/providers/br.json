@@ -1,0 +1,445 @@
+{
+ "pack": "providers",
+ "id": "providers-br",
+ "version": "1.0.0",
+ "country": "BR",
+ "title": "Common providers: Brazil",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carriers, the mobile network operators, the largest fibre operators, two wholesale backbones, satellite and the research network; Brazil has thousands of regional ISPs that are not listed.",
+ "missing": [
+  "Thousands of regional and municipal ISPs, which together serve a large share of fixed lines",
+  "Business ISPs and smaller wholesale carriers",
+  "Former names of Nio, Vero, Ligga and Giga+ Fibra (not confirmed on the read date)",
+  "An AS number for Nio (none was found registered to it)",
+  "Websites for Vivo, Giga+ Fibra and Alares (they did not answer an automated request on the read date)",
+  "Status pages (none was found)",
+  "The regulator's operator lists (its pages refused an automated request and its data panels were under maintenance on the read date)"
+ ],
+ "sources": [
+  {
+   "name": "Anatel (Agência Nacional de Telecomunicações)",
+   "url": "https://www.gov.br/anatel/pt-br",
+   "read": "2026-11-11",
+   "terms": "The inner pages refused an automated request on the read date: no reuse licence was read and nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date; the licensing data panels showed a maintenance notice. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Brazil and 3 more pages",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Brazil",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "11 of 20 entries were found by a name on the 4 pages read."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "17 of 20 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+   "use": "cross-check",
+   "result": "27 AS numbers confirmed; a number whose registered holder was an unrelated name was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+   "use": "cross-check",
+   "result": "Read to find which AS numbers are registered under each provider's company names."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of a Wikidata item that states one of the entry's AS numbers (property P3797)."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Vivo",
+   "slug": "vivo",
+   "kind": "national_carrier",
+   "aka": [
+    "Telefônica Brasil",
+    "Telefônica",
+    "Vivo Empresas"
+   ],
+   "asns": [
+    {
+     "asn": 27699,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 18881,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 10429,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 26599,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed and mobile; registered as Telefônica Brasil."
+  },
+  {
+   "name": "Claro",
+   "slug": "claro-br",
+   "kind": "national_carrier",
+   "aka": [
+    "Claro Empresas",
+    "Claro NXT",
+    "Embratel",
+    "NET"
+   ],
+   "asns": [
+    {
+     "asn": 28573,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 4230,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 22085,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.claro.com.br/empresas",
+   "support_url": null,
+   "notes": "Cable, fixed and mobile; the group of Embratel (long distance) and NET (cable), now under the one name."
+  },
+  {
+   "name": "TIM",
+   "slug": "tim-br",
+   "kind": "mobile",
+   "aka": [
+    "TIM Brasil"
+   ],
+   "asns": [
+    {
+     "asn": 26615,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.tim.com.br/",
+   "support_url": null,
+   "notes": "Mobile.",
+   "wikidata": "Q2079243"
+  },
+  {
+   "name": "Oi",
+   "slug": "oi",
+   "kind": "national_carrier",
+   "aka": [
+    "Oi Soluções",
+    "Telemar"
+   ],
+   "asns": [
+    {
+     "asn": 14571,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.oi.com.br/",
+   "support_url": null,
+   "notes": "Its court-supervised recovery was turned into bankruptcy in August 2026 (its own press note); circuits may still carry the name."
+  },
+  {
+   "name": "Nio",
+   "slug": "nio",
+   "kind": "cable_fibre",
+   "aka": [
+    "Nio Fibra"
+   ],
+   "asns": [],
+   "website": "https://www.niointernet.com.br/",
+   "support_url": null,
+   "notes": "Home and business fibre."
+  },
+  {
+   "name": "V.tal",
+   "slug": "vtal",
+   "kind": "wholesale",
+   "aka": [
+    "V tal"
+   ],
+   "asns": [
+    {
+     "asn": 7738,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 8167,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://vtal.com/",
+   "support_url": null,
+   "notes": "Neutral wholesale fibre network; retail through other providers."
+  },
+  {
+   "name": "Algar Telecom",
+   "slug": "algar-telecom",
+   "kind": "national_carrier",
+   "aka": [
+    "Algar"
+   ],
+   "asns": [
+    {
+     "asn": 16735,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 53006,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.algartelecom.com.br/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Brisanet",
+   "slug": "brisanet",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 28126,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.brisanet.com.br/",
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "Desktop",
+   "slug": "desktop",
+   "kind": "cable_fibre",
+   "aka": [
+    "Desktop Sigmanet"
+   ],
+   "asns": [
+    {
+     "asn": 28649,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 28668,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.desktop.com.br/",
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "Vero",
+   "slug": "vero",
+   "kind": "cable_fibre",
+   "aka": [
+    "Vero Internet"
+   ],
+   "asns": [
+    {
+     "asn": 28211,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://querovero.com.br/",
+   "support_url": null,
+   "notes": "Fibre. Many more AS numbers are registered to it; one is listed."
+  },
+  {
+   "name": "Unifique",
+   "slug": "unifique",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 28343,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.unifique.com.br/",
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "Ligga",
+   "slug": "ligga",
+   "kind": "cable_fibre",
+   "aka": [
+    "Ligga Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 14868,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://ligga.com.br/",
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "Giga+ Fibra",
+   "slug": "giga-mais-fibra",
+   "kind": "cable_fibre",
+   "aka": [
+    "Giga Mais Fibra"
+   ],
+   "asns": [
+    {
+     "asn": 28210,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fibre. More AS numbers are registered to it; one is listed."
+  },
+  {
+   "name": "Alares",
+   "slug": "alares",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 28220,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "Cirion",
+   "slug": "cirion",
+   "kind": "business_isp",
+   "aka": [
+    "Cirion Technologies"
+   ],
+   "asns": [
+    {
+     "asn": 11415,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.ciriontechnologies.com/",
+   "support_url": null,
+   "notes": "AS11415 is registered to it and was not announced on the read date."
+  },
+  {
+   "name": "Eletronet",
+   "slug": "eletronet",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 267613,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://eletronet.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Telebras",
+   "slug": "telebras",
+   "kind": "business_isp",
+   "aka": [
+    "Telecomunicações Brasileiras"
+   ],
+   "asns": [
+    {
+     "asn": 53237,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.telebras.com.br/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "HughesNet",
+   "slug": "hughesnet-br",
+   "kind": "satellite",
+   "aka": [
+    "Hughes"
+   ],
+   "asns": [
+    {
+     "asn": 28613,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.hughesnet.com.br/",
+   "support_url": null,
+   "notes": "Satellite."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "RNP",
+   "slug": "rnp",
+   "kind": "research_education",
+   "aka": [
+    "Rede Nacional de Ensino e Pesquisa"
+   ],
+   "asns": [
+    {
+     "asn": 1916,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.rnp.br/",
+   "support_url": null,
+   "notes": "Research and education network."
+  }
+ ]
+}

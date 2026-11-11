@@ -1,0 +1,294 @@
+{
+ "pack": "providers",
+ "id": "providers-ch",
+ "version": "1.0.0",
+ "country": "CH",
+ "title": "Common providers: Switzerland",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the three mobile network operators, the main cable networks and the research network; business ISPs are partial and city utility fibre networks are not listed.",
+ "missing": [
+  "City and regional utility fibre networks, and local cable networks",
+  "Smaller business ISPs",
+  "An AS number for Swiss Fibre Net (none was found registered to it)",
+  "Status pages (only one answered a check on the read date)",
+  "The regulator's list of registered providers (its address was not found on the reorganised site on the read date)"
+ ],
+ "sources": [
+  {
+   "name": "BAKOM / OFCOM (Federal Office of Communications): telecommunications pages",
+   "url": "https://www.bakom.admin.ch/de/telekommunikation",
+   "read": "2026-11-11",
+   "terms": "The page answered; the federal terms page refused an automated request, so no reuse licence was read and nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. The list of registered telecommunications service providers was not found at the addresses tried. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Switzerland and 3 more pages",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Switzerland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 13 entries were found by a name on the 4 pages read."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "13 of 13 websites and 1 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+   "use": "cross-check",
+   "result": "12 AS numbers confirmed; a number whose registered holder was an unrelated name was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+   "use": "cross-check",
+   "result": "Read to find which AS numbers are registered under each provider's company names."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of a Wikidata item that states one of the entry's AS numbers (property P3797)."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Swisscom",
+   "slug": "swisscom",
+   "kind": "national_carrier",
+   "aka": [
+    "Bluewin",
+    "Wingo",
+    "Swisscom (Schweiz)"
+   ],
+   "asns": [
+    {
+     "asn": 3303,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.swisscom.ch/de/business.html",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS44038 (Bluewin) is registered to it and was not announced on the read date.",
+   "wikidata": "Q644324"
+  },
+  {
+   "name": "Sunrise",
+   "slug": "sunrise",
+   "kind": "national_carrier",
+   "aka": [
+    "UPC",
+    "UPC Switzerland",
+    "Cablecom",
+    "Sunrise UPC"
+   ],
+   "asns": [
+    {
+     "asn": 6730,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sunrise.ch/business",
+   "support_url": null,
+   "notes": "Fixed, cable and mobile. AS8404 (the former Cablecom cable network) is registered to it and was not announced on the read date."
+  },
+  {
+   "name": "Salt",
+   "slug": "salt",
+   "kind": "mobile",
+   "aka": [
+    "Salt Mobile",
+    "Orange Switzerland"
+   ],
+   "asns": [
+    {
+     "asn": 15796,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.salt.ch/",
+   "support_url": null,
+   "notes": "Mobile and fibre; formerly Orange Switzerland."
+  },
+  {
+   "name": "Quickline",
+   "slug": "quickline",
+   "kind": "cable_fibre",
+   "aka": [
+    "Finecom"
+   ],
+   "asns": [
+    {
+     "asn": 15600,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.quickline.ch/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Init7",
+   "slug": "init7",
+   "kind": "business_isp",
+   "aka": [
+    "Init7 (Switzerland)"
+   ],
+   "asns": [
+    {
+     "asn": 13030,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.init7.net/",
+   "support_url": "https://www.init7.net/de/support/faq/status-info",
+   "notes": null
+  },
+  {
+   "name": "iWay",
+   "slug": "iway",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8758,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.iway.ch/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Green",
+   "slug": "green-ch",
+   "kind": "business_isp",
+   "aka": [
+    "green.ch"
+   ],
+   "asns": [
+    {
+     "asn": 1836,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.green.ch/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "netplus.ch",
+   "slug": "netplus-ch",
+   "kind": "cable_fibre",
+   "aka": [
+    "netplus",
+    "net+"
+   ],
+   "asns": [
+    {
+     "asn": 15547,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.netplus.ch/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "VTX",
+   "slug": "vtx",
+   "kind": "business_isp",
+   "aka": [
+    "VTX Services"
+   ],
+   "asns": [
+    {
+     "asn": 12350,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vtx.ch/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Cyberlink",
+   "slug": "cyberlink",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 15623,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cyberlink.ch/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Swiss Fibre Net",
+   "slug": "swiss-fibre-net",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.swissfibrenet.ch/",
+   "support_url": null,
+   "notes": "Wholesale fibre access; retail through other providers."
+  },
+  {
+   "name": "SWITCH",
+   "slug": "switch",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 559,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.switch.ch/",
+   "support_url": null,
+   "notes": "Research and education network."
+  }
+ ]
+}
