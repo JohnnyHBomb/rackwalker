@@ -183,9 +183,11 @@ the labels is the rest (`make test-live-empty` plays and times it).
 pack of the site's country that NetBox does not hold yet, by name; "Another provider: search by name", which looks
 in NetBox and in every pack by name, by another name the provider goes by, or by AS number (a provider your NetBox
 holds under another name than the pack's, "British Telecom" for "BT", is found by either and offered as yours); "My provider is not
-listed", which takes the name as you type it; and "I don't know yet". A provider is created only when you apply the
+listed", which takes the name as you type it (a name that the pack of the site's country knows, as a name or as
+another name of one entry, is recorded as that entry); and "I don't know yet". A provider is created only when you apply the
 previewed change, with its AS numbers as NetBox ASN objects. A pack entry that NetBox already holds, under the same
-name or with the same AS number, is that provider: it is used, and never made twice. Names are compared in any
+name or with the same AS number, is that provider: it is used, and never made twice. Another country's network that
+only bears one of the entry's other names is not taken for it ([`docs/packs.md`](packs.md) says how the two are told apart). Names are compared in any
 script and with their spacing left out ("AT & T" is "AT&T"; "МТС" is not "Ростелеком"). Where NetBox holds one
 network under two names (two providers with one AS number) and neither is the pack's name, the line asks which.
 A site with no country on record, or in a country with no pack yet, says so and offers the search.

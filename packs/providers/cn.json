@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-cn",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "CN",
  "title": "Common providers: China (mainland)",
  "read": "2026-11-11",
@@ -13,7 +13,8 @@
   "The website of 中国电信 (it refused an automated request on the read date)",
   "Provincial cable networks (now grouped under China Broadnet) and private broadband resellers: no public list was readable, so none is named",
   "The licence register of the Ministry of Industry and Information Technology was not readable by an automated request, so licensed operators could not be checked against it",
-  "Status pages (none was checked)"
+  "Status pages (none was checked)",
+  "The website of 中国移动 (the secure connection failed on the read date)"
  ],
  "sources": [
   {
@@ -54,7 +55,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "4 of 6 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked."
+   "result": "3 of 6 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked. An address that answered only with a refusal, a bot check or a page-not-found page counts as one that did not answer."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -139,7 +140,7 @@
      "rir": "apnic"
     }
    ],
-   "website": "https://www.chinaunicom.cn/",
+   "website": "https://www.chinaunicom.com.cn/",
    "support_url": null,
    "notes": "AS4837 is the China169 backbone and AS9929 is the Industrial Internet backbone (formerly China Netcom). The international arm is China Unicom Global (Hong Kong pack)."
   },
@@ -166,7 +167,7 @@
      "rir": "apnic"
     }
    ],
-   "website": "https://www.10086.cn/",
+   "website": null,
    "support_url": null,
    "notes": "Mobile and fixed. AS9394 is China Tietong, its fixed-line subsidiary. The international arm is China Mobile International (Hong Kong pack)."
   },

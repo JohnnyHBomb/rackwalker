@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-cz",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "CZ",
  "title": "Common providers: Czechia",
  "read": "2026-11-11",
@@ -13,7 +13,8 @@
   "An AS number for České Radiokomunikace (none found)",
   "AS5588 of T-Mobile Czech Republic (registered to it and not announced on the read date)",
   "Satellite providers",
-  "Status pages (none checked)"
+  "Status pages (none checked)",
+  "A website for CESNET (it answered an automated request only with a refusal or a bot check on the read date)"
  ],
  "sources": [
   {
@@ -46,7 +47,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "11 of 11 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+   "result": "10 of 11 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked. An address that answered only with a refusal, a bot check or a page-not-found page counts as one that did not answer."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -274,7 +275,7 @@
      "rir": "ripe"
     }
    ],
-   "website": "https://www.cesnet.cz/",
+   "website": null,
    "support_url": null,
    "notes": "The national research and education network."
   }

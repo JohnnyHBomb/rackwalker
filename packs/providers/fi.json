@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-fi",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "FI",
  "title": "Common providers: Finland",
  "read": "2026-11-11",
@@ -202,13 +202,13 @@
   },
   {
    "name": "GlobalConnect",
-   "slug": "globalconnect",
+   "slug": "globalconnect-fi",
    "kind": "cable_fibre",
    "aka": [],
    "asns": [],
    "website": "https://globalconnect.fi/",
    "support_url": null,
-   "notes": "Nordic fibre group, also in the Sweden and Denmark packs; open fibre in Finland."
+   "notes": "Nordic fibre group, also in the Sweden and Denmark packs; open fibre in Finland. No AS number was confirmed for its Finnish network."
   },
   {
    "name": "Cinia",

@@ -136,7 +136,7 @@
     {
       "id": "providers-be",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Belgium",
       "country": "BE",
       "read": "2026-11-11",
@@ -296,7 +296,7 @@
     {
       "id": "providers-br",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Brazil",
       "country": "BR",
       "read": "2026-11-11",
@@ -305,11 +305,12 @@
       "missing": [
         "Thousands of regional and municipal ISPs, which together serve a large share of fixed lines",
         "Business ISPs and smaller wholesale carriers",
-        "Former names of Nio, Vero, Ligga and Giga+ Fibra (not confirmed on the read date)",
+        "Former names of Vero, Ligga and Giga+ Fibra (not confirmed on the read date)",
         "An AS number for Nio (none was found registered to it)",
         "Websites for Vivo, Giga+ Fibra and Alares (they did not answer an automated request on the read date)",
         "Status pages (none was found)",
-        "The regulator's operator lists (its pages refused an automated request and its data panels were under maintenance on the read date)"
+        "The regulator's operator lists (its pages refused an automated request and its data panels were under maintenance on the read date)",
+        "A website for Ligga (it answered an automated request with a few bytes that are not a page on the read date)"
       ],
       "entries": 20,
       "sources": [
@@ -361,6 +362,13 @@
           "read": "2026-11-11",
           "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
           "use": "copied"
+        },
+        {
+          "name": "Wikipedia (Portuguese): Nio (empresa)",
+          "url": "https://pt.wikipedia.org/wiki/Nio_(empresa)",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
         }
       ]
     },
@@ -505,7 +513,7 @@
     {
       "id": "providers-cn",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: China (mainland)",
       "country": "CN",
       "read": "2026-11-11",
@@ -517,7 +525,8 @@
         "The website of 中国电信 (it refused an automated request on the read date)",
         "Provincial cable networks (now grouped under China Broadnet) and private broadband resellers: no public list was readable, so none is named",
         "The licence register of the Ministry of Industry and Information Technology was not readable by an automated request, so licensed operators could not be checked against it",
-        "Status pages (none was checked)"
+        "Status pages (none was checked)",
+        "The website of 中国移动 (the secure connection failed on the read date)"
       ],
       "entries": 6,
       "sources": [
@@ -657,7 +666,7 @@
     {
       "id": "providers-cz",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Czechia",
       "country": "CZ",
       "read": "2026-11-11",
@@ -669,7 +678,8 @@
         "An AS number for České Radiokomunikace (none found)",
         "AS5588 of T-Mobile Czech Republic (registered to it and not announced on the read date)",
         "Satellite providers",
-        "Status pages (none checked)"
+        "Status pages (none checked)",
+        "A website for CESNET (it answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 11,
       "sources": [
@@ -807,7 +817,7 @@
     {
       "id": "providers-dk",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Denmark",
       "country": "DK",
       "read": "2026-11-11",
@@ -898,7 +908,7 @@
     {
       "id": "providers-ee",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Estonia",
       "country": "EE",
       "read": "2026-11-11",
@@ -982,7 +992,7 @@
     {
       "id": "providers-es",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Spain",
       "country": "ES",
       "read": "2026-11-11",
@@ -994,7 +1004,8 @@
         "Regional research networks",
         "AS numbers for Onivia and Reintel (none confirmed: they sell no internet service)",
         "A website for Aire Networks (it did not answer)",
-        "Support and status pages (none recorded)"
+        "Support and status pages (none recorded)",
+        "Websites for Evolutio and Sarenet (each answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 19,
       "sources": [
@@ -1066,7 +1077,7 @@
     {
       "id": "providers-fi",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Finland",
       "country": "FI",
       "read": "2026-11-11",
@@ -1290,7 +1301,7 @@
     {
       "id": "providers-gr",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Greece",
       "country": "GR",
       "read": "2026-11-11",
@@ -1300,7 +1311,9 @@
         "Smaller and regional ISPs (the regulator's register of providers was not found on the pages read)",
         "The fibre networks of the power utility PPC (no trading name or AS number was confirmed)",
         "An AS number for HCN (none confirmed), so it is not listed",
-        "Support and status pages (none recorded)"
+        "Support and status pages (none recorded)",
+        "Websites for Telekom and OTEGlobe (each answered an automated request only with a refusal or a bot check on the read date)",
+        "Names in Greek script, except the two found on the providers' own pages"
       ],
       "entries": 9,
       "sources": [
@@ -1372,7 +1385,7 @@
     {
       "id": "providers-hk",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Hong Kong",
       "country": "HK",
       "read": "2026-11-11",
@@ -1434,22 +1447,30 @@
           "read": "2026-11-11",
           "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
           "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Hong Kong Broadband Network",
+          "url": "https://en.wikipedia.org/wiki/Hong_Kong_Broadband_Network",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
         }
       ]
     },
     {
       "id": "providers-hr",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Croatia",
       "country": "HR",
       "read": "2026-11-11",
-      "partial": false,
-      "coverage": "Complete for the three national operators (fixed and mobile), the state transmission network and the research network; business ISPs are partial.",
+      "partial": true,
+      "coverage": "Partial. Complete for the three national operators (fixed and mobile), the state transmission network and the research network; cable and fibre operators and business ISPs are thin, and the regulator's register was not read as a list.",
       "missing": [
         "Smaller business ISPs and local cable operators",
         "Satellite providers",
-        "Status pages (none checked)"
+        "Status pages (none checked)",
+        "Cable and fibre operators other than the national operators (the regulator's register is in Croatian and its terms were not read, so no name was taken from it)"
       ],
       "entries": 6,
       "sources": [
@@ -1736,7 +1757,7 @@
     {
       "id": "providers-in",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: India",
       "country": "IN",
       "read": "2026-11-11",
@@ -1806,7 +1827,7 @@
     {
       "id": "providers-it",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Italy",
       "country": "IT",
       "read": "2026-11-11",
@@ -1816,7 +1837,8 @@
         "Regional fibre and fixed-wireless operators (several hundred are on the regulator's register)",
         "Smaller business ISPs",
         "An AS number for iliad (none confirmed: the number it is known by is registered to another company of the group)",
-        "Support and status pages (none recorded)"
+        "Support and status pages (none recorded)",
+        "A website for Open Fiber (it answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 17,
       "sources": [
@@ -2180,7 +2202,7 @@
     {
       "id": "providers-lv",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Latvia",
       "country": "LV",
       "read": "2026-11-11",
@@ -2191,7 +2213,8 @@
         "Smaller business ISPs and data-centre operators",
         "The regulator's register of electronic communications merchants (not read)",
         "Satellite providers",
-        "Status pages (none checked)"
+        "Status pages (none checked)",
+        "A website for Tele2 Latvija (it answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 8,
       "sources": [
@@ -2256,6 +2279,13 @@
           "url": "https://en.wikipedia.org/wiki/SigmaNet",
           "read": "2026-11-11",
           "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: SigmaNet",
+          "url": "https://en.wikipedia.org/wiki/SigmaNet",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
           "use": "cross-check"
         }
       ]
@@ -2607,7 +2637,7 @@
     {
       "id": "providers-nz",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: New Zealand",
       "country": "NZ",
       "read": "2026-11-11",
@@ -2617,7 +2647,8 @@
         "Smaller retail broadband providers, among them the power companies other than Mercury",
         "Regional wireless ISPs",
         "Smaller business ISPs",
-        "A register of operators (none that could be read was found on the read date)"
+        "A register of operators (none that could be read was found on the read date)",
+        "A status page for One NZ (the address answered with a page-not-found page on the read date)"
       ],
       "entries": 13,
       "sources": [
@@ -2820,7 +2851,7 @@
     {
       "id": "providers-pt",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Portugal",
       "country": "PT",
       "read": "2026-11-11",
@@ -2898,6 +2929,13 @@
           "read": "2026-11-11",
           "terms": "Cited for a date and a name (facts); no text is copied.",
           "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Nowo",
+          "url": "https://en.wikipedia.org/wiki/Nowo",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
         }
       ]
     },
@@ -2987,7 +3025,7 @@
     {
       "id": "providers-se",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Sweden",
       "country": "SE",
       "read": "2026-11-11",
@@ -2998,7 +3036,7 @@
         "Smaller business ISPs and regional broadband providers",
         "AS numbers for Stokab and Open Infra (none confirmed as announced)",
         "Satellite providers",
-        "Status pages other than the three that answered a check on the read date"
+        "Status pages other than the two that answered a check on the read date"
       ],
       "entries": 14,
       "sources": [
@@ -3063,7 +3101,7 @@
     {
       "id": "providers-sg",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Singapore",
       "country": "SG",
       "read": "2026-11-11",
@@ -3073,7 +3111,8 @@
         "Smaller business ISPs and data-centre providers",
         "Mobile virtual network operators",
         "An AS number for NetLink Trust (wholesale only: it sells no internet service)",
-        "Status pages (none was found that answered a check)"
+        "Status pages (none was found that answered a check)",
+        "A website for NetLink Trust (it answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 10,
       "sources": [
@@ -3131,17 +3170,18 @@
     {
       "id": "providers-si",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Slovenia",
       "country": "SI",
       "read": "2026-11-11",
-      "partial": false,
-      "coverage": "Complete for the four national operators (fixed and mobile) and the research network; business ISPs and local cable operators are partial.",
+      "partial": true,
+      "coverage": "Partial. Complete for the four national operators (fixed and mobile) and the research network; local cable operators, wholesale networks and business ISPs are thin, and the regulator's registers were not read as a list.",
       "missing": [
         "Local cable operators and smaller business ISPs",
         "AS8591 of A1 Slovenija (registered to it and not announced on the read date)",
         "Satellite providers",
-        "Status pages (none checked)"
+        "Status pages (none checked)",
+        "Wholesale networks and regional operators (the regulator's registers are in Slovenian and their terms were not read, so no name was taken from them)"
       ],
       "entries": 7,
       "sources": [
@@ -3282,7 +3322,7 @@
     {
       "id": "providers-th",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Thailand",
       "country": "TH",
       "read": "2026-11-11",
@@ -3294,7 +3334,8 @@
         "Smaller business ISPs and regional operators",
         "Satellite providers",
         "Websites for NT, INET and UniNet (none answered an automated check on the read date)",
-        "Status pages (none was found that answered a check)"
+        "Status pages (none was found that answered a check)",
+        "A website for UIH (it answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 10,
       "sources": [
@@ -3339,6 +3380,13 @@
           "read": "2026-11-11",
           "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
           "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Advanced Info Service",
+          "url": "https://en.wikipedia.org/wiki/Advanced_Info_Service",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
         }
       ]
     },
@@ -3484,7 +3532,7 @@
     {
       "id": "providers-us",
       "kind": "providers",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "title": "Common providers: United States",
       "country": "US",
       "read": "2026-11-11",
@@ -3568,7 +3616,7 @@
     {
       "id": "providers-vn",
       "kind": "providers",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "title": "Common providers: Vietnam",
       "country": "VN",
       "read": "2026-11-11",
@@ -3580,7 +3628,8 @@
         "Smaller ISPs and regional cable operators",
         "Satellite providers",
         "Websites for VNPT, VTVcab and VinaREN (none answered an automated check on the read date)",
-        "Status pages (none was found that answered a check)"
+        "Status pages (none was found that answered a check)",
+        "Websites for Viettel (both answered an automated request only with a refusal or a bot check on the read date)"
       ],
       "entries": 11,
       "sources": [
@@ -3638,7 +3687,7 @@
     {
       "id": "providers-international",
       "kind": "providers",
-      "version": "1.2.0",
+      "version": "1.2.1",
       "title": "Backbone and international wholesale providers",
       "country": null,
       "read": "2026-11-11",

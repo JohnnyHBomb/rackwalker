@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-ee",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "EE",
  "title": "Common providers: Estonia",
  "read": "2026-11-11",
@@ -203,7 +203,7 @@
   },
   {
    "name": "CITIC Telecom CPC",
-   "slug": "citic-telecom-cpc",
+   "slug": "citic-telecom-cpc-ee",
    "kind": "business_isp",
    "aka": [
     "Linxtelecom",

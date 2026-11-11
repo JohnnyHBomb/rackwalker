@@ -50,7 +50,7 @@ the other large economies of Europe and the Americas, and the large economies of
 |---|---|
 | `name` | as the provider trades ("BT", not the registered company name). Where it trades in another script, the name is in that script ("ソフトバンク") and the Latin form is among `aka` |
 | `slug` | the NetBox slug it gets |
-| `kind` | `national_carrier`, `business_isp`, `cable_fibre`, `mobile`, `wholesale`, `satellite` or `research_education` (a national research and education network) |
+| `kind` | `national_carrier` (a network operator with fixed and mobile lines across the country), `business_isp`, `cable_fibre`, `mobile`, `wholesale`, `satellite` or `research_education` (a national research and education network). There is no kind for a retail ISP that runs on another operator's network: such a name (Scarlet, Tiscali, Bahnhof) is filed as `business_isp` |
 | `aka` | other names on a bill or a hand-off box: former names, the business brand, the group. Used for search and to match a provider NetBox already holds |
 | `asns` | AS numbers, each with the regional registry that holds it (`ripe`, `arin`, `apnic`, `lacnic`, `afrinic`). NetBox needs the registry to make an ASN object |
 | `website`, `support_url` | public pages, or `null`. A status page is listed only where it answered a check on the read date |
@@ -87,7 +87,7 @@ is always an answer: the name is recorded as you type it.
 ### The second sweep
 
 The second sweep added 43 countries, read on 2026-11-11: the rest of the European Union, Switzerland, Norway and
-Türkiye, Canada, Mexico and Brazil, and the large economies of Asia and the Pacific. 19 of them are marked `partial`.
+Türkiye, Canada, Mexico and Brazil, and the large economies of Asia and the Pacific. 21 of them are marked `partial`.
 
 | Pack | Country | Providers | Partial, and why |
 |---|---|---|---|
@@ -95,7 +95,7 @@ Türkiye, Canada, Mexico and Brazil, and the large economies of Asia and the Pac
 | `au` | Australia | 13 | no |
 | `be` | Belgium | 16 | no |
 | `bg` | Bulgaria | 9 | **partial**: several hundred local cable and LAN providers are not listed and business ISPs are thin; the regulator's register is in Bulgarian and was not read; no AS number for Yettel Bulgaria |
-| `br` | Brazil | 20 | **partial**: Brazil has thousands of regional ISPs that are not listed; three websites did not answer |
+| `br` | Brazil | 20 | **partial**: Brazil has thousands of regional ISPs that are not listed; four websites did not answer |
 | `ca` | Canada | 16 | no |
 | `ch` | Switzerland | 13 | no |
 | `cn` | China (mainland) | 6 | **partial**: only the national backbones of the state carriers and the two academic networks: several hundred provincial AS numbers, regional cable and resellers are not listed, and the licence register could not be read |
@@ -105,9 +105,9 @@ Türkiye, Canada, Mexico and Brazil, and the large economies of Asia and the Pac
 | `ee` | Estonia | 9 | **partial**: wholesale networks and business ISPs are thin; the regulator's register was not read; no AS number for Tele2 Eesti |
 | `es` | Spain | 19 | no |
 | `fi` | Finland | 15 | no |
-| `gr` | Greece | 9 | **partial**: fibre newcomers, regional operators and business ISPs are thin; the regulator's register was not found on the pages read |
+| `gr` | Greece | 9 | **partial**: fibre newcomers, regional operators and business ISPs are thin; the regulator's register was not found on the pages read; only two names are also given in Greek script |
 | `hk` | Hong Kong | 13 | no |
-| `hr` | Croatia | 6 | no |
+| `hr` | Croatia | 6 | **partial**: cable and fibre operators and business ISPs are thin; the regulator's register is in Croatian and was not read as a list |
 | `hu` | Hungary | 9 | no |
 | `id` | Indonesia | 13 | **partial**: many hundreds of regional ISPs are not listed; the ministry's site refused an automated read |
 | `in` | India | 21 | **partial**: many hundreds of regional cable and fibre operators hold a licence and are not listed; three websites did not answer |
@@ -128,7 +128,7 @@ Türkiye, Canada, Mexico and Brazil, and the large economies of Asia and the Pac
 | `ro` | Romania | 7 | **partial**: several hundred local networks are not listed and business ISPs are thin; the regulator's site failed the secure connection |
 | `se` | Sweden | 14 | no |
 | `sg` | Singapore | 10 | no |
-| `si` | Slovenia | 7 | no |
+| `si` | Slovenia | 7 | **partial**: local cable operators, wholesale networks and business ISPs are thin; the regulator's registers are in Slovenian and were not read as a list |
 | `sk` | Slovakia | 10 | no |
 | `th` | Thailand | 10 | **partial**: names are in Latin script only (no Thai-script name was confirmed against a source that may be copied); the regulator's site refused an automated read and is in Thai |
 | `tr` | Türkiye | 11 | **partial**: business ISPs and regional operators are thin; the regulator's list is an application that needs a browser and could not be read |
@@ -152,28 +152,48 @@ It was made by the method of the first sweep, with these differences:
   announced on the read date is left out too (CYNET, LuxConnect).
 * **Names in another script.** The Japan, South Korea, Taiwan, mainland China and Hong Kong packs give a provider
   the name it trades under at home ("NTT東日本", "LG유플러스", "中華電信"), with the Latin form and former names in `aka`.
-  The Greece and Bulgaria packs use the Latin trading name and give the Greek or Cyrillic one in `aka`. The Thailand
-  and Vietnam packs have Latin names only, and say so in `missing`. Every slug is in Latin letters. The search finds
+  The Greece and Bulgaria packs use the Latin trading name; the Greek or Cyrillic one is in `aka` only for the two
+  entries of each pack whose own pages gave it, and `missing` says so. The Thailand and Vietnam packs have Latin
+  names only, and say so in `missing`. Every slug is in Latin letters. The search finds
   a provider by any of its names in any script, with or without accents, in full-width or half-width letters.
+* **Web addresses.** An address counts as answering only when it gave a page of the provider's own. One that
+  answered with a refusal, a bot check or a page-not-found page is left empty like one that did not answer, and
+  `missing` names it. The page is read as well as its status: an address that answers can still be another site
+  of the same name.
 * **Ownership changes** up to the read date are in `aka` and `notes` (One Magyarország, formerly Vodafone Hungary;
-  Norlys, formerly Telia Danmark; Telemach Hrvatska, formerly Tele2 Hrvatska).
+  Norlys, formerly Telia Danmark; Telemach Hrvatska, formerly Tele2 Hrvatska; Nio, formerly Oi Fibra). Where the
+  owner and the owned network are both entries of a pack (DIGI and NOWO in Portugal, China Mobile Hong Kong and
+  HKBN, AIS and 3BB in Thailand), each stays an entry with its own AS numbers and says so in `notes`: the other's
+  trading name is not put in `aka`, because a name in `aka` makes the two one provider in NetBox.
 
 **One group, many countries.** A group that trades in several countries (Vodafone, Orange, Telia, Telenor, Tele2,
 A1, Deutsche Telekom's subsidiaries, DIGI) has an entry in each country's pack under the name it trades by there
 ("Vodafone Portugal", "Orange Polska", "Magyar Telekom") with the AS numbers of that country's network; no AS number
-is shared between them. A network that is the same everywhere (Colt, Starlink, euNetworks) is the same entry, with
-the same slug and AS number, in each pack that lists it and in the international pack. The group's backbone is an
-entry of the international pack under its own name (Vodafone Carrier Services, Orange International Carriers,
-Arelion, Deutsche Telekom Global Carrier). Where a domestic network and the backbone trade under one name (Tata
-Communications: AS4755 in India, AS6453 abroad), the country's entry says so in `notes`. The validator refuses an
-AS number that two packs list under two registries.
+is shared between them, and each has a slug of its own (`globalconnect-dk`, `globalconnect-se`). A network that is
+the same everywhere (Colt, Starlink, euNetworks, Zayo) is the same entry, with the same slug and the same AS numbers,
+in each pack that lists it and in the international pack. The group's backbone is an entry of the international pack
+under its own name (Vodafone Carrier Services, Orange International Carriers, Arelion, Deutsche Telekom Global
+Carrier). Where a domestic network and the backbone trade under one name (Tata Communications: AS4755 in India,
+AS6453 abroad), they are two entries with two slugs and the country's entry says so in `notes`. The validator refuses
+an AS number that two packs list under two registries, and a slug that two packs give different AS numbers.
+
+**One name, two networks, one NetBox.** NetBox keeps one provider per name. Where two countries' networks trade
+under the very same name ("Telia" in Norway and in Sweden, "Telenet" in Belgium and in Latvia, "GlobalConnect" in
+four countries), the first one picked becomes the NetBox provider, with its slug and AS numbers. A later line in the
+other country is put on that provider, shown as "(in your NetBox)"; the second network's AS numbers are not added to
+it, and the game does not say so. Add them in NetBox if you keep both networks under the one name, or rename the
+first provider ("Telia Norge") and pick the second from the search.
 
 ### How a provider reaches NetBox
 
 Choosing a provider proposes one op, `create_provider` (name, slug, AS numbers). On apply, the proxy:
 
 1. looks for a provider NetBox already holds with the same name or slug, with one of the AS numbers, or under a name
-   the pack says the provider also goes by. If there is one, it is used as it is and **nothing is created**;
+   the pack says the provider also goes by. If there is one, it is used as it is and **nothing is created**. A
+   provider under one of the entry's other names is not taken for it when it is plainly another network: Norlys of
+   Denmark also goes by "Telia", and a "Telia" that NetBox holds with Norway's AS numbers is not Norlys. It is
+   another network when both carry AS numbers and share none, or when it is another country's pack entry of that
+   name. A provider made by hand under the other name, with no AS number, is still taken for the entry;
 2. otherwise finds or creates each AS number as an `ipam.ASN` object (NetBox 4.7 requires a registry for an ASN, so
    the registry is found or created as an `ipam.RIR`; one NetBox already holds is found under either of its names,
    "RIPE" or "RIPE NCC", slug `ripe` or `ripe-ncc`), then creates the provider with those ASNs.
@@ -185,20 +205,28 @@ In the way-out quest the provider is created in the same previewed change as its
 
 * **The country of a site** is read from the custom field `iso_country`, from the site's region (its slug or name as
   a two-letter code, or its name as a country's name) or from the last line of its address. The game knows the
-  English name of every country that has a pack, and some names a country uses for itself ("Türkiye", "España",
-  "Deutschland"); accents do not count. The first-site quest asks for the country as a typed name or code: with
-  fifty countries there is no short list that suits every player.
-* **The choices** of "Whose line is it?" are the providers NetBox holds, then the first six names of the country's
-  pack that NetBox does not hold. The list does not grow with the pack: the rest is reached by the search.
+  English name of every country that has a pack, and names a country uses for itself, in its own script too
+  ("Türkiye", "España", "Deutschland", "日本", "대한민국", "Ελλάδα", "България"); accents do not count. Only the site's
+  own region is read, not the regions above it: a site in a city region under a country region ("Thailand" >
+  "Bangkok") has no country until `iso_country` or the last line of its address names one, and is then offered no
+  pack first (the search still finds every provider). The first-site quest asks for the country as a typed name or
+  code: with fifty countries there is no short list that suits every player.
+* **The choices** of "Whose line is it?" are the providers NetBox holds (up to eight, by name), then names of the
+  country's pack that NetBox does not hold: the first six in a NetBox with no provider, fewer as NetBox holds more,
+  and never fewer than two. In an estate that already holds many providers of other countries the pack's names come
+  last; the search puts the site's country first. The list does not grow with the pack: the rest is reached by the
+  search.
 * **The search** looks in every pack, by name, by another name, by slug or by AS number, and shows at most six: the
   site's own country first, then the international pack, then other countries with their code ("Telia (NO)").
   An AS number that several packs list is one line. Two countries' networks of one name ("Telenet" in Belgium and in
   Latvia) are two lines. Two or three Latin letters are looked for at the start of a word only; a longer text, and any
   text in a script written without spaces, is looked for anywhere in a name.
-* **A typed name** ("My provider is not listed") that is the name of an entry of the site's own country or of the
-  international pack is that entry, with its AS numbers; so is a name that only one pack lists. A name that several
-  countries use for different networks is recorded as typed, with no AS number: pick the entry from the search to
-  say which one it is.
+* **A typed name** ("My provider is not listed") is looked up in this order: the entry of the site's own country
+  with that name; the one entry of that country that also goes by it ("Vodafone" at a British site is Vodafone UK,
+  "Oi Fibra" at a Brazilian one is Nio; the provider is recorded under the entry's name, and the preview says so);
+  a provider NetBox holds under that name; an entry of the international pack; a name that only one pack lists. A
+  name that several countries use for different networks, or that two networks of the site's country go by
+  ("MasOrange"), is recorded as typed, with no AS number: pick the entry from the search to say which one it is.
 
 ### Adding or correcting a provider pack
 
@@ -371,7 +399,8 @@ game last read. A refusal writes nothing.
 network. It checks each file against its JSON Schema in `packs/schema/`, and what a schema cannot say:
 
 * an id is used once; a slug, a name and an AS number are used once per provider pack;
-* an AS number that several packs list is under the same registry in each;
+* an AS number that several packs list is under the same registry in each, and a slug that several packs use has
+  the same AS numbers in each;
 * the file name matches the country and the id, and the country is an assigned ISO 3166-1 alpha-2 code;
 * a partial pack says what it lacks; one source is marked as the one the facts came from;
 * no phone number and no mail address anywhere in a provider pack;

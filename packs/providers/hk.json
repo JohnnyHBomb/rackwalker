@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-hk",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "HK",
  "title": "Common providers: Hong Kong",
  "read": "2026-11-11",
@@ -69,6 +69,14 @@
    "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
    "use": "cited",
    "result": "Terms read; no data taken."
+  },
+  {
+   "name": "Wikipedia: Hong Kong Broadband Network",
+   "url": "https://en.wikipedia.org/wiki/Hong_Kong_Broadband_Network",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: China Mobile Hong Kong completed the purchase of 78.08% of HKBN on 17 September 2025."
   }
  ],
  "providers": [
@@ -141,7 +149,7 @@
    ],
    "website": "https://www.hkbn.net/",
    "support_url": null,
-   "notes": "AS9381 and AS17444 are HKBN Enterprise Solutions, the business arm (formerly WTT and Wharf T&T)."
+   "notes": "AS9381 and AS17444 are HKBN Enterprise Solutions, the business arm (formerly WTT and Wharf T&T). China Mobile Hong Kong has owned 78% of it since September 2025; the two networks are listed apart."
   },
   {
    "name": "HGC",
@@ -221,7 +229,7 @@
    ],
    "website": null,
    "support_url": null,
-   "notes": "Mobile and fibre broadband."
+   "notes": "Mobile and fibre broadband. It has owned 78% of HKBN since September 2025; HKBN is listed apart, with its own AS numbers."
   },
   {
    "name": "i-CABLE",

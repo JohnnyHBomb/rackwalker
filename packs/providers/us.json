@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-us",
- "version": "1.2.0",
+ "version": "1.2.1",
  "country": "US",
  "title": "Common providers: United States",
  "read": "2026-11-11",
@@ -379,11 +379,15 @@
     {
      "asn": 6461,
      "rir": "arin"
+    },
+    {
+     "asn": 15290,
+     "rir": "arin"
     }
    ],
    "website": "https://www.zayo.com/",
    "support_url": null,
-   "notes": "Owns the former Crown Castle fibre business since spring 2026 (listed apart, AS46887).",
+   "notes": "Owns the former Crown Castle fibre business since spring 2026 (listed apart, AS46887). AS15290 is its Canadian network (formerly Allstream).",
    "wikidata": "Q8067574"
   },
   {

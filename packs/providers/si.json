@@ -1,17 +1,18 @@
 {
  "pack": "providers",
  "id": "providers-si",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "SI",
  "title": "Common providers: Slovenia",
  "read": "2026-11-11",
- "partial": false,
- "coverage": "Complete for the four national operators (fixed and mobile) and the research network; business ISPs and local cable operators are partial.",
+ "partial": true,
+ "coverage": "Partial. Complete for the four national operators (fixed and mobile) and the research network; local cable operators, wholesale networks and business ISPs are thin, and the regulator's registers were not read as a list.",
  "missing": [
   "Local cable operators and smaller business ISPs",
   "AS8591 of A1 Slovenija (registered to it and not announced on the read date)",
   "Satellite providers",
-  "Status pages (none checked)"
+  "Status pages (none checked)",
+  "Wholesale networks and regional operators (the regulator's registers are in Slovenian and their terms were not read, so no name was taken from them)"
  ],
  "sources": [
   {

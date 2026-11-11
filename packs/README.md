@@ -4,7 +4,7 @@ Data the game ships with to help set a NetBox up: the common providers of a coun
 of the community device-type library, and what a vendor's serial number looks like. Data only: a new country is one
 JSON file in `providers/` (and one line for its name in the proxy's country table, where the game does not know it yet).
 
-21 of the 49 country packs are marked `partial`: each says in `coverage` and `missing` what it lacks and why.
+23 of the 49 country packs are marked `partial`: each says in `coverage` and `missing` what it lacks and why.
 A thin pack that says so is preferred to a full one that guesses.
 
 | Folder | What | Schema |

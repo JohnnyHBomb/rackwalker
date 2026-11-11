@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-pt",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "PT",
  "title": "Common providers: Portugal",
  "read": "2026-11-11",
@@ -86,7 +86,15 @@
    "read": "2026-11-11",
    "terms": "Cited for a date and a name (facts); no text is copied.",
    "use": "cited",
-   "result": "Read on the date above (article of 5 August 2024): Digi agreed to buy Nowo. The completion date was not read."
+   "result": "Read on the date above (article of 5 August 2024): Digi agreed to buy Nowo. The completion date was not read from it."
+  },
+  {
+   "name": "Wikipedia: Nowo",
+   "url": "https://en.wikipedia.org/wiki/Nowo",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: the parent of NOWO is Digi Communications. NOWO's own site, read the same day, carried both names and asked customers to move to DIGI."
   }
  ],
  "providers": [
@@ -165,7 +173,7 @@
    "asns": [],
    "website": "https://www.digi.pt/",
    "support_url": null,
-   "notes": "Fibre and mobile; the fourth network operator."
+   "notes": "Fibre and mobile; the fourth network operator. The Digi group owns NOWO, which is listed apart while it trades under its own name."
   },
   {
    "name": "NOWO",
@@ -173,7 +181,8 @@
    "kind": "cable_fibre",
    "aka": [
     "Cabovisão",
-    "Nowo Communications"
+    "Nowo Communications",
+    "Digi Communications"
    ],
    "asns": [
     {
@@ -183,22 +192,24 @@
    ],
    "website": "https://www.nowo.pt/",
    "support_url": null,
-   "notes": "Cable. DIGI agreed to buy it in August 2024; it still traded under its own name on the read date."
+   "notes": "Cable. Owned by the Digi group (the DIGI entry); on the read date its own site carried both names and asked customers to move to DIGI."
   },
   {
    "name": "Ar Telecom",
    "slug": "ar-telecom",
    "kind": "business_isp",
-   "aka": [],
+   "aka": [
+    "Ar"
+   ],
    "asns": [
     {
      "asn": 12926,
      "rir": "ripe"
     }
    ],
-   "website": "https://www.artelecom.pt/",
+   "website": "https://ar.pt/",
    "support_url": null,
-   "notes": null
+   "notes": "It presents itself as Ar on its own site; AS12926 is registered to Ar Telecom."
   },
   {
    "name": "ONI",

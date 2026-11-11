@@ -224,3 +224,150 @@ def test_a_provider_netbox_holds_under_its_latin_name_is_the_packs_entry_in_its_
     entry = packs.load().provider("providers-jp", "rakuten-mobile")
     assert made["slug"] == "rakuten-mobile" and [a["asn"] for a in made["asns"]] == [a["asn"] for a in entry["asns"]]
     assert {r["slug"] for r in box.data["ipam/rirs"]} == {"apnic"} and held["id"] != made["id"] != kddi["id"]
+
+
+# ---------------------------------------------------------------- a NetBox that already holds another country's provider
+def entries_apart() -> list[tuple[dict[str, Any], dict[str, Any]]]:
+    """Every pair of entries of two packs that are two networks: no AS number, name or slug in common."""
+    every = packs.load().all_providers()
+    numbers = {id(x): {a["asn"] for a in x["asns"]} for x in every}
+    return [(a, b) for a in every for b in every if a["country"] != b["country"] and not numbers[id(a)] & numbers[id(b)]
+            and not packs.same_name(a["name"], b["name"]) and a["slug"] != b["slug"]]
+
+
+def test_an_entry_is_never_taken_for_another_countrys_network_that_only_bears_one_of_its_other_names():
+    shared = 0
+    for a, b in entries_apart():
+        if not any(packs.same_name(b["name"], k) for k in a["aka"]):
+            continue
+        shared += 1         # Norlys also goes by "Telia", Orange Polska by "Orange", Odido by "T-Mobile"
+        held = {"id": 1, "name": b["name"], "slug": b["slug"], "asns": [x["asn"] for x in b["asns"]]}
+        assert packs.provider_matches(a, [held]) == [] and not packs.provider_named(a, [held]), (a["country"], a["name"], b["country"], b["name"])
+        # the same entry as the change op carries it (its pack, no country) is no match either
+        op = {k: a[k] for k in ("name", "slug", "asns", "aka", "pack")}
+        assert packs.match_provider(op, [held]) is None, (a["name"], b["name"])
+    assert shared > 50
+    norlys, bt = packs.load().provider("providers-dk", "norlys"), packs.load().provider("providers-gb", "bt")
+    # a provider made by hand under the other name, with no AS number, is still the admin's own
+    assert packs.match_provider(norlys, [{"id": 7, "name": "Telia", "slug": "telia", "asns": []}])["id"] == 7
+    assert packs.match_provider(bt, [{"id": 8, "name": "British Telecom", "slug": "british-telecom", "asns": []}])["id"] == 8
+    # with AS numbers of its own that the entry does not have, it is another network; with one of the entry's, it is the entry
+    assert packs.match_provider(norlys, [{"id": 7, "name": "Telia", "slug": "telia", "asns": [64500]}]) is None
+    assert packs.match_provider(norlys, [{"id": 7, "name": "Telia", "slug": "telia", "asns": [norlys["asns"][0]["asn"]]}])["id"] == 7
+
+
+def line(cl, box: EmptyBox, way: str, dev: dict[str, Any], *answers: tuple[str, dict[str, Any]], cid: str = "LINE-1") -> dict[str, Any]:
+    """Play the way-out line to its end with these answers about the carrier; the provider the new circuit is on."""
+    port = next(i for i in box.data["dcim/interfaces"] if i["device"]["id"] == dev["id"])
+    q = say(cl, way, ("device", {"choice": f"device:{dev['id']}"}), *answers)
+    assert q["step"]["id"] == "circuit_id", q["step"]
+    q = say(cl, way, ("circuit_id", {"text": cid}))
+    kind = [("circuit_type", {"choice": q["step"]["choices"][0]["id"]})]
+    say(cl, way, *kind, ("local_port", {"choice": f"interface:{port['id']}"}), ("cable_type", {"choice": "cat6"}))
+    assert apply(cl, way)["complete"]
+    circuit = next(c for c in box.data["circuits/circuits"] if c["cid"] == cid)
+    return next(x for x in box.data["circuits/providers"] if x["id"] == circuit["provider"]["id"])
+
+
+def numbers(box: EmptyBox, held: dict[str, Any]) -> list[int]:
+    return sorted(a["asn"] for a in box.data["ipam/asns"] if a["id"] in [x["id"] if isinstance(x, dict) else x for x in held["asns"]])
+
+
+@pytest.mark.parametrize("answers", [
+    [("provider", {"choice": "pack:norlys"})],
+    [("provider", {"choice": "search"}), ("provider_find0", {"text": "norlys"}), ("provider_pick0", {"choice": "hit:providers-dk:norlys"})],
+    [("provider", {"choice": "typed"}), ("provider_name", {"text": "Norlys"})],
+    [("provider", {"choice": "typed"}), ("provider_name", {"text": "telia"})]])            # as an older Danish bill says
+def test_a_danish_line_is_not_written_onto_norways_telia_that_netbox_holds(tmp_path, monkeypatch, answers):
+    box = EmptyBox()
+    site, dev, way = way_out(box, "dk")
+    telia = provider(box, "Telia", 25400, slug="telia-no")
+    cl = game(tmp_path, monkeypatch, box)
+    q = say(cl, way, ("device", {"choice": f"device:{dev['id']}"}))
+    labels = [c["label"] for c in q["step"]["choices"]]
+    assert labels[0] == "Telia" and "Norlys" in labels           # NetBox's own first; the Danish network is still offered
+    if answers[0][1]["choice"] == "search":
+        q = say(cl, way, *answers[:2])
+        assert [c["label"] for c in q["step"]["choices"]][:1] == ["Norlys"], q["step"]["choices"]
+    made = line(cl, box, way, dev, *answers)
+    entry = packs.load().provider("providers-dk", "norlys")
+    assert (made["name"], made["slug"]) == ("Norlys", "norlys") and made["id"] != telia["id"]
+    assert numbers(box, made) == sorted(a["asn"] for a in entry["asns"]) and numbers(box, telia) == [25400]
+
+
+@pytest.mark.parametrize("cc,name,want", [
+    ("gb", "Vodafone", ("providers-gb", "vodafone-uk")),               # not the Vodafone of the one pack that has that very name
+    ("bg", "A1", ("providers-bg", "a1-bg")), ("be", "orange", ("providers-be", "orange-be")),
+    ("de", "Telekom", ("providers-de", "deutsche-telekom")), ("nl", "T-Mobile", ("providers-nl", "odido")),
+    ("mx", "Uninet", ("providers-mx", "telmex")), ("br", "Oi Fibra", ("providers-br", "nio")),
+    ("es", "MasOrange", None),                                         # two Spanish networks go by it: nobody can say which
+    ("za", "Vodafone", None)])                                         # no pack of its own, and many countries' packs have one
+def test_a_typed_name_that_the_sites_own_country_knows_as_another_name_is_that_countrys_entry(tmp_path, monkeypatch, cc, name, want):
+    box = EmptyBox()
+    site, dev, way = way_out(box, cc)
+    cl = game(tmp_path, monkeypatch, box)
+    q = say(cl, CARRIER.format(site["id"]), ("provider", {"choice": "typed"}), ("provider_name", {"text": name}))
+    made = next(o for o in q["proposal"]["ops"] if o["op"] == "create_provider")["fields"]
+    if want is None:
+        assert made == {"name": name}
+    else:
+        entry = packs.load().provider(*want)
+        assert (made["pack"], made["slug"], made["name"], made.get("asns", [])) == (want[0], want[1], entry["name"], entry["asns"])
+
+
+def test_a_typed_name_is_looked_up_in_every_pack_however_many_list_a_name_like_it(tmp_path, monkeypatch):
+    # "Vodafone" is the whole name of two countries' entries and another name of a dozen more: from a country with no
+    # pack it is recorded bare, and with NetBox holding one of them it is that provider
+    names = [x for x in packs.load().all_providers() if packs.same_name(x["name"], "Vodafone")]
+    assert len(names) == 2 and len(packs.load().search_providers("Vodafone", None, limit=50)) > 12
+    box = EmptyBox()
+    site, dev, way = way_out(box, "za")
+    held = provider(box, "Vodafone", 15480, slug="vodafone-nl")
+    cl = game(tmp_path, monkeypatch, box)
+    assert line(cl, box, way, dev, ("provider", {"choice": "typed"}), ("provider_name", {"text": "vodafone"}))["id"] == held["id"]
+
+
+def test_two_or_three_letters_that_start_a_later_word_of_a_name_find_it():
+    assert {"Vodafone UK (GB)", "Three UK (GB)"} <= set(found("uk", "GB")) and found("nz", "NZ")[0] == "One NZ (NZ)"
+    assert "Vodafone UK (GB)" in found("uk", "ZA") and "Kaisanet (FI)" not in found("ais", "FI", 50)       # the middle of a word is not a start
+
+
+def test_the_validator_refuses_one_slug_with_two_sets_of_as_numbers(tmp_path):
+    every = packs.load().all_providers()
+    by_slug: dict[str, set[str]] = defaultdict(set)
+    for x in every:
+        by_slug[x["slug"]].add(json.dumps(sorted(a["asn"] for a in x["asns"])))
+    assert len(by_slug["zayo"]) == 1 and {s: v for s, v in by_slug.items() if len(v) > 1} == {}
+    errs = broken(tmp_path, lambda r: edit(r, "providers/ca.json", lambda d: next(x for x in d["providers"] if x["slug"] == "zayo")["asns"].pop()))
+    assert len(errs) >= 1 and all("slug zayo has other AS numbers here than in" in e for e in errs), errs
+
+
+# ---------------------------------------------------------------- a country by the name it has at home
+@pytest.mark.parametrize("text,cc", [
+    ("日本", "JP"), ("中国", "CN"), ("中國", "CN"), ("대한민국", "KR"), ("한국", "KR"), ("台灣", "TW"), ("香港", "HK"), ("ประเทศไทย", "TH"),
+    ("Ελλάδα", "GR"), ("ελλάδα", "GR"), ("България", "BG"), ("БЪЛГАРИЯ", "BG"), ("Česko", "CZ"), ("cesko", "CZ"), ("Magyarország", "HU"),
+    ("Hong Kong SAR", "HK"), ("Nippon", "JP")])
+def test_a_country_is_read_by_the_name_it_has_at_home_typed_or_as_a_region(text, cc):
+    assert setup.country_typed(text) == (cc, None) and country.code_of(text) == cc
+    assert country.site_country(None, "r-1", text, None) == cc and country.site_country(None, None, None, f"1-2-3 Somewhere\n{text}") == cc
+    assert country.name_of(cc) == setupops.COUNTRY_OF[cc] and all(ord(ch) < 0x250 for ch in country.name_of(cc))      # shown in English
+
+
+def test_a_typed_country_the_game_does_not_know_is_told_apart_from_a_mistyped_code():
+    assert "not a country code" in setup.country_typed("QQ")[1] and "not a country code" in setup.country_typed("zz")[1]
+    for text in ("日", "東京", "Atlantis", "한"):
+        assert setup.country_typed(text) == (None, "The game does not know that name. Type the country's two-letter code, for example BE.")
+        assert country.code_of(text) is None
+
+
+def test_a_netbox_that_holds_other_countries_providers_still_offers_two_names_of_the_sites_pack(tmp_path, monkeypatch):
+    box = EmptyBox()
+    site, dev, way = way_out(box, "kr")
+    for name in ("Bell", "Claro", "Colt Technology Services", "Telmex", "Türk Telekom", "Vivacom"):
+        provider(box, name)
+    cl = game(tmp_path, monkeypatch, box)
+    q = say(cl, way, ("device", {"choice": f"device:{dev['id']}"}))
+    labels = [c["label"] for c in q["step"]["choices"]]
+    pack = [x["name"] for x in packs.load().providers_of("KR")]
+    assert labels[:6] == ["Bell", "Claro", "Colt Technology Services", "Telmex", "Türk Telekom", "Vivacom"] and labels[6:8] == pack[:2]
+    assert labels[8:10] == ["Another provider: search by name", "My provider is not listed"]

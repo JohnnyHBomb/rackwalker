@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-dk",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "DK",
  "title": "Common providers: Denmark",
  "read": "2026-11-11",
@@ -135,7 +135,7 @@
    ],
    "website": "https://tdcnet.dk/",
    "support_url": null,
-   "notes": "The network side of the former TDC: copper, cable, fibre and mobile network; wholesale."
+   "notes": "The network side of the former TDC: copper, cable, fibre and mobile network; wholesale. AS3292 is registered to TDC Holding, the former group; it is given here because TDC NET runs the network."
   },
   {
    "name": "Telenor Danmark",
@@ -201,7 +201,7 @@
   },
   {
    "name": "GlobalConnect",
-   "slug": "globalconnect",
+   "slug": "globalconnect-dk",
    "kind": "business_isp",
    "aka": [
     "Nianet"

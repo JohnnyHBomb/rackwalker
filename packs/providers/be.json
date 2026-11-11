@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-be",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "BE",
  "title": "Common providers: Belgium",
  "read": "2026-11-11",
@@ -163,7 +163,7 @@
   {
    "name": "DIGI",
    "slug": "digi-be",
-   "kind": "mobile",
+   "kind": "national_carrier",
    "aka": [
     "DIGI Belgium",
     "Digi Communications Belgium"

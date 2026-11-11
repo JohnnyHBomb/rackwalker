@@ -29,7 +29,8 @@ NOT_COUNTRIES = {"EU", "UN", "XX", "ZZ"}
 
 # Country names (and common short or older names) -> code, as `fold` leaves them: lower case, accents off, no
 # punctuation. Every country with a provider pack has its English name here, so a region called "Bulgaria" or a typed
-# "Hong Kong" reads as that country; a few names a country uses for itself in Latin script are known too.
+# "Hong Kong" reads as that country; names a country uses for itself are known too (HOME_NAMES below adds those in
+# other scripts).
 NAMES: dict[str, str] = {
     "united kingdom": "GB", "uk": "GB", "great britain": "GB", "britain": "GB", "england": "GB", "scotland": "GB",
     "wales": "GB", "northern ireland": "GB", "united kingdom of great britain and northern ireland": "GB",
@@ -48,15 +49,29 @@ NAMES: dict[str, str] = {
     "belgie": "BE", "belgique": "BE", "danmark": "DK", "norge": "NO", "sverige": "SE", "suomi": "FI",
     "polska": "PL", "brasil": "BR",
 }
+# Names a country with a provider pack goes by at home, in its own script or spelling. They are read like the names
+# above (a region called "日本", a typed "Ελλάδα"); the English name stays the one the game shows.
+HOME_NAMES: dict[str, str] = {
+    "日本": "JP", "日本国": "JP", "Nippon": "JP", "Nihon": "JP", "中国": "CN", "中國": "CN", "中华人民共和国": "CN",
+    "대한민국": "KR", "한국": "KR", "台灣": "TW", "臺灣": "TW", "台湾": "TW", "香港": "HK", "Hong Kong SAR": "HK",
+    "ประเทศไทย": "TH", "ไทย": "TH", "Ελλάδα": "GR", "Ελλάς": "GR", "Hellas": "GR", "Κύπρος": "CY", "България": "BG",
+    "Česko": "CZ", "Česká republika": "CZ", "Hrvatska": "HR", "Magyarország": "HU", "Slovensko": "SK",
+    "Slovenija": "SI", "Eesti": "EE", "Latvija": "LV", "Lietuva": "LT", "Lëtzebuerg": "LU", "Luxemburg": "LU",
+    "Éire": "IE", "Pilipinas": "PH", "Belgien": "BE", "Svizzera": "CH",
+}
 # The name a country is shown under, and the name of the region the game makes for it, where the first name above
 # in title case is not it.
 SHOWN: dict[str, str] = {"TR": "Türkiye"}
 
 
 def fold(s: str) -> str:
-    """A country name as it is compared: lower case, accents off ("España" is "espana"), letters and spaces only."""
+    """A country name as it is compared: lower case, accents off ("España" is "espana"), letters of any script and
+    spaces only."""
     plain = "".join(ch for ch in unicodedata.normalize("NFKD", s.casefold()) if not unicodedata.combining(ch))
-    return re.sub(r"[^a-z ]", "", plain).strip()
+    return re.sub(r"[^\w ]|[\d_]", "", plain).strip()
+
+
+NAMES.update({fold(name): code for name, code in HOME_NAMES.items()})
 
 
 def name_of(code: str) -> str | None:

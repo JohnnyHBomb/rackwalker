@@ -249,7 +249,8 @@ def plan_create_site(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
 
 
 def plan_create_provider(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
-    entry = {"name": f["name"].strip(), "slug": f.get("slug") or packs.slugify(f["name"]), "asns": f.get("asns") or [], "aka": f.get("aka") or []}
+    entry = {"name": f["name"].strip(), "slug": f.get("slug") or packs.slugify(f["name"]), "asns": f.get("asns") or [], "aka": f.get("aka") or [],
+             "pack": f.get("pack")}
     known = [{"id": r.id, **r.v} for r in pl.st.of("provider")]
     hit = packs.match_provider(entry, known)
     if hit is not None:
@@ -776,7 +777,8 @@ def simulate(e: Any, op: dict[str, Any], f: dict[str, Any], res: dict[str, Any],
         res["after"] = dict(f)
         ref("site", sid)
     elif name == "create_provider":
-        entry = {"name": f["name"], "slug": f.get("slug") or packs.slugify(f["name"]), "asns": f.get("asns") or [], "aka": f.get("aka") or []}
+        entry = {"name": f["name"], "slug": f.get("slug") or packs.slugify(f["name"]), "asns": f.get("asns") or [], "aka": f.get("aka") or [],
+                 "pack": f.get("pack")}
         hit = packs.match_provider(entry, list(e.providers.values()))
         if hit is not None:
             res["status"] = "no_change"

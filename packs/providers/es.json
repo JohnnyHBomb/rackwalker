@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-es",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "ES",
  "title": "Common providers: Spain",
  "read": "2026-11-11",
@@ -13,7 +13,8 @@
   "Regional research networks",
   "AS numbers for Onivia and Reintel (none confirmed: they sell no internet service)",
   "A website for Aire Networks (it did not answer)",
-  "Support and status pages (none recorded)"
+  "Support and status pages (none recorded)",
+  "Websites for Evolutio and Sarenet (each answered an automated request only with a refusal or a bot check on the read date)"
  ],
  "sources": [
   {
@@ -46,7 +47,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "18 of 19 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+   "result": "16 of 19 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked. An address that answered only with a refusal, a bot check or a page-not-found page counts as one that did not answer."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -184,7 +185,7 @@
   {
    "name": "DIGI",
    "slug": "digi-es",
-   "kind": "cable_fibre",
+   "kind": "national_carrier",
    "aka": [
     "Digi Spain Telecom",
     "DIGI mobil"
@@ -304,7 +305,7 @@
    "kind": "wholesale",
    "aka": [],
    "asns": [],
-   "website": "https://www.onivia.com/",
+   "website": "https://onivia.net/es/",
    "support_url": null,
    "notes": "Wholesale fibre access network; never the name on the bill."
   },
@@ -353,7 +354,7 @@
      "rir": "ripe"
     }
    ],
-   "website": "https://www.evolutio.com/",
+   "website": null,
    "support_url": null,
    "notes": "Formerly BT's Spanish unit."
   },
@@ -368,7 +369,7 @@
      "rir": "ripe"
     }
    ],
-   "website": "https://www.sarenet.es/",
+   "website": null,
    "support_url": null,
    "notes": null
   },

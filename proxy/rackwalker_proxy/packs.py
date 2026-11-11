@@ -152,7 +152,7 @@ def _strings(node: Any) -> list[str]:
 def validate(root: Path | None = None) -> list[str]:
     """Everything wrong with the packs under `root`, one line each ([] = all good). Checks the schema of every file,
     and what a schema cannot say: ids used once, a slug and an AS number once per pack, an AS number under one registry
-    in every pack that lists it, the file name against the country, a country code that is an assigned one, a thin pack that says what it lacks, no phone number or mail address anywhere in a provider pack, a
+    in every pack that lists it, a slug with the same AS numbers in every pack that uses it, the file name against the country, a country code that is an assigned one, a thin pack that says what it lacks, no phone number or mail address anywhere in a provider pack, a
     device index that is the file its pack names (size, SHA-256, counts, every row whole), and serial rules that
     compile and carry their source."""
     root = root or packs_dir()
@@ -166,6 +166,7 @@ def validate(root: Path | None = None) -> list[str]:
     ids: dict[str, str] = {}
     countries: dict[str | None, str] = {}
     registries: dict[int, tuple[str, str]] = {}
+    networks: dict[str, tuple[frozenset[int], str]] = {}
     found = 0
     for kind in KINDS:
         for path in sorted((root / kind).glob("*.json")):
@@ -186,7 +187,7 @@ def validate(root: Path | None = None) -> list[str]:
             if doc["partial"] and not doc["missing"]:
                 out.append(f"{rel}: a partial pack says what it lacks (`missing` is empty)")
             if kind == "providers":
-                out += [f"{rel}: {m}" for m in _check_providers(doc, path, countries, registries)]
+                out += [f"{rel}: {m}" for m in _check_providers(doc, path, countries, registries, networks)]
             elif kind == "devices":
                 out += [f"{rel}: {m}" for m in _check_devices(doc, path)]
             else:
@@ -197,7 +198,8 @@ def validate(root: Path | None = None) -> list[str]:
     return out
 
 
-def _check_providers(doc: dict[str, Any], path: Path, countries: dict[str | None, str], registries: dict[int, tuple[str, str]]) -> list[str]:
+def _check_providers(doc: dict[str, Any], path: Path, countries: dict[str | None, str], registries: dict[int, tuple[str, str]],
+                     networks: dict[str, tuple[frozenset[int], str]]) -> list[str]:
     out = []
     if doc["country"] is not None and doc["country"] not in ISO_CODES:
         out.append(f"{doc['country']} is not an assigned ISO 3166-1 alpha-2 country code")
@@ -217,6 +219,11 @@ def _check_providers(doc: dict[str, Any], path: Path, countries: dict[str | None
             out.append(f"the name {p['name']} is used twice")
         slugs.add(p["slug"])
         names.add(norm(p["name"]))
+        # a slug that several packs use is one network: the first pick makes the NetBox provider, with these numbers
+        first = networks.setdefault(p["slug"], (frozenset(a["asn"] for a in p["asns"]), path.name))
+        if first[0] != frozenset(a["asn"] for a in p["asns"]):
+            out.append(f"slug {p['slug']} has other AS numbers here than in {first[1]}: one network keeps its slug and its AS numbers in every "
+                       "pack, and a country's own network of a group gets a slug of its own")
         for a in p["asns"]:
             if a["asn"] in asns:
                 out.append(f"AS{a['asn']} is on {asns[a['asn']]} and on {p['name']}: one AS number belongs to one provider of a pack")
@@ -439,14 +446,42 @@ def same_network(a: dict[str, Any], b: dict[str, Any]) -> bool:
     return a.get("country") == b.get("country") or a.get("country") is None or b.get("country") is None
 
 
+def _country_of(entry: dict[str, Any]) -> str | None:
+    """The country of a pack entry ("DK"), None for a backbone name, "" for an entry that does not say (a typed name)."""
+    if "country" in entry:
+        return entry["country"]
+    pack = entry.get("pack") or ""
+    if not pack.startswith("providers-"):
+        return ""
+    return None if pack == "providers-international" else pack.removeprefix("providers-").upper()
+
+
+def _another_network(entry: dict[str, Any], held: dict[str, Any]) -> bool:
+    """A provider NetBox holds under a name the entry also goes by, that is plainly not the entry: "Telia" with
+    Norway's AS numbers is not Norlys of Denmark, formerly Telia Danmark. It is another network when both carry AS
+    numbers and share none, or when it is another country's pack entry of that name: it carries that entry's AS
+    number, or, where neither has a number, its slug. A provider made by hand, with no AS number, stays a match."""
+    mine, theirs = _asns(entry), _asns(held)
+    if mine and theirs:
+        return not mine & theirs
+    cc = _country_of(entry)
+    for y in load().all_providers():
+        if y["country"] == cc or _same_slug(y, entry) or _asns(y) & mine or not same_name(y["name"], held["name"]):
+            continue
+        if _asns(y) & theirs or (not _asns(y) and not theirs and _same_slug(y, held)):
+            return True
+    return False
+
+
 def provider_matches(entry: dict[str, Any], existing: list[dict[str, Any]]) -> list[dict[str, Any]]:
     """The providers NetBox already holds that a pack entry (or a typed name) could mean, nearest first: the same name
-    or slug; then a name the pack says the provider also goes by; then a shared AS number. One network that NetBox
-    holds under two names (two providers with one AS number) gives two answers, the one named like the entry first."""
+    or slug; then a name the pack says the provider also goes by, unless that provider is plainly another country's
+    network of that name; then a shared AS number. One network that NetBox holds under two names (two providers with
+    one AS number) gives two answers, the one named like the entry first."""
     aka = [a for a in entry.get("aka") or []]
     out: list[dict[str, Any]] = []
     for test in (lambda x: same_name(x["name"], entry["name"]) or _same_slug(x, entry),
-                 lambda x: any(same_name(x["name"], a) for a in aka),
+                 lambda x: any(same_name(x["name"], a) for a in aka) and not _another_network(entry, x),
                  lambda x: bool(_asns(entry) & _asns(x))):
         out += [x for x in existing if test(x) and not any(x is o for o in out)]
     return out
@@ -461,7 +496,7 @@ def provider_named(entry: dict[str, Any], existing: list[dict[str, Any]]) -> boo
     """True when the nearest match is one by name (its own or another it goes by), not only by a shared AS number."""
     hit = match_provider(entry, existing)
     return hit is not None and (same_name(hit["name"], entry["name"]) or _same_slug(hit, entry)
-                                or any(same_name(hit["name"], a) for a in entry.get("aka") or []))
+                                or (any(same_name(hit["name"], a) for a in entry.get("aka") or []) and not _another_network(entry, hit)))
 
 
 @lru_cache(maxsize=4)

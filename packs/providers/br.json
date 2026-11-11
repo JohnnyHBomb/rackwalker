@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-br",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "BR",
  "title": "Common providers: Brazil",
  "read": "2026-11-11",
@@ -10,11 +10,12 @@
  "missing": [
   "Thousands of regional and municipal ISPs, which together serve a large share of fixed lines",
   "Business ISPs and smaller wholesale carriers",
-  "Former names of Nio, Vero, Ligga and Giga+ Fibra (not confirmed on the read date)",
+  "Former names of Vero, Ligga and Giga+ Fibra (not confirmed on the read date)",
   "An AS number for Nio (none was found registered to it)",
   "Websites for Vivo, Giga+ Fibra and Alares (they did not answer an automated request on the read date)",
   "Status pages (none was found)",
-  "The regulator's operator lists (its pages refused an automated request and its data panels were under maintenance on the read date)"
+  "The regulator's operator lists (its pages refused an automated request and its data panels were under maintenance on the read date)",
+  "A website for Ligga (it answered an automated request with a few bytes that are not a page on the read date)"
  ],
  "sources": [
   {
@@ -39,7 +40,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "17 of 20 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "16 of 20 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty. An address that answered only with a refusal, a bot check or a page-not-found page counts as one that did not answer."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -72,6 +73,14 @@
    "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
    "use": "copied",
    "result": "1 entries carry the id of a Wikidata item that states one of the entry's AS numbers (property P3797)."
+  },
+  {
+   "name": "Wikipedia (Portuguese): Nio (empresa)",
+   "url": "https://pt.wikipedia.org/wiki/Nio_(empresa)",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above for former names and the owner: Velox, Oi Velox, Oi Internet, Oi Fibra (2021 to 2025); owned by V.tal since 2025."
   }
  ],
  "providers": [
@@ -175,12 +184,16 @@
    "slug": "nio",
    "kind": "cable_fibre",
    "aka": [
-    "Nio Fibra"
+    "Nio Fibra",
+    "Oi Fibra",
+    "Oi Internet",
+    "Oi Velox",
+    "Velox"
    ],
    "asns": [],
    "website": "https://www.niointernet.com.br/",
    "support_url": null,
-   "notes": "Home and business fibre."
+   "notes": "Home and business fibre. Oi Fibra until 2025; owned by V.tal."
   },
   {
    "name": "V.tal",
@@ -305,7 +318,7 @@
      "rir": "lacnic"
     }
    ],
-   "website": "https://ligga.com.br/",
+   "website": null,
    "support_url": null,
    "notes": "Fibre."
   },

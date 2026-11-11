@@ -373,15 +373,25 @@ def ask_provider(ctx: Any, site_id: int, closing: list[dict[str, str]] | None = 
         return "@provider", entry["name"], [{"op": "create_provider", "target": {"kind": "provider", "id": None}, "client_ref": "provider", "fields": fields}]
 
     def typed(name: str) -> tuple[Any, str, list[dict[str, Any]]]:
+        every = p.all_providers()
+        home = [x for x in every if country and x["country"] == country]
+        # the site's own country first: an entry of that name, else the one entry that also goes by it ("Vodafone" at a
+        # British site is Vodafone UK, never the Vodafone of the one other country whose pack has that very name)
+        own = [x for x in home if packs.same_name(x["name"], name)]
+        also = [] if own else [x for x in home if any(packs.same_name(a, name) for a in x["aka"])]
+        if own or len(also) == 1:
+            return from_pack((own or also)[0])
         hit = packs.match_provider({"name": name, "slug": packs.slugify(name), "asns": [], "aka": []}, known)
         if hit is not None:
             return hit["id"], hit["name"], []
-        exact = [x for x in p.search_providers(name, country, limit=12) if packs.same_name(x["name"], name)]
-        near = [x for x in exact if x["country"] in (country, None)]
-        # a name of the site's own country or of the backbone names is that provider; so is a name only one pack lists.
-        # A name several countries use for different networks ("Telenet", "TIM") is recorded as typed, with no AS number
-        if near or len(exact) == 1:
-            return from_pack((near or exact)[0])
+        exact: list[dict[str, Any]] = []
+        for x in sorted((x for x in every if packs.same_name(x["name"], name)), key=lambda x: x["country"] is not None):
+            if not any(packs.same_network(x, y) for y in exact):
+                exact.append(x)
+        # then a backbone name; then a name only one pack lists. A name several countries use for different networks
+        # ("Telenet", "TIM"), or several networks of this country go by, is recorded as typed, with no AS number
+        if not also and exact and (exact[0]["country"] is None or len(exact) == 1):
+            return from_pack(exact[0])
         return "@provider", name, [{"op": "create_provider", "target": {"kind": "provider", "id": None}, "client_ref": "provider", "fields": {"name": name}}]
 
     offered = [x for x in p.providers_of(country) if packs.match_provider(x, known) is None]
@@ -462,7 +472,7 @@ def country_typed(text: str) -> tuple[Any, str | None]:
     if code is None and re.fullmatch(r"[A-Za-z]{2}", t) and t.upper() in ISO_CODES:
         code = t.upper()
     if code is None:
-        return None, ("That is not a country code the game knows. Type the two letters of its ISO code, for example BE." if len(t) == 2 else
+        return None, ("That is not a country code the game knows. Type the two letters of its ISO code, for example BE." if re.fullmatch(r"[A-Za-z]{2}", t) else
                       "The game does not know that name. Type the country's two-letter code, for example BE.")
     return code, None
 
@@ -729,7 +739,8 @@ def describe_op(e: Estate, op: dict[str, Any], refs: dict[str, str]) -> str | No
     if name == "create_site":
         return f"New site {f['name']}" + (f" in {country_name(f['country'])}." if f.get("country") else ".")
     if name == "create_provider":
-        hit = packs.match_provider({"name": f["name"], "slug": f.get("slug"), "asns": f.get("asns") or [], "aka": f.get("aka") or []}, list(e.providers.values()))
+        hit = packs.match_provider({"name": f["name"], "slug": f.get("slug"), "asns": f.get("asns") or [], "aka": f.get("aka") or [], "pack": f.get("pack")},
+                                   list(e.providers.values()))
         if ref:
             refs[ref] = (hit or f)["name"]
         if hit is not None:

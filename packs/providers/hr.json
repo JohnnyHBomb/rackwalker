@@ -1,16 +1,17 @@
 {
  "pack": "providers",
  "id": "providers-hr",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "HR",
  "title": "Common providers: Croatia",
  "read": "2026-11-11",
- "partial": false,
- "coverage": "Complete for the three national operators (fixed and mobile), the state transmission network and the research network; business ISPs are partial.",
+ "partial": true,
+ "coverage": "Partial. Complete for the three national operators (fixed and mobile), the state transmission network and the research network; cable and fibre operators and business ISPs are thin, and the regulator's register was not read as a list.",
  "missing": [
   "Smaller business ISPs and local cable operators",
   "Satellite providers",
-  "Status pages (none checked)"
+  "Status pages (none checked)",
+  "Cable and fibre operators other than the national operators (the regulator's register is in Croatian and its terms were not read, so no name was taken from it)"
  ],
  "sources": [
   {

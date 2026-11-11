@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-sg",
- "version": "1.0.0",
+ "version": "1.0.1",
  "country": "SG",
  "title": "Common providers: Singapore",
  "read": "2026-11-11",
@@ -11,7 +11,8 @@
   "Smaller business ISPs and data-centre providers",
   "Mobile virtual network operators",
   "An AS number for NetLink Trust (wholesale only: it sells no internet service)",
-  "Status pages (none was found that answered a check)"
+  "Status pages (none was found that answered a check)",
+  "A website for NetLink Trust (it answered an automated request only with a refusal or a bot check on the read date)"
  ],
  "sources": [
   {
@@ -36,7 +37,7 @@
    "read": "2026-11-11",
    "terms": "Only the address itself is recorded (a fact); no content is copied.",
    "use": "copied",
-   "result": "10 of 10 websites and 2 business, support or status pages answered an automated check; an address that did not answer is left empty."
+   "result": "9 of 10 websites and 2 business, support or status pages answered an automated check; an address that did not answer is left empty. An address that answered only with a refusal, a bot check or a page-not-found page counts as one that did not answer."
   },
   {
    "name": "RIPEstat as-overview (RIPE NCC)",
@@ -234,7 +235,7 @@
     "NetLink"
    ],
    "asns": [],
-   "website": "https://www.netlinknbn.com/",
+   "website": null,
    "support_url": null,
    "notes": "Wholesale fibre network: seldom the name on the bill."
   },

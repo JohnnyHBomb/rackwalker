@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-international",
- "version": "1.2.0",
+ "version": "1.2.1",
  "country": null,
  "title": "Backbone and international wholesale providers",
  "read": "2026-11-11",
@@ -76,11 +76,15 @@
     {
      "asn": 3356,
      "rir": "arin"
+    },
+    {
+     "asn": 209,
+     "rir": "arin"
     }
    ],
    "website": "https://www.lumen.com/",
    "support_url": null,
-   "notes": null
+   "notes": "AS209 is the former CenturyLink network."
   },
   {
    "name": "Arelion",
@@ -127,11 +131,15 @@
     {
      "asn": 6461,
      "rir": "arin"
+    },
+    {
+     "asn": 15290,
+     "rir": "arin"
     }
    ],
    "website": "https://www.zayo.com/",
    "support_url": null,
-   "notes": null
+   "notes": "AS15290 is its Canadian network (formerly Allstream)."
   },
   {
    "name": "GTT",
