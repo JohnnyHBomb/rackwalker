@@ -20,7 +20,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from rackwalker_proxy import packs
+from rackwalker_proxy import packs, questroutes
 
 from .conftest import schema_validator
 from .test_live_quests import ADMIN, URL, _board, _client
@@ -34,6 +34,9 @@ SITE = "Quay Annex"
 def offline_library(monkeypatch):
     monkeypatch.setenv("RACKWALKER_LIBRARY_DIR", str(LIBRARY))
     monkeypatch.setenv("RACKWALKER_LIBRARY_FETCH", "0")
+    # the tests change NetBox behind the game's back and ask it to look again at once: reads on request are not spaced out
+    monkeypatch.setattr(questroutes, "FRESH_SITE_S", 0.0)
+    monkeypatch.setattr(questroutes, "FRESH_ALL_S", 0.0)
 
 
 @pytest.fixture(scope="module")
@@ -164,8 +167,9 @@ def clear_annex(nbx) -> None:
         drop("dcim/device-types/", slug=slug)
     drop("dcim/module-types/", model="JPSU-650W-AC-AFO")
     for slug in ("juniper", "generic", "harbour-works"):
-        if not rows(nbx, "dcim/device-types/", manufacturer=slug) and not rows(nbx, "dcim/module-types/", manufacturer=slug):
-            drop("dcim/manufacturers/", slug=slug)
+        for maker in rows(nbx, "dcim/manufacturers/", slug=slug):      # only one that nothing else uses
+            if not rows(nbx, "dcim/device-types/", manufacturer_id=maker["id"]) and not rows(nbx, "dcim/module-types/", manufacturer_id=maker["id"]):
+                drop("dcim/manufacturers/", slug=slug)
     drop("dcim/device-roles/", slug="annex-kit")
     drop("extras/tags/", slug="rw-unverified")
 
@@ -197,8 +201,8 @@ def test_an_empty_site_beside_the_seed_gets_its_rack_and_a_box_from_the_library_
     sid = annex["site"]["id"]
     b = _board(player.cl, sid)
     chain = next(c for c in b["chains"] if c["kind"] == "setup")
-    # the seed has a carrier on record, so only the rack and the kit are asked for here
-    assert chain["title"] == f"Setting up {SITE}" and [s["stage"] for s in chain["stages"]] == ["room", "kit"]
+    # the seed has a carrier on record: that stage is done before it is asked, and only the rack and the kit are played
+    assert chain["title"] == f"Setting up {SITE}" and [(s["stage"], s["status"]) for s in chain["stages"]] == [("room", "open"), ("kit", "locked"), ("carrier", "done")]
     player.say(f"q:site_no_rack:site:{sid}", ("rack_kind", {"choice": "other"}), ("rack_height", {"text": "9"}), ("rack_name", {"text": "QA-1"}))
     assert player.apply(f"q:site_no_rack:site:{sid}")["complete"]
     kit = f"q:site_no_devices:site:{sid}"
@@ -272,7 +276,7 @@ def test_a_model_the_library_does_not_hold_and_a_module_in_a_bay_live(nbx, annex
     # a device with module bays and nothing in them: the power supply from the library goes into the bay the player names
     juniper = rows(nbx, "dcim/manufacturers/", slug="juniper")[0]
     mx = annex["make"]("dcim/device-types/", {"manufacturer": juniper["id"], "model": "MX204", "slug": "juniper-mx204", "part_number": "MX204"})
-    annex["make"]("dcim/module-bay-templates/", {"device_type": mx["id"], "name": "Power Supply 0"})
+    annex["make"]("dcim/module-bay-templates/", {"device_type": mx["id"], "name": "Power Supply 0", "position": "0"})
     role = rows(nbx, "dcim/device-roles/", slug="annex-kit")[0]
     rtr = annex["make"]("dcim/devices/", {"name": "qa-rtr1", "site": sid, "role": role["id"], "device_type": mx["id"], "status": "active", "serial": "QA-R1"})
     player.cl.get("/api/game/quests", params={"scope": "netbox", "fresh": True})

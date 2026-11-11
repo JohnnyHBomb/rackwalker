@@ -471,7 +471,7 @@ test('settings changed in two tabs: each change is kept, neither tab reverts the
   await ctx.close();
 });
 
-test('a NetBox without sites: Ilatea names the one next step (add a site), and never sends the player to a door', async ({ page }) => {
+test('a NetBox without sites: Ilatea offers the one next step (the first site), and never sends the player to a door', async ({ page }) => {
   await page.route('**/api/scene/world', async (r) => {
     const w = await (await r.fetch()).json();
     await r.fulfill({ json: { ...w, sites: [], links: [] } });
@@ -480,7 +480,8 @@ test('a NetBox without sites: Ilatea names the one next step (add a site), and n
   // no site of NetBox's; the practice island (made up, in a region of its own) is always there
   expect(await page.evaluate(() => window.__game!.shell.map!.doors.map((d) => d.siteId))).toEqual([9_000_001]);
   await expect.poll(async () => (await game(page)).dialogue?.script).toBe('ilatea-empty');
-  expect((await game(page)).dialogue!.text).toContain('add one site in NetBox');
+  expect((await game(page)).dialogue!.text).toContain('this NetBox has no site yet');
+  expect((await game(page)).dialogue!.choices[0]).toBe('Yes: my first site'); // played end to end in e2e-setup/setup.spec.ts
   await page.keyboard.press('Escape');
   await page.evaluate(() => (window.__game!.shell.stuckMs = 200));
   await page.waitForTimeout(1_500);
