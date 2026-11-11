@@ -604,7 +604,7 @@ def describe_op(e: Estate, op: dict[str, Any], refs: dict[str, str]) -> str | No
             refs[ref] = label
         if row is None:
             return f"New device type {label}, recorded by hand and marked unverified: the device-type library does not hold it, so it earns no bonus."
-        bits = ([f"{row['u_height']:g}U"] if kind == "device" else []) + [f"{row[k]} {w}" for k, w in (
+        bits = ([f"{row['u_height']:g}U"] if kind == "device" else []) + [f"{row[k]} {w if row[k] != 1 else w[:-1]}" for k, w in (
             ("interfaces", "interfaces"), ("console_ports", "console ports"), ("power_ports", "power ports"), ("front_ports", "front ports"),
             ("rear_ports", "rear ports"), ("module_bays", "module bays")) if row.get(k)]
         return f"Import the {kind} type {label} from the device-type library (part number {row['part_number'] or 'not given'}; {', '.join(bits) or 'no ports'}), with its manufacturer if NetBox lacks it."

@@ -19,7 +19,7 @@ export NB_PROJECT NB_PORT NB_HOST
 PLAYWRIGHT_BROWSERS_PATH ?= $(CURDIR)/.ms-playwright
 export PLAYWRIGHT_BROWSERS_PATH
 
-.PHONY: help bootstrap test packs-check test-proxy test-live test-live-empty test-web test-e2e e2e e2e-live e2e-themes theme-shots gen dev dev-fixtures build \
+.PHONY: help bootstrap test packs-check test-proxy test-live test-live-empty test-web test-e2e e2e e2e-setup e2e-live e2e-themes theme-shots gen dev dev-fixtures build \
         netbox-up netbox-down netbox-destroy netbox-seed netbox-reset netbox-status netbox-check-fixtures netbox-env netbox-tunnel
 
 help:
@@ -77,8 +77,13 @@ test-live-empty: $(VENV_OK)
 test-web: web/node_modules/.package-lock.json
 	cd web && npx tsc --noEmit -p . && npx vitest run
 
-test-e2e: web/node_modules/.package-lock.json
+test-e2e: web/node_modules/.package-lock.json $(VENV_OK)
 	cd web && npx playwright install chromium && npx playwright test
+	cd web && npx playwright test -c playwright.setup.config.ts
+
+# The setup companion alone: an empty made-up NetBox (proxy/tests/empty_netbox.py), a write-enabled proxy, the browser.
+e2e-setup: web/node_modules/.package-lock.json $(VENV_OK)
+	cd web && npx playwright install chromium && npx playwright test -c playwright.setup.config.ts
 
 e2e: test-e2e
 
