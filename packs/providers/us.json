@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-us",
- "version": "1.1.0",
+ "version": "1.2.0",
  "country": "US",
  "title": "Common providers: United States",
  "read": "2026-11-11",
@@ -12,7 +12,7 @@
   "Municipal fibre networks",
   "Wireless ISPs",
   "Most regional cable operators",
-  "AS numbers for Brightspeed and Metronet (none confirmed)",
+  "An AS number for Metronet (none confirmed)",
   "Websites that refused an automated check on the read date (left empty)"
  ],
  "sources": [
@@ -79,6 +79,14 @@
    "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
    "use": "cited",
    "result": "Terms read; no data taken."
+  },
+  {
+   "name": "Press releases and trade press on the changes of ownership of 2026",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: Verizon and Frontier closed on 20 January 2026; AT&T and Lumen's home fibre on 2 February 2026; Zayo and Crown Castle's fibre about 1 May 2026 (sources give 29 April to 4 May); Charter and Cox on 20 August 2026."
   }
  ],
  "providers": [
@@ -88,7 +96,9 @@
    "kind": "national_carrier",
    "aka": [
     "ATT",
-    "AT&T Business"
+    "AT&T Business",
+    "AT&T Fiber",
+    "Quantum Fiber"
    ],
    "asns": [
     {
@@ -98,7 +108,7 @@
    ],
    "website": "https://www.business.att.com/",
    "support_url": "https://www.att.com/outages/",
-   "notes": null,
+   "notes": "Owns Lumen's former home-fibre business (Quantum Fiber) since 2 February 2026.",
    "wikidata": "Q35476"
   },
   {
@@ -118,7 +128,7 @@
    ],
    "website": "https://www.verizon.com/business/",
    "support_url": "https://www.verizon.com/support/check-network-status/",
-   "notes": "Fios and business lines."
+   "notes": "Fios and business lines. Owns Frontier since January 2026 (its lines are still listed under Frontier, AS5650)."
   },
   {
    "name": "Comcast Business",
@@ -190,14 +200,15 @@
    ],
    "website": null,
    "support_url": "https://www.spectrum.net/support/internet/spectrum-outage-information",
-   "notes": "Charter Communications; Spectrum Business and Spectrum Enterprise."
+   "notes": "Charter Communications; Spectrum Business and Spectrum Enterprise. Owns Cox since August 2026 (listed apart, AS22773)."
   },
   {
    "name": "Cox Business",
    "slug": "cox-business",
    "kind": "cable_fibre",
    "aka": [
-    "Cox"
+    "Cox",
+    "Cox Communications"
    ],
    "asns": [
     {
@@ -207,7 +218,7 @@
    ],
    "website": "https://www.cox.com/business/home.html",
    "support_url": null,
-   "notes": null
+   "notes": "Cox was bought by Charter (Spectrum) on 20 August 2026; lines are moving to the Spectrum name. AS22773 is still Cox's."
   },
   {
    "name": "Lumen",
@@ -230,13 +241,16 @@
    ],
    "website": "https://www.lumen.com/",
    "support_url": null,
-   "notes": "Formerly CenturyLink and Level 3; AS209 is the CenturyLink access network."
+   "notes": "Formerly CenturyLink and Level 3; AS209 is the CenturyLink access network. Its home fibre (Quantum Fiber) went to AT&T in February 2026."
   },
   {
    "name": "Frontier",
    "slug": "frontier",
    "kind": "national_carrier",
-   "aka": [],
+   "aka": [
+    "Frontier Communications",
+    "Frontier Fiber"
+   ],
    "asns": [
     {
      "asn": 5650,
@@ -245,7 +259,7 @@
    ],
    "website": "https://business.frontier.com/",
    "support_url": null,
-   "notes": null
+   "notes": "Bought by Verizon on 20 January 2026. The Frontier name and AS5650 may still be what the bill and the hand-off box show."
   },
   {
    "name": "Optimum (Altice USA)",
@@ -272,7 +286,8 @@
    "kind": "national_carrier",
    "aka": [
     "Windstream",
-    "Kinetic"
+    "Kinetic",
+    "Uniti"
    ],
    "asns": [
     {
@@ -340,7 +355,10 @@
    "name": "Google Fiber",
    "slug": "google-fiber",
    "kind": "cable_fibre",
-   "aka": [],
+   "aka": [
+    "GFiber",
+    "Google Fiber Webpass"
+   ],
    "asns": [
     {
      "asn": 16591,
@@ -365,7 +383,7 @@
    ],
    "website": "https://www.zayo.com/",
    "support_url": null,
-   "notes": null,
+   "notes": "Owns the former Crown Castle fibre business since spring 2026 (listed apart, AS46887).",
    "wikidata": "Q8067574"
   },
   {
@@ -390,7 +408,10 @@
    "name": "Crown Castle Fiber",
    "slug": "crown-castle-fiber",
    "kind": "business_isp",
-   "aka": [],
+   "aka": [
+    "Crown Castle",
+    "Lightower"
+   ],
    "asns": [
     {
      "asn": 46887,
@@ -399,7 +420,7 @@
    ],
    "website": "https://www.crowncastle.com/",
    "support_url": null,
-   "notes": null
+   "notes": "Crown Castle's fibre business went to Zayo in spring 2026. Older contracts and AS46887 still carry the Crown Castle name."
   },
   {
    "name": "Fidium (Consolidated Communications)",
@@ -530,7 +551,12 @@
    "slug": "brightspeed",
    "kind": "national_carrier",
    "aka": [],
-   "asns": [],
+   "asns": [
+    {
+     "asn": 19901,
+     "rir": "arin"
+    }
+   ],
    "website": null,
    "support_url": null,
    "notes": "Former CenturyLink lines in 20 states."

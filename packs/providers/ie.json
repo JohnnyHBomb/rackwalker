@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-ie",
- "version": "1.1.0",
+ "version": "1.2.0",
  "country": "IE",
  "title": "Common providers: Ireland",
  "read": "2026-11-11",
@@ -10,7 +10,7 @@
  "missing": [
   "Regional fixed-wireless operators",
   "Smaller business ISPs",
-  "AS numbers for SIRO, National Broadband Ireland, Viatel, BT Ireland, Pure Telecom and HEAnet (none confirmed)",
+  "AS numbers for SIRO, National Broadband Ireland, Viatel, BT Ireland and Pure Telecom (none confirmed)",
   "Status pages (only one answered a check on the read date)"
  ],
  "sources": [
@@ -69,6 +69,14 @@
    "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
    "use": "cited",
    "result": "Terms read; no data taken."
+  },
+  {
+   "name": "Announcements of 2025: HEAnet becomes Asiera; BT sells its Irish wholesale unit",
+   "url": "https://www.heanet.ie/news/asiera",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: HEAnet and EduCampus merged to become Asiera as of 31 December 2025; BT completed the sale to Speed Fibre Group on 1 September 2025."
   }
  ],
  "providers": [
@@ -156,7 +164,7 @@
    ],
    "website": "https://www.three.ie/business/",
    "support_url": null,
-   "notes": "Mobile and fixed wireless."
+   "notes": "Mobile and fixed wireless. AS34218 is registered to it and was not announced on the read date."
   },
   {
    "name": "Sky Ireland",
@@ -199,7 +207,10 @@
    "name": "Enet",
    "slug": "enet",
    "kind": "wholesale",
-   "aka": [],
+   "aka": [
+    "Speed Fibre Group",
+    "Enet Communications"
+   ],
    "asns": [
     {
      "asn": 2110,
@@ -208,7 +219,7 @@
    ],
    "website": "https://www.enet.ie/",
    "support_url": null,
-   "notes": "Operates the Metropolitan Area Networks; wholesale."
+   "notes": "Operates the Metropolitan Area Networks; wholesale. Part of Speed Fibre Group, which took over BT's Irish wholesale unit in 2025; AS2110 was BT Ireland's number."
   },
   {
    "name": "Digiweb",
@@ -337,11 +348,14 @@
    "name": "BT Ireland",
    "slug": "bt-ireland",
    "kind": "business_isp",
-   "aka": [],
+   "aka": [
+    "BT Communications Ireland",
+    "BTCIL"
+   ],
    "asns": [],
    "website": "https://www.btireland.com/",
    "support_url": null,
-   "notes": null
+   "notes": "BT's Irish wholesale and enterprise unit went to Speed Fibre Group (Enet, Magnet+) on 1 September 2025. BT still serves large and multinational customers in Ireland."
   },
   {
    "name": "Pure Telecom",
@@ -354,14 +368,22 @@
    "notes": null
   },
   {
-   "name": "HEAnet",
+   "name": "Asiera",
    "slug": "heanet",
    "kind": "research_education",
-   "aka": [],
-   "asns": [],
+   "aka": [
+    "HEAnet",
+    "EduCampus"
+   ],
+   "asns": [
+    {
+     "asn": 1213,
+     "rir": "ripe"
+    }
+   ],
    "website": "https://www.heanet.ie/",
    "support_url": null,
-   "notes": "The national research and education network."
+   "notes": "The national research and education network. HEAnet until 31 December 2025, when it merged with EduCampus and took this name."
   }
  ]
 }

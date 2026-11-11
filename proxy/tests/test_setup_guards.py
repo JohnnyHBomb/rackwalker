@@ -1074,3 +1074,73 @@ def test_a_dry_run_refuses_what_a_real_run_refuses():
         b.dev(s, "sw1", tags=[])
         e.dtypes[5]["part_number"] = "MX204"
         sim(e, "create_device", {"name": "SW1", "site_id": s, "role": "Router", "device_type_id": 5})
+
+
+# ---------------------------------------------------------------- the packs keep up with who owns what
+@pytest.mark.parametrize("typed,country,name", [
+    ("Asiera", "IE", "Asiera"), ("HEAnet", "IE", "Asiera"), ("AS1213", "IE", "Asiera"), ("Quantum Fiber", "US", "AT&T"), ("GFiber", "US", "Google Fiber"),
+    ("Uniti", "US", "Kinetic (Windstream)"), ("XS4ALL", "NL", "KPN"), ("Speed Fibre Group", "IE", "Enet"), ("AS19901", "US", "Brightspeed"),
+    ("AS34177", "FR", "Celeste"), ("703", None, "Verizon Business")])
+def test_a_provider_is_found_under_the_name_it_goes_by_now_and_the_one_it_went_by(typed, country, name):
+    hits = packs.load().search_providers(typed, country)
+    assert hits and hits[0]["name"] == name, (typed, [h["name"] for h in hits])
+
+
+def test_a_provider_that_changed_hands_says_so_where_the_admin_reads_it():
+    p = packs.load()
+    said = {("providers-us", "frontier"): "Verizon", ("providers-us", "cox-business"): "Charter", ("providers-us", "crown-castle-fiber"): "Zayo",
+            ("providers-us", "lumen"): "AT&T", ("providers-us", "kinetic-windstream"): "Uniti", ("providers-ie", "heanet"): "HEAnet",
+            ("providers-ie", "bt-ireland"): "Speed Fibre Group", ("providers-ie", "enet"): "BT Ireland", ("providers-gb", "three-uk"): "Vodafone"}
+    for (pack, slug), word in said.items():
+        entry = p.provider(pack, slug)
+        assert entry is not None and word in (entry["notes"] or ""), (pack, slug, entry and entry["notes"])
+    # an AS number that is registered and not announced is said to be so, not passed off as the network's own
+    quiet = {("providers-gb", "ee"): 12576, ("providers-nl", "ziggo"): 9143, ("providers-nl", "vodafone-nl"): 15480, ("providers-de", "vodafone-de"): 31334,
+             ("providers-fr", "sfr"): 12626, ("providers-ie", "three-ie"): 34218}
+    for (pack, slug), asn in quiet.items():
+        entry = p.provider(pack, slug)
+        assert f"AS{asn}" in entry["notes"] and "not announced" in entry["notes"], (slug, entry["notes"])
+    assert "four mobile network operators" not in p.provider_pack("GB")["coverage"]
+    assert not any("HEAnet" in m or "Brightspeed" in m or "Celeste" in m for pack in p.providers for m in pack["missing"])
+
+
+def test_the_schema_alone_keeps_the_library_pinned_to_a_commit_of_a_raw_file_host(tmp_path):
+    validator = packs._validators(REPO / "packs")["devices"]
+    doc = json.loads((REPO / "packs/devices/community-library.json").read_text())
+    assert list(validator.iter_errors(doc)) == []
+    for field, bad in (("raw_base", "https://example.net/library/" + doc["library"]["commit"] + "/"), ("raw_base", "http://raw.githubusercontent.com/a/b/main/"),
+                       ("commit", "main"), ("commit", doc["library"]["commit"][:12]), ("repo", "https://gitlab.com/a/b")):
+        assert list(validator.iter_errors({**doc, "library": {**doc["library"], field: bad}})), (field, bad)
+
+
+def test_the_port_a_maker_names_for_the_way_out_is_offered_first():
+    def port(n: int, name: str, kind: str = "1000base-t", mgmt: bool = False) -> dict[str, Any]:
+        return {"id": n, "name": name, "type": kind, "mgmt_only": mgmt}
+    mx67 = [port(1, "Internet 1"), port(2, "Port 2"), port(3, "Port 3"), port(4, "Port 4"), port(5, "Port 5"), port(6, "USB", "other")]
+    assert [p["name"] for p in quests.likely_uplinks(mx67)] == ["Internet 1", "Port 5", "Port 4", "Port 3", "Port 2", "USB"]
+    edge = [port(1, "ge-0/0/0"), port(2, "ge-0/0/1"), port(3, "xe-0/1/0", "10gbase-x-sfpp"), port(4, "WAN2"), port(5, "WAN1"), port(6, "fxp0", mgmt=True),
+            port(7, "Console"), port(8, "wlan0"), port(9, "GigabitEthernet0/1 uplink")]
+    assert [p["name"] for p in quests.likely_uplinks(edge)] == ["WAN2", "WAN1", "GigabitEthernet0/1 uplink", "xe-0/1/0", "wlan0", "ge-0/0/1", "ge-0/0/0",
+                                                                "Console", "fxp0"]
+
+
+# ---------------------------------------------------------------- what an import carries over
+def test_an_import_keeps_bridge_membership_and_comments_and_a_pack_provider_says_what_kind_it_is(tmp_path, monkeypatch):
+    box = EmptyBox()
+    near_empty(box)
+    cl = game(tmp_path, monkeypatch, box)
+    pdu = lib("Eaton", "EMIB08")
+    kpn = packs.load().provider("providers-nl", "kpn")
+    r = cl.post("/api/changes/apply", json={"ops": [
+        {"op": "add_device_type", "target": T("device_type"), "fields": {"library_file": pdu["file"]}},
+        {"op": "create_provider", "target": T("provider"), "fields": {"name": kpn["name"], "slug": kpn["slug"], "asns": kpn["asns"], "pack": "providers-nl"}},
+        {"op": "create_provider", "target": T("provider"), "fields": {"name": "Harbour Wireless Co-op"}}]}).json()
+    assert r["applied"], r
+    made = next(t for t in box.data["dcim/device-types"] if t["model"] == "EMIB08")
+    assert made["comments"].startswith("Eaton Metered Input rack PDU")
+    ifaces = {t["name"]: t for t in box.data["dcim/interface-templates"] if t["device_type"]["id"] == made["id"]}
+    assert set(ifaces) == {"Network", "Daisy Chain", "Bridge 0"}
+    assert ifaces["Network"]["bridge"] == ifaces["Bridge 0"]["id"] == ifaces["Daisy Chain"]["bridge"] and ifaces["Bridge 0"].get("bridge") is None
+    by_name = {p["name"]: p for p in box.data["circuits/providers"]}
+    assert by_name["KPN"]["description"] == "National carrier" and "description" not in by_name["Harbour Wireless Co-op"]
+    assert r["ops"][1]["after"]["description"] == "National carrier"

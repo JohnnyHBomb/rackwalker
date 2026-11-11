@@ -241,8 +241,20 @@ export function guidePanel(host: HTMLElement, who: 'byte' | 'nocti', back: () =>
 const CAT_MARK: Readonly<Record<CatalogueItem['status'], [string, string]>> = {
   verified: ['✔', 'confirmed by the device-type library'],
   unverified: ['?', 'not confirmed'],
-  mismatch: ['≠', 'part number differs from the library'],
+  mismatch: ['≠', 'part number of another model'],
 };
+
+/** One catalogue entry as it is shown: its mark and word (never colour alone), its name with its part number, and its note. */
+export function catalogueRow(it: CatalogueItem): { status: CatalogueItem['status']; mark: string; name: string; state: string; note: string | null } {
+  const [mark, word] = CAT_MARK[it.status];
+  return {
+    status: it.status,
+    mark,
+    name: it.model + (it.part_number && it.part_number !== it.model ? ` (${it.part_number})` : ''),
+    state: `${word} · ${it.devices} device${it.devices === 1 ? '' : 's'}`,
+    note: it.note || null,
+  };
+}
 
 /**
  * The device catalogue: the manufacturers and models of the player's own NetBox, as a collection. What the device-type
@@ -267,21 +279,21 @@ export function cataloguePanel(host: HTMLElement, load: (fresh: boolean) => Prom
       const table = document.createElement('table');
       for (const it of c.items.filter((i) => i.manufacturer === m.name)) {
         const tr = document.createElement('tr');
-        tr.dataset.status = it.status;
+        const shown = catalogueRow(it);
+        tr.dataset.status = shown.status;
         tr.dataset.model = it.model;
-        const [mark, word] = CAT_MARK[it.status];
         const name = document.createElement('td');
         const sign = document.createElement('span');
         sign.className = 'mark';
-        sign.textContent = mark;
+        sign.textContent = shown.mark;
         sign.setAttribute('aria-hidden', 'true');
-        name.append(sign, it.model + (it.part_number && it.part_number !== it.model ? ` (${it.part_number})` : ''));
+        name.append(sign, shown.name);
         const state = document.createElement('td');
-        state.textContent = `${word} · ${it.devices} device${it.devices === 1 ? '' : 's'}`;
-        if (it.note) {
+        state.textContent = shown.state;
+        if (shown.note) {
           const note = document.createElement('div');
           note.className = 'note';
-          note.textContent = it.note;
+          note.textContent = shown.note;
           state.append(note);
         }
         tr.append(name, state);

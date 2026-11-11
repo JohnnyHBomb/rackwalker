@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-nl",
- "version": "1.1.0",
+ "version": "1.2.0",
  "country": "NL",
  "title": "Common providers: Netherlands",
  "read": "2026-11-11",
@@ -10,7 +10,8 @@
  "missing": [
   "Regional and municipal fibre operators",
   "Smaller business ISPs",
-  "AS numbers for the wholesale-only fibre networks (they sell no internet service)"
+  "AS numbers for the wholesale-only fibre networks (they sell no internet service)",
+  "An announced AS number for Trined (AS204893 is registered to it and was not announced on the read date)"
  ],
  "sources": [
   {
@@ -75,7 +76,11 @@
    "name": "KPN",
    "slug": "kpn",
    "kind": "national_carrier",
-   "aka": [],
+   "aka": [
+    "XS4ALL",
+    "Koninklijke KPN",
+    "KPN Zakelijk"
+   ],
    "asns": [
     {
      "asn": 1136,
@@ -84,7 +89,7 @@
    ],
    "website": "https://www.kpn.com/zakelijk",
    "support_url": "https://www.kpn.com/service/storingen",
-   "notes": null,
+   "notes": "XS4ALL is a KPN name since 2022 (AS3265 is registered to KPN and was not announced on the read date).",
    "wikidata": "Q338633"
   },
   {
@@ -139,7 +144,7 @@
    ],
    "website": "https://www.ziggo.nl/zakelijk",
    "support_url": "https://www.ziggo.nl/klantenservice/storingen",
-   "notes": "Cable; part of VodafoneZiggo.",
+   "notes": "Cable; part of VodafoneZiggo. AS9143 is registered to Vodafone Libertel and was not announced on the read date.",
    "wikidata": "Q2382166"
   },
   {
@@ -159,7 +164,7 @@
    ],
    "website": "https://www.vodafone.nl/zakelijk",
    "support_url": null,
-   "notes": "Mobile; part of VodafoneZiggo. The fixed network (AS33915, AS9143) is recorded on Ziggo."
+   "notes": "Mobile; part of VodafoneZiggo. The fixed network (AS33915, AS9143) is on Ziggo. AS15480 was not announced on the read date."
   },
   {
    "name": "DELTA Fiber",
@@ -294,7 +299,7 @@
    "asns": [],
    "website": "https://www.trined.nl/",
    "support_url": null,
-   "notes": null
+   "notes": "AS204893 is registered to it and was not announced on the read date, so it is not listed as its number."
   },
   {
    "name": "Colt Technology Services",

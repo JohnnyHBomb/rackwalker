@@ -1453,7 +1453,7 @@ export interface CreateCircuitTypeFields {
   name: string;
 }
 /**
- * A device type in NetBox (2.5.0), with its manufacturer when missing. With `library_file` it is imported from the pinned device-type library: the full definition is fetched, checked against the index's SHA-256 and written with its console, power, interface, front and rear port, module-bay and device-bay templates; when it cannot be fetched the op fails with library_unavailable. With `manufacturer` and `model` it is recorded by hand for a model the library does not hold, and tagged rw-unverified; a part number that contradicts the library's for a model it does hold is refused. A device type NetBox already holds (same manufacturer and model) is matched instead (no_change).
+ * A device type in NetBox (2.5.0), with its manufacturer when missing. With `library_file` it is imported from the pinned device-type library: the full definition is fetched, checked against the index's SHA-256 and written with its console, power, interface, front and rear port, module-bay and device-bay templates; when it cannot be fetched the op fails with library_unavailable. With `manufacturer` and `model` it is recorded by hand for a model the library does not hold, and tagged rw-unverified; a part number that is the library's for another model of that maker is refused. A device type NetBox already holds (the same model, under any usual name of its manufacturer, or with the part number as its model) is matched instead (no_change); one it holds with no component template at all is filled with the library's templates (ok, with the counts as `after`).
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "AddDeviceTypeOp".
@@ -1604,7 +1604,7 @@ export interface InstallModuleFields {
   serial?: string;
 }
 /**
- * Sets the part number of a device type NetBox holds to the one the pinned device-type library lists for that manufacturer and model (2.5.0). `part_number` is what was read off the label; it is compared without spaces, dashes and case, and the library's own spelling is what is written. Refused when the library does not hold the model or lists no part number for it, or when `part_number` is not the library's (validation_failed, with details.expected).
+ * Sets the part number of a device type NetBox holds to the one the pinned device-type library lists for that manufacturer and model (2.5.0). `part_number` is what was read off the label; it is compared without spaces, dashes and case, and the library's own spelling is what is written. Refused when the library does not hold the model or lists no single part number for it (a pattern such as 7X0x is not one), or when `part_number` is not the library's (validation_failed, with details.expected).
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "SetPartNumberOp".
@@ -2475,7 +2475,7 @@ export interface CatalogueItem {
   model: string;
   part_number: string | null;
   /**
-   * verified = the device-type library holds this maker and model, and the part numbers agree; mismatch = it holds the model with another part number (note says which); unverified = it does not hold the model.
+   * verified = the device-type library holds this maker and model, and no part number contradicts it (a part number the library merely does not list for the model is said in the note, not held against it); mismatch = NetBox holds it under the part number of another model of that maker (note says which); unverified = the library does not hold the model, or it is tagged rw-unverified.
    */
   status: "verified" | "unverified" | "mismatch";
   note: string | null;

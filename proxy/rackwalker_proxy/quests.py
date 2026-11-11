@@ -389,14 +389,19 @@ def ask_port(ctx: Ctx, sid: str, dev: dict[str, Any], prompt: str, kinds: tuple[
 
 
 FAST_PORT = ("sfp", "base-x", "10g", "25g", "40g", "50g", "100g", "200g", "400g")
+# A port the maker itself names for the way out comes first ("Internet 1", "WAN2", "Uplink"); one that is no network
+# port in the usual sense (a USB modem socket, a console) comes last.
+UPLINK_NAME = re.compile(r"(?i)(?<![a-z])(wan|internet|uplink)(?![a-z])")
+SIDE_PORT = re.compile(r"(?i)(?<![a-z])(usb|console|aux)(?![a-z])")
 
 
 def likely_uplinks(free: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Free ports, the likeliest carrier of a link between devices first: fibre cages and fast ports before copper
-    access ports, the highest-numbered first inside each kind (uplinks sit at the end of the front panel), and a
-    management-only port last."""
+    """Free ports, the likeliest carrier of a link between devices first: a port named for it, then fibre cages and
+    fast ports before copper access ports, the highest-numbered first inside each kind (uplinks sit at the end of the
+    front panel), then a USB or console socket, and a management-only port last."""
     by_name = sorted(free, key=lambda p: (natural(p["name"]), p["id"]), reverse=True)
-    return sorted(by_name, key=lambda p: (p["mgmt_only"], not any(w in (p["type"] or "") for w in FAST_PORT)))
+    return sorted(by_name, key=lambda p: (p["mgmt_only"], not UPLINK_NAME.search(p["name"] or ""), bool(SIDE_PORT.search(p["name"] or "")),
+                                          not any(w in (p["type"] or "") for w in FAST_PORT)))
 
 
 def ask_cable_type(ctx: Ctx, sid: str = "cable_type") -> str | None:

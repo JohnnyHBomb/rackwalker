@@ -8,7 +8,7 @@ This product includes data derived from the NetBox community device-type library
 (https://github.com/netbox-community/devicetype-library), dedicated to the public domain under CC0 1.0 Universal:
   packs/devices/community-library.index.json.gz   an index built from the library at the commit named in
                                                   packs/devices/community-library.json
-  proxy/tests/library/                            five definition files, unchanged, for the offline tests
+  proxy/tests/library/                            seventeen definition files, unchanged, for the offline tests
 CC0 requires no attribution; the source is named here so that it can be found.
 
 The provider packs (packs/providers/) hold facts only: the names providers trade under, their AS numbers and the

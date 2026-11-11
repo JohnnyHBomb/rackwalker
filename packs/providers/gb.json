@@ -1,12 +1,12 @@
 {
  "pack": "providers",
  "id": "providers-gb",
- "version": "1.1.0",
+ "version": "1.2.0",
  "country": "GB",
  "title": "Common providers: United Kingdom",
  "read": "2026-11-11",
  "partial": false,
- "coverage": "Complete for the national fixed-line carriers, the four mobile network operators and the main wholesale access networks; business ISPs and full-fibre alternative networks are partial (the largest by reach only).",
+ "coverage": "Complete for the national fixed-line carriers, the mobile network operators (three networks since Three merged with Vodafone UK in 2025; both names are listed) and the main wholesale access networks; business ISPs and full-fibre alternative networks are partial (the largest by reach only).",
  "missing": [
   "Regional full-fibre alternative networks (several dozen)",
   "Resellers that own no network",
@@ -198,7 +198,7 @@
    ],
    "website": "https://ee.co.uk/",
    "support_url": null,
-   "notes": "Mobile operator of the BT group; 4G/5G backup and fixed wireless."
+   "notes": "Mobile operator of the BT group; 4G/5G backup and fixed wireless. AS12576 is registered to it and was not announced on the read date."
   },
   {
    "name": "Three UK",

@@ -4,7 +4,7 @@
     {
       "id": "providers-de",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Common providers: Germany",
       "country": "DE",
       "read": "2026-11-11",
@@ -70,7 +70,7 @@
     {
       "id": "providers-fr",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Common providers: France",
       "country": "FR",
       "read": "2026-11-11",
@@ -79,7 +79,7 @@
       "missing": [
         "Smaller business ISPs",
         "Operators in the overseas departments",
-        "AS numbers for Celeste, Linkt and the wholesale fibre operators (none confirmed)"
+        "AS numbers for Linkt and the wholesale fibre operators (none confirmed)"
       ],
       "entries": 22,
       "sources": [
@@ -137,12 +137,12 @@
     {
       "id": "providers-gb",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Common providers: United Kingdom",
       "country": "GB",
       "read": "2026-11-11",
       "partial": false,
-      "coverage": "Complete for the national fixed-line carriers, the four mobile network operators and the main wholesale access networks; business ISPs and full-fibre alternative networks are partial (the largest by reach only).",
+      "coverage": "Complete for the national fixed-line carriers, the mobile network operators (three networks since Three merged with Vodafone UK in 2025; both names are listed) and the main wholesale access networks; business ISPs and full-fibre alternative networks are partial (the largest by reach only).",
       "missing": [
         "Regional full-fibre alternative networks (several dozen)",
         "Resellers that own no network",
@@ -211,7 +211,7 @@
     {
       "id": "providers-ie",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Common providers: Ireland",
       "country": "IE",
       "read": "2026-11-11",
@@ -220,7 +220,7 @@
       "missing": [
         "Regional fixed-wireless operators",
         "Smaller business ISPs",
-        "AS numbers for SIRO, National Broadband Ireland, Viatel, BT Ireland, Pure Telecom and HEAnet (none confirmed)",
+        "AS numbers for SIRO, National Broadband Ireland, Viatel, BT Ireland and Pure Telecom (none confirmed)",
         "Status pages (only one answered a check on the read date)"
       ],
       "entries": 20,
@@ -273,13 +273,20 @@
           "read": "2026-11-11",
           "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
           "use": "cited"
+        },
+        {
+          "name": "Announcements of 2025: HEAnet becomes Asiera; BT sells its Irish wholesale unit",
+          "url": "https://www.heanet.ie/news/asiera",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
         }
       ]
     },
     {
       "id": "providers-nl",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Common providers: Netherlands",
       "country": "NL",
       "read": "2026-11-11",
@@ -288,7 +295,8 @@
       "missing": [
         "Regional and municipal fibre operators",
         "Smaller business ISPs",
-        "AS numbers for the wholesale-only fibre networks (they sell no internet service)"
+        "AS numbers for the wholesale-only fibre networks (they sell no internet service)",
+        "An announced AS number for Trined (AS204893 is registered to it and was not announced on the read date)"
       ],
       "entries": 19,
       "sources": [
@@ -346,7 +354,7 @@
     {
       "id": "providers-us",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Common providers: United States",
       "country": "US",
       "read": "2026-11-11",
@@ -357,7 +365,7 @@
         "Municipal fibre networks",
         "Wireless ISPs",
         "Most regional cable operators",
-        "AS numbers for Brightspeed and Metronet (none confirmed)",
+        "An AS number for Metronet (none confirmed)",
         "Websites that refused an automated check on the read date (left empty)"
       ],
       "entries": 34,
@@ -417,13 +425,20 @@
           "read": "2026-11-11",
           "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
           "use": "cited"
+        },
+        {
+          "name": "Press releases and trade press on the changes of ownership of 2026",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
         }
       ]
     },
     {
       "id": "providers-international",
       "kind": "providers",
-      "version": "1.1.0",
+      "version": "1.2.0",
       "title": "Backbone and international wholesale providers",
       "country": null,
       "read": "2026-11-11",

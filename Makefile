@@ -82,6 +82,7 @@ test-e2e: web/node_modules/.package-lock.json $(VENV_OK)
 	cd web && npx playwright test -c playwright.setup.config.ts
 
 # The setup companion alone: an empty made-up NetBox (proxy/tests/empty_netbox.py), a write-enabled proxy, the browser.
+# It leaves the checkout as it was; RACKWALKER_SETUP_SHOTS=1 also rewrites docs/screenshots/setup/.
 e2e-setup: web/node_modules/.package-lock.json $(VENV_OK)
 	cd web && npx playwright install chromium && npx playwright test -c playwright.setup.config.ts
 

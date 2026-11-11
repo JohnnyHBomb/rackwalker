@@ -261,9 +261,13 @@ def plan_create_provider(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
     slug, n = entry["slug"], 2
     while any(r.v.get("slug") == slug for r in pl.st.of("provider")):
         slug, n = f"{entry['slug']}-{n}", n + 1
-    shown = {"name": entry["name"], **({"asns": [a["asn"] for a in entry["asns"]]} if entry["asns"] else {}), **({"pack": f["pack"]} if f.get("pack") else {})}
+    # what kind of network it is goes with it into NetBox, as the pack says it (the pack's notes are for its readers and stay there)
+    listed = packs.load().provider(f["pack"], entry["slug"]) if f.get("pack") else None
+    about = packs.KIND_WORDS.get(listed["kind"], "").capitalize() if listed else ""
+    shown = {"name": entry["name"], **({"asns": [a["asn"] for a in entry["asns"]]} if entry["asns"] else {}), **({"pack": f["pack"]} if f.get("pack") else {}),
+             **({"description": about} if about else {})}
     pl._new(p, op, "provider", {"name": entry["name"], "slug": slug, "asns": [a["asn"] for a in entry["asns"]]}, shown)
-    p.write = {"name": entry["name"], "slug": slug, "asns": entry["asns"]}
+    p.write = {"name": entry["name"], "slug": slug, "asns": entry["asns"], "description": about}
 
 
 def plan_create_circuit_type(pl: Any, p: Any, op: Any, f: dict[str, Any]) -> None:
@@ -607,6 +611,12 @@ async def _write_templates(client: nb.NetBox, doc: dict[str, Any], kind: str, ty
             continue
         made = await client.request("POST", tpl + "/", json=[{**_template(key, e, owner, by_name, mappings), "changelog_message": message} for e in entries])
         by_name[key] = {m["name"]: m["id"] for m in made}
+        if key == "interfaces":
+            # an interface that is a member of a bridge names it; the bridge may stand later in the file, so it is set once all exist
+            for e in entries:
+                bridge = by_name[key].get(str(e["bridge"])) if e.get("bridge") is not None else None
+                if bridge is not None:
+                    await client.request("PATCH", f"{tpl}/{by_name[key][str(e['name'])]}/", json={"bridge": bridge, "changelog_message": message})
 
 
 async def _write_type(client: nb.NetBox, w: dict[str, Any], kind: str, message: str) -> dict[str, Any]:
@@ -617,7 +627,7 @@ async def _write_type(client: nb.NetBox, w: dict[str, Any], kind: str, message: 
     maker_id = w["manufacturer_id"] or await _find_or_make(client, "dcim/manufacturers", {"slug": packs.slugify(w["manufacturer"])},
                                                            {"name": w["manufacturer"], "slug": packs.slugify(w["manufacturer"])}, message)
     body: dict[str, Any] = {"manufacturer": maker_id, "model": str(doc["model"]), "part_number": str(doc.get("part_number") or "")}
-    for k in ("weight", "weight_unit", "airflow", "description"):
+    for k in ("weight", "weight_unit", "airflow", "description", "comments"):
         if doc.get(k) is not None:
             body[k] = doc[k]
     if kind == "device":
@@ -700,7 +710,8 @@ async def write(client: nb.NetBox, p: Any, real: dict[Any, int], message: str) -
                 continue
             rir = await _registry(client, a["rir"], message)
             asn_ids.append((await client.request("POST", "ipam/asns/", json={"asn": a["asn"], "rir": rir, **note}))["id"])
-        return await client.request("POST", "circuits/providers/", json={"name": w["name"], "slug": w["slug"], "asns": asn_ids, **note})
+        return await client.request("POST", "circuits/providers/", json={"name": w["name"], "slug": w["slug"], "asns": asn_ids,
+                                                                         **({"description": w["description"]} if w.get("description") else {}), **note})
     if p.op == "create_circuit_type":
         return await client.request("POST", "circuits/circuit-types/", json={"name": w["name"], "slug": w["slug"], **note})
     if p.op in ("add_device_type", "add_module_type"):

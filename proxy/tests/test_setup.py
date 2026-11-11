@@ -201,7 +201,7 @@ def test_a_provider_netbox_holds_is_used_not_added_again_and_a_circuit_can_name_
     fresh = planned(State({("circuit_type", 3): st.recs[("circuit_type", 3)]}), kpn, circuit,
                     {"op": "create_provider", "target": T("provider"), "fields": {"name": "kpn"}})
     assert [o["status"] for o in fresh] == ["ok", "ok", "no_change"]           # the second "kpn" is the one just planned
-    assert fresh[0]["after"] == {"name": "KPN", "asns": [1136], "pack": "providers-nl"}
+    assert fresh[0]["after"] == {"name": "KPN", "asns": [1136], "pack": "providers-nl", "description": "National carrier"}
 
 
 # ---------------------------------------------------------------- the device index, part numbers, serials

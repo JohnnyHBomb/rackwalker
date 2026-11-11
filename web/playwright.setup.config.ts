@@ -3,7 +3,7 @@ import { defineConfig } from '@playwright/test';
 // The setup companion in the browser, without Docker and without a network: a made-up NetBox that starts empty
 // (proxy/tests/empty_netbox.py), a real write-enabled proxy in front of it with a fresh game store, and vite.
 // Imports read the few library files in proxy/tests/library; fetching is forbidden. Own ports, so it runs beside
-// `make dev` and the other e2e. Screenshots go to docs/screenshots/setup/.
+// `make dev` and the other e2e. Screenshots go to test-results/ (RACKWALKER_SETUP_SHOTS=1: to docs/screenshots/setup/).
 const port = Number(process.env.RACKWALKER_SETUP_PORT ?? 5343);
 const proxyPort = Number(process.env.RACKWALKER_SETUP_PROXY_PORT ?? 8743);
 const boxPort = Number(process.env.RACKWALKER_SETUP_NETBOX_PORT ?? 8745);

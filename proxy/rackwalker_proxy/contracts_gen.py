@@ -1812,7 +1812,7 @@ class CatalogueItem(BaseModel):
     status: Annotated[
         Literal['verified', 'unverified', 'mismatch'],
         Field(
-            description='verified = the device-type library holds this maker and model, and the part numbers agree; mismatch = it holds the model with another part number (note says which); unverified = it does not hold the model.'
+            description='verified = the device-type library holds this maker and model, and no part number contradicts it (a part number the library merely does not list for the model is said in the note, not held against it); mismatch = NetBox holds it under the part number of another model of that maker (note says which); unverified = the library does not hold the model, or it is tagged rw-unverified.'
         ),
     ]
     note: str | None

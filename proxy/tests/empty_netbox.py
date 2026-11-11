@@ -4,8 +4,9 @@ tests of the setup lines, which need a NetBox with nothing in it and must run wi
     python -m tests.empty_netbox 8743        (from proxy/)
 
 It keeps what it is sent, hands a new device the components of its type's templates, and answers the list filters the
-proxy uses. One player exists: user 9, a superuser, whatever token is presented. It is not NetBox: only what the
-proxy asks of NetBox is here.
+proxy uses. Two players exist: user 9, a superuser, whatever token is presented; and user 10, who signs in with a token
+that holds the word "limited" and may only add devices and device roles. It is not NetBox: only what the proxy asks of
+NetBox is here.
 """
 from __future__ import annotations
 
@@ -26,6 +27,8 @@ FK = {"site": "dcim/sites", "region": "dcim/regions", "rack": "dcim/racks", "loc
       "power_port": None}
 CHOICES = ("status", "face", "type", "feed_leg", "poe_mode", "poe_type")
 TEMPLATES = {tpl: path for _, tpl, path, _ in setupops.COMPONENTS}
+# What user 10 may do in NetBox: put a box of a model NetBox holds on record, and nothing else.
+LIMITED = [{"object_types": ["dcim.device", "dcim.devicerole"], "actions": ["add"]}]
 
 
 class EmptyBox:
@@ -98,13 +101,19 @@ class EmptyBox:
         if path == "status":
             return httpx.Response(200, json={"netbox-version": "4.7.4"})
         if path == "authentication-check":
+            if "limited" in req.headers.get("authorization", ""):
+                return httpx.Response(200, json={"id": 10, "username": "helper", "first_name": "", "last_name": ""})
             return httpx.Response(200, json={"id": 9, "username": "walker", "first_name": "", "last_name": ""})
         if path == "users/users/9":
             return httpx.Response(200, json={"id": 9, "username": "walker", "is_active": True, "is_superuser": self.superuser, "groups": []})
+        if path == "users/users/10":
+            return httpx.Response(200, json={"id": 10, "username": "helper", "is_active": True, "is_superuser": False, "groups": []})
         if path == "users/users":
-            return httpx.Response(200, json={"count": 1 if self.superuser else 0, "results": [{"id": 9}] if self.superuser else []})
+            sup = self.superuser and req.url.params.get("id") != "10"
+            return httpx.Response(200, json={"count": 1 if sup else 0, "results": [{"id": 9}] if sup else []})
         if path == "users/permissions":
-            rows = [{"id": n + 1, "enabled": True, "constraints": None, **p} for n, p in enumerate(self.permissions)] if "user_id" in req.url.params else []
+            mine = LIMITED if req.url.params.get("user_id") == "10" else self.permissions if "user_id" in req.url.params else []
+            rows = [{"id": n + 1, "enabled": True, "constraints": None, **p} for n, p in enumerate(mine)]
             return httpx.Response(200, json={"count": len(rows), "results": rows})
         if path.endswith("/trace"):
             return httpx.Response(200, json=[])
@@ -215,7 +224,8 @@ def asgi(box: EmptyBox) -> Any:
             if not msg.get("more_body"):
                 break
         query = scope.get("query_string", b"").decode()
-        req = httpx.Request(scope["method"], f"http://netbox.invalid{scope['path']}" + (f"?{query}" if query else ""), content=body)
+        headers = [(k.decode("latin-1"), v.decode("latin-1")) for k, v in scope.get("headers", []) if k.lower() in (b"authorization", b"content-type")]
+        req = httpx.Request(scope["method"], f"http://netbox.invalid{scope['path']}" + (f"?{query}" if query else ""), content=body, headers=headers)
         res = box(req)
         await send({"type": "http.response.start", "status": res.status_code, "headers": [(b"content-type", b"application/json")]})
         await send({"type": "http.response.body", "body": res.content})

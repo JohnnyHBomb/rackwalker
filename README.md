@@ -162,7 +162,7 @@ Open `http://127.0.0.1:5173/` (no `?view=`) with `make dev` or `make dev-fixture
   read from or written to NetBox; it pays no XP and can be started afresh from the quest log.
 * **Setting NetBox up.** In a NetBox with no site, Ilatea's first line offers to make one. A new site then asks for its first rack, its
   first boxes and its carrier ("Setting up <site>" in the quest log). "What is this box?" searches the device-type library by model or
-  part number, also offline; importing a model needs the internet or a local copy of the library (`RACKWALKER_LIBRARY_DIR`), and says so
+  part number, also offline; while a site is being set up, "More boxes at <site>" offers the next ones; importing a model needs the internet or a local copy of the library (`RACKWALKER_LIBRARY_DIR`), and says so
   when it has neither.
   ![Searching the device-type library by what is printed on the box](docs/screenshots/setup/device-search.png)
 * **Device catalogue** (menu): the manufacturers and models of your own NetBox as a collection, with a tick where the device-type library

@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-international",
- "version": "1.1.0",
+ "version": "1.2.0",
  "country": null,
  "title": "Backbone and international wholesale providers",
  "read": "2026-11-11",
@@ -318,11 +318,15 @@
     {
      "asn": 702,
      "rir": "arin"
+    },
+    {
+     "asn": 703,
+     "rir": "arin"
     }
    ],
    "website": "https://www.verizon.com/business/",
    "support_url": null,
-   "notes": "AS701 is its network in the Americas, AS702 the one outside them."
+   "notes": "AS701 is its network in the Americas; AS702 and AS703 are its networks outside them."
   },
   {
    "name": "PCCW Global",

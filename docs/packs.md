@@ -148,7 +148,10 @@ matched and used; it is never created twice. `add_module_type` does the same for
 library does not hold can be recorded by hand (manufacturer, model, part number), like a device type: it gets no
 templates and is marked unverified.
 
-Inventory-item templates, images and rack types of the library are not imported.
+An interface that is a member of a bridge keeps that membership, and the type keeps the library's comments. A
+manufacturer NetBox already holds under a longer name ("Juniper Networks") is the one the type goes under. A part
+number of the library that stands for several ("7X0x") is left empty. Inventory-item templates, images and rack types
+of the library, and the profile and attributes of a module type, are not imported.
 
 ### Rebuilding the index
 
@@ -171,29 +174,49 @@ A smaller device pack is the same file with `manufacturers` set to a list of man
 
 The game does not take a value just because it was typed.
 
-**Part numbers.** A part number is checked against the index for that manufacturer and model:
+**Part numbers.** A part number is checked against the index for that manufacturer and model. The library lists one
+part number per model, and a real model is sold under several (a region, a licence bundle, the machine type of a
+family), so only a known contradiction is refused:
 
 | The index says | Then |
 |---|---|
-| the same part number | the model is **verified** |
-| another part number for that model | **refused**, with what was expected: "The device-type library knows Juniper EX2300-24P with the part number EX2300-24P; EX2300-48P does not match it." This applies to a part number you type, and to a device type already in NetBox that a quest would build on |
-| it does not hold the model | **accepted**, recorded by hand, and marked unverified |
+| the same part number, or it lists a pattern that the number fits ("7X0x" for 7X06) | the model is **verified** |
+| that number is the part number of **another** model of the maker | **refused**, naming both: "The device-type library knows EX2300-48P as the part number of the Juniper EX2300-48P, not of the EX2300-24P." This applies to a part number you type, and to a device type already in NetBox that a quest would build on |
+| another number for that model, which it lists for no model | **left as it is**: the model is confirmed, the number is neither confirmed nor called wrong, and the catalogue says so. A device is built on such a type without a word |
+| it does not hold the model | **accepted**, recorded by hand, and marked unverified (unless the part number you typed is that of a model it does hold: then that is the model) |
 
-**A part number NetBox already holds.** Where a device type in use is a model the library holds and its part number
-in NetBox is another one, or empty, the line "The part number of ..." sends you to the label of one box of that model.
-If the label carries the library's number, `set_part_number` writes it (in the library's spelling) and the model
-becomes verified. If it carries something else, nothing is written: the line says which model that number belongs to
-when the library knows, because then the device's type is what is wrong. "Leave it" closes the line with no XP.
+A manufacturer is the library's under any of its usual names ("Juniper Networks", "Cisco Systems", "Dell Inc."; an
+Aruba switch under "HP" or "HPE"), and a device type that carries the part number in its model field
+("WS-C2960X-24PS-L") is the library's model of that part number. Such a type is used as it stands, never made a second
+time, and the catalogue says what the library calls it. Two models that differ by a plus sign ("DS218" and "DS218+")
+are two models.
+
+A library part number that stands for several ("7X0x", "825.4524.xx", a trailing "#") is compared against as a
+pattern. It is never offered as what a label says, and never written to NetBox: an import of such a model leaves the
+part number empty.
+
+**A part number NetBox already holds.** Where a device type in use is a model the library holds and NetBox has no
+part number for it, or has the part number of another model, the line "The part number of ..." sends you to the label
+of one box of that model. If the label carries the library's number, `set_part_number` writes it (in the library's
+spelling) and the model becomes verified. If it carries something else, nothing is written: the line says which model
+that number belongs to when the library knows (then the device's type is what is wrong), and otherwise where to
+record it yourself. "Leave it" closes the line with no XP.
+
+**A model NetBox holds with no port on it.** A device type made by hand, with no interface, console, power or bay
+template at all, would give a new box no ports. When such a type is the library's model, the box's own change set
+fills it first: `add_device_type` adds the library's templates to the type NetBox holds (the preview says "NetBox
+holds the device type ... with no ports: they are added from the device-type library"). Nothing the type has is
+changed, a type with any template of its own is left exactly as it is, and devices made before keep what they have.
 
 **Serial numbers.** `packs/serials/network-vendors.json` lists the eight network vendors with the most device types
 in the library, and APC for its UPS units. A rule is written only when a public page of the vendor's own states it; the rule quotes that page.
 
 | Vendor | Rule | Source |
 |---|---|---|
-| Cisco | three characters for the place it was made, two digits for the year, two digits for the week (01 to 53), then four characters | Cisco Field Notice FN63942, which gives the pattern `LLLYYWWSSSS` |
+| Cisco (not Meraki, which the library files under Cisco and which has serials of its own) | three characters for the place it was made, two digits for the year, two digits for the week (01 to 53), then four characters | Cisco Field Notice FN63942, which gives the pattern `LLLYYWWSSSS` |
 | Cisco | the same with five characters at the end | Cisco's product-recycling page, which gives the pattern `FFFYYWWSSSSS` |
-| Dell | a Service Tag of seven letters and digits | Dell knowledge base article 000196860 |
-| Fortinet | a FortiGate serial starts with `FG`, a FortiSwitch serial with `FS` | Fortinet Community technical tip on product abbreviations |
+| Dell (PowerEdge, OptiPlex, Latitude, Precision only) | a Service Tag of seven letters and digits | Dell knowledge base article 000196860. Storage and switches carry other serials, so the rule is not applied to them |
+| Fortinet (FortiGate only) | a FortiGate serial starts with `FG` | Fortinet Community technical tip on product abbreviations, whose example is a FortiGate. No rule for FortiSwitch: no page states one |
 | APC (UPS models only) | two characters, then two digits for the year and two for the week the unit was made, then the rest | Schneider Electric's page on APC UPS factory warranty. The page speaks of UPS units, so the rule is not applied to APC's power strips |
 | HPE (Aruba), Juniper, Arista, Extreme Networks, Ubiquiti | none | no page of the vendor's own that states a format was found (each entry says what was looked at) |
 
@@ -201,7 +224,7 @@ The rules fail soft:
 
 | The serial | Then |
 |---|---|
-| is the serial of another device | **refused**: a serial number belongs to one device |
+| is the serial of another device in service | **refused**: a serial number belongs to one device. A record that has left service (decommissioning, inventory, offline, failed) does not hold its serial for ever: the box that is put back to use may carry it |
 | fits a rule | taken, and it earns the bonus |
 | breaks every rule that applies | the game asks once: "Are you sure? 12345 does not look like a Cisco serial: ..." You can confirm it (it is recorded, and the device is marked unverified) or leave it out |
 | belongs to a vendor with no rule | taken as typed; no bonus, and nothing is marked |
@@ -214,7 +237,8 @@ because NetBox can filter any list by it. Remove the tag in NetBox when you have
 **No XP bonus for the unverified.** A quest line pays its own XP when NetBox confirms the change. On top of that,
 values that pass a check earn a bonus, decided from NetBox as it reads after the write: 20 XP for each box of a model
 the library confirms, 10 XP for each serial that fits its vendor's rule. Anything marked unverified earns no bonus,
-and the reward says so.
+and the reward says so: a box whose serial you confirmed against its vendor's rule earns none for its model either.
+Each apply pays for what that apply confirmed, never for a line's earlier passes.
 
 ## Changing the model of an existing device
 
@@ -242,11 +266,17 @@ network. It checks each file against its JSON Schema in `packs/schema/`, and wha
 * a partial pack says what it lacks; one source is marked as the one the facts came from;
 * no phone number and no mail address anywhere in a provider pack;
 * the device index is the file the pack names (size and SHA-256), was built from the pinned commit, holds the number
-  of rows the pack says, and every row is whole;
-* every serial rule compiles and quotes its source; a vendor with no rule says why.
+  of rows the pack says, and every row is whole (no file name leaves the library's folder);
+* `raw_base` is the raw-file address of the library's own repository at the pinned commit, and nothing else;
+* every serial rule compiles (its `models` expression too) and quotes its source; a vendor with no rule says why; no
+  rule repeats a group that itself repeats (such a pattern can take the regex engine minutes on a serial that almost
+  fits, and every player waits with it).
 
 A pack folder that does not validate is not half-used: the game offers nothing from it, and `GET /api/packs` lists
-the errors.
+the errors (in plain words: where the pack folder is on the machine stays in the proxy's log).
+
+An import is bounded: a definition is read once and kept by its SHA-256 while the proxy runs, and one change set
+imports at most eight models from the library.
 
 ## The change ops behind it (contract 2.5.0)
 

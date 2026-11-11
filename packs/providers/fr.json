@@ -1,7 +1,7 @@
 {
  "pack": "providers",
  "id": "providers-fr",
- "version": "1.1.0",
+ "version": "1.2.0",
  "country": "FR",
  "title": "Common providers: France",
  "read": "2026-11-11",
@@ -10,7 +10,7 @@
  "missing": [
   "Smaller business ISPs",
   "Operators in the overseas departments",
-  "AS numbers for Celeste, Linkt and the wholesale fibre operators (none confirmed)"
+  "AS numbers for Linkt and the wholesale fibre operators (none confirmed)"
  ],
  "sources": [
   {
@@ -110,7 +110,7 @@
    ],
    "website": "https://www.sfrbusiness.fr/",
    "support_url": null,
-   "notes": "SFR Business.",
+   "notes": "SFR Business. AS12626 is registered to it and was not announced on the read date.",
    "wikidata": "Q218765"
   },
   {
@@ -226,7 +226,12 @@
    "slug": "celeste",
    "kind": "business_isp",
    "aka": [],
-   "asns": [],
+   "asns": [
+    {
+     "asn": 34177,
+     "rir": "ripe"
+    }
+   ],
    "website": "https://www.celeste.fr/",
    "support_url": null,
    "notes": null

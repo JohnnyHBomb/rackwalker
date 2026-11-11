@@ -155,6 +155,16 @@ function btn(label: string, id: string, run: () => void): HTMLButtonElement {
  * player's changes would be written (not a dry-run proxy, not a read-only token, no missing permission) and NetBox has
  * a connectivity finding to work on. Everywhere else tracing stays open: a gate never takes a view away for good.
  */
+/**
+ * Would applying this line really write to NetBox for this player? The line's own verdict decides (the proxy has checked
+ * its change against the proxy's mode and the player's own NetBox permissions), never the log's summary: a button that
+ * says "Practice run" must not write, and one that says "Apply to NetBox" must. A line with nothing proposed has no
+ * verdict of its own; there the log's summary stands.
+ */
+export function wouldWrite(q: Pick<Quest, 'scope' | 'write_blocked' | 'proposal'>, board: Pick<QuestBoard, 'can_write'> | null): boolean {
+  return q.scope === 'netbox' && q.write_blocked === null && (q.proposal !== null || !!board?.can_write);
+}
+
 export function tracerLocked(board: QuestBoard | null): boolean {
   if (!board || board.rewards.tools.includes('cable_tracer')) return false;
   return board.can_write && !board.write_blocked && board.findings.some((f) => f.rank === 'connectivity');
@@ -584,9 +594,7 @@ export class Quests {
     }
     p.append(table);
     // the proxy has already checked this change against the player's own NetBox permissions: said before Apply, not after
-    // The line's own verdict decides, never the log's summary: a button that says "Practice run" must not write.
-    // (a line with nothing proposed has no verdict of its own; there the log's summary stands)
-    const real = q.scope === 'netbox' && q.write_blocked === null && (q.proposal !== null || !!board?.can_write);
+    const real = wouldWrite(q, board);
     const mode = el('p', real
       ? `Apply writes this to NetBox; its changelog will name you (${this.hooks.player()}). NetBox is then read again to check the outcome.`
       : `${q.write_blocked ?? board?.write_blocked ?? 'Nothing is written.'} This is a practice run: no XP.`, 'mode');
