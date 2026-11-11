@@ -1,0 +1,210 @@
+{
+ "pack": "providers",
+ "id": "providers-hr",
+ "version": "1.0.0",
+ "country": "HR",
+ "title": "Common providers: Croatia",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the three national operators (fixed and mobile), the state transmission network and the research network; business ISPs are partial.",
+ "missing": [
+  "Smaller business ISPs and local cable operators",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "HAKOM (Croatian Regulatory Authority for Network Industries): e-register of operators",
+   "url": "https://www.hakom.hr/hr/e-registar/197",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Croatia",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Croatia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 6 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Wikipedia: Internet in Croatia",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Croatia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 6 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "6 of 6 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "10 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: Hrvatski Telekom; A1 Hrvatska",
+   "url": "https://en.wikipedia.org/wiki/Hrvatski_Telekom",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above for former names: T-Com and Iskon (Hrvatski Telekom), Vipnet and Metronet (A1 Hrvatska)."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Hrvatski Telekom",
+   "slug": "hrvatski-telekom",
+   "kind": "national_carrier",
+   "aka": [
+    "HT",
+    "T-HT",
+    "T-Com",
+    "Iskon"
+   ],
+   "asns": [
+    {
+     "asn": 5391,
+     "rir": "ripe"
+    },
+    {
+     "asn": 13046,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://poslovni.ht.hr/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS13046 carries the AS name ASN-ISKON."
+  },
+  {
+   "name": "A1 Hrvatska",
+   "slug": "a1-hr",
+   "kind": "national_carrier",
+   "aka": [
+    "A1",
+    "Vipnet",
+    "Metronet"
+   ],
+   "asns": [
+    {
+     "asn": 15994,
+     "rir": "ripe"
+    },
+    {
+     "asn": 35549,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.a1.hr/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS35549 carries the AS name METRONET-AS."
+  },
+  {
+   "name": "Telemach Hrvatska",
+   "slug": "telemach-hr",
+   "kind": "national_carrier",
+   "aka": [
+    "Telemach",
+    "Tele2 Hrvatska",
+    "Optima Telekom",
+    "OT"
+   ],
+   "asns": [
+    {
+     "asn": 205714,
+     "rir": "ripe"
+    },
+    {
+     "asn": 34594,
+     "rir": "ripe"
+    },
+    {
+     "asn": 34748,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://telemach.hr/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS205714 carries the AS name tele2hr; AS34594 and AS34748 the AS name OT-AS."
+  },
+  {
+   "name": "Terrakom",
+   "slug": "terrakom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 34362,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.terrakom.hr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Odašiljači i veze",
+   "slug": "oiv",
+   "kind": "wholesale",
+   "aka": [
+    "OiV",
+    "OIV",
+    "Odasiljaci i veze"
+   ],
+   "asns": [
+    {
+     "asn": 48797,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.oiv.hr/",
+   "support_url": null,
+   "notes": "Broadcast and transmission network."
+  },
+  {
+   "name": "CARNET",
+   "slug": "carnet",
+   "kind": "research_education",
+   "aka": [
+    "CARNet",
+    "Croatian Academic and Research Network"
+   ],
+   "asns": [
+    {
+     "asn": 2108,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.carnet.hr/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

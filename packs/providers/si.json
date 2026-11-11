@@ -1,0 +1,201 @@
+{
+ "pack": "providers",
+ "id": "providers-si",
+ "version": "1.0.0",
+ "country": "SI",
+ "title": "Common providers: Slovenia",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the four national operators (fixed and mobile) and the research network; business ISPs and local cable operators are partial.",
+ "missing": [
+  "Local cable operators and smaller business ISPs",
+  "AS8591 of A1 Slovenija (registered to it and not announced on the read date)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "AKOS (Agency for Communication Networks and Services): registers",
+   "url": "https://www.akos-rs.si/registri",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Slovenia",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Slovenia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 7 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Wikipedia: Internet in Slovenia",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Slovenia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 7 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "7 of 7 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "7 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: A1 Slovenija",
+   "url": "https://en.wikipedia.org/wiki/A1_Slovenija",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: the company was Si.mobil until 2017."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telekom Slovenije",
+   "slug": "telekom-slovenije",
+   "kind": "national_carrier",
+   "aka": [
+    "Telekom",
+    "SiOL"
+   ],
+   "asns": [
+    {
+     "asn": 5603,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telekom.si/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS5603 carries the AS name SIOL-NET."
+  },
+  {
+   "name": "A1 Slovenija",
+   "slug": "a1-si",
+   "kind": "national_carrier",
+   "aka": [
+    "A1",
+    "Si.mobil"
+   ],
+   "asns": [
+    {
+     "asn": 21283,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.a1.si/",
+   "support_url": null,
+   "notes": "Mobile and fixed. Si.mobil until 2017."
+  },
+  {
+   "name": "Telemach Slovenija",
+   "slug": "telemach-si",
+   "kind": "national_carrier",
+   "aka": [
+    "Telemach"
+   ],
+   "asns": [
+    {
+     "asn": 3212,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://telemach.si/",
+   "support_url": null,
+   "notes": "Cable, fibre and mobile."
+  },
+  {
+   "name": "T-2",
+   "slug": "t-2",
+   "kind": "national_carrier",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 34779,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.t-2.net/",
+   "support_url": null,
+   "notes": "Fibre and mobile."
+  },
+  {
+   "name": "Softnet",
+   "slug": "softnet",
+   "kind": "business_isp",
+   "aka": [
+    "SOFTNET"
+   ],
+   "asns": [
+    {
+     "asn": 9119,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.softnet.si/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Stelkom",
+   "slug": "stelkom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 43061,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.stelkom.si/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "ARNES",
+   "slug": "arnes",
+   "kind": "research_education",
+   "aka": [
+    "Academic and Research Network of Slovenia"
+   ],
+   "asns": [
+    {
+     "asn": 2107,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.arnes.si/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

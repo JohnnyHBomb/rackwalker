@@ -1,0 +1,380 @@
+{
+ "pack": "providers",
+ "id": "providers-pl",
+ "version": "1.0.0",
+ "country": "PL",
+ "title": "Common providers: Poland",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed-line carrier, the four mobile network operators, the largest cable operators and the main wholesale fibre networks; business ISPs are partial.",
+ "missing": [
+  "Local cable and fibre operators (several thousand undertakings are registered)",
+  "Smaller business ISPs and the city academic networks",
+  "AS numbers for the wholesale-only fibre networks Światłowód Inwestycje, Nexera and Polski Światłowód Otwarty (none found)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "UKE (Office of Electronic Communications): register of telecommunications undertakings",
+   "url": "https://bip.uke.gov.pl/rpt/",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Poland",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Poland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 17 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Wikipedia: Internet in Poland",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Poland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 17 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "17 of 17 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "19 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: UPC Polska",
+   "url": "https://en.wikipedia.org/wiki/UPC_Polska",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for a date and a name (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: the UPC name in Poland gave way to Play on 31 August 2023."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Orange Polska",
+   "slug": "orange-pl",
+   "kind": "national_carrier",
+   "aka": [
+    "Orange",
+    "Telekomunikacja Polska"
+   ],
+   "asns": [
+    {
+     "asn": 5617,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange.pl/",
+   "support_url": null,
+   "notes": "Fixed and mobile; the former Telekomunikacja Polska."
+  },
+  {
+   "name": "Play",
+   "slug": "play-pl",
+   "kind": "national_carrier",
+   "aka": [
+    "P4",
+    "UPC Polska",
+    "UPC"
+   ],
+   "asns": [
+    {
+     "asn": 39603,
+     "rir": "ripe"
+    },
+    {
+     "asn": 9141,
+     "rir": "ripe"
+    },
+    {
+     "asn": 31242,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.play.pl/",
+   "support_url": null,
+   "notes": "Mobile and cable. UPC Polska took this name on 31 August 2023; all three numbers are registered to P4."
+  },
+  {
+   "name": "T-Mobile Polska",
+   "slug": "t-mobile-pl",
+   "kind": "national_carrier",
+   "aka": [
+    "T-Mobile"
+   ],
+   "asns": [
+    {
+     "asn": 12912,
+     "rir": "ripe"
+    },
+    {
+     "asn": 6714,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.t-mobile.pl/",
+   "support_url": null,
+   "notes": "Mobile and business fixed lines."
+  },
+  {
+   "name": "Plus",
+   "slug": "plus-pl",
+   "kind": "mobile",
+   "aka": [
+    "Polkomtel"
+   ],
+   "asns": [
+    {
+     "asn": 8374,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.plus.pl/",
+   "support_url": null,
+   "notes": "Mobile; the registered company is Polkomtel."
+  },
+  {
+   "name": "Netia",
+   "slug": "netia",
+   "kind": "business_isp",
+   "aka": [
+    "Internetia"
+   ],
+   "asns": [
+    {
+     "asn": 12741,
+     "rir": "ripe"
+    },
+    {
+     "asn": 43939,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.netia.pl/",
+   "support_url": null,
+   "notes": "Fixed lines for homes and business."
+  },
+  {
+   "name": "Vectra",
+   "slug": "vectra",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 29314,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vectra.pl/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "Multimedia Polska",
+   "slug": "multimedia-polska",
+   "kind": "cable_fibre",
+   "aka": [
+    "Multimedia"
+   ],
+   "asns": [
+    {
+     "asn": 21021,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.multimedia.pl/",
+   "support_url": null,
+   "notes": "Cable. It holds its own AS number and is listed apart from Vectra, which its site names."
+  },
+  {
+   "name": "Inea",
+   "slug": "inea",
+   "kind": "cable_fibre",
+   "aka": [
+    "INEA"
+   ],
+   "asns": [
+    {
+     "asn": 13110,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.inea.pl/",
+   "support_url": null,
+   "notes": "Cable and fibre in the Poznań region."
+  },
+  {
+   "name": "Toya",
+   "slug": "toya",
+   "kind": "cable_fibre",
+   "aka": [
+    "TOYA"
+   ],
+   "asns": [
+    {
+     "asn": 16342,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://toya.net.pl/",
+   "support_url": null,
+   "notes": "Cable in the Łódź area."
+  },
+  {
+   "name": "Exatel",
+   "slug": "exatel",
+   "kind": "business_isp",
+   "aka": [
+    "EXATEL"
+   ],
+   "asns": [
+    {
+     "asn": 20804,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.exatel.pl/",
+   "support_url": null,
+   "notes": "Business and public-sector lines."
+  },
+  {
+   "name": "Atman",
+   "slug": "atman",
+   "kind": "business_isp",
+   "aka": [
+    "ATMAN"
+   ],
+   "asns": [
+    {
+     "asn": 24724,
+     "rir": "ripe"
+    },
+    {
+     "asn": 15694,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.atman.pl/",
+   "support_url": null,
+   "notes": "Data centres and business internet."
+  },
+  {
+   "name": "NASK",
+   "slug": "nask",
+   "kind": "business_isp",
+   "aka": [
+    "Naukowa i Akademicka Sieć Komputerowa",
+    "Naukowa i Akademicka Siec Komputerowa"
+   ],
+   "asns": [
+    {
+     "asn": 8308,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nask.pl/",
+   "support_url": null,
+   "notes": "A state research institute that also sells lines (AS name NASK-COMMERCIAL)."
+  },
+  {
+   "name": "Fiberhost",
+   "slug": "fiberhost",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 39834,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://fiberhost.com/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; its site names Inea."
+  },
+  {
+   "name": "Światłowód Inwestycje",
+   "slug": "swiatlowod-inwestycje",
+   "kind": "wholesale",
+   "aka": [
+    "Swiatlowod Inwestycje"
+   ],
+   "asns": [],
+   "website": "https://swiatlowodinwestycje.pl/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; seldom the name on the bill."
+  },
+  {
+   "name": "Nexera",
+   "slug": "nexera",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.nexera.pl/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; seldom the name on the bill."
+  },
+  {
+   "name": "Polski Światłowód Otwarty",
+   "slug": "polski-swiatlowod-otwarty",
+   "kind": "wholesale",
+   "aka": [
+    "PŚO",
+    "PSO",
+    "Polski Swiatlowod Otwarty"
+   ],
+   "asns": [],
+   "website": "https://pso.pl/",
+   "support_url": null,
+   "notes": "Wholesale access network; seldom the name on the bill."
+  },
+  {
+   "name": "PIONIER",
+   "slug": "pionier",
+   "kind": "research_education",
+   "aka": [
+    "PSNC",
+    "Poznań Supercomputing and Networking Center"
+   ],
+   "asns": [
+    {
+     "asn": 8501,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://pionier.net.pl/",
+   "support_url": null,
+   "notes": "The national research and education network, run by the Poznań Supercomputing and Networking Center."
+  }
+ ]
+}

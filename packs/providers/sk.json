@@ -1,0 +1,253 @@
+{
+ "pack": "providers",
+ "id": "providers-sk",
+ "version": "1.0.0",
+ "country": "SK",
+ "title": "Common providers: Slovakia",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the four mobile network operators (three sell fixed lines) and the main cable operator; business ISPs and regional operators are partial.",
+ "missing": [
+  "Regional cable, fibre and wireless ISPs",
+  "Smaller business ISPs",
+  "An AS number for O2 Slovakia (its registry record holds none) and the network company behind it",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "RÚ (Regulatory Authority for Electronic Communications and Postal Services)",
+   "url": "https://www.teleoff.gov.sk/",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The home page answered on the read date; the register of undertakings was not found by an automated read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Slovakia",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Slovakia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 10 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "10 of 10 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "10 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Press reports on the SWAN mergers",
+   "url": "https://developingtelecoms.com/telecom-business/operator-news/12604-slovak-operators-swan-and-4ka-merged-on-new-year-eve.html",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: SWAN and SWAN Mobile (4ka) became one company at the turn of 2021 to 2022; home and mobile service trades as 4ka, business service as SWAN."
+  },
+  {
+   "name": "Wikipedia: Slovak Telekom",
+   "url": "https://en.wikipedia.org/wiki/Slovak_Telekom",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above for former names: T-Mobile Slovensko and EuroTel."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Slovak Telekom",
+   "slug": "slovak-telekom",
+   "kind": "national_carrier",
+   "aka": [
+    "Telekom",
+    "T-Mobile Slovensko",
+    "EuroTel"
+   ],
+   "asns": [
+    {
+     "asn": 6855,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telekom.sk/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "Orange Slovensko",
+   "slug": "orange-sk",
+   "kind": "national_carrier",
+   "aka": [
+    "Orange"
+   ],
+   "asns": [
+    {
+     "asn": 15962,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange.sk/",
+   "support_url": null,
+   "notes": "Mobile and fibre."
+  },
+  {
+   "name": "O2 Slovakia",
+   "slug": "o2-sk",
+   "kind": "mobile",
+   "aka": [
+    "O2"
+   ],
+   "asns": [],
+   "website": "https://www.o2.sk/",
+   "support_url": null,
+   "notes": "No AS number is registered to it."
+  },
+  {
+   "name": "SWAN",
+   "slug": "swan",
+   "kind": "national_carrier",
+   "aka": [
+    "4ka",
+    "SWAN Mobile",
+    "Benestra"
+   ],
+   "asns": [
+    {
+     "asn": 5578,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.swan.sk/",
+   "support_url": null,
+   "notes": "Business lines trade as SWAN, home and mobile service as 4ka. AS5578 carries the AS name BENESTRA."
+  },
+  {
+   "name": "UPC",
+   "slug": "upc-sk",
+   "kind": "cable_fibre",
+   "aka": [
+    "UPC Broadband Slovakia"
+   ],
+   "asns": [
+    {
+     "asn": 213609,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.upc.sk/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "Slovanet",
+   "slug": "slovanet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8778,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8257,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.slovanet.net/",
+   "support_url": null,
+   "notes": "Homes and business."
+  },
+  {
+   "name": "Antik Telecom",
+   "slug": "antik-telecom",
+   "kind": "cable_fibre",
+   "aka": [
+    "Antik",
+    "ANTIK"
+   ],
+   "asns": [
+    {
+     "asn": 42841,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.antik.sk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "VNET",
+   "slug": "vnet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 29405,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vnet.sk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Energotel",
+   "slug": "energotel",
+   "kind": "wholesale",
+   "aka": [
+    "ENERGOTEL"
+   ],
+   "asns": [
+    {
+     "asn": 31117,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.energotel.sk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "SANET",
+   "slug": "sanet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2607,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sanet.sk/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

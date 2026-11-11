@@ -1,0 +1,257 @@
+{
+ "pack": "providers",
+ "id": "providers-hu",
+ "version": "1.0.0",
+ "country": "HU",
+ "title": "Common providers: Hungary",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the three national operators (fixed and mobile) and the two network companies behind them, after the mergers of 2025; regional cable operators and business ISPs are partial.",
+ "missing": [
+  "Smaller regional cable operators and business ISPs",
+  "The state network operator MVM NET (no AS number found, and its address did not answer)",
+  "Websites of KIFÜ and PR-TELECOM (neither answered an automated check)",
+  "AS8990 and AS20568 (former Antenna Hungária numbers, registered to a 4iG holding company)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "NMHH (National Media and Infocommunications Authority): registers",
+   "url": "https://nmhh.hu/szakmai-erdekeltek/hirkozles/nyilvantartasok",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Hungary",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Hungary",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 9 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "7 of 9 websites answered an automated check; an address that did not answer is left empty (KIFÜ, PR-TELECOM). No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "11 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "4iG: announcement of 1 October 2025 on 2Connect",
+   "url": "https://www.4ig.hu/new-chapter-in-telecommunications-introducing-2connect",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and names (facts); no text is copied.",
+   "use": "cited",
+   "result": "Found by a web search on the date above: from 1 October 2025 the networks of One, DIGI, Invitech and Antenna Hungária are in 2Connect and retail service is One Magyarország."
+  },
+  {
+   "name": "Wikipedia: One Hungary; Yettel Hungary; CETIN",
+   "url": "https://en.wikipedia.org/wiki/One_Hungary",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for dates and names (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: Vodafone Hungary became One on 1 January 2025; Yettel was Telenor and Pannon; the network of Yettel was split off into CETIN Hungary."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Magyar Telekom",
+   "slug": "magyar-telekom",
+   "kind": "national_carrier",
+   "aka": [
+    "Telekom",
+    "Matáv",
+    "Matav"
+   ],
+   "asns": [
+    {
+     "asn": 5483,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telekom.hu/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "One Magyarország",
+   "slug": "one-hu",
+   "kind": "national_carrier",
+   "aka": [
+    "One",
+    "One Hungary",
+    "Vodafone Magyarország",
+    "Vodafone Hungary",
+    "UPC Magyarország",
+    "DIGI",
+    "Invitech"
+   ],
+   "asns": [
+    {
+     "asn": 12301,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8696,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.one.hu/",
+   "support_url": null,
+   "notes": "Fixed and mobile. Vodafone Hungary until 1 January 2025; took in DIGI and Invitech in 2025. Its network is 2Connect's."
+  },
+  {
+   "name": "Yettel Magyarország",
+   "slug": "yettel-hu",
+   "kind": "mobile",
+   "aka": [
+    "Yettel",
+    "Yettel Hungary",
+    "Telenor Magyarország",
+    "Telenor Hungary",
+    "Pannon"
+   ],
+   "asns": [
+    {
+     "asn": 213155,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.yettel.hu/",
+   "support_url": null,
+   "notes": "Mobile. Its network is CETIN Hungary's."
+  },
+  {
+   "name": "2Connect",
+   "slug": "2connect",
+   "kind": "wholesale",
+   "aka": [
+    "Antenna Hungária",
+    "Antenna Hungaria"
+   ],
+   "asns": [
+    {
+     "asn": 21334,
+     "rir": "ripe"
+    },
+    {
+     "asn": 20845,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.2connect.hu/",
+   "support_url": null,
+   "notes": "Network company of the 4iG group since 1 October 2025; One is its retail name. AS20845 carries the AS name DIGICABLE."
+  },
+  {
+   "name": "CETIN Hungary",
+   "slug": "cetin-hu",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8448,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cetin.hu/",
+   "support_url": null,
+   "notes": "The network company behind Yettel; wholesale."
+  },
+  {
+   "name": "Tarr",
+   "slug": "tarr",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8462,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tarr.hu/",
+   "support_url": null,
+   "notes": "Regional cable."
+  },
+  {
+   "name": "PR-TELECOM",
+   "slug": "pr-telecom",
+   "kind": "cable_fibre",
+   "aka": [
+    "PR-Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 35311,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Regional cable."
+  },
+  {
+   "name": "ViDaNet",
+   "slug": "vidanet",
+   "kind": "cable_fibre",
+   "aka": [
+    "Vidanet"
+   ],
+   "asns": [
+    {
+     "asn": 43529,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vidanet.hu/",
+   "support_url": null,
+   "notes": "Regional cable."
+  },
+  {
+   "name": "KIFÜ",
+   "slug": "kifu",
+   "kind": "research_education",
+   "aka": [
+    "KIFU",
+    "HBONE"
+   ],
+   "asns": [
+    {
+     "asn": 1955,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "The national research and education network (HBONE)."
+  }
+ ]
+}

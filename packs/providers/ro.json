@@ -1,0 +1,228 @@
+{
+ "pack": "providers",
+ "id": "providers-ro",
+ "version": "1.0.0",
+ "country": "RO",
+ "title": "Common providers: Romania",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the three national operators after the takeover of Telekom Romania Mobile in 2025, and the research network; business ISPs are thin and local networks are not listed.",
+ "missing": [
+  "Local cable and neighbourhood fibre networks (several hundred)",
+  "Most business ISPs: only three are listed, and the regulator's register could not be read (its site failed the secure connection)",
+  "The government network operator STS (its site did not answer; not a commercial provider)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "ANCOM (National Authority for Management and Regulation in Communications)",
+   "url": "https://www.ancom.ro/",
+   "read": "2026-11-11",
+   "terms": "The site did not answer an automated read on the read date and its terms were not read: nothing is copied.",
+   "use": "cited",
+   "result": "Not read: the site did not complete a secure connection on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Romania",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Romania",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 7 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Wikipedia: Internet in Romania",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Romania",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 7 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "7 of 7 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "10 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: Telekom Romania",
+   "url": "https://en.wikipedia.org/wiki/Telekom_Romania",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for dates and names (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: the fixed company went to Orange Romania; Vodafone and Digi completed the takeover of Telekom Romania Mobile on 30 September 2025."
+  },
+  {
+   "name": "Wikipedia: Vodafone Romania",
+   "url": "https://en.wikipedia.org/wiki/Vodafone_Romania",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above for former names: Connex and UPC Romania."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Digi",
+   "slug": "digi-ro",
+   "kind": "national_carrier",
+   "aka": [
+    "DIGI Romania",
+    "RCS & RDS",
+    "RCS-RDS"
+   ],
+   "asns": [
+    {
+     "asn": 8708,
+     "rir": "ripe"
+    },
+    {
+     "asn": 6910,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.digi.ro/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "Orange Romania",
+   "slug": "orange-ro",
+   "kind": "national_carrier",
+   "aka": [
+    "Orange",
+    "Telekom Romania",
+    "Romtelecom"
+   ],
+   "asns": [
+    {
+     "asn": 8953,
+     "rir": "ripe"
+    },
+    {
+     "asn": 9050,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange.ro/business/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS9050 is the fixed network taken over from Telekom Romania."
+  },
+  {
+   "name": "Vodafone Romania",
+   "slug": "vodafone-ro",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "Connex",
+    "UPC Romania",
+    "Telekom Romania Mobile",
+    "Cosmote"
+   ],
+   "asns": [
+    {
+     "asn": 12302,
+     "rir": "ripe"
+    },
+    {
+     "asn": 35725,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.ro/",
+   "support_url": null,
+   "notes": "Mobile and cable. AS35725 (AS name TELEKOMRO) came with Telekom Romania Mobile, taken over on 30 September 2025."
+  },
+  {
+   "name": "GTS Telecom",
+   "slug": "gts-telecom",
+   "kind": "business_isp",
+   "aka": [
+    "GTS"
+   ],
+   "asns": [
+    {
+     "asn": 5606,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.gts.ro/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Prime Telecom",
+   "slug": "prime-telecom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 39737,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.primetelecom.ro/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "iNES Group",
+   "slug": "ines-group",
+   "kind": "business_isp",
+   "aka": [
+    "iNES"
+   ],
+   "asns": [
+    {
+     "asn": 12310,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ines.ro/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "RoEduNet",
+   "slug": "roedunet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2614,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.roedu.net/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

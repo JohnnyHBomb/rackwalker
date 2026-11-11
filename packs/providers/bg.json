@@ -1,0 +1,257 @@
+{
+ "pack": "providers",
+ "id": "providers-bg",
+ "version": "1.0.0",
+ "country": "BG",
+ "title": "Common providers: Bulgaria",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the three national operators, the network company behind Yettel and the research network; business ISPs are thin and local networks are not listed.",
+ "missing": [
+  "Local cable and LAN internet providers (several hundred)",
+  "Most business ISPs: only three are listed; the regulator's register is in Bulgarian and was not read",
+  "An AS number for Yettel Bulgaria (its registry record holds none; its network is CETIN Bulgaria's)",
+  "The website of Novatel (it refused an automated request)",
+  "Names in Cyrillic, except the two found on the providers' own pages",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "CRC (Communications Regulation Commission): registers",
+   "url": "https://crc.bg/bg/rubriki/205/registri",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Bulgaria",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Bulgaria",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "1 of 9 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Wikipedia: Internet in Bulgaria",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Bulgaria",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "1 of 9 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "8 of 9 websites answered an automated check; an address that did not answer is left empty (Novatel). No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "13 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: Vivacom; A1 Bulgaria; Yettel Bulgaria; CETIN",
+   "url": "https://en.wikipedia.org/wiki/Vivacom",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for dates and names (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: the former names of the three operators, and that the networks of the Yettel operators were split off into CETIN companies."
+  }
+ ],
+ "providers": [
+  {
+   "name": "A1 Bulgaria",
+   "slug": "a1-bg",
+   "kind": "national_carrier",
+   "aka": [
+    "A1",
+    "Mtel",
+    "Mobiltel"
+   ],
+   "asns": [
+    {
+     "asn": 12716,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8717,
+     "rir": "ripe"
+    },
+    {
+     "asn": 13124,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.a1.bg/",
+   "support_url": null,
+   "notes": "Mobile and fixed."
+  },
+  {
+   "name": "Vivacom",
+   "slug": "vivacom",
+   "kind": "national_carrier",
+   "aka": [
+    "Виваком",
+    "BTC",
+    "Bulgarian Telecommunications Company",
+    "Bulsatcom",
+    "Net1",
+    "Networx"
+   ],
+   "asns": [
+    {
+     "asn": 8866,
+     "rir": "ripe"
+    },
+    {
+     "asn": 43205,
+     "rir": "ripe"
+    },
+    {
+     "asn": 43561,
+     "rir": "ripe"
+    },
+    {
+     "asn": 34569,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vivacom.bg/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS43205 (Bulsatcom), AS43561 (Net1) and AS34569 (Networx) are registered to Vivacom."
+  },
+  {
+   "name": "Yettel Bulgaria",
+   "slug": "yettel-bg",
+   "kind": "mobile",
+   "aka": [
+    "Yettel",
+    "Йеттел",
+    "Telenor Bulgaria",
+    "Globul"
+   ],
+   "asns": [],
+   "website": "https://www.yettel.bg/",
+   "support_url": null,
+   "notes": "Mobile and fixed. Its network is CETIN Bulgaria's (AS29244, recorded there)."
+  },
+  {
+   "name": "CETIN Bulgaria",
+   "slug": "cetin-bg",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 29244,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cetinbg.bg/",
+   "support_url": null,
+   "notes": "The network company behind Yettel; wholesale. AS29244 carries the AS name TelenorBG."
+  },
+  {
+   "name": "Neterra",
+   "slug": "neterra",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 34224,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.neterra.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Evolink",
+   "slug": "evolink",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8262,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.evolink.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Novatel",
+   "slug": "novatel",
+   "kind": "business_isp",
+   "aka": [
+    "NOVATEL"
+   ],
+   "asns": [
+    {
+     "asn": 41313,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Cooolbox",
+   "slug": "cooolbox",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 9070,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cooolbox.bg/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "BREN",
+   "slug": "bren",
+   "kind": "research_education",
+   "aka": [
+    "Bulgarian Research and Education Network"
+   ],
+   "asns": [
+    {
+     "asn": 6802,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.bren.bg/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

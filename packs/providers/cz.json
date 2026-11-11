@@ -1,0 +1,282 @@
+{
+ "pack": "providers",
+ "id": "providers-cz",
+ "version": "1.0.0",
+ "country": "CZ",
+ "title": "Common providers: Czechia",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the three mobile network operators (all sell fixed lines) and the national wholesale network; cable, fibre and business ISPs are partial, and local wireless ISPs are not listed.",
+ "missing": [
+  "Local wireless and fibre ISPs (well over a thousand are registered)",
+  "Smaller business ISPs",
+  "An AS number for České Radiokomunikace (none found)",
+  "AS5588 of T-Mobile Czech Republic (registered to it and not announced on the read date)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "ČTÚ (Czech Telecommunication Office): register of undertakings in electronic communications",
+   "url": "https://ctu.gov.cz/vyhledavaci-databaze/evidence-podnikatelu-v-elektronickych-komunikacich-podle-vseobecneho-opravneni",
+   "read": "2026-11-11",
+   "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in the Czech Republic",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_the_Czech_Republic",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 11 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Wikipedia: Internet in the Czech Republic",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_the_Czech_Republic",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 11 entries were found on the page, by their name or a distinctive other name."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "11 of 11 websites answered an automated check; an address that did not answer is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "11 AS numbers confirmed, each announced on the read date; a number whose holder was another company is listed only where the note says whose it is."
+  },
+  {
+   "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+   "url": "https://apps.db.ripe.net/db-web-ui/query",
+   "read": "2026-11-11",
+   "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+   "use": "cross-check",
+   "result": "Read to find candidate AS numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikipedia: CETIN",
+   "url": "https://en.wikipedia.org/wiki/CETIN",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for a date and a name (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above: the network of O2 Czech Republic was split off as CETIN on 1 June 2015; CETIN sells wholesale to O2, T-Mobile and Vodafone."
+  },
+  {
+   "name": "Wikipedia: O2 Czech Republic; Vodafone Czech Republic",
+   "url": "https://en.wikipedia.org/wiki/O2_Czech_Republic",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "Read on the date above for former names: Český Telecom and Eurotel (O2), Oskar (Vodafone)."
+  }
+ ],
+ "providers": [
+  {
+   "name": "O2 Czech Republic",
+   "slug": "o2-cz",
+   "kind": "national_carrier",
+   "aka": [
+    "O2",
+    "Český Telecom",
+    "Cesky Telecom",
+    "Eurotel"
+   ],
+   "asns": [
+    {
+     "asn": 5610,
+     "rir": "ripe"
+    },
+    {
+     "asn": 12570,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.o2.cz/podnikatele-a-firmy",
+   "support_url": null,
+   "notes": "Fixed and mobile, retail; the lines run on CETIN's network."
+  },
+  {
+   "name": "T-Mobile Czech Republic",
+   "slug": "t-mobile-cz",
+   "kind": "national_carrier",
+   "aka": [
+    "T-Mobile"
+   ],
+   "asns": [
+    {
+     "asn": 13036,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.t-mobile.cz/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS5588 (AS name GTSCE) is registered to it and was not announced on the read date."
+  },
+  {
+   "name": "Vodafone Czech Republic",
+   "slug": "vodafone-cz",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "Oskar"
+   ],
+   "asns": [
+    {
+     "asn": 16019,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.cz/",
+   "support_url": null,
+   "notes": "Mobile and fixed."
+  },
+  {
+   "name": "CETIN",
+   "slug": "cetin",
+   "kind": "wholesale",
+   "aka": [
+    "Česká telekomunikační infrastruktura",
+    "Ceska telekomunikacni infrastruktura"
+   ],
+   "asns": [
+    {
+     "asn": 28725,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cetin.cz/",
+   "support_url": null,
+   "notes": "Wholesale only: the former network of O2 Czech Republic; seldom the name on the bill."
+  },
+  {
+   "name": "Nej.cz",
+   "slug": "nej-cz",
+   "kind": "cable_fibre",
+   "aka": [
+    "Nej"
+   ],
+   "asns": [
+    {
+     "asn": 41046,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.nej.cz/",
+   "support_url": null,
+   "notes": "Cable and fibre. AS41046 (AS name NEJTV) is registered to O2 Czech Republic."
+  },
+  {
+   "name": "PODA",
+   "slug": "poda",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 30764,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.poda.cz/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Quantcom",
+   "slug": "quantcom",
+   "kind": "business_isp",
+   "aka": [
+    "Dial Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 29208,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.quantcom.cz/",
+   "support_url": null,
+   "notes": "Formerly Dial Telecom."
+  },
+  {
+   "name": "ČD-Telematika",
+   "slug": "cd-telematika",
+   "kind": "business_isp",
+   "aka": [
+    "CD-Telematika"
+   ],
+   "asns": [
+    {
+     "asn": 25512,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cdt.cz/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "České Radiokomunikace",
+   "slug": "ceske-radiokomunikace",
+   "kind": "business_isp",
+   "aka": [
+    "CRA",
+    "Ceske Radiokomunikace"
+   ],
+   "asns": [],
+   "website": "https://www.cra.cz/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Casablanca INT",
+   "slug": "casablanca-int",
+   "kind": "business_isp",
+   "aka": [
+    "Casablanca"
+   ],
+   "asns": [
+    {
+     "asn": 15685,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.casablanca.cz/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "CESNET",
+   "slug": "cesnet",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2852,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cesnet.cz/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}
