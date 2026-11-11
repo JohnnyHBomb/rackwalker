@@ -36,9 +36,12 @@ from .findings import CIRCUIT_FACTS, FACT_SHORT, LIVE, Analysis
 from .findings import _some as some
 
 STAGES = ("physical", "logical", "administrative")
+# The stages of "Setting up <site>" (2.5.0): its first rack, its first boxes, whose line it is on.
+SETUP_STAGES = ("room", "kit", "carrier")
 STAGE_TITLES = {"physical": "what is plugged into what", "logical": "addresses, and how it is managed",
-                "administrative": "whose it is, who to call, what it costs"}
-KINDS = ("way_out", "site_link", "room_link", "device", "rack")
+                "administrative": "whose it is, who to call, what it costs",
+                "room": "where the kit stands", "kit": "the boxes, each with its model", "carrier": "whose line it is on"}
+KINDS = ("setup", "way_out", "site_link", "room_link", "device", "rack")
 # What each stage of a chain puts on record. A chain says what it will hold from the stages it has, so a link that is
 # a plain cable (one stage) promises no carrier and no bill.
 STAGE_HOLDS = {
@@ -53,9 +56,14 @@ STAGE_HOLDS = {
     ("device", "logical"): "how it is managed, and the address to log in to it if it has one",
     ("rack", "physical"): "where the rack stands, which unit each device is in, and what powers it",
     ("rack", "administrative"): "the serial number and asset tag of each device",
+    ("setup", "room"): "the site's first rack",
+    ("setup", "kit"): "its first devices, each with the ports of its model",
+    ("setup", "carrier"): "the carrier its line belongs to",
 }
 # The bonus for a chain NetBox shows complete: more than any single stage of it pays. A chain of one stage has none.
-CHAIN_XP = {"way_out": 250, "site_link": 250, "room_link": 0, "device": 150, "rack": 100}
+# Setting a site up pays stage by stage and has no bonus: the chain is over when its last check passes, and the way
+# out, which follows it, has its own.
+CHAIN_XP = {"way_out": 250, "site_link": 250, "room_link": 0, "device": 150, "rack": 100, "setup": 0}
 
 
 def holds(kind: str, stages: list[str]) -> str:
@@ -86,11 +94,12 @@ def _build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str
     def made(site_id: int, *cids: str) -> list[str]:
         return [c for c in cids if c in a.checks.get(site_id, {})]
 
-    def chain(kind: str, obj: tuple[str, int], site_id: int, title: str, stages: dict[str, list[str]], always: tuple[str, ...] = ()) -> None:
+    def chain(kind: str, obj: tuple[str, int], site_id: int, title: str, stages: dict[str, list[str]], always: tuple[str, ...] = (),
+              order: tuple[str, ...] = STAGES) -> None:
         """A chain with the stages that have checks (and those in `always`, which wait for an earlier stage to produce
         what they are about: a circuit has no address to ask for before it is plugged in)."""
         rows = []
-        for stage in STAGES:
+        for stage in order:
             checks = list(dict.fromkeys(stages.get(stage, [])))
             if checks or stage in always:
                 rows.append({"stage": stage, "title": STAGE_TITLES[stage], "checks": checks,
@@ -137,6 +146,11 @@ def _build(e: Estate, a: Analysis, lines: list[dict[str, Any]]) -> list[dict[str
 
     for site_id in sorted(e.sites):
         site = e.sites[site_id]["name"]
+        setting_up = {"room": made(site_id, f"site_no_rack:site:{site_id}"), "kit": made(site_id, f"site_no_devices:site:{site_id}"),
+                      "carrier": made(site_id, f"site_no_provider:site:{site_id}")}
+        # only while something of it is open: a site that has its rack, its boxes and its carrier is not "set up" for ever
+        if any(a.checks[site_id].get(c) is False for cs in setting_up.values() for c in cs):
+            chain("setup", ("site", site_id), site_id, f"Setting up {site}", setting_up, order=SETUP_STAGES)
         here = plugged.get(site_id, [])
         out_circuits = [c for c in here if c not in between]
         open_ends = sorted(set(loose.get(site_id, [])))

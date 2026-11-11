@@ -524,7 +524,12 @@ def test_what_each_change_needs_of_the_player():
         "assign_ip": [("ipam.ipaddress", "add"), ("dcim.device", "change")], "create_prefix": [("ipam.prefix", "add")],
         "set_management": [("dcim.device", "change")], "record_circuit": [("circuits.circuit", "change")],
         "create_provider_account": [("circuits.provideraccount", "add")], "create_provider_network": [("circuits.providernetwork", "add")],
-        "create_contact": [("tenancy.contact", "add")], "assign_contact": [("tenancy.contactassignment", "add")]}
+        "create_contact": [("tenancy.contact", "add")], "assign_contact": [("tenancy.contactassignment", "add")],
+        # the setup companion: each op lists everything it may have to make
+        "create_site": [("dcim.site", "add")], "create_provider": [("circuits.provider", "add")], "create_circuit_type": [("circuits.circuittype", "add")],
+        "add_device_type": [("dcim.devicetype", "add"), ("dcim.manufacturer", "add")], "add_module_type": [("dcim.moduletype", "add"), ("dcim.manufacturer", "add")],
+        "create_device": [("dcim.device", "add"), ("dcim.devicerole", "add")], "set_device_type": [("dcim.device", "change")],
+        "install_module": [("dcim.module", "add")], "mark_unverified": [("extras.tag", "add")]}
     # a model's default lives on the device type: recording it needs that permission too
     op = {"op": "set_management", "target": {"kind": "device", "id": 1}, "fields": {"mode": "cloud", "model_default": "cloud"}}
     assert perms.needs_of([op]) == [("dcim.device", "change"), ("dcim.devicetype", "change")]
@@ -708,6 +713,7 @@ def test_a_site_with_nothing_in_it_has_no_confusion_to_face(tmp_path, monkeypatc
     data["dcim/sites"].append({**data["dcim/sites"][0], "id": 2, "name": "Empty Lot", "slug": "empty-lot"})
     cl, box, app = start(tmp_path, monkeypatch, data)
     empty = next(s for s in board(cl)["sites"] if s["site_id"] == 2)
-    assert empty["completeness"] == {"percent": 100, "total": 3, "open": 0} and empty["boss_ready"] is False
+    # an empty site is not "complete": it has no rack and no device yet (the setup lines), and nothing to guard
+    assert empty["completeness"] == {"percent": 60, "total": 5, "open": 2} and empty["boss_ready"] is False
     r = cl.post("/api/game/boss/ack", json={"scope": "netbox", "site_id": 2})
     assert r.status_code == 409

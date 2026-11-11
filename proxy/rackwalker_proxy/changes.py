@@ -25,6 +25,7 @@ from jsonschema import Draft202012Validator
 
 from . import contracts_gen as c
 from . import netbox as nb
+from . import setupops
 from .errors import ApiError
 from .schema import CONTRACT_VERSION, SCHEMA
 
@@ -55,9 +56,11 @@ CUSTOM = {"iso_x", "iso_y", "iso_w", "iso_h", "iso_facing", "iso_theme"}
 # Ops added in contract 2.3.0 (what a quest line ends in): each creates one NetBox object, or assigns an address.
 NET_OPS = ("connect_cable", "create_circuit", "create_circuit_termination", "assign_ip", "create_prefix",
            # 2.4.0: how a device is managed, and a circuit's administrative record
-           "set_management", "record_circuit", "create_provider_account", "create_provider_network", "create_contact", "assign_contact")
+           "set_management", "record_circuit", "create_provider_account", "create_provider_network", "create_contact", "assign_contact",
+           # 2.5.0: the setup companion (setupops.py)
+           *setupops.SETUP_OPS)
 # Ops of NET_OPS that change an existing object: they create nothing, so no later op can refer to their result.
-NET_UPDATES = ("assign_ip", "set_management", "record_circuit", "assign_contact")
+NET_UPDATES = ("assign_ip", "set_management", "record_circuit", "assign_contact", *setupops.SETUP_UPDATES)
 # The custom fields the 2.4.0 ops write (created by devnetbox/seed.py --fields-only).
 MGMT_FIELDS = ("rw_mgmt_mode", "rw_mgmt_service")
 COST_FIELDS = {"mrc": "rw_mrc", "nrc": "rw_nrc", "currency": "rw_currency"}
@@ -315,6 +318,7 @@ async def _one(client: nb.NetBox, path: str, oid: int) -> dict[str, Any] | None:
 async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
     """What the 2.3.0 ops can touch: the cable ends they name, circuits with their terminations, providers, circuit
     types, platforms, and any address or prefix that already holds a value they set."""
+    await setupops.gather(client, ops, st)
     for op in ops:
         f = _fields(op)
         if op.op == "update_fields" and isinstance(f.get("platform_id"), int) and ("platform", f["platform_id"]) not in st.recs:
@@ -332,12 +336,14 @@ async def gather_net(client: nb.NetBox, ops: list[Any], st: State) -> None:
                         st.add(Rec("end:" + kind, oid, None, {"cable": (row.get("cable") or {}).get("id"), "name": row.get("name") or row.get("term_side"),
                                                               "device_id": dev.get("id"), "device": dev.get("name")}))
         if op.op == "create_circuit":
+            # a provider or type made by an earlier op of the same set ("@ref") is not in NetBox yet: nothing to read
             for kind, path, oid in (("provider", "circuits/providers", f["provider_id"]), ("circuit_type", "circuits/circuit-types", f["type_id"])):
-                row = await _one(client, path, oid)
+                row = await _one(client, path, oid) if isinstance(oid, int) and (kind, oid) not in st.recs else None
                 if row:
-                    st.add(Rec(kind, oid, None, {"name": row["name"]}))
-            for row in await client.list_raw("circuits/circuits", {"cid": f["cid"], "provider_id": f["provider_id"]}):
-                st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": f["provider_id"]}))
+                    st.add(Rec(kind, oid, None, {"name": row["name"], "slug": row.get("slug")}))
+            # every circuit of that ID: the provider may be one an earlier op of the set matches to an existing one
+            for row in await client.list_raw("circuits/circuits", {"cid": f["cid"]}):
+                st.add(Rec("circuit", row["id"], None, {"cid": row["cid"], "provider_id": (row.get("provider") or {}).get("id")}))
         if op.op in ("create_provider_account", "create_provider_network") and ("provider", f["provider_id"]) not in st.recs:
             row = await _one(client, "circuits/providers", f["provider_id"])
             if row:
@@ -698,13 +704,16 @@ class Planner:
 
     def create_circuit(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
         for kind, key in (("provider", "provider_id"), ("circuit_type", "type_id")):
-            if (kind, f[key]) not in self.st.recs:
+            if isinstance(f[key], int) and (kind, f[key]) not in self.st.recs:
                 raise OpError("not_found", f"{kind.replace('_', ' ').capitalize()} {f[key]} does not exist.", {"field": key, "id": f[key]})
+        # since 2.5.0 the provider and the type may be made (or matched) by an earlier op of the same set
+        provider, ctype = self.resolve("provider", f["provider_id"], "provider_id"), self.resolve("circuit_type", f["type_id"], "type_id")
         for c in self.st.of("circuit"):
-            if c.v["cid"] == f["cid"] and c.v.get("provider_id") == f["provider_id"]:
+            if c.v["cid"] == f["cid"] and c.v.get("provider_id") == provider.id:
                 raise OpError("validation_failed", f"Circuit {f['cid']} already exists for that provider (NetBox: a circuit ID is "
                               "unique per provider).", {"field": "cid"})
-        self._new(p, op, "circuit", {"cid": f["cid"], "provider_id": f["provider_id"]}, dict(f))
+        self._new(p, op, "circuit", {"cid": f["cid"], "provider_id": provider.id}, dict(f))
+        p.write = {**f, "provider_id": provider.id, "type_id": ctype.id}
 
     def create_circuit_termination(self, p: Planned, op: Any, f: dict[str, Any]) -> None:
         circuit = self.resolve("circuit", f["circuit_id"], "circuit_id")
@@ -882,6 +891,8 @@ async def write_net(client: nb.NetBox, p: Planned, real: dict[Key, int], message
     def rid(kind: str, v: Any) -> int:
         return real[(kind, v)] if isinstance(v, str) else v
 
+    if p.op in setupops.SETUP_OPS:
+        return await setupops.write(client, p, real, message)
     if p.op == "connect_cable":
         ends = {side: [{"object_type": END_TYPE[w[f"{side}_kind"]],
                         "object_id": rid("circuit_termination", w[f"{side}_id"])}] for side in ("a", "b")}
@@ -889,7 +900,8 @@ async def write_net(client: nb.NetBox, p: Planned, real: dict[Key, int], message
                 **({"type": w["type"]} if w.get("type") else {}), **({"label": w["label"]} if w.get("label") else {})}
         return await client.request("POST", "dcim/cables/", json={**body, "changelog_message": message})
     if p.op == "create_circuit":
-        return await client.request("POST", "circuits/circuits/", json={"cid": w["cid"], "provider": w["provider_id"], "type": w["type_id"],
+        return await client.request("POST", "circuits/circuits/", json={"cid": w["cid"], "provider": rid("provider", w["provider_id"]),
+                                                                        "type": rid("circuit_type", w["type_id"]),
                                                                         "status": "active", "changelog_message": message})
     if p.op == "create_circuit_termination":
         at = ({"termination_type": "circuits.providernetwork", "termination_id": rid("provider_network", w["provider_network_id"])}
@@ -1069,3 +1081,6 @@ async def apply(client: nb.NetBox, cs: c.ChangeSet, write_enabled: bool, player:
             log.warning("apply: op %d failed (%s); written=%s skipped=%s", p.index, e.code, written, later)
             return result("apply", planned, write_enabled, False, ids)
     return result("apply", planned, write_enabled, True, ids)
+
+
+setupops.install(Planner)

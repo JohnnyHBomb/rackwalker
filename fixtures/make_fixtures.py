@@ -22,7 +22,7 @@ import seed_model as sm  # noqa: E402
 
 NB = "http://netbox.example.invalid"
 TS = "2026-11-07T09:00:00Z"
-META = {"contract_version": "2.4.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
+META = {"contract_version": "2.5.0", "generated_at": "2026-11-07T10:00:00Z", "netbox_version": None, "source": "fixture"}
 
 PASS_THROUGH = {"front_port", "rear_port"}
 # PortKind enum order (contracts/scene.schema.json): DeviceDetail.interfaces is ordered by kind in this order.
@@ -207,14 +207,19 @@ class World:
                          "manufacturer": sm.DEVICE_TYPES[d.dtype].manufacturer, "vc_id": None, "type_id": self.dt_id[d.dtype],
                          # nothing is on record about how a device is managed: one with a primary IP is locally managed
                          "mgmt_mode": None, "mgmt_service": None, "mgmt_default": None, "mgmt_default_service": None,
-                         "last_updated": None} for d in m.devices],
+                         "tags": [], "last_updated": None} for d in m.devices],
             "ports": sorted(ports, key=lambda p: (p["kind"], p["id"])),
             "cables": [{"id": c["id"], "type": c["spec"].type, "label": c["spec"].label, "status": c["spec"].status,
                         "a": [key(c["a"])], "b": [key(c["b"])]} for c in self.cables],
             "circuits": [{"id": self.circ_id[c.cid], "cid": c.cid, "provider_id": 1, "type": c.type, "status": c.status, "account_id": 1,
                           "install_date": c.install_date or None, "commit_rate": 1000000, "mrc": f"{c.mrc:.2f}", "nrc": f"{c.nrc:.2f}",
                           "currency": sm.CURRENCY, "last_updated": None} for c in m.circuits],
-            "providers": [{"id": 1, "name": m.circuits[0].provider}] if m.circuits else [],
+            "providers": [{"id": 1, "name": m.circuits[0].provider, "slug": "example-carrier", "asns": []}] if m.circuits else [],
+            # every device type and role of the seed, and no module bays (the seed's models have none)
+            "dtypes": [{"id": self.dt_id[t.slug], "manufacturer": t.manufacturer, "model": t.model, "slug": t.slug, "part_number": "",
+                        "u_height": float(t.u_height), "tags": []} for t in sm.DEVICE_TYPES.values()],
+            "roles": [{"id": self.role_id[slug], "name": name, "slug": slug} for slug, (name, _) in sm.ROLES.items()],
+            "module_bays": [],
             "circuit_types": [{"id": 1, "name": m.circuits[0].type}] if m.circuits else [],
             "cterms": [{"id": t["id"], "circuit_id": self.circ_id[t["cid"]], "side": t["side"], "site_id": self.site_id[t["site"]],
                         "location_id": None, "network_id": None, "cable_id": t["cable"]} for t in self.cterm.values()],
@@ -241,7 +246,7 @@ def render() -> dict[str, object]:
     m = sm.build()
     w = World(m)
     out: dict[str, object] = {}
-    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.4.0", "write_enabled": False,
+    out["health.json"] = {"status": "ok", "app_version": "0.1.0", "contract_version": "2.5.0", "write_enabled": False,
                           "netbox": {"url": "http://netbox.example.invalid", "reachable": True, "version": "4.7.4", "supported": True,
                                      "permission_check": "unknown"}}
     sites = []
@@ -347,7 +352,7 @@ def render() -> dict[str, object]:
                   {"field": "face", "before": srv.face, "after": None}], "error": None},
         {"index": 4, "op": "update_fields", "client_ref": None, "target": {"kind": "device", "id": detail_ids[0]}, "status": "error",
          "before": None, "after": None, "diff": [],
-         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.4.0.",
+         "error": {"code": "validation_failed", "message": "Field 'primary_ip' is not editable on device in contract 2.5.0.",
                    "details": {"field": "primary_ip",
                                "allowed": ["name", "status", "serial", "asset_tag", "description", "comments", "platform_id"]}}},
         {"index": 5, "op": "move_rack", "client_ref": None, "target": {"kind": "rack", "id": "@newrack"}, "status": "ok",
@@ -457,6 +462,9 @@ def quest_examples(files: dict[str, object], index: list[dict], token: str) -> t
             return {k: (TS if k == "updated_at" and v is not None else fixed(v)) for k, v in x.items()}
         return [fixed(v) for v in x] if isinstance(x, list) else x
 
+    def fixed_seen(body):
+        return {**body, "items": [{**it, "first_seen": TS} for it in body["items"]]}
+
     out: dict[str, object] = {}
     with tempfile.TemporaryDirectory() as tmp:
         fx = Path(tmp) / "fixtures"
@@ -490,6 +498,8 @@ def quest_examples(files: dict[str, object], index: list[dict], token: str) -> t
             out["quest-preview.json"] = call("POST", "/api/game/quests/preview", ref)
             out["quest-verdict.json"] = call("POST", "/api/game/quests/apply", ref)
             out["boss-ack-request.json"] = {"scope": "practice", "site_id": 9000001}
+            out["packs.json"] = call("GET", "/api/packs")
+            out["game-catalogue.json"] = fixed_seen(call("GET", "/api/game/catalogue"))
             cl.post("/api/game/practice/reset", headers=h)
     idx = [
         {"method": "GET", "path": "/api/quests/gaps/1", "status": 200, "schema": "GapList", "file": "quest-gaps-1.json", "store": True},
@@ -505,6 +515,8 @@ def quest_examples(files: dict[str, object], index: list[dict], token: str) -> t
         {"method": "POST", "path": "/api/game/practice/reset", "status": 200, "schema": "QuestBoard", "file": "quest-board.json", "store": True},
         {"method": "POST", "path": "/api/game/boss/ack", "status": 200, "schema": "QuestBoard", "file": "quest-board.json",
          "request_schema": "BossAck", "request_file": "boss-ack-request.json", "store": True},
+        {"method": "GET", "path": "/api/packs", "status": 200, "schema": "PackList", "file": "packs.json", "store": True},
+        {"method": "GET", "path": "/api/game/catalogue", "status": 200, "schema": "Catalogue", "file": "game-catalogue.json", "store": True},
     ]
     return out, idx
 

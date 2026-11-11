@@ -1,0 +1,332 @@
+{
+ "pack": "providers",
+ "id": "providers-fr",
+ "version": "1.0.0",
+ "country": "FR",
+ "title": "Common providers: France",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the four national operators (fixed and mobile) and the main operators of public-initiative fibre networks; business ISPs are partial.",
+ "missing": [
+  "Smaller business ISPs",
+  "Operators in the overseas departments",
+  "AS numbers for Celeste and the wholesale fibre operators (none confirmed)"
+ ],
+ "sources": [
+  {
+   "name": "Arcep: maps and data",
+   "url": "https://www.arcep.fr/cartes-et-donnees.html",
+   "read": "2026-11-11",
+   "terms": "Public data that may not be used for commercial or advertising purposes (legal notice): nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in France",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_France",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 18 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "16 of 17 websites and 2 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "14 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Orange",
+   "slug": "orange",
+   "kind": "national_carrier",
+   "aka": [
+    "Orange Business",
+    "France Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 3215,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.orange-business.com/fr",
+   "support_url": "https://suivi-des-incidents.orange.fr/",
+   "notes": "Orange Business for business lines."
+  },
+  {
+   "name": "SFR",
+   "slug": "sfr",
+   "kind": "national_carrier",
+   "aka": [
+    "SFR Business",
+    "Altice France"
+   ],
+   "asns": [
+    {
+     "asn": 15557,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sfrbusiness.fr/",
+   "support_url": null,
+   "notes": "SFR Business."
+  },
+  {
+   "name": "Bouygues Telecom",
+   "slug": "bouygues-telecom",
+   "kind": "national_carrier",
+   "aka": [
+    "Bouygues Telecom Entreprises",
+    "Bbox"
+   ],
+   "asns": [
+    {
+     "asn": 5410,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.bouyguestelecom-pro.fr/",
+   "support_url": null,
+   "notes": "Bouygues Telecom Entreprises."
+  },
+  {
+   "name": "Free",
+   "slug": "free",
+   "kind": "national_carrier",
+   "aka": [
+    "Freebox",
+    "Iliad",
+    "Proxad"
+   ],
+   "asns": [
+    {
+     "asn": 12322,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.free.fr/",
+   "support_url": null,
+   "notes": "Iliad group."
+  },
+  {
+   "name": "Free Pro",
+   "slug": "free-pro",
+   "kind": "business_isp",
+   "aka": [
+    "Jaguar Network"
+   ],
+   "asns": [
+    {
+     "asn": 30781,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://pro.free.fr/",
+   "support_url": null,
+   "notes": "Formerly Jaguar Network."
+  },
+  {
+   "name": "Free Mobile",
+   "slug": "free-mobile",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 51207,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://mobile.free.fr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "OVHcloud Telecom",
+   "slug": "ovh-telecom",
+   "kind": "business_isp",
+   "aka": [
+    "OVH",
+    "OVH Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 16276,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ovhcloud.com/fr/telecom/",
+   "support_url": "https://network.status-ovhcloud.com/",
+   "notes": null
+  },
+  {
+   "name": "inherent",
+   "slug": "inherent",
+   "kind": "business_isp",
+   "aka": [
+    "Adista"
+   ],
+   "asns": [
+    {
+     "asn": 16347,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://inherent.fr/",
+   "support_url": null,
+   "notes": "Formerly Adista."
+  },
+  {
+   "name": "Celeste",
+   "slug": "celeste",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.celeste.fr/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Sipartech",
+   "slug": "sipartech",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8309,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sipartech.com/",
+   "support_url": null,
+   "notes": "Dark fibre and transport."
+  },
+  {
+   "name": "K-Net",
+   "slug": "k-net",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 24904,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.k-net.fr/",
+   "support_url": null,
+   "notes": "On public-initiative fibre networks."
+  },
+  {
+   "name": "IELO",
+   "slug": "ielo",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 29075,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ielo.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Zayo France",
+   "slug": "zayo-france",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8218,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.zayo.com/",
+   "support_url": null,
+   "notes": "Formerly Neo Telecoms."
+  },
+  {
+   "name": "Axione",
+   "slug": "axione",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.axione.com/",
+   "support_url": null,
+   "notes": "Operator of public-initiative fibre networks; wholesale."
+  },
+  {
+   "name": "Altitude Infra",
+   "slug": "altitude-infra",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": null,
+   "support_url": null,
+   "notes": "Operator of public-initiative fibre networks; includes Covage and Kosc."
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}

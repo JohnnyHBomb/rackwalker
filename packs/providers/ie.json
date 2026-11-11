@@ -1,0 +1,318 @@
+{
+ "pack": "providers",
+ "id": "providers-ie",
+ "version": "1.0.0",
+ "country": "IE",
+ "title": "Common providers: Ireland",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carriers, cable, the mobile network operators and the three wholesale fibre networks; business ISPs and fixed-wireless operators are thin.",
+ "missing": [
+  "Regional fixed-wireless operators",
+  "Smaller business ISPs",
+  "AS numbers for SIRO, National Broadband Ireland and Viatel (none confirmed)",
+  "Status pages (only one answered a check on the read date)"
+ ],
+ "sources": [
+  {
+   "name": "ComReg: Quarterly Key Data Report",
+   "url": "https://www.comreg.ie/industry/electronic-communications/market-information/quarterly-key-data-report/",
+   "read": "2026-11-11",
+   "terms": "The page redirected an automated read on the read date and its terms were not read: nothing is copied.",
+   "use": "cited",
+   "result": "Not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in the Republic of Ireland",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_the_Republic_of_Ireland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "10 of 17 candidate names were found on the page."
+  },
+  {
+   "name": "Wikipedia: Internet in Ireland",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Ireland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "7 of 17 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "15 of 16 websites and 1 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "12 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "eir",
+   "slug": "eir",
+   "kind": "national_carrier",
+   "aka": [
+    "Eircom",
+    "eir evo",
+    "eir Business"
+   ],
+   "asns": [
+    {
+     "asn": 5466,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eir.ie/business/",
+   "support_url": null,
+   "notes": "eir evo for business; open eir is the wholesale arm."
+  },
+  {
+   "name": "open eir",
+   "slug": "open-eir",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.openeir.ie/",
+   "support_url": null,
+   "notes": "Wholesale arm of eir; the network (AS5466) is recorded on eir."
+  },
+  {
+   "name": "Virgin Media Ireland",
+   "slug": "virgin-media-ie",
+   "kind": "cable_fibre",
+   "aka": [
+    "Virgin Media",
+    "UPC Ireland"
+   ],
+   "asns": [
+    {
+     "asn": 6830,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.virginmedia.ie/business/",
+   "support_url": "https://www.virginmedia.ie/customer-support/support-by-topic/service-status/",
+   "notes": "Liberty Global network."
+  },
+  {
+   "name": "Vodafone Ireland",
+   "slug": "vodafone-ie",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone"
+   ],
+   "asns": [
+    {
+     "asn": 15502,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.ie/business",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "Three Ireland",
+   "slug": "three-ie",
+   "kind": "mobile",
+   "aka": [
+    "Three",
+    "3"
+   ],
+   "asns": [
+    {
+     "asn": 13280,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.three.ie/business/",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Sky Ireland",
+   "slug": "sky-ie",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 5607,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sky.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "SIRO",
+   "slug": "siro",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://siro.ie/",
+   "support_url": null,
+   "notes": "Wholesale fibre network (ESB and Vodafone); retail through other providers."
+  },
+  {
+   "name": "National Broadband Ireland",
+   "slug": "nbi",
+   "kind": "wholesale",
+   "aka": [
+    "NBI"
+   ],
+   "asns": [],
+   "website": "https://nbi.ie/",
+   "support_url": null,
+   "notes": "Wholesale fibre network of the National Broadband Plan."
+  },
+  {
+   "name": "Enet",
+   "slug": "enet",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 2110,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.enet.ie/",
+   "support_url": null,
+   "notes": "Operates the Metropolitan Area Networks; wholesale."
+  },
+  {
+   "name": "Digiweb",
+   "slug": "digiweb",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 31122,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.digiweb.ie/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Imagine",
+   "slug": "imagine",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 25441,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.imagine.ie/",
+   "support_url": null,
+   "notes": "Fixed wireless."
+  },
+  {
+   "name": "Magnet+",
+   "slug": "magnet-plus",
+   "kind": "business_isp",
+   "aka": [
+    "Magnet Networks",
+    "Magnet"
+   ],
+   "asns": [
+    {
+     "asn": 34245,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Viatel",
+   "slug": "viatel",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.viatel.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "euNetworks",
+   "slug": "eunetworks",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13237,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://eunetworks.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}

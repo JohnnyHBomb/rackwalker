@@ -27,7 +27,7 @@ from fastapi import Body, FastAPI, Query, Request
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
-from . import chains, changes, findings, perms, practice, quests, schema
+from . import chains, changes, findings, packs, perms, practice, quests, schema, setup
 from . import contracts_gen as c
 from .errors import ApiError
 from .estate import Estate, left, read_estate, simulate, splice
@@ -333,19 +333,23 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             f, target = op.get("fields") or {}, op["target"]
             if op["op"] == "connect_cable":
                 out.update(e.port_site((f[k + "_kind"], f[k + "_id"])) for k in ("a", "b") if isinstance(f[k + "_id"], int))
-            elif op["op"] == "create_circuit_termination":
+            elif op["op"] in ("create_circuit_termination", "create_device", "create_rack"):
                 out.add(f.get("site_id"))
+            elif op["op"] == "install_module":
+                out.add(e.devices.get(f.get("device_id"), {}).get("site_id"))
             elif target["kind"] == "device":
                 out.add(e.devices.get(target["id"], {}).get("site_id"))
             elif target["kind"] == "rack":
                 out.add(e.racks.get(target["id"], {}).get("site_id"))
             elif target["kind"] == "site":
                 out.add(target["id"])
-        return {s for s in out if s is not None}
+        return {s for s in out if s}   # 0 is the estate itself (a line about a NetBox with no site): no site to read
 
     def reaches_every_site(ops: list[dict[str, Any]]) -> bool:
-        """A model's default sits on the devices of that model at every site: only a whole read shows it everywhere."""
-        return any(op["op"] == "set_management" and "model_default" in (op.get("fields") or {}) for op in ops)
+        """A model's default sits on the devices of that model at every site: only a whole read shows it everywhere.
+        A new site is at no site that was read before, and a tag on a device type shows on its devices everywhere."""
+        return any(op["op"] == "set_management" and "model_default" in (op.get("fields") or {}) or op["op"] == "create_site"
+                   or op["op"] == "mark_unverified" and op["target"]["kind"] == "device_type" for op in ops)
 
     async def may_write(uid: int | None, fresh: bool = False) -> perms.Permissions | None:
         """The player's NetBox permissions, or None for the single-user local mode (no NetBox user to ask about).
@@ -436,6 +440,16 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         sites_out: list[dict[str, Any]] = []
         queued = 0
         best: tuple[Any, str] | None = None
+        # A NetBox with no site yet has one line, about the estate itself (site 0): there is no building to stand at,
+        # so it is offered in the quest log and by the guide.
+        for line in (stand.open_lines(by_site.get(0, []), 0) if site_id is None else []):
+            row, state = rows.get(line["id"]), state_of(line)
+            status = "offered" if row is None else {"asking": "active"}.get(state["status"], state["status"])
+            if row is not None and row["status"] == "practised" and state["status"] == "ready":
+                status = "practised"
+            out_quests.append(quest_body(scope, line, row, state, status, gate=gate))
+            if best is None and status != "parked":
+                best = ((False, order[line["id"]]), line["id"])
         for sid in sorted(e.sites):
             open_lines = stand.open_lines(by_site.get(sid, []), sid)
             # A line waits beside the others when the player parked it, and also when it stands parked now: a record
@@ -541,6 +555,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         else:
             n = len(here) + queued
             message = f"{n} thing{'s' if n != 1 else ''} to find out at {where}; the most useful one comes first."
+        if scope == "netbox" and not e.sites and e.can_see("sites"):
+            message = "NetBox has no site yet. The first quest makes one: it asks for the country and a name, and shows the change before it is written."
         practice_rows = rows if scope == "practice" else st.quests(uid, "practice")
         real_rows = rows if scope == "netbox" else st.quests(uid, "netbox")
         return {"contract_version": schema.CONTRACT_VERSION, "scope": scope, "site_id": site_id, "write_enabled": write_enabled,
@@ -749,7 +765,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             verified = list(dict.fromkeys(before + now))
             complete = not still and bool(verified)
             moot = real and not still and not verified and any(cid not in waived for cid in base)
-            xp = potions = 0
+            xp = potions = bonus_xp = 0
+            bonus_note: str | None = None
             unlocked: list[str] = []
             if real and newly:
                 paid = st.mark_paid(uid, newly)
@@ -761,10 +778,16 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                     xp = xp_for(line["xp"], len(paid), len(stands), raw["repeats"].get(signature, 0))
                     before_level = 1 + raw["xp"] // LEVEL_XP
                     st.add_reward(uid, line["id"], "xp", xp, signature)
+                    # the bonus is for values that pass a check against the packs, as NetBox holds them now
+                    bonus_xp, bonus_note = setup.bonus(after, line, paid)
+                    if bonus_xp:
+                        st.add_reward(uid, line["id"], "xp", bonus_xp, f"verified:{line['kind']}")
+                        xp += bonus_xp
                     if 1 + (raw["xp"] + xp) // LEVEL_XP > before_level:
                         potions = 1
                         st.add_reward(uid, line["id"], "potion", 1, "level")
-                    tool = TOOL_FOR_RANK.get(line["rank"])
+                    # a tool is earned by recording a connection or reading labels, not by setting a site up
+                    tool = None if line["kind"] in setup.KINDS else TOOL_FOR_RANK.get(line["rank"])
                     if complete and tool and tool not in raw["tools"]:
                         st.add_reward(uid, line["id"], "tool", 1, "tool", item=tool)
                         unlocked.append(tool)
@@ -809,14 +832,15 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
                 saved = save_row(uid, scope, line, row, status, answers, verified=verified if wrote else before)
         undone = [cid for cid in before if state.get(cid) is False]
         return {"saved": saved, "complete": complete, "newly": newly, "xp": xp, "potions": potions, "unlocked": unlocked, "open": sorted(still),
-                "moot": moot, "undone": undone, "was_done": row is not None and row["status"] == "done", "chain_xp": chain_xp}
+                "moot": moot, "undone": undone, "was_done": row is not None and row["status"] == "done", "chain_xp": chain_xp,
+                "bonus_xp": bonus_xp, "bonus_note": bonus_note}
 
     def standing_still(uid: int, scope: str, line: dict[str, Any]) -> dict[str, Any]:
         """A settlement that changes nothing: the line stays exactly where it stood (a write NetBox did not take)."""
         row = store().quests(uid, scope).get(line["id"])
         saved = row if row is not None else save_row(uid, scope, line, None, "active", {})
         return {"saved": saved, "complete": False, "newly": [], "xp": 0, "potions": 0, "unlocked": [], "open": [], "moot": False,
-                "undone": [], "was_done": False, "chain_xp": 0}
+                "undone": [], "was_done": False, "chain_xp": 0, "bonus_xp": 0, "bonus_note": None}
 
     def verdict(uid: int, scope: str, line: dict[str, Any], s: dict[str, Any], mode: str, verified: bool, message: str,
                 result: dict[str, Any] | None, trace: str | None, e: Estate, gate: Gate | None = None) -> dict[str, Any]:
@@ -839,6 +863,8 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
         ch = chain_view(uid, scope, e, shown, s["saved"]["checks"], pays=gate is not None and gate.board()[0],
                         hidden=gate.hidden if gate is not None else frozenset())
         told = (verified or mode == "practice") and (s["newly"] or s["complete"])
+        if s.get("bonus_note") and verified:
+            message += f" {s['bonus_note']}"
         going_on = ch is not None and ch["total"] > 1 and ch["status"] != "complete"
         if s["complete"] and verified and line["site_id"] in e.sites and not going_on:
             # the small step, and where it leaves the site. (In the middle of a chain the next stage is said instead:
@@ -853,7 +879,7 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             elif going_on and s["complete"]:
                 message += f" Next in the chain \"{ch['title']}\": {ch['label']}."
         return {"quest": quest_body(scope, shown, s["saved"], state, status, gate=gate, chain=line_chain(uid, scope, e, shown)), "chain": ch,
-                "chain_xp": s["chain_xp"], "mode": mode, "verified": verified,
+                "chain_xp": s["chain_xp"], "bonus_xp": s.get("bonus_xp", 0), "mode": mode, "verified": verified,
                 "complete": s["complete"], "xp_awarded": s["xp"], "potions_awarded": s["potions"], "message": message,
                 "can_now": line["outcome"] if s["complete"] and verified and not s["was_done"] else None, "unlocked": s["unlocked"],
                 "trace": trace, "result": result,
@@ -1043,6 +1069,56 @@ def install(app: FastAPI, *, client: NetBox | None, fixtures_dir: Path | None, w
             raise ApiError("conflict", "That site's Confusion is not ready: the site is not at 100 % yet.", {"completeness": site["completeness"]})
         await run_in_threadpool(lambda: store().ack_boss(uid, b["scope"], b["site_id"]))
         return _no_store(await board_for(uid, b["scope"], None))
+
+    # ---------------------------------------------------------------- the setup companion: packs and the catalogue
+    @app.get("/api/packs")
+    async def get_packs():
+        """What the game ships with to help set NetBox up, with the sources and what each pack is complete for."""
+        return JSONResponse(await run_in_threadpool(pack_list))
+
+    @app.get("/api/game/catalogue")
+    async def get_catalogue(request: Request, fresh: bool = False):
+        uid = await run_in_threadpool(require, request, False)
+        e, source = await real_estate(fresh)
+
+        def work() -> dict[str, Any]:
+            cat = setup.catalogue(e)
+            keyed = [{**it, "key": f"{packs.norm(it['manufacturer'])}|{packs._words(it['model'])}"} for it in cat["items"]]
+            seen = store().sync_catalogue(uid, keyed)
+            items = [{**{k: v for k, v in it.items() if k != "key"}, "first_seen": seen[it["key"]]} for it in keyed]
+            total, good = cat["total"], cat["verified"]
+            if not e.can_see("dtypes"):
+                message = "The game could not read the device types from NetBox, so the catalogue is empty for now."
+            elif total == 0:
+                message = "Your NetBox holds no device type yet. The first box you add appears here."
+            elif good == total:
+                message = f"All {total} model{'s' if total != 1 else ''} in your NetBox {'are' if total != 1 else 'is'} confirmed by the device-type library."
+            else:
+                message = (f"{good} of the {total} model{'s' if total != 1 else ''} in your NetBox {'are' if good != 1 else 'is'} confirmed by the "
+                           "device-type library. The others are kept as you recorded them.")
+            return {"contract_version": schema.CONTRACT_VERSION, "source": source, "verified": good, "total": total,
+                    "manufacturers": cat["manufacturers"], "items": items, "message": message}
+        return _no_store(await run_in_threadpool(work))
+
+
+def pack_list() -> dict[str, Any]:
+    p = packs.load()
+    out = []
+    for kind in ("providers", "devices", "serials"):
+        for pack in getattr(p, kind):
+            entries = (len(pack["providers"]) if kind == "providers" else pack["index"]["device_types"] + pack["index"]["module_types"] if kind == "devices"
+                       else sum(len(v["rules"]) for v in pack["vendors"]))
+            sources = pack.get("sources") or [{"name": r["source"]["name"], "url": r["source"]["url"], "read": r["source"]["read"],
+                                               "terms": "Quoted in one sentence as the ground of a rule.", "use": "cited"}
+                                              for v in pack["vendors"] for r in v["rules"]]
+            out.append({"id": pack["id"], "kind": kind, "version": pack["version"], "title": pack["title"], "country": pack.get("country"),
+                        "read": pack["read"], "partial": pack["partial"], "coverage": pack["coverage"], "missing": pack["missing"], "entries": entries,
+                        "sources": [{k: s.get(k) for k in ("name", "url", "read", "terms", "use")} for s in sources]})
+    dev = p.device_pack()
+    local = packs.library_dir()
+    library = {"repo": dev["library"]["repo"], "commit": dev["library"]["commit"],
+               "import_from": "local" if local is not None and local.is_dir() else "https" if packs.fetch_allowed() else "none"} if dev else None
+    return {"contract_version": schema.CONTRACT_VERSION, "packs": out, "errors": p.errors[:20], "library": library}
 
 
 def schema_id() -> Any:

@@ -1,0 +1,468 @@
+{
+  "contract_version": "2.5.0",
+  "packs": [
+    {
+      "id": "providers-de",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Germany",
+      "country": "DE",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed-line carriers and the mobile network operators, and the largest regional (city) carriers; smaller city carriers and business ISPs are partial.",
+      "missing": [
+        "Smaller city carriers (Stadtwerke networks; over a hundred)",
+        "Smaller business ISPs"
+      ],
+      "entries": 20,
+      "sources": [
+        {
+          "name": "Bundesnetzagentur: telecommunications market data",
+          "url": "https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Marktdaten/start.html",
+          "read": "2026-11-11",
+          "terms": "Site content is under CC BY-ND 4.0 DE unless marked otherwise: no derivative use, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Germany",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Germany",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-fr",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: France",
+      "country": "FR",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the four national operators (fixed and mobile) and the main operators of public-initiative fibre networks; business ISPs are partial.",
+      "missing": [
+        "Smaller business ISPs",
+        "Operators in the overseas departments",
+        "AS numbers for Celeste and the wholesale fibre operators (none confirmed)"
+      ],
+      "entries": 17,
+      "sources": [
+        {
+          "name": "Arcep: maps and data",
+          "url": "https://www.arcep.fr/cartes-et-donnees.html",
+          "read": "2026-11-11",
+          "terms": "Public data that may not be used for commercial or advertising purposes (legal notice): nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in France",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_France",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-gb",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: United Kingdom",
+      "country": "GB",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed-line carriers, the four mobile network operators and the main wholesale access networks; business ISPs and full-fibre alternative networks are partial (the largest by reach only).",
+      "missing": [
+        "Regional full-fibre alternative networks (several dozen)",
+        "Resellers that own no network",
+        "AS numbers for Openreach, CityFibre and Neos Networks (none confirmed)"
+      ],
+      "entries": 22,
+      "sources": [
+        {
+          "name": "Ofcom: Connected Nations",
+          "url": "https://www.ofcom.org.uk/phones-and-broadband/coverage-and-speeds/connected-nations-2024",
+          "read": "2026-11-11",
+          "terms": "Ofcom's copyright page allows reproduction free of charge with acknowledgement; the report itself is in documents that were not parsed.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: List of broadband providers in the United Kingdom",
+          "url": "https://en.wikipedia.org/wiki/List_of_broadband_providers_in_the_United_Kingdom",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in the United Kingdom",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_the_United_Kingdom",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-ie",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Ireland",
+      "country": "IE",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carriers, cable, the mobile network operators and the three wholesale fibre networks; business ISPs and fixed-wireless operators are thin.",
+      "missing": [
+        "Regional fixed-wireless operators",
+        "Smaller business ISPs",
+        "AS numbers for SIRO, National Broadband Ireland and Viatel (none confirmed)",
+        "Status pages (only one answered a check on the read date)"
+      ],
+      "entries": 16,
+      "sources": [
+        {
+          "name": "ComReg: Quarterly Key Data Report",
+          "url": "https://www.comreg.ie/industry/electronic-communications/market-information/quarterly-key-data-report/",
+          "read": "2026-11-11",
+          "terms": "The page redirected an automated read on the read date and its terms were not read: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in the Republic of Ireland",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_the_Republic_of_Ireland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in Ireland",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Ireland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-nl",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Netherlands",
+      "country": "NL",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed-line carriers, cable and the mobile network operators, and the main wholesale fibre networks; business ISPs are partial.",
+      "missing": [
+        "Regional and municipal fibre operators",
+        "Smaller business ISPs",
+        "AS numbers for the wholesale-only fibre networks (they sell no internet service)"
+      ],
+      "entries": 17,
+      "sources": [
+        {
+          "name": "ACM (Authority for Consumers and Markets): telecom market publications",
+          "url": "https://www.acm.nl/",
+          "read": "2026-11-11",
+          "terms": "The site's terms allow linking; no reuse licence was found on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in the Netherlands",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_the_Netherlands",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-us",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: United States",
+      "country": "US",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carriers, the largest cable and fibre operators, the three mobile network operators, the main satellite services and the main backbone names.",
+      "missing": [
+        "Regional and rural telephone companies and co-operatives (many hundreds)",
+        "Municipal fibre networks",
+        "Wireless ISPs",
+        "Most regional cable operators",
+        "AS numbers for Ziply Fiber and Brightspeed (none confirmed)",
+        "Websites that refused an automated check on the read date (left empty)"
+      ],
+      "entries": 30,
+      "sources": [
+        {
+          "name": "FCC: Communications Marketplace Reports",
+          "url": "https://www.fcc.gov/reports-research/reports/consolidated-communications-marketplace-reports-released",
+          "read": "2026-11-11",
+          "terms": "A work of the US federal government; the site's policy page did not answer on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: List of broadband providers in the United States",
+          "url": "https://en.wikipedia.org/wiki/List_of_broadband_providers_in_the_United_States",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in the United States",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_the_United_States",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-international",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Backbone and international wholesale providers",
+      "country": null,
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. The backbone and international wholesale names a site admin is most likely to meet on a transit or wave bill, offered beside every country's pack.",
+      "missing": [
+        "Regional carriers outside Europe and North America",
+        "Submarine cable consortia",
+        "Internet exchanges (they are not providers)"
+      ],
+      "entries": 18,
+      "sources": [
+        {
+          "name": "Wikipedia: Tier 1 network",
+          "url": "https://en.wikipedia.org/wiki/Tier_1_network",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider and which registry assigned it.",
+          "use": "cross-check"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "devices-community-library",
+      "kind": "devices",
+      "version": "2026.11.10",
+      "title": "Device types and module types of the NetBox community device-type library",
+      "country": null,
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the library at the pinned commit: every device type and module type of every manufacturer in it. The library itself is community-maintained and does not hold every model of every manufacturer.",
+      "missing": [
+        "Models the library does not hold (they can still be recorded, and are marked unverified)",
+        "Rack types and elevation images of the library (not used)"
+      ],
+      "entries": 16448,
+      "sources": [
+        {
+          "name": "NetBox community device-type library",
+          "url": "https://github.com/netbox-community/devicetype-library",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0 Universal (LICENSE.txt at the pinned commit, read on the date above). No attribution is required; the source is named anyway.",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "serials-network-vendors",
+      "kind": "serials",
+      "version": "1.0.0",
+      "title": "Serial-number rules of the most common network vendors in the device-type library",
+      "country": null,
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "The eight network vendors with the most device types in the library. Three have a rule with a public source of the vendor's own; five have none yet, and their serials are accepted as typed.",
+      "missing": [
+        "A sourced rule for HPE (Aruba), Juniper, Arista, Extreme Networks and Ubiquiti",
+        "Every other vendor"
+      ],
+      "entries": 4,
+      "sources": [
+        {
+          "name": "Cisco: product recycling, how to read when a product was made",
+          "url": "https://www.cisco.com/c/en/us/about/takeback-and-reuse/product-recycling/weee-compliance/crossed-out-wheelie-bin.html",
+          "read": "2026-11-11",
+          "terms": "Quoted in one sentence as the ground of a rule.",
+          "use": "cited"
+        },
+        {
+          "name": "Dell: Service Tag, Product ID Search Error, or Part Number Results (KB 000196860)",
+          "url": "https://www.dell.com/support/kbdoc/en-us/000196860/service-tag-search-null-results",
+          "read": "2026-11-11",
+          "terms": "Quoted in one sentence as the ground of a rule.",
+          "use": "cited"
+        },
+        {
+          "name": "Fortinet Community: Technical Tip, deciphering abbreviations for Fortinet products",
+          "url": "https://community.fortinet.com/t5/Customer-Service/Technical-Tip-Deciphering-abbreviations-for-Fortinet-products/ta-p/196062",
+          "read": "2026-11-11",
+          "terms": "Quoted in one sentence as the ground of a rule.",
+          "use": "cited"
+        },
+        {
+          "name": "Fortinet Community: Technical Tip, deciphering abbreviations for Fortinet products",
+          "url": "https://community.fortinet.com/t5/Customer-Service/Technical-Tip-Deciphering-abbreviations-for-Fortinet-products/ta-p/196062",
+          "read": "2026-11-11",
+          "terms": "Quoted in one sentence as the ground of a rule.",
+          "use": "cited"
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "library": {
+    "repo": "https://github.com/netbox-community/devicetype-library",
+    "commit": "9f0e6916b8407470f3a5e5cdcd2c8e8c1f411cc2",
+    "import_from": "https"
+  }
+}

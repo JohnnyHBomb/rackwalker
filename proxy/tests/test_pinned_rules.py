@@ -162,7 +162,7 @@ def test_a_damaged_row_does_not_stop_the_store_from_opening(tmp_path, answers):
     db.execute("INSERT INTO quest VALUES (2, 'netbox', 'q:device_unreachable:site:1', 1, 'active', ?, '[]', '[]', '{}', '2026-11-09T10:00:00Z')", (answers,))
     db.close()
     st = GameStore(path)
-    assert st.version == 4 and list(st.quests(1, "netbox")) == ["q:device_unreachable:device:2"]
+    assert st.version == 5 and list(st.quests(1, "netbox")) == ["q:device_unreachable:device:2"]
 
 
 def test_a_check_undone_and_redone_under_another_line_pays_nothing(tmp_path, monkeypatch):
@@ -317,7 +317,7 @@ def test_a_circuits_address_and_record_are_reported_where_it_plugs_in():
 # ---------------------------------------------------------------- chains
 def test_the_bonus_of_each_chain_kind_is_the_documented_one():
     # docs/quests.md: "250 XP for a way out or a link between sites, 150 for a device, 100 for a rack"
-    assert chains.CHAIN_XP == {"way_out": 250, "site_link": 250, "room_link": 0, "device": 150, "rack": 100}
+    assert chains.CHAIN_XP == {"way_out": 250, "site_link": 250, "room_link": 0, "device": 150, "rack": 100, "setup": 0}
 
 
 def two_sites_and_circuits():

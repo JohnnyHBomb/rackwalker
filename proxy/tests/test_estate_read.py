@@ -104,7 +104,7 @@ def test_the_estate_is_read_with_slim_field_selections_and_becomes_plain_data():
     assert e.cables[1]["a"] == [("interface", 11)] and e.ports[("interface", 21)]["cable_id"] == 1
     # every list asks NetBox only for the fields the scanner uses
     assert fake.lists("dcim/devices")[0]["fields"] == ("id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,"
-                                                      "virtual_chassis,custom_fields,last_updated")
+                                                      "virtual_chassis,custom_fields,last_updated,tags")
     assert fake.lists("dcim/interfaces")[0]["fields"] == "id,name,device,type,enabled,mgmt_only,cable,description,mark_connected"
     # the estate survives a round trip through JSON (the fixture-mode estate is stored that way)
     again = estate.Estate.from_json(e.to_json())

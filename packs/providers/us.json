@@ -1,0 +1,615 @@
+{
+ "pack": "providers",
+ "id": "providers-us",
+ "version": "1.0.0",
+ "country": "US",
+ "title": "Common providers: United States",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carriers, the largest cable and fibre operators, the three mobile network operators, the main satellite services and the main backbone names.",
+ "missing": [
+  "Regional and rural telephone companies and co-operatives (many hundreds)",
+  "Municipal fibre networks",
+  "Wireless ISPs",
+  "Most regional cable operators",
+  "AS numbers for Ziply Fiber and Brightspeed (none confirmed)",
+  "Websites that refused an automated check on the read date (left empty)"
+ ],
+ "sources": [
+  {
+   "name": "FCC: Communications Marketplace Reports",
+   "url": "https://www.fcc.gov/reports-research/reports/consolidated-communications-marketplace-reports-released",
+   "read": "2026-11-11",
+   "terms": "A work of the US federal government; the site's policy page did not answer on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: List of broadband providers in the United States",
+   "url": "https://en.wikipedia.org/wiki/List_of_broadband_providers_in_the_United_States",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "23 of 30 candidate names were found on the page."
+  },
+  {
+   "name": "Wikipedia: Internet in the United States",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_the_United_States",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "21 of 30 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "23 of 30 websites and 7 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "40 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "AT&T",
+   "slug": "att",
+   "kind": "national_carrier",
+   "aka": [
+    "ATT",
+    "AT&T Business"
+   ],
+   "asns": [
+    {
+     "asn": 7018,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.business.att.com/",
+   "support_url": "https://www.att.com/outages/",
+   "notes": null
+  },
+  {
+   "name": "Verizon",
+   "slug": "verizon",
+   "kind": "national_carrier",
+   "aka": [
+    "Verizon Business",
+    "Fios",
+    "Verizon Fios"
+   ],
+   "asns": [
+    {
+     "asn": 701,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.verizon.com/business/",
+   "support_url": "https://www.verizon.com/support/check-network-status/",
+   "notes": "Fios and business lines."
+  },
+  {
+   "name": "Comcast Business",
+   "slug": "comcast-business",
+   "kind": "cable_fibre",
+   "aka": [
+    "Comcast",
+    "Xfinity"
+   ],
+   "asns": [
+    {
+     "asn": 7922,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://business.comcast.com/",
+   "support_url": null,
+   "notes": "Xfinity for homes."
+  },
+  {
+   "name": "Spectrum (Charter)",
+   "slug": "spectrum",
+   "kind": "cable_fibre",
+   "aka": [
+    "Charter",
+    "Spectrum",
+    "Spectrum Business",
+    "Spectrum Enterprise",
+    "Time Warner Cable"
+   ],
+   "asns": [
+    {
+     "asn": 20115,
+     "rir": "arin"
+    },
+    {
+     "asn": 7843,
+     "rir": "arin"
+    },
+    {
+     "asn": 10796,
+     "rir": "arin"
+    },
+    {
+     "asn": 11351,
+     "rir": "arin"
+    },
+    {
+     "asn": 11426,
+     "rir": "arin"
+    },
+    {
+     "asn": 11427,
+     "rir": "arin"
+    },
+    {
+     "asn": 12271,
+     "rir": "arin"
+    },
+    {
+     "asn": 20001,
+     "rir": "arin"
+    },
+    {
+     "asn": 33363,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": "https://www.spectrum.net/support/internet/spectrum-outage-information",
+   "notes": "Charter Communications; Spectrum Business and Spectrum Enterprise."
+  },
+  {
+   "name": "Cox Business",
+   "slug": "cox-business",
+   "kind": "cable_fibre",
+   "aka": [
+    "Cox"
+   ],
+   "asns": [
+    {
+     "asn": 22773,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.cox.com/business/home.html",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Lumen",
+   "slug": "lumen",
+   "kind": "national_carrier",
+   "aka": [
+    "CenturyLink",
+    "Level 3",
+    "Level3"
+   ],
+   "asns": [
+    {
+     "asn": 3356,
+     "rir": "arin"
+    },
+    {
+     "asn": 209,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.lumen.com/",
+   "support_url": null,
+   "notes": "Formerly CenturyLink and Level 3; AS209 is the CenturyLink access network."
+  },
+  {
+   "name": "Frontier",
+   "slug": "frontier",
+   "kind": "national_carrier",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 5650,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://business.frontier.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Optimum (Altice USA)",
+   "slug": "optimum",
+   "kind": "cable_fibre",
+   "aka": [
+    "Optimum",
+    "Altice",
+    "Cablevision"
+   ],
+   "asns": [
+    {
+     "asn": 6128,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": "https://www.optimum.net/support/outage",
+   "notes": null
+  },
+  {
+   "name": "Kinetic (Windstream)",
+   "slug": "kinetic-windstream",
+   "kind": "national_carrier",
+   "aka": [
+    "Windstream",
+    "Kinetic"
+   ],
+   "asns": [
+    {
+     "asn": 7029,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.gokinetic.com/",
+   "support_url": null,
+   "notes": "Kinetic by Windstream; merged into Uniti in 2025."
+  },
+  {
+   "name": "T-Mobile",
+   "slug": "t-mobile-us",
+   "kind": "mobile",
+   "aka": [
+    "T-Mobile US"
+   ],
+   "asns": [
+    {
+     "asn": 21928,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.t-mobile.com/business",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Verizon Wireless",
+   "slug": "verizon-wireless",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 22394,
+     "rir": "arin"
+    },
+    {
+     "asn": 6167,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.verizon.com/business/",
+   "support_url": "https://www.verizon.com/support/check-network-status/",
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "AT&T Mobility",
+   "slug": "att-mobility",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 20057,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.business.att.com/",
+   "support_url": "https://www.att.com/outages/",
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "Google Fiber",
+   "slug": "google-fiber",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 16591,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Zayo",
+   "slug": "zayo",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6461,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.zayo.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Cogent Communications",
+   "slug": "cogent",
+   "kind": "wholesale",
+   "aka": [
+    "Cogent"
+   ],
+   "asns": [
+    {
+     "asn": 174,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.cogentco.com/",
+   "support_url": "https://ecogent.cogentco.com/network-status",
+   "notes": null
+  },
+  {
+   "name": "Crown Castle Fiber",
+   "slug": "crown-castle-fiber",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 46887,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.crowncastle.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Fidium (Consolidated Communications)",
+   "slug": "fidium",
+   "kind": "national_carrier",
+   "aka": [
+    "Consolidated Communications"
+   ],
+   "asns": [
+    {
+     "asn": 13977,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.consolidated.com/",
+   "support_url": null,
+   "notes": "Consolidated Communications trades as Fidium."
+  },
+  {
+   "name": "Mediacom",
+   "slug": "mediacom",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 30036,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Sparklight (Cable One)",
+   "slug": "sparklight",
+   "kind": "cable_fibre",
+   "aka": [
+    "Sparklight",
+    "Cable One"
+   ],
+   "asns": [
+    {
+     "asn": 11492,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "TDS Telecom",
+   "slug": "tds-telecom",
+   "kind": "national_carrier",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 4181,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://tdstelecom.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Astound Broadband",
+   "slug": "astound",
+   "kind": "cable_fibre",
+   "aka": [
+    "RCN",
+    "Wave",
+    "Grande"
+   ],
+   "asns": [
+    {
+     "asn": 6079,
+     "rir": "arin"
+    },
+    {
+     "asn": 11404,
+     "rir": "arin"
+    },
+    {
+     "asn": 7459,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.astound.com/",
+   "support_url": null,
+   "notes": "RCN, Wave and Grande."
+  },
+  {
+   "name": "WOW!",
+   "slug": "wow",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12083,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.wowway.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Ziply Fiber",
+   "slug": "ziply-fiber",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [],
+   "website": "https://ziplyfiber.com/",
+   "support_url": null,
+   "notes": "Pacific Northwest."
+  },
+  {
+   "name": "Brightspeed",
+   "slug": "brightspeed",
+   "kind": "national_carrier",
+   "aka": [],
+   "asns": [],
+   "website": null,
+   "support_url": null,
+   "notes": "Former CenturyLink lines in 20 states."
+  },
+  {
+   "name": "Hurricane Electric",
+   "slug": "hurricane-electric",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6939,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.he.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "GTT",
+   "slug": "gtt",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 3257,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.gtt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Arelion",
+   "slug": "arelion",
+   "kind": "wholesale",
+   "aka": [
+    "Telia Carrier",
+    "Telia"
+   ],
+   "asns": [
+    {
+     "asn": 1299,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.arelion.com/",
+   "support_url": null,
+   "notes": "Formerly Telia Carrier."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Viasat",
+   "slug": "viasat",
+   "kind": "satellite",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 7155,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.viasat.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Hughesnet",
+   "slug": "hughesnet",
+   "kind": "satellite",
+   "aka": [
+    "Hughes"
+   ],
+   "asns": [
+    {
+     "asn": 6621,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}

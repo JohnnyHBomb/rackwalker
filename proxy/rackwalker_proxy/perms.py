@@ -44,7 +44,22 @@ NEEDS: dict[str, list[tuple[str, str]]] = {
     "create_provider_network": [("circuits.providernetwork", "add")],
     "create_contact": [("tenancy.contact", "add")],
     "assign_contact": [("tenancy.contactassignment", "add")],
+    # 2.5.0, the setup companion. Each op lists everything it may have to make: a site's country is a region, a
+    # provider's AS numbers are ASN objects of a registry, a model comes with its manufacturer and its templates.
+    "create_site": [("dcim.site", "add")],
+    "create_provider": [("circuits.provider", "add")],
+    "create_circuit_type": [("circuits.circuittype", "add")],
+    "add_device_type": [("dcim.devicetype", "add"), ("dcim.manufacturer", "add")],
+    "add_module_type": [("dcim.moduletype", "add"), ("dcim.manufacturer", "add")],
+    "create_device": [("dcim.device", "add"), ("dcim.devicerole", "add")],
+    "set_device_type": [("dcim.device", "change")],
+    "install_module": [("dcim.module", "add")],
+    "mark_unverified": [("extras.tag", "add")],
 }
+TEMPLATE_TYPES = ["dcim.consoleporttemplate", "dcim.consoleserverporttemplate", "dcim.powerporttemplate", "dcim.poweroutlettemplate",
+                  "dcim.interfacetemplate", "dcim.rearporttemplate", "dcim.frontporttemplate", "dcim.modulebaytemplate", "dcim.devicebaytemplate"]
+COMPONENT_TYPES = ["dcim.consoleport", "dcim.consoleserverport", "dcim.powerport", "dcim.poweroutlet", "dcim.interface", "dcim.rearport",
+                   "dcim.frontport", "dcim.modulebay", "dcim.devicebay"]
 UPDATE_TYPE = {"site": "dcim.site", "location": "dcim.location", "rack": "dcim.rack", "device": "dcim.device", "cable": "dcim.cable",
                "interface": "dcim.interface"}
 TTL = 30.0
@@ -75,6 +90,19 @@ def needs_of(ops: list[dict[str, Any]]) -> list[tuple[str, str]]:
         need = [(UPDATE_TYPE[op["target"]["kind"]], "change")] if op["op"] == "update_fields" else NEEDS.get(op["op"], [("unknown", "change")])
         if op["op"] == "set_management" and "model_default" in (op.get("fields") or {}):
             need = need + [("dcim.devicetype", "change")]   # the model's default lives on the device type
+        f = op.get("fields") or {}
+        if op["op"] == "create_site" and f.get("country"):
+            need = need + [("dcim.region", "add")]
+        if op["op"] == "create_provider" and f.get("asns"):
+            need = need + [("ipam.asn", "add"), ("ipam.rir", "add")]
+        if op["op"] in ("add_device_type", "add_module_type") and f.get("library_file"):
+            need = need + [(t, "add") for t in TEMPLATE_TYPES]
+        if op["op"] == "add_device_type" and not f.get("library_file") or op["op"] == "create_device" and f.get("unverified"):
+            need = need + [("extras.tag", "add")]
+        if op["op"] == "set_device_type":
+            need = need + [(t, "add") for t in COMPONENT_TYPES]
+        if op["op"] == "mark_unverified":
+            need = need + [("dcim.device" if op["target"]["kind"] == "device" else "dcim.devicetype", "change")]
         for n in need:
             if n not in out:
                 out.append(n)

@@ -497,16 +497,24 @@ def test_candidates_for_an_access_switch_start_in_its_own_room_with_the_busiest_
 
 
 # ---------------------------------------------------------------- the way out, circuits, platforms
-def test_whose_line_it_is_is_asked_and_a_missing_circuit_type_is_said_before_the_player_reads_a_label():
+def test_whose_line_it_is_is_asked_and_a_netbox_with_no_circuit_type_gets_one_with_the_circuit():
     e = practice.example_estate(complete=True)
     line = one(e, "site_no_way_out")
     answers = {"device": {"choice": "device:9000001"}}
     assert quests.evaluate(e, line, answers)["step"]["id"] == "provider"
     e.circuit_types.clear()
     e.touch()
-    state = quests.evaluate(e, line, {**answers, "provider": {"choice": "provider:9000001"}})
-    assert state["status"] == "parked" and state["note"] == "A new circuit needs a circuit type, and NetBox has none yet."
-    assert state["checklist"][0].startswith("NetBox has no circuit type yet: add one under Circuits > Circuit Types")
+    answers |= {"provider": {"choice": "provider:9000001"}, "circuit_id": {"text": "EXF-1"}}
+    state = quests.evaluate(e, line, answers)
+    # no dead end: the kinds of service a site admin meets are offered, and the one picked is made with the circuit
+    assert state["step"]["id"] == "circuit_type" and "NetBox has no circuit type yet" in state["step"]["prompt"]
+    assert [c["label"] for c in state["step"]["choices"]] == ["Internet", "Private line", "MPLS or IP VPN", "Dark fibre", "I don't know yet"]
+    state = quests.evaluate(e, line, {**answers, "circuit_type": {"choice": "new:0"}, "local_port": {"choice": "interface:9000026"},
+                                      "cable_type": {"choice": "smf"}})
+    ops = state["proposal"]["ops"]
+    assert [o["op"] for o in ops] == ["create_circuit_type", "create_circuit", "create_circuit_termination", "connect_cable"]
+    assert ops[0]["fields"] == {"name": "Internet"} and ops[1]["fields"]["type_id"] == "@ctype"
+    assert state["changes"][:2] == ["New circuit type Internet.", "New circuit EXF-1 from Example Fibre (Internet)."]
 
 
 def test_a_site_with_no_line_out_on_purpose_can_say_so():

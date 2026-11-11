@@ -1,0 +1,433 @@
+{
+ "pack": "providers",
+ "id": "providers-gb",
+ "version": "1.0.0",
+ "country": "GB",
+ "title": "Common providers: United Kingdom",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed-line carriers, the four mobile network operators and the main wholesale access networks; business ISPs and full-fibre alternative networks are partial (the largest by reach only).",
+ "missing": [
+  "Regional full-fibre alternative networks (several dozen)",
+  "Resellers that own no network",
+  "AS numbers for Openreach, CityFibre and Neos Networks (none confirmed)"
+ ],
+ "sources": [
+  {
+   "name": "Ofcom: Connected Nations",
+   "url": "https://www.ofcom.org.uk/phones-and-broadband/coverage-and-speeds/connected-nations-2024",
+   "read": "2026-11-11",
+   "terms": "Ofcom's copyright page allows reproduction free of charge with acknowledgement; the report itself is in documents that were not parsed.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: List of broadband providers in the United Kingdom",
+   "url": "https://en.wikipedia.org/wiki/List_of_broadband_providers_in_the_United_Kingdom",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "14 of 23 candidate names were found on the page."
+  },
+  {
+   "name": "Wikipedia: Internet in the United Kingdom",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_the_United_Kingdom",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "16 of 23 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "21 of 22 websites and 5 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "20 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "BT",
+   "slug": "bt",
+   "kind": "national_carrier",
+   "aka": [
+    "BT Business",
+    "British Telecom",
+    "BTnet",
+    "British Telecommunications"
+   ],
+   "asns": [
+    {
+     "asn": 2856,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://business.bt.com/",
+   "support_url": null,
+   "notes": "Trades as BT Business for business lines; network identity BTnet."
+  },
+  {
+   "name": "Openreach",
+   "slug": "openreach",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.openreach.com/",
+   "support_url": null,
+   "notes": "Wholesale access network; lines are sold through retail providers, so it is seldom the name on the bill."
+  },
+  {
+   "name": "Virgin Media Business",
+   "slug": "virgin-media-business",
+   "kind": "cable_fibre",
+   "aka": [
+    "Virgin Media",
+    "Virgin Media O2",
+    "NTL"
+   ],
+   "asns": [
+    {
+     "asn": 5089,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.virginmediabusiness.co.uk/",
+   "support_url": "https://www.virginmedia.com/help/check/status",
+   "notes": "Part of Virgin Media O2."
+  },
+  {
+   "name": "Sky",
+   "slug": "sky",
+   "kind": "cable_fibre",
+   "aka": [
+    "Sky Business",
+    "Sky Broadband"
+   ],
+   "asns": [
+    {
+     "asn": 5607,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sky.com/",
+   "support_url": null,
+   "notes": "Sky Business sells leased lines and broadband."
+  },
+  {
+   "name": "TalkTalk",
+   "slug": "talktalk",
+   "kind": "business_isp",
+   "aka": [
+    "TalkTalk Business"
+   ],
+   "asns": [
+    {
+     "asn": 13285,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.talktalk.business/",
+   "support_url": null,
+   "notes": "TalkTalk Business; wholesale arm trades as PXC."
+  },
+  {
+   "name": "Vodafone UK",
+   "slug": "vodafone-uk",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "VodafoneThree"
+   ],
+   "asns": [
+    {
+     "asn": 25135,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.co.uk/business",
+   "support_url": "https://www.vodafone.co.uk/network/status-checker",
+   "notes": "Fixed and mobile; AS1273 is the international backbone."
+  },
+  {
+   "name": "EE",
+   "slug": "ee",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12576,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://ee.co.uk/",
+   "support_url": null,
+   "notes": "Mobile operator of the BT group; 4G/5G backup and fixed wireless."
+  },
+  {
+   "name": "Three UK",
+   "slug": "three-uk",
+   "kind": "mobile",
+   "aka": [
+    "Three",
+    "3",
+    "Hutchison 3G"
+   ],
+   "asns": [
+    {
+     "asn": 206067,
+     "rir": "ripe"
+    },
+    {
+     "asn": 60339,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.three.co.uk/",
+   "support_url": null,
+   "notes": "Mobile operator; merged with Vodafone UK in 2025 (VodafoneThree)."
+  },
+  {
+   "name": "O2",
+   "slug": "o2-uk",
+   "kind": "mobile",
+   "aka": [
+    "Telefonica UK",
+    "Virgin Media O2"
+   ],
+   "asns": [
+    {
+     "asn": 35228,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.o2.co.uk/",
+   "support_url": "https://status.o2.co.uk/",
+   "notes": "Mobile operator of Virgin Media O2."
+  },
+  {
+   "name": "Zen Internet",
+   "slug": "zen-internet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13037,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.zen.co.uk/",
+   "support_url": "https://status.zen.co.uk/",
+   "notes": null
+  },
+  {
+   "name": "KCOM",
+   "slug": "kcom",
+   "kind": "cable_fibre",
+   "aka": [
+    "Kingston Communications"
+   ],
+   "asns": [
+    {
+     "asn": 12390,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.kcom.com/",
+   "support_url": null,
+   "notes": "Incumbent in Hull and East Yorkshire."
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": "Business fibre and Ethernet in city centres."
+  },
+  {
+   "name": "Gamma",
+   "slug": "gamma",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 31655,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://gammagroup.co/",
+   "support_url": null,
+   "notes": "Sold largely through channel partners."
+  },
+  {
+   "name": "CityFibre",
+   "slug": "cityfibre",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://cityfibre.com/",
+   "support_url": null,
+   "notes": "Wholesale full-fibre network."
+  },
+  {
+   "name": "Hyperoptic",
+   "slug": "hyperoptic",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 56478,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.hyperoptic.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Community Fibre",
+   "slug": "community-fibre",
+   "kind": "cable_fibre",
+   "aka": [
+    "CommunityFibre"
+   ],
+   "asns": [
+    {
+     "asn": 201838,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://communityfibre.co.uk/",
+   "support_url": null,
+   "notes": "London."
+  },
+  {
+   "name": "Andrews & Arnold",
+   "slug": "andrews-arnold",
+   "kind": "business_isp",
+   "aka": [
+    "AAISP",
+    "A&A"
+   ],
+   "asns": [
+    {
+     "asn": 20712,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.aa.net.uk/",
+   "support_url": "https://aastatus.net/",
+   "notes": null
+  },
+  {
+   "name": "Neos Networks",
+   "slug": "neos-networks",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://neosnetworks.com/",
+   "support_url": null,
+   "notes": "Business and wholesale fibre; formerly SSE Enterprise Telecoms."
+  },
+  {
+   "name": "Glide",
+   "slug": "glide",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 42689,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://glide.co.uk/",
+   "support_url": null,
+   "notes": "Business parks and student accommodation."
+  },
+  {
+   "name": "PXC",
+   "slug": "pxc",
+   "kind": "wholesale",
+   "aka": [
+    "Virtual1",
+    "TalkTalk Wholesale"
+   ],
+   "asns": [
+    {
+     "asn": 47474,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.pxc.co.uk/",
+   "support_url": null,
+   "notes": "Wholesale only; formerly TalkTalk Wholesale Services and Virtual1."
+  },
+  {
+   "name": "Exponential-e",
+   "slug": "exponential-e",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 25180,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": "Satellite; common as a backup line at rural sites."
+  }
+ ]
+}

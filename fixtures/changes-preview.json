@@ -195,7 +195,7 @@
       "diff": [],
       "error": {
         "code": "validation_failed",
-        "message": "Field 'primary_ip' is not editable on device in contract 2.4.0.",
+        "message": "Field 'primary_ip' is not editable on device in contract 2.5.0.",
         "details": {
           "field": "primary_ip",
           "allowed": [

@@ -25,6 +25,7 @@ from typing import Any
 
 import zlib
 
+from . import setup
 from .estate import Estate, is_passive, is_physical, is_router
 from .estate import name_of as nm
 
@@ -32,11 +33,14 @@ RANKS = ("connectivity", "identity", "layout")
 # Devices in these states are expected to be connected, powered and reachable.
 LIVE = ("active", "staged")
 # Order of finding kinds inside one rank: the most valuable unknown first.
-KIND_ORDER = ["site_no_way_out", "sites_not_linked", "locations_not_linked", "site_island", "switch_no_uplink",
+# The setup lines (setup.py) come first: a site with nothing in it has nothing else to ask about.
+KIND_ORDER = ["estate_no_site", "site_no_rack", "site_no_devices", "site_no_provider",
+              "site_no_way_out", "sites_not_linked", "locations_not_linked", "site_island", "switch_no_uplink",
               "circuit_unterminated", "provider_unused", "circuit_handoff", "circuit_record", "device_unconnected", "router_no_address",
-              "interface_no_cable", "device_no_power", "device_unreachable", "address_no_prefix", "rack_audit", "shelf_audit",
-              "platform_survey", "site_record", "rack_devices_unpositioned", "room_layout"]
-KIND_RANK = {**{k: "connectivity" for k in KIND_ORDER[:15]}, "rack_audit": "identity", "shelf_audit": "identity",
+              "interface_no_cable", "device_no_power", "device_unreachable", "address_no_prefix", "device_type_unknown", "rack_audit", "shelf_audit",
+              "module_bays_unrecorded", "platform_survey", "site_record", "rack_devices_unpositioned", "room_layout"]
+KIND_RANK = {**{k: "connectivity" for k in KIND_ORDER[:19]}, "device_type_unknown": "identity", "rack_audit": "identity", "shelf_audit": "identity",
+             "module_bays_unrecorded": "identity",
              "platform_survey": "identity", "site_record": "identity", "rack_devices_unpositioned": "layout", "room_layout": "layout"}
 # At most this many devices of one model are covered by one platform line.
 MAX_SURVEY = 20
@@ -57,6 +61,9 @@ class Analysis:
     checks: dict[int, dict[str, bool]] = field(default_factory=lambda: defaultdict(dict))
     # per site: interface gaps found beyond MAX_INTERFACE_GAPS (counted, not listed)
     unlisted: dict[int, int] = field(default_factory=lambda: defaultdict(int))
+    # checks of the setup lines that passed: made (so a line about them can be confirmed), but not counted into a
+    # site's completeness, which would otherwise rise for merely having a rack
+    quiet: set[str] = field(default_factory=set)
     _flat: dict[str, bool] | None = field(default=None, repr=False, compare=False)
 
     def check(self, cid: str, site_id: int | None = None) -> bool | None:
@@ -79,7 +86,7 @@ class Analysis:
     def completeness(self, site_id: int, resolved: frozenset[str] | set[str] = frozenset()) -> dict[str, int]:
         """Checks passed out of checks made at a site. `resolved` are finding ids the player has answered as "that is
         how it is" (no link on purpose): they count as passed for that player."""
-        checks = self.checks.get(site_id, {})
+        checks = {cid: ok for cid, ok in self.checks.get(site_id, {}).items() if cid not in self.quiet}
         total = len(checks)
         passed = sum(1 for cid, ok in checks.items() if ok or cid in resolved)
         percent = 100 if total == 0 else (100 * passed) // total
@@ -682,6 +689,12 @@ def _analyse(e: Estate) -> Analysis:
                 add("provider_unused", ("provider", pid), home,
                     f"{p['name']} is listed as a provider, but no circuit of theirs is on record.", [ref("provider", pid, p["name"])],
                     provider_id=pid)
+
+    def quiet(kind: str, obj: tuple[str, int], site_id: int) -> None:
+        cid = f"{kind}:{obj[0]}:{obj[1]}"
+        if a.checks[site_id].setdefault(cid, True):
+            a.quiet.add(cid)
+    setup.findings(e, a, add, quiet, LIVE)
     a.findings.sort(key=_sort_key)
     a.gaps.sort(key=lambda g: (g["site_id"], RANKS.index(g["rank"]), g["kind"], g["object_id"], g["field"]))
     return a

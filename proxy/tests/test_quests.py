@@ -371,7 +371,10 @@ CASES = [device_unconnected, switch_no_uplink, site_island, locations_not_linked
 
 
 def test_every_finding_kind_has_a_case():
-    assert sorted(c.__name__ for c in CASES) == sorted(findings.KIND_ORDER) == sorted(quests.FLOWS) == sorted(quests.WORDS)
+    from rackwalker_proxy import setup
+
+    # the setup lines (a NetBox with nothing in it yet) have their own cases in test_setup.py
+    assert sorted([c.__name__ for c in CASES] + list(setup.KINDS)) == sorted(findings.KIND_ORDER) == sorted(quests.FLOWS) == sorted(quests.WORDS)
 
 
 @pytest.mark.parametrize("case", CASES, ids=lambda c: c.__name__)

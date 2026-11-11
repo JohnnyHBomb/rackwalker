@@ -2,8 +2,8 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://rackwalker.invalid/contracts/scene.schema.json",
   "title": "RackWalker scene contract",
-  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.4.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.",
-  "$comment": "contract_version=2.4.0",
+  "description": "Source of truth for every body exchanged between web/ and proxy/. Contract version 2.5.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.",
+  "$comment": "contract_version=2.5.0",
   "$defs": {
     "Id": {
       "type": "integer",
@@ -122,7 +122,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "generated_at": {
           "$ref": "#/$defs/Timestamp"
@@ -959,7 +959,7 @@
         },
         "contract_version": {
           "type": "string",
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "write_enabled": {
           "type": "boolean",
@@ -1609,6 +1609,33 @@
         },
         {
           "$ref": "#/$defs/AssignContactOp"
+        },
+        {
+          "$ref": "#/$defs/CreateSiteOp"
+        },
+        {
+          "$ref": "#/$defs/CreateProviderOp"
+        },
+        {
+          "$ref": "#/$defs/CreateCircuitTypeOp"
+        },
+        {
+          "$ref": "#/$defs/AddDeviceTypeOp"
+        },
+        {
+          "$ref": "#/$defs/AddModuleTypeOp"
+        },
+        {
+          "$ref": "#/$defs/CreateDeviceOp"
+        },
+        {
+          "$ref": "#/$defs/SetDeviceTypeOp"
+        },
+        {
+          "$ref": "#/$defs/InstallModuleOp"
+        },
+        {
+          "$ref": "#/$defs/MarkUnverifiedOp"
         }
       ]
     },
@@ -1688,7 +1715,16 @@
             "create_provider_account",
             "create_provider_network",
             "create_contact",
-            "assign_contact"
+            "assign_contact",
+            "create_site",
+            "create_provider",
+            "create_circuit_type",
+            "add_device_type",
+            "add_module_type",
+            "create_device",
+            "set_device_type",
+            "install_module",
+            "mark_unverified"
           ]
         },
         "client_ref": {
@@ -1720,7 +1756,11 @@
                 "provider",
                 "provider_account",
                 "provider_network",
-                "contact"
+                "contact",
+                "circuit_type",
+                "device_type",
+                "module_type",
+                "module"
               ]
             },
             "id": {
@@ -2221,7 +2261,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "player": {
           "$ref": "#/$defs/Player"
@@ -2253,6 +2293,7 @@
         "netbox_unreachable",
         "netbox_error",
         "unsupported_netbox_version",
+        "library_unavailable",
         "unauthorized",
         "forbidden",
         "internal"
@@ -2391,7 +2432,7 @@
     },
     "CreateCircuitOp": {
       "type": "object",
-      "description": "A new circuit of an existing provider and circuit type (2.3.0); status active.",
+      "description": "A new circuit of a provider and circuit type (2.3.0); status active. Since 2.5.0 the provider and the type may be '@' references to a create_provider or create_circuit_type op of the same ChangeSet.",
       "additionalProperties": false,
       "required": [
         "op",
@@ -2434,10 +2475,10 @@
               "maxLength": 100
             },
             "provider_id": {
-              "$ref": "#/$defs/Id"
+              "$ref": "#/$defs/IdOrRef"
             },
             "type_id": {
-              "$ref": "#/$defs/Id"
+              "$ref": "#/$defs/IdOrRef"
             }
           },
           "title": "CreateCircuitFields"
@@ -2721,7 +2762,7 @@
           "$ref": "#/$defs/QuestRank"
         },
         "site_id": {
-          "$ref": "#/$defs/Id"
+          "$ref": "#/$defs/SiteOrEstateId"
         },
         "title": {
           "type": "string"
@@ -2822,7 +2863,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "site_id": {
           "$ref": "#/$defs/Id"
@@ -3129,7 +3170,7 @@
           "$ref": "#/$defs/QuestRank"
         },
         "site_id": {
-          "$ref": "#/$defs/Id"
+          "$ref": "#/$defs/SiteOrEstateId"
         },
         "title": {
           "type": "string"
@@ -3380,7 +3421,7 @@
       "properties": {
         "contract_version": {
           "type": "string",
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "scope": {
           "$ref": "#/$defs/QuestScope"
@@ -3547,7 +3588,8 @@
         "result",
         "rewards",
         "chain",
-        "chain_xp"
+        "chain_xp",
+        "bonus_xp"
       ],
       "properties": {
         "quest": {
@@ -3626,6 +3668,11 @@
           "type": "integer",
           "minimum": 0,
           "description": "The bonus for a chain NetBox now shows complete, part of xp_awarded (2.4.0)."
+        },
+        "bonus_xp": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "XP for values that passed a check against the packs (a model the device-type library holds, a serial that fits the vendor's sourced rule), part of xp_awarded (2.5.0). 0 for anything marked unverified."
         }
       },
       "description": "What applying or checking a quest line led to."
@@ -4041,8 +4088,12 @@
       "enum": [
         "physical",
         "logical",
-        "administrative"
-      ]
+        "administrative",
+        "room",
+        "kit",
+        "carrier"
+      ],
+      "description": "physical, logical and administrative are the stages of a record; room, kit and carrier are the stages of setting a site up (2.5.0)."
     },
     "ChainStage": {
       "type": "object",
@@ -4118,11 +4169,12 @@
             "site_link",
             "room_link",
             "device",
-            "rack"
+            "rack",
+            "setup"
           ]
         },
         "site_id": {
-          "$ref": "#/$defs/Id"
+          "$ref": "#/$defs/SiteOrEstateId"
         },
         "title": {
           "type": "string"
@@ -4210,6 +4262,914 @@
           "minimum": 1
         },
         "label": {
+          "type": "string"
+        }
+      }
+    },
+    "SiteOrEstateId": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "A site's NetBox primary key, or 0 for the estate itself: a line about a NetBox that has no site yet (2.5.0)."
+    },
+    "CountryCode": {
+      "type": "string",
+      "pattern": "^[A-Z]{2}$",
+      "description": "ISO 3166-1 alpha-2."
+    },
+    "CreateSiteOp": {
+      "type": "object",
+      "description": "A new site (2.5.0); status active. With `country`, the site gets the region of that country (slug = the code in lower case), which is created when NetBox has none: that is where the game reads a site's country from.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_site"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "site"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateSiteTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "country": {
+              "$ref": "#/$defs/CountryCode"
+            }
+          },
+          "title": "CreateSiteFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateProviderOp": {
+      "type": "object",
+      "description": "A provider (2.5.0), by name, with its AS numbers as NetBox ASN objects (the registry of each is created when missing). A provider NetBox already holds under the same name or slug, or with one of the AS numbers, is matched instead (status no_change; later ops that refer to this op get the existing provider): a provider is never made twice.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_provider"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "provider"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateProviderTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "slug": {
+              "type": "string",
+              "pattern": "^[a-z0-9]+(-[a-z0-9]+)*$",
+              "maxLength": 100
+            },
+            "asns": {
+              "type": "array",
+              "maxItems": 16,
+              "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": [
+                  "asn",
+                  "rir"
+                ],
+                "properties": {
+                  "asn": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 4294967295
+                  },
+                  "rir": {
+                    "type": "string",
+                    "enum": [
+                      "ripe",
+                      "arin",
+                      "apnic",
+                      "lacnic",
+                      "afrinic"
+                    ]
+                  }
+                },
+                "title": "ProviderAsn"
+              }
+            },
+            "aka": {
+              "type": "array",
+              "maxItems": 12,
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 100
+              },
+              "description": "Other names the provider goes by; used only to match a provider NetBox already holds."
+            },
+            "pack": {
+              "type": "string",
+              "maxLength": 60,
+              "description": "The id of the provider pack the entry came from; absent for a name the player typed."
+            }
+          },
+          "title": "CreateProviderFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateCircuitTypeOp": {
+      "type": "object",
+      "description": "A circuit type (2.5.0), by name; an existing one of that name is matched instead (no_change).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_circuit_type"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "circuit_type"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateCircuitTypeTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            }
+          },
+          "title": "CreateCircuitTypeFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "AddDeviceTypeOp": {
+      "type": "object",
+      "description": "A device type in NetBox (2.5.0), with its manufacturer when missing. With `library_file` it is imported from the pinned device-type library: the full definition is fetched, checked against the index's SHA-256 and written with its console, power, interface, front and rear port, module-bay and device-bay templates; when it cannot be fetched the op fails with library_unavailable. With `manufacturer` and `model` it is recorded by hand for a model the library does not hold, and tagged rw-unverified; a part number that contradicts the library's for a model it does hold is refused. A device type NetBox already holds (same manufacturer and model) is matched instead (no_change).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "add_device_type"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device_type"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "AddDeviceTypeTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [],
+          "properties": {
+            "library_file": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 200,
+              "pattern": "^[^/]+/[^/]+\\.ya?ml$",
+              "description": "The file of the index row, <manufacturer folder>/<file>."
+            },
+            "manufacturer": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "part_number": {
+              "type": "string",
+              "maxLength": 50
+            },
+            "u_height": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 100
+            }
+          },
+          "title": "AddDeviceTypeFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "AddModuleTypeOp": {
+      "type": "object",
+      "description": "A module type imported from the pinned device-type library (2.5.0), as add_device_type with `library_file`.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "add_module_type"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "module_type"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "AddModuleTypeTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "library_file"
+          ],
+          "properties": {
+            "library_file": {
+              "type": "string",
+              "minLength": 3,
+              "maxLength": 200,
+              "pattern": "^[^/]+/[^/]+\\.ya?ml$"
+            }
+          },
+          "title": "AddModuleTypeFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "CreateDeviceOp": {
+      "type": "object",
+      "description": "A new device (2.5.0); status active. `role` is a role's name: an existing role of that name is used, else it is created. With `unverified` the device is tagged rw-unverified (its serial does not look like the vendor's and the player confirmed it).",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "create_device"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "CreateDeviceTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "name",
+            "site_id",
+            "role",
+            "device_type_id"
+          ],
+          "properties": {
+            "name": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64
+            },
+            "site_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "role": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 100
+            },
+            "device_type_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "rack_id": {
+              "$ref": "#/$defs/NullableId"
+            },
+            "position": {
+              "type": [
+                "number",
+                "null"
+              ],
+              "minimum": 1,
+              "maximum": 100
+            },
+            "face": {
+              "type": [
+                "string",
+                "null"
+              ],
+              "enum": [
+                "front",
+                "rear",
+                null
+              ]
+            },
+            "serial": {
+              "type": "string",
+              "maxLength": 50
+            },
+            "unverified": {
+              "type": "boolean"
+            }
+          },
+          "title": "CreateDeviceFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "SetDeviceTypeOp": {
+      "type": "object",
+      "description": "Gives an existing device another device type (2.5.0), only where nothing recorded is lost: every port, bay and other component the device has must exist under the same name in the new type, and the new height must fit where the device is racked. The components the device lacks are then added from the type's templates; none is removed or changed. Anything else is refused with the reason.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "set_device_type"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "device"
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "SetDeviceTypeTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "device_type_id"
+          ],
+          "properties": {
+            "device_type_id": {
+              "$ref": "#/$defs/IdOrRef"
+            }
+          },
+          "title": "SetDeviceTypeFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "InstallModuleOp": {
+      "type": "object",
+      "description": "A module fitted in an empty module bay of a device (2.5.0); NetBox adds the module type's ports to the device.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "install_module"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "const": "module"
+            },
+            "id": {
+              "type": "null"
+            }
+          },
+          "title": "InstallModuleTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "device_id",
+            "module_bay_id",
+            "module_type_id"
+          ],
+          "properties": {
+            "device_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "module_bay_id": {
+              "$ref": "#/$defs/Id"
+            },
+            "module_type_id": {
+              "$ref": "#/$defs/IdOrRef"
+            },
+            "serial": {
+              "type": "string",
+              "maxLength": 50
+            }
+          },
+          "title": "InstallModuleFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "MarkUnverifiedOp": {
+      "type": "object",
+      "description": "Tags a device or device type rw-unverified (2.5.0): its serial or model could not be checked against the packs. The tag is created when NetBox has none.",
+      "additionalProperties": false,
+      "required": [
+        "op",
+        "target",
+        "fields"
+      ],
+      "properties": {
+        "op": {
+          "const": "mark_unverified"
+        },
+        "target": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "id"
+          ],
+          "properties": {
+            "kind": {
+              "type": "string",
+              "enum": [
+                "device",
+                "device_type"
+              ]
+            },
+            "id": {
+              "$ref": "#/$defs/Id"
+            }
+          },
+          "title": "MarkUnverifiedTarget"
+        },
+        "fields": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "reason"
+          ],
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 200
+            }
+          },
+          "title": "MarkUnverifiedFields"
+        },
+        "client_ref": {
+          "$ref": "#/$defs/OpCommon/properties/client_ref"
+        },
+        "if_unmodified_since": {
+          "$ref": "#/$defs/OpCommon/properties/if_unmodified_since"
+        }
+      }
+    },
+    "PackInfo": {
+      "type": "object",
+      "description": "One pack the game ships with (2.5.0): what it is, how complete, and where it came from.",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "kind",
+        "version",
+        "title",
+        "country",
+        "read",
+        "partial",
+        "coverage",
+        "missing",
+        "entries",
+        "sources"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "providers",
+            "devices",
+            "serials"
+          ]
+        },
+        "version": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "country": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "read": {
+          "type": "string"
+        },
+        "partial": {
+          "type": "boolean"
+        },
+        "coverage": {
+          "type": "string"
+        },
+        "missing": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "entries": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Providers, device and module types, or rules in the pack."
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "url",
+              "read",
+              "terms",
+              "use"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "url": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "read": {
+                "type": "string"
+              },
+              "terms": {
+                "type": "string"
+              },
+              "use": {
+                "type": "string",
+                "enum": [
+                  "copied",
+                  "cross-check",
+                  "cited"
+                ]
+              }
+            },
+            "title": "PackSource"
+          }
+        }
+      }
+    },
+    "PackList": {
+      "type": "object",
+      "description": "GET /api/packs (2.5.0).",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "packs",
+        "errors",
+        "library"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "const": "2.5.0"
+        },
+        "packs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/PackInfo"
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "Why the packs could not be used (they did not validate); empty when all is well."
+        },
+        "library": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "repo",
+                "commit",
+                "import_from"
+              ],
+              "properties": {
+                "repo": {
+                  "type": "string"
+                },
+                "commit": {
+                  "type": "string"
+                },
+                "import_from": {
+                  "type": "string",
+                  "enum": [
+                    "local",
+                    "https",
+                    "none"
+                  ],
+                  "description": "Where a full definition comes from when a player imports a model: a local copy, the pinned commit over HTTPS, or nowhere (imports are unavailable)."
+                }
+              },
+              "title": "PackLibrary"
+            }
+          ]
+        }
+      }
+    },
+    "CatalogueItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "manufacturer",
+        "model",
+        "part_number",
+        "status",
+        "note",
+        "devices",
+        "first_seen"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/Id"
+        },
+        "manufacturer": {
+          "type": "string"
+        },
+        "model": {
+          "type": "string"
+        },
+        "part_number": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "type": "string",
+          "enum": [
+            "verified",
+            "unverified",
+            "mismatch"
+          ],
+          "description": "verified = the device-type library holds this maker and model, and the part numbers agree; mismatch = it holds the model with another part number (note says which); unverified = it does not hold the model."
+        },
+        "note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "devices": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "first_seen": {
+          "$ref": "#/$defs/Timestamp"
+        }
+      }
+    },
+    "CatalogueMaker": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "verified",
+        "total"
+      ],
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "verified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "Catalogue": {
+      "type": "object",
+      "description": "The device catalogue (2.5.0): the manufacturers and device types of the player's own NetBox as a collection, with those the device-type library confirms marked verified. Derived from NetBox on every read; the game store only remembers when each type was first seen.",
+      "additionalProperties": false,
+      "required": [
+        "contract_version",
+        "source",
+        "verified",
+        "total",
+        "manufacturers",
+        "items",
+        "message"
+      ],
+      "properties": {
+        "contract_version": {
+          "type": "string",
+          "const": "2.5.0"
+        },
+        "source": {
+          "type": "string",
+          "enum": [
+            "netbox",
+            "cache",
+            "fixture"
+          ]
+        },
+        "verified": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "total": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "manufacturers": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogueMaker"
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/CatalogueItem"
+          }
+        },
+        "message": {
           "type": "string"
         }
       }

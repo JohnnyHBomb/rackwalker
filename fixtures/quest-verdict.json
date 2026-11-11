@@ -100,6 +100,7 @@
     "bonus_xp": 0
   },
   "chain_xp": 0,
+  "bonus_xp": 0,
   "mode": "practice",
   "verified": true,
   "complete": true,

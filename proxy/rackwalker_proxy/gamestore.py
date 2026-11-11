@@ -176,6 +176,20 @@ MIGRATIONS: list[Any] = [
     # confirmed check for, with that device's answers; "It has none: nobody logs in to it" becomes the answer "it is
     # not managed at all" to the new first question, so it is not asked again and can be written to the device.
     split_management_rows,
+    # 4 -> 5: the device catalogue. The catalogue itself is derived from NetBox on every read; this table only keeps
+    # when a player's NetBox first held each model, and how it stood then. It can be emptied at any time: the next
+    # read fills it again (with today as "first seen").
+    """
+    CREATE TABLE catalogue (
+        user_id      INTEGER NOT NULL REFERENCES player(user_id) ON DELETE CASCADE,
+        type_key     TEXT NOT NULL,                 -- manufacturer and model as compared: 'juniper|ex2300 24p'
+        manufacturer TEXT NOT NULL,
+        model        TEXT NOT NULL,
+        status       TEXT NOT NULL,                 -- verified | unverified | mismatch, as last derived
+        first_seen   TEXT NOT NULL,
+        PRIMARY KEY (user_id, type_key)
+    );
+    """,
 ]
 SCHEMA_VERSION = len(MIGRATIONS)
 SESSION_SECONDS = 7 * 24 * 3600
@@ -586,6 +600,25 @@ class GameStore:
         with self._tx() as db:
             db.execute("INSERT INTO practice(user_id, ops) VALUES (?,?) ON CONFLICT(user_id) DO UPDATE SET ops=excluded.ops",
                        (user_id, json.dumps(ops)))
+
+    def sync_catalogue(self, user_id: int, items: list[dict[str, Any]]) -> dict[str, str]:
+        """Makes the kept catalogue rows of a player the given ones (`key`, `manufacturer`, `model`, `status`): new
+        models are added with now as their first sighting, models NetBox no longer holds are dropped, and a status
+        that changed is updated. Returns key -> first_seen."""
+        now = _now_iso()
+        with self._tx() as db:
+            have = {r["type_key"]: r for r in db.execute("SELECT type_key, status, first_seen FROM catalogue WHERE user_id=?", (user_id,))}
+            keys = {it["key"] for it in items}
+            for it in items:
+                old = have.get(it["key"])
+                if old is None:
+                    db.execute("INSERT OR IGNORE INTO catalogue(user_id, type_key, manufacturer, model, status, first_seen) VALUES (?,?,?,?,?,?)",
+                               (user_id, it["key"], it["manufacturer"], it["model"], it["status"], now))
+                elif old["status"] != it["status"]:
+                    db.execute("UPDATE catalogue SET status=? WHERE user_id=? AND type_key=?", (it["status"], user_id, it["key"]))
+            for key in set(have) - keys:
+                db.execute("DELETE FROM catalogue WHERE user_id=? AND type_key=?", (user_id, key))
+            return {r["type_key"]: r["first_seen"] for r in db.execute("SELECT type_key, first_seen FROM catalogue WHERE user_id=?", (user_id,))}
 
     def boss_acks(self, user_id: int, scope: str) -> set[int]:
         with self._tx() as db:

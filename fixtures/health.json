@@ -1,7 +1,7 @@
 {
   "status": "ok",
   "app_version": "0.1.0",
-  "contract_version": "2.4.0",
+  "contract_version": "2.5.0",
   "write_enabled": false,
   "netbox": {
     "url": "http://netbox.example.invalid",

@@ -1,0 +1,319 @@
+{
+ "pack": "providers",
+ "id": "providers-nl",
+ "version": "1.0.0",
+ "country": "NL",
+ "title": "Common providers: Netherlands",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed-line carriers, cable and the mobile network operators, and the main wholesale fibre networks; business ISPs are partial.",
+ "missing": [
+  "Regional and municipal fibre operators",
+  "Smaller business ISPs",
+  "AS numbers for the wholesale-only fibre networks (they sell no internet service)"
+ ],
+ "sources": [
+  {
+   "name": "ACM (Authority for Consumers and Markets): telecom market publications",
+   "url": "https://www.acm.nl/",
+   "read": "2026-11-11",
+   "terms": "The site's terms allow linking; no reuse licence was found on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in the Netherlands",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_the_Netherlands",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 18 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "16 of 17 websites and 3 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "13 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "KPN",
+   "slug": "kpn",
+   "kind": "national_carrier",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 1136,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.kpn.com/zakelijk",
+   "support_url": "https://www.kpn.com/service/storingen",
+   "notes": null
+  },
+  {
+   "name": "Odido",
+   "slug": "odido",
+   "kind": "national_carrier",
+   "aka": [
+    "T-Mobile",
+    "Tele2",
+    "T-Mobile Thuis"
+   ],
+   "asns": [
+    {
+     "asn": 50266,
+     "rir": "ripe"
+    },
+    {
+     "asn": 13127,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.odido.nl/zakelijk",
+   "support_url": "https://www.odido.nl/storingen-en-onderhoud",
+   "notes": "Formerly T-Mobile Netherlands and Tele2; fixed and mobile."
+  },
+  {
+   "name": "Ziggo",
+   "slug": "ziggo",
+   "kind": "cable_fibre",
+   "aka": [
+    "VodafoneZiggo",
+    "Ziggo Zakelijk",
+    "UPC"
+   ],
+   "asns": [
+    {
+     "asn": 33915,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ziggo.nl/zakelijk",
+   "support_url": "https://www.ziggo.nl/klantenservice/storingen",
+   "notes": "Cable; part of VodafoneZiggo."
+  },
+  {
+   "name": "Vodafone",
+   "slug": "vodafone-nl",
+   "kind": "mobile",
+   "aka": [
+    "VodafoneZiggo"
+   ],
+   "asns": [],
+   "website": "https://www.vodafone.nl/zakelijk",
+   "support_url": null,
+   "notes": "Mobile; part of VodafoneZiggo, whose network (AS33915) is recorded on Ziggo."
+  },
+  {
+   "name": "DELTA Fiber",
+   "slug": "delta-fiber",
+   "kind": "cable_fibre",
+   "aka": [
+    "DELTA",
+    "Caiway"
+   ],
+   "asns": [
+    {
+     "asn": 15435,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.delta.nl/zakelijk/",
+   "support_url": null,
+   "notes": "Includes Caiway."
+  },
+  {
+   "name": "Eurofiber",
+   "slug": "eurofiber",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 39686,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eurofiber.com/nl-nl/",
+   "support_url": null,
+   "notes": "Business fibre and dark fibre."
+  },
+  {
+   "name": "Freedom Internet",
+   "slug": "freedom-internet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 206238,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://freedom.nl/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "BIT",
+   "slug": "bit",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12859,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.bit.nl/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Solcon",
+   "slug": "solcon",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12414,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.solcon.nl/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "A2B Internet",
+   "slug": "a2b-internet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 51088,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Glaspoort",
+   "slug": "glaspoort",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.glaspoort.nl/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network (KPN and APG); never the name on the bill."
+  },
+  {
+   "name": "Open Dutch Fiber",
+   "slug": "open-dutch-fiber",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.opendutchfiber.nl/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; retail through Odido and others."
+  },
+  {
+   "name": "Relined Fiber Network",
+   "slug": "relined",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://relined.eu/",
+   "support_url": null,
+   "notes": "Dark fibre."
+  },
+  {
+   "name": "Trined",
+   "slug": "trined",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.trined.nl/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "euNetworks",
+   "slug": "eunetworks",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13237,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://eunetworks.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}

@@ -346,6 +346,22 @@
       "request_schema": "BossAck",
       "request_file": "boss-ack-request.json",
       "store": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/packs",
+      "status": 200,
+      "schema": "PackList",
+      "file": "packs.json",
+      "store": true
+    },
+    {
+      "method": "GET",
+      "path": "/api/game/catalogue",
+      "status": 200,
+      "schema": "Catalogue",
+      "file": "game-catalogue.json",
+      "store": true
     }
   ]
 }

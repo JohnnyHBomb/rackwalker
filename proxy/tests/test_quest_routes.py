@@ -218,7 +218,7 @@ def test_a_version_1_store_gains_the_quest_tables_and_keeps_its_saves(tmp_path):
     db.execute("INSERT INTO flag VALUES (7, 'ilatea.intro.seen', 'true')")
     db.close()
     st = GameStore(path)
-    assert st.version == SCHEMA_VERSION == 4
+    assert st.version == SCHEMA_VERSION == 5
     assert st.saves(7) == [{"slot": "auto", "rev": 5, "updated_at": "2026-11-08T10:00:00Z", "data": save}]
     assert st.flags(7) == {"ilatea.intro.seen": True}
     assert st.quests(7, "netbox") == {} and st.rewards(7) == {"xp": 0, "potions": 0, "tools": [], "repeats": {}}

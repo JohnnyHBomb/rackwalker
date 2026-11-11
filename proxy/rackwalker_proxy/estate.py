@@ -152,6 +152,11 @@ class Estate:
     contacts: dict[int, dict[str, Any]] = field(default_factory=dict)
     contact_roles: dict[int, dict[str, Any]] = field(default_factory=dict)
     assignments: dict[int, dict[str, Any]] = field(default_factory=dict)
+    # for the setup companion: every device type and device role NetBox holds (also those no device uses yet), and
+    # the module bays of the devices with what is fitted in them
+    dtypes: dict[int, dict[str, Any]] = field(default_factory=dict)
+    roles: dict[int, dict[str, Any]] = field(default_factory=dict)
+    module_bays: dict[int, dict[str, Any]] = field(default_factory=dict)
     # custom fields the game uses that this NetBox does not have (devnetbox/seed.py --fields-only adds them): what
     # they would hold is not asked for, and never counted as missing
     no_fields: list[str] = field(default_factory=list)
@@ -216,7 +221,7 @@ class Estate:
 
     # ---------------------------------------------------------------- (de)serialisation
     TABLES = ("sites", "locations", "racks", "devices", "cables", "circuits", "providers", "circuit_types", "cterms", "feeds",
-              "platforms", "ips", "prefixes", "accounts", "networks", "contacts", "contact_roles", "assignments")
+              "platforms", "ips", "prefixes", "accounts", "networks", "contacts", "contact_roles", "assignments", "dtypes", "roles", "module_bays")
 
     def to_json(self) -> dict[str, Any]:
         out: dict[str, Any] = {t: [getattr(self, t)[k] for k in sorted(getattr(self, t))] for t in self.TABLES}
@@ -625,7 +630,7 @@ def _money(v: Any) -> str | None:
 
 
 # Lists NetBox can select by site (`site_id=`); every other list is small and is always read whole.
-BY_SITE = ("locations", "racks", "devices", "cables", "feeds", "ports")
+BY_SITE = ("locations", "racks", "devices", "cables", "feeds", "ports", "module_bays")
 # Addresses have no site filter: for a few sites they are read by device, this many devices to a request.
 IP_CHUNK = 100
 
@@ -654,7 +659,7 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         "sites": ("dcim/sites", "id,name,slug,status,latitude,longitude,facility,region,physical_address,custom_fields,last_updated", CAPS["sites"]),
         "locations": ("dcim/locations", "id,name,site", CAPS["locations"]),
         "racks": ("dcim/racks", "id,name,site,location,u_height,custom_fields,last_updated", CAPS["racks"]),
-        "devices": ("dcim/devices", "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,virtual_chassis,custom_fields,last_updated", CAPS["devices"]),
+        "devices": ("dcim/devices", "id,name,site,location,rack,position,face,role,device_type,status,serial,asset_tag,platform,primary_ip,virtual_chassis,custom_fields,last_updated,tags", CAPS["devices"]),
         "cables": ("dcim/cables", "id,type,label,status,a_terminations,b_terminations", CAPS["cables"]),
         "circuits": ("circuits/circuits", "id,cid,provider,provider_account,type,status,install_date,commit_rate,custom_fields,last_updated", CAPS["circuits"]),
         "accounts": ("circuits/provider-accounts", "id,provider,account,name", CAPS["circuits"]),
@@ -662,13 +667,16 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         "contacts": ("tenancy/contacts", "id,name,phone,email", CAPS["circuits"]),
         "contact_roles": ("tenancy/contact-roles", "id,name,slug", CAPS["circuits"]),
         "assignments": ("tenancy/contact-assignments", "id,object_type,object_id,contact,role", CAPS["circuits"]),
-        "providers": ("circuits/providers", "id,name", CAPS["circuits"]),
+        "providers": ("circuits/providers", "id,name,slug,asns", CAPS["circuits"]),
         "circuit_types": ("circuits/circuit-types", "id,name", CAPS["circuits"]),
         "cterms": ("circuits/circuit-terminations", "id,circuit,term_side,termination_type,termination_id,cable", CAPS["circuits"]),
         "feeds": ("dcim/power-feeds", "id,name,rack,cable", CAPS["circuits"]),
         "platforms": ("dcim/platforms", "id,name,manufacturer", CAPS["circuits"]),
         "ips": ("ipam/ip-addresses", "id,address,vrf,assigned_object_type,assigned_object_id", CAPS["ips"]),
         "prefixes": ("ipam/prefixes", "id,prefix,vrf", CAPS["prefixes"]),
+        "dtypes": ("dcim/device-types", "id,manufacturer,model,slug,part_number,u_height,tags", CAPS["devices"]),
+        "roles": ("dcim/device-roles", "id,name,slug", CAPS["circuits"]),
+        "module_bays": ("dcim/module-bays", "id,name,device,installed_module", CAPS["ports"]),
     }
     names = [n for n in jobs if not (site_ids is not None and n == "ips")]
     slots = asyncio.Semaphore(READ_CONCURRENCY)
@@ -726,6 +734,7 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
             "type_id": dt.id if dt else None, "mgmt_mode": _cf(d, "rw_mgmt_mode"), "mgmt_service": _cf(d, "rw_mgmt_service") or None,
             "mgmt_default": _val(dt.custom_fields.get("rw_mgmt_default")) if dt else None,
             "mgmt_default_service": (_val(dt.custom_fields.get("rw_mgmt_service")) or None) if dt else None,
+            "tags": sorted(t.get("slug") for t in d.get("tags") or [] if isinstance(t, dict) and t.get("slug")),
             "last_updated": d.get("last_updated")}
     for kind, rows in raw_ports.items():
         for p in rows:
@@ -752,7 +761,8 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
         e.cables[c["id"]] = {"id": c["id"], "type": c.get("type") or None, "label": c.get("label") or None,
                              "status": _val(c.get("status")), "a": ends("a_terminations"), "b": ends("b_terminations")}
     for p in raw["providers"]:
-        e.providers[p["id"]] = {"id": p["id"], "name": p["name"]}
+        e.providers[p["id"]] = {"id": p["id"], "name": p["name"], "slug": p.get("slug") or None,
+                                "asns": sorted(a["asn"] for a in p.get("asns") or [] if isinstance(a, dict) and isinstance(a.get("asn"), int))}
     for t in raw["circuit_types"]:
         e.circuit_types[t["id"]] = {"id": t["id"], "name": t["name"]}
     for c in raw["circuits"]:
@@ -790,6 +800,16 @@ async def read_estate(client: nb.NetBox, site_ids: list[int] | None = None) -> E
                            "interface_id": ip.get("assigned_object_id") if ip.get("assigned_object_type") == "dcim.interface" else None}
     for p in raw["prefixes"]:
         e.prefixes[p["id"]] = {"id": p["id"], "prefix": p["prefix"], "vrf_id": _id(p.get("vrf"))}
+    for t in raw["dtypes"]:
+        e.dtypes[t["id"]] = {"id": t["id"], "manufacturer": (t.get("manufacturer") or {}).get("name"), "model": t.get("model") or "",
+                             "slug": t.get("slug") or "", "part_number": t.get("part_number") or "", "u_height": float(t.get("u_height") or 0),
+                             "tags": sorted(x.get("slug") for x in t.get("tags") or [] if isinstance(x, dict) and x.get("slug"))}
+    for r in raw["roles"]:
+        e.roles[r["id"]] = {"id": r["id"], "name": r["name"], "slug": r.get("slug") or ""}
+    for b in raw["module_bays"]:
+        did = _id(b.get("device"))
+        if did in e.devices:
+            e.module_bays[b["id"]] = {"id": b["id"], "device_id": did, "name": b["name"], "module_id": _id(b.get("installed_module"))}
     return e
 
 
@@ -810,7 +830,7 @@ def splice(base: Estate, part: Estate, site_ids: list[int]) -> Estate:
     e.no_fields = sorted(set(part.no_fields) | {f for t, fs in GAME_FIELDS.items() if not getattr(part, t) for f in fs if f in base.no_fields}
                          | ({"rw_mgmt_default"} & set(base.no_fields) if not part.devices else set()))
     for t in ("sites", "circuits", "providers", "circuit_types", "cterms", "platforms", "prefixes", "accounts", "networks", "contacts",
-              "contact_roles", "assignments"):
+              "contact_roles", "assignments", "dtypes", "roles"):
         setattr(e, t, dict(getattr(part, t)))
     for t in ("locations", "racks", "devices"):
         setattr(e, t, {i: r for i, r in getattr(base, t).items() if r["site_id"] not in here} | getattr(part, t))
@@ -819,6 +839,7 @@ def splice(base: Estate, part: Estate, site_ids: list[int]) -> Estate:
             t["site_id"] = e.locations.get(t["location_id"], {}).get("site_id")
     old_devices = {i for i, d in base.devices.items() if d["site_id"] in here}
     old_ports = {k for k, p in base.ports.items() if p["device_id"] in old_devices}
+    e.module_bays = {i: b for i, b in base.module_bays.items() if b["device_id"] not in old_devices} | part.module_bays
     e.ports = {k: p for k, p in base.ports.items() if k not in old_ports} | part.ports
     e.feeds = {i: f for i, f in base.feeds.items() if base.racks.get(f["rack_id"] or 0, {}).get("site_id") not in here} | part.feeds
     old_ifaces = {k[1] for k in old_ports if k[0] == "interface"}
@@ -851,6 +872,12 @@ _TERM_KIND = {"dcim.interface": "interface", "dcim.frontport": "front_port", "dc
 # ---------------------------------------------------------------- simulated ops (practice island; never NetBox)
 class SimError(Exception):
     pass
+
+
+def setup_simulate(e: Estate, op: dict[str, Any], f: dict[str, Any], res: dict[str, Any], refs: dict[str, tuple[str, int]], resolve: Any) -> bool:
+    from . import setupops   # the setup ops live in a module of their own; it needs this one
+
+    return setupops.simulate(e, op, f, res, refs, resolve)
 
 
 def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
@@ -919,11 +946,12 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 res["target"]["id"] = cid
                 res["after"] = {k: v for k, v in f.items()}
             elif name == "create_circuit":
-                if any(c["cid"] == f["cid"] and c["provider_id"] == f["provider_id"] for c in e.circuits.values()):
+                prov, ctype = resolve(f["provider_id"], "provider"), resolve(f["type_id"], "circuit_type")
+                if any(c["cid"] == f["cid"] and c["provider_id"] == prov for c in e.circuits.values()):
                     raise SimError(f"Circuit {f['cid']} already exists for that provider.")
                 cid = e.next_id("circuits")
-                e.circuits[cid] = {"id": cid, "cid": f["cid"], "provider_id": f["provider_id"],
-                                   "type": e.circuit_types[f["type_id"]]["name"], "status": "active", "account_id": None,
+                e.circuits[cid] = {"id": cid, "cid": f["cid"], "provider_id": prov,
+                                   "type": e.circuit_types[ctype]["name"], "status": "active", "account_id": None,
                                    "install_date": None, "commit_rate": None, "mrc": None, "nrc": None, "currency": None}
                 res["target"]["id"] = cid
                 res["after"] = dict(f)
@@ -1040,7 +1068,7 @@ def simulate(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 aid = e.next_id("assignments")
                 e.assignments[aid] = {"id": aid, "object_type": otype, "object_id": target["id"], "contact_id": contact, "role_id": f["role_id"]}
                 res["after"] = {**f, "contact_id": contact}
-            else:
+            elif not setup_simulate(e, op, f, res, refs, resolve):
                 raise SimError(f"Op {name} is not available on the practice island.")
             b = res["before"] or {}
             res["diff"] = [{"field": k, "before": b.get(k), "after": v} for k, v in (res["after"] or {}).items() if b.get(k) != v]

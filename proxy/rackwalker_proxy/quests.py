@@ -31,6 +31,7 @@ import re
 import zlib
 from typing import Any
 
+from . import setup
 from .estate import Estate, is_passive, is_physical, is_router, natural
 from .estate import name_of as nm
 from .findings import CONTACT_ROLES, FACT_SHORT, Analysis, contact_roles
@@ -39,7 +40,7 @@ from .findings import _some as some
 XP = {"connectivity": 120, "identity": 50, "layout": 30}
 # Kinds worth less than their rank: confirming a subnet is one answer, not a walk to the rack.
 # How one device is managed is one or two answers; a circuit's hand-off address is one typed value.
-KIND_XP = {"address_no_prefix": 50, "device_unreachable": 40, "circuit_handoff": 60}
+KIND_XP = {"address_no_prefix": 50, "device_unreachable": 40, "circuit_handoff": 60, **setup.XP}
 MINUTES = {"connectivity": 4, "identity": 5, "layout": 3}
 MAX_CANDIDATES = 6
 MAX_PORTS = 6
@@ -435,14 +436,11 @@ def land_circuit(ctx: Ctx, circuit_id: int | str, site_id: int, new_circuit: dic
     return ops, ("circuit_termination", f"@handoff{tag}")
 
 
-def ask_new_circuit(ctx: Ctx, provider_id: int) -> dict[str, Any]:
+def ask_new_circuit(ctx: Ctx, provider_id: int | str, name: str | None = None) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """The new circuit's fields, and the op that adds its circuit type when NetBox has none yet. `provider_id` may be
+    "@provider": a carrier the same change set adds from a provider pack (`name` is then its name)."""
     e = ctx.e
-    prov = e.providers[provider_id]["name"]
-    if not e.circuit_types and e.can_see("circuit_types"):
-        # said before the player reads a label for nothing: a circuit cannot be recorded without a type
-        raise Stop("parked", None, ["NetBox has no circuit type yet: add one under Circuits > Circuit Types (for example Internet), then come back.",
-                                    f"While you are there, read the circuit ID on {prov}'s hand-off box or bill."],
-                   note="A new circuit needs a circuit type, and NetBox has none yet.")
+    prov = name or e.providers[provider_id]["name"]  # type: ignore[index]
     taken = {c["cid"].lower() for c in e.circuits.values() if c["provider_id"] == provider_id}
 
     def check(t: str) -> tuple[Any, str | None]:
@@ -453,9 +451,8 @@ def ask_new_circuit(ctx: Ctx, provider_id: int) -> dict[str, Any]:
                    "exactly as printed, for example EXF-20417",
                    [f"Find the hand-off box or modem of {prov} (often by the incoming duct).",
                     "Read the circuit ID on its label; the bill and the order mail carry it too."])
-    types = [(f"type:{t['id']}", t["name"], t["name"]) for _, t in sorted(e.circuit_types.items())]
-    tid = pick(ctx, "circuit_type", f"What kind of service is {cid}?", types, ["The order or the bill names the service."], noun="circuit type")
-    return {"cid": cid, "provider_id": provider_id, "type_id": int(tid.split(":")[1])}
+    type_id, type_ops = setup.ask_circuit_type(ctx, cid)
+    return {"cid": cid, "provider_id": provider_id, "type_id": type_id}, type_ops
 
 
 # ---------------------------------------------------------------- flows (one per finding kind)
@@ -556,29 +553,28 @@ def flow_way_out(ctx: Ctx) -> list[dict[str, Any]]:
     dev = e.devices[int(picked.split(":")[1])]
     ctx.at(device_id=dev["id"])
     new_circuit: dict[str, Any] | None = None
-    add_carrier = ["Add the carrier to NetBox (Circuits > Providers).", "Come back: it will then be one of the choices."]
+    before: list[dict[str, Any]] = []   # a carrier from a provider pack, a first circuit type: made with the circuit
     if circuit_id is None:
-        if provider_id is None:
-            # always asked, also with one provider on record: the line may be another carrier's
-            provs = [(f"provider:{i}", pr["name"], pr["name"]) for i, pr in sorted(e.providers.items())]
-            p = pick(ctx, "provider", "Whose line is it?", provs, ["The hand-off box and the bill carry the carrier's name."],
-                     [choice("other", "A carrier that is not in NetBox yet", "other")], noun="provider")
-            if p == "other":
-                raise Stop("parked", None, add_carrier, note="You said the line belongs to a carrier that is not in NetBox yet.")
-            provider_id = int(p.split(":")[1])
-        open_circuits = circuit_items(e, site_id, False, provider_id)
-        prov_name = e.providers[provider_id]["name"]
+        provider: int | str | None = provider_id
+        prov_name = e.providers[provider_id]["name"] if provider_id is not None else ""
+        if provider is None:
+            # always asked, also with one provider on record: the line may be another carrier's. The carriers NetBox
+            # holds come first, then those of the provider pack of the site's country; one picked from a pack is
+            # added with the circuit, in the same previewed change.
+            provider, prov_name, before = setup.ask_provider(ctx, site_id)
+        open_circuits = circuit_items(e, site_id, False, provider) if isinstance(provider, int) else []
         if open_circuits:
             c = pick(ctx, "circuit", f"Which circuit of {prov_name} is it?", open_circuits, ["Read the circuit ID on the hand-off box's label."],
                      [choice("new", "A circuit not in NetBox yet", "other")], noun="circuit")
             if c != "new":
                 circuit_id = int(c.split(":")[1])
         if circuit_id is None:
-            new_circuit = ask_new_circuit(ctx, provider_id)
+            new_circuit, type_ops = ask_new_circuit(ctx, provider, prov_name)
+            before += type_ops
     local = ask_port(ctx, "local_port", dev, f"Which port on {nm(dev)} is the line plugged into?")
     assert local is not None
     ops, end = land_circuit(ctx, "@circuit" if new_circuit else circuit_id, site_id, new_circuit)  # type: ignore[arg-type]
-    return ops + [cable_op(local, end, ask_cable_type(ctx))]
+    return before + ops + [cable_op(local, end, ask_cable_type(ctx))]
 
 
 def flow_onward(ctx: Ctx) -> list[dict[str, Any]]:
@@ -1146,7 +1142,11 @@ def flow_audit(ctx: Ctx) -> list[dict[str, Any]]:
                  "Serial numbers are on a pull-out tag at the front or a label at the rear; photograph them if the light is poor.",
                  "An asset tag is your own sticker: if a device has none, that is worth knowing too."]
     values = ctx.form("labels", prompt, fields, checklist, na="No such label on them: leave it as it is")
-    return _per_device(values)
+    # a serial that is another device's is refused; one that does not look like the vendor's is asked about once
+    values, marks = setup.audit_serials(ctx, "labels", values)
+    if not values:
+        raise Stop("parked", None, checklist, note="Nothing is left to write: the serial was left out.")
+    return _per_device(values) + marks
 
 
 def _per_device(values: dict[str, Any]) -> list[dict[str, Any]]:
@@ -1335,6 +1335,7 @@ FLOWS = {
     "router_no_address": flow_address, "device_unreachable": flow_address, "device_no_power": flow_power, "address_no_prefix": flow_prefix,
     "rack_audit": flow_audit, "shelf_audit": flow_audit, "platform_survey": flow_platform, "site_record": flow_site, "rack_devices_unpositioned": flow_units,
     "room_layout": flow_layout, "interface_no_cable": flow_port, "circuit_handoff": flow_handoff, "circuit_record": flow_record,
+    **setup.FLOWS,
 }
 
 # Per finding kind: the quest's title, why it matters (said after the finding's own sentence, which names the objects),
@@ -1375,6 +1376,7 @@ WORDS: dict[str, tuple[str, str, str]] = {
     "rack_devices_unpositioned": ("Rack units in {subject}", "Nobody can be sent to the right unit. Let's note where each one sits.",
                                   "You can now send someone to the exact unit in rack {subject}."),
     "room_layout": ("The floor plan", "Someone new cannot find a rack that is not on the plan. Let's put that right.", "You can now point to {names} on the floor plan."),
+    **setup.WORDS,
 }
 
 
@@ -1390,7 +1392,7 @@ def words_of(e: Estate, f: dict[str, Any]) -> tuple[str, str, str]:
     refs = [r["name"] for r in f["evidence"] if r["kind"] in ("device", "rack", "ip_address")]
     rack = e.racks.get(d.get("rack_id") or 0)
     site = e.sites[f["site_id"]]["name"] if f["site_id"] in e.sites else "the estate"
-    ctx = {"site": site, "subject": subject_of(e, f), "subject_s": poss(subject_of(e, f)), "names": some(refs) or "them",
+    ctx = {"site": site, "subject": subject_of(e, f), "subject_s": poss(subject_of(e, f)), "names": some(refs) or "them", "made": "your first site",
            "room": e.locations.get(d.get("location_id") or 0, {}).get("name", "one room"),
            "main_room": e.locations.get(d.get("main_location_id") or 0, {}).get("name", "the other"),
            "where": f"rack {rack['name']}" if rack else f"the kit outside any rack at {site}"}
@@ -1464,12 +1466,14 @@ def describe(e: Estate, ops: list[dict[str, Any]]) -> list[str]:
     out: list[str] = []
     for op in ops:
         f, name, target = op["fields"], op["op"], op["target"]
+        if name == "create_circuit_type" and op.get("client_ref"):
+            refs["@" + op["client_ref"]] = f["name"]
         if name == "connect_cable":
             kind = CABLE_WORDS.get(f.get("type") or "", "cable type left empty")
             out.append(f"New cable: {end(f['a_kind'], f['a_id'])} to {end(f['b_kind'], f['b_id'])} ({kind[0].lower() + kind[1:]}).")
         elif name == "create_circuit":
-            prov = e.providers.get(f["provider_id"], {}).get("name", "the provider")
-            ctype = e.circuit_types.get(f["type_id"], {}).get("name", "circuit")
+            prov = refs.get(f["provider_id"], "the provider") if isinstance(f["provider_id"], str) else e.providers.get(f["provider_id"], {}).get("name", "the provider")
+            ctype = refs.get(f["type_id"], "circuit") if isinstance(f["type_id"], str) else e.circuit_types.get(f["type_id"], {}).get("name", "circuit")
             refs["@" + op.get("client_ref", "")] = f"circuit {f['cid']}"
             out.append(f"New circuit {f['cid']} from {prov} ({ctype}).")
         elif name == "create_circuit_termination":
@@ -1540,6 +1544,10 @@ def describe(e: Estate, ops: list[dict[str, Any]]) -> list[str]:
             if f.get("platform_id") in e.platforms:
                 bits.append(f"platform {e.platforms[f['platform_id']]['name']}")
             out.append(f"{who}: {', '.join(bits)}.")
+        else:
+            words = setup.describe_op(e, op, refs)
+            if words:
+                out.append(words)
     return out
 
 
@@ -1617,7 +1625,7 @@ def stamp(e: Estate, ops: list[dict[str, Any]]) -> list[dict[str, Any]]:
     for op in ops:
         target = op["target"]
         row = tables.get(target["kind"], {}).get(target["id"]) if isinstance(target.get("id"), int) else None
-        since = row.get("last_updated") if row and op["op"] in ("update_fields", "place_device", "move_rack", "assign_ip", "set_management") else None
+        since = row.get("last_updated") if row and op["op"] in ("update_fields", "place_device", "move_rack", "assign_ip", "set_management", "set_device_type") else None
         out.append({**op, "if_unmodified_since": since} if since else op)
     return out
 

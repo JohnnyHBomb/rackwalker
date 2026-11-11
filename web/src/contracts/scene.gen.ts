@@ -115,7 +115,16 @@ export type ChangeOp =
   | CreateProviderAccountOp
   | CreateProviderNetworkOp
   | CreateContactOp
-  | AssignContactOp;
+  | AssignContactOp
+  | CreateSiteOp
+  | CreateProviderOp
+  | CreateCircuitTypeOp
+  | AddDeviceTypeOp
+  | AddModuleTypeOp
+  | CreateDeviceOp
+  | SetDeviceTypeOp
+  | InstallModuleOp
+  | MarkUnverifiedOp;
 export type CreateCircuitTerminationFields = (
   | {
       site_id: Id;
@@ -144,6 +153,13 @@ export type MgmtMode = "local" | "cloud" | "unmanaged";
  */
 export type Money = string;
 /**
+ * ISO 3166-1 alpha-2.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CountryCode".
+ */
+export type CountryCode = string;
+/**
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "ErrorCode".
  */
@@ -156,6 +172,7 @@ export type ErrorCode =
   | "netbox_unreachable"
   | "netbox_error"
   | "unsupported_netbox_version"
+  | "library_unavailable"
   | "unauthorized"
   | "forbidden"
   | "internal";
@@ -215,13 +232,22 @@ export type QuestScope = "netbox" | "practice";
  */
 export type ToolId = "label_maker" | "cable_tracer";
 /**
+ * A site's NetBox primary key, or 0 for the estate itself: a line about a NetBox that has no site yet (2.5.0).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SiteOrEstateId".
+ */
+export type SiteOrEstateId = number;
+/**
+ * physical, logical and administrative are the stages of a record; room, kit and carrier are the stages of setting a site up (2.5.0).
+ *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "ChainStageName".
  */
-export type ChainStageName = "physical" | "logical" | "administrative";
+export type ChainStageName = "physical" | "logical" | "administrative" | "room" | "kit" | "carrier";
 
 /**
- * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.4.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.
+ * Source of truth for every body exchanged between web/ and proxy/. Contract version 2.5.0 (2.0.0, the first public contract, plus the game shell: player sessions and game state; 2.2.0 added the site country for the overworld; 2.3.0 adds quests: the gap scanner, quest lines, rewards, the practice island, and the change ops a quest line ends in). Change only by contract change; see contracts/README.md.
  */
 export interface RackWalkerSceneContract {}
 /**
@@ -231,7 +257,7 @@ export interface RackWalkerSceneContract {}
  * via the `definition` "Meta".
  */
 export interface Meta {
-  contract_version: "2.4.0";
+  contract_version: "2.5.0";
   generated_at: Timestamp;
   /**
    * Version reported by NetBox /api/status/, e.g. 4.7.4; null for fixtures.
@@ -599,7 +625,7 @@ export interface HealthResponse {
    */
   status: "ok" | "degraded" | "down";
   app_version: string;
-  contract_version: "2.4.0";
+  contract_version: "2.5.0";
   /**
    * true only when the proxy runs with WRITE_ENABLED=1.
    */
@@ -904,7 +930,7 @@ export interface ConnectCableFields {
   label?: string;
 }
 /**
- * A new circuit of an existing provider and circuit type (2.3.0); status active.
+ * A new circuit of a provider and circuit type (2.3.0); status active. Since 2.5.0 the provider and the type may be '@' references to a create_provider or create_circuit_type op of the same ChangeSet.
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
  * via the `definition` "CreateCircuitOp".
@@ -928,8 +954,8 @@ export interface CreateCircuitTarget {
 }
 export interface CreateCircuitFields {
   cid: string;
-  provider_id: Id;
-  type_id: Id;
+  provider_id: IdOrRef;
+  type_id: IdOrRef;
 }
 /**
  * A new end of a circuit (2.3.0): at a site, or (2.4.0) on a network of the circuit's provider. Exactly one of site_id and provider_network_id. The side must be free.
@@ -1190,6 +1216,416 @@ export interface AssignContactFields {
   role_id: Id;
 }
 /**
+ * A new site (2.5.0); status active. With `country`, the site gets the region of that country (slug = the code in lower case), which is created when NetBox has none: that is where the game reads a site's country from.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreateSiteOp".
+ */
+export interface CreateSiteOp {
+  op: "create_site";
+  target: CreateSiteTarget;
+  fields: CreateSiteFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreateSiteTarget {
+  kind: "site";
+  id: null;
+}
+export interface CreateSiteFields {
+  name: string;
+  country?: CountryCode;
+}
+/**
+ * A provider (2.5.0), by name, with its AS numbers as NetBox ASN objects (the registry of each is created when missing). A provider NetBox already holds under the same name or slug, or with one of the AS numbers, is matched instead (status no_change; later ops that refer to this op get the existing provider): a provider is never made twice.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreateProviderOp".
+ */
+export interface CreateProviderOp {
+  op: "create_provider";
+  target: CreateProviderTarget;
+  fields: CreateProviderFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreateProviderTarget {
+  kind: "provider";
+  id: null;
+}
+export interface CreateProviderFields {
+  name: string;
+  slug?: string;
+  /**
+   * @maxItems 16
+   */
+  asns?:
+    | []
+    | [ProviderAsn]
+    | [ProviderAsn, ProviderAsn]
+    | [ProviderAsn, ProviderAsn, ProviderAsn]
+    | [ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn]
+    | [ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn]
+    | [ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn]
+    | [ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn]
+    | [ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn, ProviderAsn]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ]
+    | [
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn,
+        ProviderAsn
+      ];
+  /**
+   * Other names the provider goes by; used only to match a provider NetBox already holds.
+   *
+   * @maxItems 12
+   */
+  aka?:
+    | []
+    | [string]
+    | [string, string]
+    | [string, string, string]
+    | [string, string, string, string]
+    | [string, string, string, string, string]
+    | [string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string, string]
+    | [string, string, string, string, string, string, string, string, string, string, string, string];
+  /**
+   * The id of the provider pack the entry came from; absent for a name the player typed.
+   */
+  pack?: string;
+}
+export interface ProviderAsn {
+  asn: number;
+  rir: "ripe" | "arin" | "apnic" | "lacnic" | "afrinic";
+}
+/**
+ * A circuit type (2.5.0), by name; an existing one of that name is matched instead (no_change).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreateCircuitTypeOp".
+ */
+export interface CreateCircuitTypeOp {
+  op: "create_circuit_type";
+  target: CreateCircuitTypeTarget;
+  fields: CreateCircuitTypeFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreateCircuitTypeTarget {
+  kind: "circuit_type";
+  id: null;
+}
+export interface CreateCircuitTypeFields {
+  name: string;
+}
+/**
+ * A device type in NetBox (2.5.0), with its manufacturer when missing. With `library_file` it is imported from the pinned device-type library: the full definition is fetched, checked against the index's SHA-256 and written with its console, power, interface, front and rear port, module-bay and device-bay templates; when it cannot be fetched the op fails with library_unavailable. With `manufacturer` and `model` it is recorded by hand for a model the library does not hold, and tagged rw-unverified; a part number that contradicts the library's for a model it does hold is refused. A device type NetBox already holds (same manufacturer and model) is matched instead (no_change).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "AddDeviceTypeOp".
+ */
+export interface AddDeviceTypeOp {
+  op: "add_device_type";
+  target: AddDeviceTypeTarget;
+  fields: AddDeviceTypeFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface AddDeviceTypeTarget {
+  kind: "device_type";
+  id: null;
+}
+export interface AddDeviceTypeFields {
+  /**
+   * The file of the index row, <manufacturer folder>/<file>.
+   */
+  library_file?: string;
+  manufacturer?: string;
+  model?: string;
+  part_number?: string;
+  u_height?: number;
+}
+/**
+ * A module type imported from the pinned device-type library (2.5.0), as add_device_type with `library_file`.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "AddModuleTypeOp".
+ */
+export interface AddModuleTypeOp {
+  op: "add_module_type";
+  target: AddModuleTypeTarget;
+  fields: AddModuleTypeFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface AddModuleTypeTarget {
+  kind: "module_type";
+  id: null;
+}
+export interface AddModuleTypeFields {
+  library_file: string;
+}
+/**
+ * A new device (2.5.0); status active. `role` is a role's name: an existing role of that name is used, else it is created. With `unverified` the device is tagged rw-unverified (its serial does not look like the vendor's and the player confirmed it).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CreateDeviceOp".
+ */
+export interface CreateDeviceOp {
+  op: "create_device";
+  target: CreateDeviceTarget;
+  fields: CreateDeviceFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface CreateDeviceTarget {
+  kind: "device";
+  id: null;
+}
+export interface CreateDeviceFields {
+  name: string;
+  site_id: Id;
+  role: string;
+  device_type_id: IdOrRef;
+  rack_id?: NullableId;
+  position?: number | null;
+  face?: "front" | "rear" | null;
+  serial?: string;
+  unverified?: boolean;
+}
+/**
+ * Gives an existing device another device type (2.5.0), only where nothing recorded is lost: every port, bay and other component the device has must exist under the same name in the new type, and the new height must fit where the device is racked. The components the device lacks are then added from the type's templates; none is removed or changed. Anything else is refused with the reason.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "SetDeviceTypeOp".
+ */
+export interface SetDeviceTypeOp {
+  op: "set_device_type";
+  target: SetDeviceTypeTarget;
+  fields: SetDeviceTypeFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface SetDeviceTypeTarget {
+  kind: "device";
+  id: Id;
+}
+export interface SetDeviceTypeFields {
+  device_type_id: IdOrRef;
+}
+/**
+ * A module fitted in an empty module bay of a device (2.5.0); NetBox adds the module type's ports to the device.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "InstallModuleOp".
+ */
+export interface InstallModuleOp {
+  op: "install_module";
+  target: InstallModuleTarget;
+  fields: InstallModuleFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface InstallModuleTarget {
+  kind: "module";
+  id: null;
+}
+export interface InstallModuleFields {
+  device_id: Id;
+  module_bay_id: Id;
+  module_type_id: IdOrRef;
+  serial?: string;
+}
+/**
+ * Tags a device or device type rw-unverified (2.5.0): its serial or model could not be checked against the packs. The tag is created when NetBox has none.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "MarkUnverifiedOp".
+ */
+export interface MarkUnverifiedOp {
+  op: "mark_unverified";
+  target: MarkUnverifiedTarget;
+  fields: MarkUnverifiedFields;
+  /**
+   * Optional; unique within the ChangeSet; echoed in the result; lets later ops point at a created object as '@<client_ref>'.
+   */
+  client_ref?: string;
+  /**
+   * Optional optimistic lock: the target's last_updated as the client saw it. A newer last_updated in NetBox makes the op fail with code 'conflict'.
+   */
+  if_unmodified_since?: string;
+}
+export interface MarkUnverifiedTarget {
+  kind: "device" | "device_type";
+  id: Id;
+}
+export interface MarkUnverifiedFields {
+  reason: string;
+}
+/**
  * Body of POST /api/changes/preview and POST /api/changes/apply. Ops run in order.
  *
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
@@ -1237,7 +1673,16 @@ export interface OpResult {
     | "create_provider_account"
     | "create_provider_network"
     | "create_contact"
-    | "assign_contact";
+    | "assign_contact"
+    | "create_site"
+    | "create_provider"
+    | "create_circuit_type"
+    | "add_device_type"
+    | "add_module_type"
+    | "create_device"
+    | "set_device_type"
+    | "install_module"
+    | "mark_unverified";
   client_ref: string | null;
   target: OpTarget;
   /**
@@ -1273,7 +1718,11 @@ export interface OpTarget {
     | "provider"
     | "provider_account"
     | "provider_network"
-    | "contact";
+    | "contact"
+    | "circuit_type"
+    | "device_type"
+    | "module_type"
+    | "module";
   /**
    * Resolved target. Preview: the request's id, or the request's '@<client_ref>' string unchanged when the target was created by an earlier op of the same ChangeSet; null for create_rack. Apply: always the real NetBox id.
    */
@@ -1465,7 +1914,7 @@ export interface FlagsPatch {
  * via the `definition` "GameState".
  */
 export interface GameState {
-  contract_version: "2.4.0";
+  contract_version: "2.5.0";
   player: Player;
   settings: GameSettings;
   flags: Flags;
@@ -1511,7 +1960,7 @@ export interface Finding {
   id: string;
   kind: string;
   rank: QuestRank;
-  site_id: Id;
+  site_id: SiteOrEstateId;
   title: string;
   evidence: ObjectRef[];
 }
@@ -1551,7 +2000,7 @@ export interface Completeness {
  * via the `definition` "GapList".
  */
 export interface GapList {
-  contract_version: "2.4.0";
+  contract_version: "2.5.0";
   site_id: Id;
   total: number;
   offset: number;
@@ -1666,7 +2115,7 @@ export interface Quest {
   scope: QuestScope;
   kind: string;
   rank: QuestRank;
-  site_id: Id;
+  site_id: SiteOrEstateId;
   title: string;
   /**
    * Why it matters, in plain words for a site admin.
@@ -1769,7 +2218,7 @@ export interface SiteProgress {
  * via the `definition` "QuestBoard".
  */
 export interface QuestBoard {
-  contract_version: "2.4.0";
+  contract_version: "2.5.0";
   scope: QuestScope;
   site_id: NullableId;
   write_enabled: boolean;
@@ -1811,8 +2260,8 @@ export interface QuestBoard {
  */
 export interface Chain {
   id: string;
-  kind: "way_out" | "site_link" | "room_link" | "device" | "rack";
-  site_id: Id;
+  kind: "way_out" | "site_link" | "room_link" | "device" | "rack" | "setup";
+  site_id: SiteOrEstateId;
   title: string;
   /**
    * What the record will hold when the chain is complete, from the stages this chain has.
@@ -1920,6 +2369,10 @@ export interface QuestVerdict {
    * The bonus for a chain NetBox now shows complete, part of xp_awarded (2.4.0).
    */
   chain_xp: number;
+  /**
+   * XP for values that passed a check against the packs (a model the device-type library holds, a serial that fits the vendor's sourced rule), part of xp_awarded (2.5.0). 0 for anything marked unverified.
+   */
+  bonus_xp: number;
 }
 /**
  * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
@@ -1928,4 +2381,97 @@ export interface QuestVerdict {
 export interface BossAck {
   scope: QuestScope;
   site_id: Id;
+}
+/**
+ * One pack the game ships with (2.5.0): what it is, how complete, and where it came from.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "PackInfo".
+ */
+export interface PackInfo {
+  id: string;
+  kind: "providers" | "devices" | "serials";
+  version: string;
+  title: string;
+  country: string | null;
+  read: string;
+  partial: boolean;
+  coverage: string;
+  missing: string[];
+  /**
+   * Providers, device and module types, or rules in the pack.
+   */
+  entries: number;
+  sources: PackSource[];
+}
+export interface PackSource {
+  name: string;
+  url: string | null;
+  read: string;
+  terms: string;
+  use: "copied" | "cross-check" | "cited";
+}
+/**
+ * GET /api/packs (2.5.0).
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "PackList".
+ */
+export interface PackList {
+  contract_version: "2.5.0";
+  packs: PackInfo[];
+  /**
+   * Why the packs could not be used (they did not validate); empty when all is well.
+   */
+  errors: string[];
+  library: null | PackLibrary;
+}
+export interface PackLibrary {
+  repo: string;
+  commit: string;
+  /**
+   * Where a full definition comes from when a player imports a model: a local copy, the pinned commit over HTTPS, or nowhere (imports are unavailable).
+   */
+  import_from: "local" | "https" | "none";
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CatalogueItem".
+ */
+export interface CatalogueItem {
+  id: Id;
+  manufacturer: string;
+  model: string;
+  part_number: string | null;
+  /**
+   * verified = the device-type library holds this maker and model, and the part numbers agree; mismatch = it holds the model with another part number (note says which); unverified = it does not hold the model.
+   */
+  status: "verified" | "unverified" | "mismatch";
+  note: string | null;
+  devices: number;
+  first_seen: Timestamp;
+}
+/**
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "CatalogueMaker".
+ */
+export interface CatalogueMaker {
+  name: string;
+  verified: number;
+  total: number;
+}
+/**
+ * The device catalogue (2.5.0): the manufacturers and device types of the player's own NetBox as a collection, with those the device-type library confirms marked verified. Derived from NetBox on every read; the game store only remembers when each type was first seen.
+ *
+ * This interface was referenced by `RackWalkerSceneContract`'s JSON-Schema
+ * via the `definition` "Catalogue".
+ */
+export interface Catalogue {
+  contract_version: "2.5.0";
+  source: "netbox" | "cache" | "fixture";
+  verified: number;
+  total: number;
+  manufacturers: CatalogueMaker[];
+  items: CatalogueItem[];
+  message: string;
 }

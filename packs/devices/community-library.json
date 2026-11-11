@@ -1,0 +1,38 @@
+{
+ "pack": "devices",
+ "id": "devices-community-library",
+ "version": "2026.11.10",
+ "title": "Device types and module types of the NetBox community device-type library",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the library at the pinned commit: every device type and module type of every manufacturer in it. The library itself is community-maintained and does not hold every model of every manufacturer.",
+ "missing": [
+  "Models the library does not hold (they can still be recorded, and are marked unverified)",
+  "Rack types and elevation images of the library (not used)"
+ ],
+ "sources": [
+  {
+   "name": "NetBox community device-type library",
+   "url": "https://github.com/netbox-community/devicetype-library",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0 Universal (LICENSE.txt at the pinned commit, read on the date above). No attribution is required; the source is named anyway.",
+   "use": "copied",
+   "result": "The index is built from the files at the pinned commit; a full definition is fetched from that same commit and checked against the SHA-256 in the index."
+  }
+ ],
+ "library": {
+  "repo": "https://github.com/netbox-community/devicetype-library",
+  "commit": "9f0e6916b8407470f3a5e5cdcd2c8e8c1f411cc2",
+  "commit_date": "2026-11-10",
+  "raw_base": "https://raw.githubusercontent.com/netbox-community/devicetype-library/9f0e6916b8407470f3a5e5cdcd2c8e8c1f411cc2/"
+ },
+ "manufacturers": "*",
+ "index": {
+  "file": "community-library.index.json.gz",
+  "sha256": "da706cffa14808723f9c5dbd95b3278beeddb17ce2b08351c0715c546482e521",
+  "bytes": 979034,
+  "manufacturers": 468,
+  "device_types": 14385,
+  "module_types": 2063
+ }
+}

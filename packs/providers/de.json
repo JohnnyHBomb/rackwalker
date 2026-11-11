@@ -1,0 +1,382 @@
+{
+ "pack": "providers",
+ "id": "providers-de",
+ "version": "1.0.0",
+ "country": "DE",
+ "title": "Common providers: Germany",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed-line carriers and the mobile network operators, and the largest regional (city) carriers; smaller city carriers and business ISPs are partial.",
+ "missing": [
+  "Smaller city carriers (Stadtwerke networks; over a hundred)",
+  "Smaller business ISPs"
+ ],
+ "sources": [
+  {
+   "name": "Bundesnetzagentur: telecommunications market data",
+   "url": "https://www.bundesnetzagentur.de/DE/Fachthemen/Telekommunikation/Marktdaten/start.html",
+   "read": "2026-11-11",
+   "terms": "Site content is under CC BY-ND 4.0 DE unless marked otherwise: no derivative use, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Germany",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Germany",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "8 of 20 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "19 of 20 websites and 1 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "18 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Deutsche Telekom",
+   "slug": "deutsche-telekom",
+   "kind": "national_carrier",
+   "aka": [
+    "Telekom",
+    "T-Systems",
+    "DTAG"
+   ],
+   "asns": [
+    {
+     "asn": 3320,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://geschaeftskunden.telekom.de/business",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Vodafone Deutschland",
+   "slug": "vodafone-de",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "Kabel Deutschland",
+    "Unitymedia"
+   ],
+   "asns": [
+    {
+     "asn": 3209,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.de/business/",
+   "support_url": null,
+   "notes": "DSL, cable (formerly Kabel Deutschland and Unitymedia) and mobile."
+  },
+  {
+   "name": "O2 Telefónica",
+   "slug": "o2-telefonica-de",
+   "kind": "national_carrier",
+   "aka": [
+    "O2",
+    "Telefonica Germany",
+    "Telefónica Deutschland"
+   ],
+   "asns": [
+    {
+     "asn": 6805,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.o2business.de/",
+   "support_url": "https://www.o2online.de/netz/netzstoerung/",
+   "notes": "Mobile and DSL."
+  },
+  {
+   "name": "1&1 Versatel",
+   "slug": "1und1-versatel",
+   "kind": "business_isp",
+   "aka": [
+    "Versatel"
+   ],
+   "asns": [
+    {
+     "asn": 8881,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Business fibre; carries 1&1 access."
+  },
+  {
+   "name": "1&1",
+   "slug": "1und1",
+   "kind": "national_carrier",
+   "aka": [
+    "1und1",
+    "1 und 1"
+   ],
+   "asns": [],
+   "website": "https://www.1und1.de/",
+   "support_url": null,
+   "notes": "DSL, fibre and mobile; its access network is 1&1 Versatel (AS8881, recorded there)."
+  },
+  {
+   "name": "EWE TEL",
+   "slug": "ewe-tel",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 9145,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ewe.de/",
+   "support_url": null,
+   "notes": "North-west Germany."
+  },
+  {
+   "name": "NetCologne",
+   "slug": "netcologne",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8422,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.netcologne.de/",
+   "support_url": null,
+   "notes": "Cologne and Aachen region."
+  },
+  {
+   "name": "M-net",
+   "slug": "m-net",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8767,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.m-net.de/",
+   "support_url": null,
+   "notes": "Bavaria."
+  },
+  {
+   "name": "Deutsche Glasfaser",
+   "slug": "deutsche-glasfaser",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 60294,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.deutsche-glasfaser.de/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "PYUR (Tele Columbus)",
+   "slug": "pyur",
+   "kind": "cable_fibre",
+   "aka": [
+    "PYUR",
+    "PŸUR",
+    "Tele Columbus"
+   ],
+   "asns": [
+    {
+     "asn": 20880,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.pyur.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "htp",
+   "slug": "htp",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13045,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.htp.net/",
+   "support_url": null,
+   "notes": "Hanover region."
+  },
+  {
+   "name": "wilhelm.tel",
+   "slug": "wilhelm-tel",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 15943,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.wilhelm-tel.de/",
+   "support_url": null,
+   "notes": "Hamburg region."
+  },
+  {
+   "name": "Plusnet",
+   "slug": "plusnet-de",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 20676,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.plusnet.de/",
+   "support_url": null,
+   "notes": "Formerly QSC; part of EnBW."
+  },
+  {
+   "name": "envia TEL",
+   "slug": "envia-tel",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 21413,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.enviatel.de/",
+   "support_url": null,
+   "notes": "Eastern Germany."
+  },
+  {
+   "name": "DOKOM21",
+   "slug": "dokom21",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 15763,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.dokom21.de/",
+   "support_url": null,
+   "notes": "Dortmund."
+  },
+  {
+   "name": "TNG Stadtnetz",
+   "slug": "tng",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13101,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tng.de/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "euNetworks",
+   "slug": "eunetworks",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13237,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://eunetworks.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "GasLINE",
+   "slug": "gasline",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.gasline.de/",
+   "support_url": null,
+   "notes": "Dark fibre along gas pipelines."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}

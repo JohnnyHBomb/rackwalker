@@ -1,0 +1,41 @@
+{
+ "$schema": "https://json-schema.org/draft/2020-12/schema",
+ "title": "Serial-number rules",
+ "description": "What a vendor's serial number looks like, one sourced rule at a time. A rule nobody can point to a public source for is not written: the vendor is listed with `rules: []` and the reason.",
+ "type": "object",
+ "additionalProperties": false,
+ "required": ["pack", "id", "version", "title", "read", "partial", "coverage", "missing", "vendors"],
+ "properties": {
+  "pack": {"const": "serials"},
+  "id": {"type": "string", "pattern": "^serials-[a-z0-9-]{2,40}$"},
+  "version": {"type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$"},
+  "title": {"type": "string"},
+  "read": {"type": "string", "pattern": "^20\\d\\d-[01]\\d-[0-3]\\d$"},
+  "partial": {"type": "boolean"},
+  "coverage": {"type": "string", "minLength": 20, "maxLength": 400},
+  "missing": {"type": "array", "items": {"type": "string"}},
+  "vendors": {"type": "array", "minItems": 1, "items": {
+   "type": "object",
+   "additionalProperties": false,
+   "required": ["vendor", "manufacturers", "rules", "no_rule_reason"],
+   "properties": {
+    "vendor": {"type": "string", "minLength": 1},
+    "manufacturers": {"type": "array", "minItems": 1, "items": {"type": "string"}, "description": "Manufacturer names as NetBox and the device-type library write them."},
+    "no_rule_reason": {"type": ["string", "null"], "description": "Why there is no rule (required when `rules` is empty)."},
+    "rules": {"type": "array", "items": {
+     "type": "object",
+     "additionalProperties": false,
+     "required": ["id", "models", "pattern", "says", "source"],
+     "properties": {
+      "id": {"type": "string", "pattern": "^[a-z0-9-]+$"},
+      "models": {"type": ["string", "null"], "description": "A regular expression a model must match for the rule to apply (case-insensitive, from the start); null: every model of the vendor."},
+      "pattern": {"type": "string", "description": "A regular expression the whole serial must match (case-insensitive)."},
+      "says": {"type": "string", "minLength": 10, "maxLength": 200, "description": "The rule in words, as the game says it to the player."},
+      "source": {"type": "object", "additionalProperties": false, "required": ["name", "url", "read", "quote"], "properties": {
+       "name": {"type": "string"}, "url": {"type": "string", "pattern": "^https://[^\\s]+$"},
+       "read": {"type": "string", "pattern": "^20\\d\\d-[01]\\d-[0-3]\\d$"},
+       "quote": {"type": "string", "minLength": 10, "maxLength": 300, "description": "The words of the source the rule rests on."}}}
+     }}}
+   }}}
+ }
+}

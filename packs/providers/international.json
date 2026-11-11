@@ -1,0 +1,361 @@
+{
+ "pack": "providers",
+ "id": "providers-international",
+ "version": "1.0.0",
+ "country": null,
+ "title": "Backbone and international wholesale providers",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. The backbone and international wholesale names a site admin is most likely to meet on a transit or wave bill, offered beside every country's pack.",
+ "missing": [
+  "Regional carriers outside Europe and North America",
+  "Submarine cable consortia",
+  "Internet exchanges (they are not providers)"
+ ],
+ "sources": [
+  {
+   "name": "Wikipedia: Tier 1 network",
+   "url": "https://en.wikipedia.org/wiki/Tier_1_network",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "14 of 19 candidate names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "17 of 18 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "18 AS numbers confirmed; a number whose registered holder was another company was removed."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Lumen",
+   "slug": "lumen",
+   "kind": "wholesale",
+   "aka": [
+    "CenturyLink",
+    "Level 3",
+    "Level3"
+   ],
+   "asns": [
+    {
+     "asn": 3356,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.lumen.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Arelion",
+   "slug": "arelion",
+   "kind": "wholesale",
+   "aka": [
+    "Telia Carrier",
+    "Telia"
+   ],
+   "asns": [
+    {
+     "asn": 1299,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.arelion.com/",
+   "support_url": null,
+   "notes": "Formerly Telia Carrier."
+  },
+  {
+   "name": "Cogent Communications",
+   "slug": "cogent",
+   "kind": "wholesale",
+   "aka": [
+    "Cogent"
+   ],
+   "asns": [
+    {
+     "asn": 174,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.cogentco.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Zayo",
+   "slug": "zayo",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6461,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.zayo.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "GTT",
+   "slug": "gtt",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 3257,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.gtt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "NTT Global IP Network",
+   "slug": "ntt-gin",
+   "kind": "wholesale",
+   "aka": [
+    "NTT",
+    "NTT GIN"
+   ],
+   "asns": [
+    {
+     "asn": 2914,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.gin.ntt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Tata Communications",
+   "slug": "tata-communications",
+   "kind": "wholesale",
+   "aka": [
+    "Tata"
+   ],
+   "asns": [
+    {
+     "asn": 6453,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.tatacommunications.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Telxius",
+   "slug": "telxius",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12956,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://telxius.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Hurricane Electric",
+   "slug": "hurricane-electric",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6939,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.he.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "euNetworks",
+   "slug": "eunetworks",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13237,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://eunetworks.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Sparkle",
+   "slug": "sparkle",
+   "kind": "wholesale",
+   "aka": [
+    "Telecom Italia Sparkle",
+    "TI Sparkle",
+    "Seabone"
+   ],
+   "asns": [
+    {
+     "asn": 6762,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tisparkle.com/",
+   "support_url": null,
+   "notes": "Telecom Italia's international carrier."
+  },
+  {
+   "name": "Orange International Carriers",
+   "slug": "orange-opentransit",
+   "kind": "wholesale",
+   "aka": [
+    "OpenTransit",
+    "Orange Wholesale"
+   ],
+   "asns": [
+    {
+     "asn": 5511,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Deutsche Telekom Global Carrier",
+   "slug": "dt-global-carrier",
+   "kind": "wholesale",
+   "aka": [
+    "Deutsche Telekom",
+    "DTAG"
+   ],
+   "asns": [
+    {
+     "asn": 3320,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://wholesale.telekom.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Verizon Business",
+   "slug": "verizon-business",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 701,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.verizon.com/business/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "PCCW Global",
+   "slug": "pccw-global",
+   "kind": "wholesale",
+   "aka": [
+    "PCCW",
+    "Console Connect"
+   ],
+   "asns": [
+    {
+     "asn": 3491,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.pccwglobal.com/",
+   "support_url": null,
+   "notes": "Trades as Console Connect."
+  },
+  {
+   "name": "Liberty Global",
+   "slug": "liberty-global",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6830,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.libertyglobal.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": "Satellite."
+  }
+ ]
+}

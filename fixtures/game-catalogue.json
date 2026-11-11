@@ -1,0 +1,96 @@
+{
+  "contract_version": "2.5.0",
+  "source": "fixture",
+  "verified": 0,
+  "total": 7,
+  "manufacturers": [
+    {
+      "name": "Example Compute",
+      "verified": 0,
+      "total": 1
+    },
+    {
+      "name": "Example Networks",
+      "verified": 0,
+      "total": 5
+    },
+    {
+      "name": "Example Power",
+      "verified": 0,
+      "total": 1
+    }
+  ],
+  "items": [
+    {
+      "id": 5,
+      "manufacturer": "Example Compute",
+      "model": "EX-S2",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 18,
+      "first_seen": "2026-11-07T09:00:00Z"
+    },
+    {
+      "id": 2,
+      "manufacturer": "Example Networks",
+      "model": "EX-A2400",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 9,
+      "first_seen": "2026-11-07T09:00:00Z"
+    },
+    {
+      "id": 1,
+      "manufacturer": "Example Networks",
+      "model": "EX-C9000",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 3,
+      "first_seen": "2026-11-07T09:00:00Z"
+    },
+    {
+      "id": 4,
+      "manufacturer": "Example Networks",
+      "model": "EX-F200",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 4,
+      "first_seen": "2026-11-07T09:00:00Z"
+    },
+    {
+      "id": 6,
+      "manufacturer": "Example Networks",
+      "model": "EX-PP24",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 12,
+      "first_seen": "2026-11-07T09:00:00Z"
+    },
+    {
+      "id": 3,
+      "manufacturer": "Example Networks",
+      "model": "EX-R400",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 4,
+      "first_seen": "2026-11-07T09:00:00Z"
+    },
+    {
+      "id": 7,
+      "manufacturer": "Example Power",
+      "model": "EX-PDU16",
+      "part_number": null,
+      "status": "unverified",
+      "note": "Not in the device-type library.",
+      "devices": 10,
+      "first_seen": "2026-11-07T09:00:00Z"
+    }
+  ],
+  "message": "0 of the 7 models in your NetBox are confirmed by the device-type library. The others are kept as you recorded them."
+}
