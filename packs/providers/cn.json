@@ -1,0 +1,234 @@
+{
+ "pack": "providers",
+ "id": "providers-cn",
+ "version": "1.0.0",
+ "country": "CN",
+ "title": "Common providers: China (mainland)",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the four state-owned basic carriers and the two national academic networks, with their backbone AS numbers only; provincial networks, regional cable and private resellers are not listed.",
+ "missing": [
+  "The provincial and city AS numbers of China Telecom, China Unicom and China Mobile (several hundred; only the national backbones are listed)",
+  "An AS number and a website for 中国广电 (China Broadnet): none confirmed",
+  "The website of 中国电信 (it refused an automated request on the read date)",
+  "Provincial cable networks (now grouped under China Broadnet) and private broadband resellers: no public list was readable, so none is named",
+  "The licence register of the Ministry of Industry and Information Technology was not readable by an automated request, so licensed operators could not be checked against it",
+  "Status pages (none was checked)"
+ ],
+ "sources": [
+  {
+   "name": "Ministry of Industry and Information Technology (MIIT)",
+   "url": "https://www.miit.gov.cn/",
+   "read": "2026-11-11",
+   "terms": "No reuse terms were found on the page on the read date: nothing is copied.",
+   "use": "cited",
+   "result": "The home page answered. No operator register could be read (the licence lookup is an interactive service). It is the authority for licensed operators; AS numbers of mainland China are assigned through CNNIC."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in China",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_China",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 6 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Wikipedia: Telecommunications industry in China",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_industry_in_China",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 6 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Wikipedia: Internet in China",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_China",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 6 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "4 of 6 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "9 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "APNIC RDAP (the registry's own record of an AS number)",
+   "url": "https://rdap.apnic.net/",
+   "read": "2026-11-11",
+   "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+   "use": "cross-check",
+   "result": "Read where the holder name in RIPEstat did not name the provider plainly."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "中国电信",
+   "slug": "china-telecom",
+   "kind": "national_carrier",
+   "aka": [
+    "China Telecom",
+    "ChinaNet",
+    "CHINANET",
+    "CN2",
+    "中国电信集团",
+    "天翼"
+   ],
+   "asns": [
+    {
+     "asn": 4134,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4809,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "AS4134 is the ChinaNet backbone and AS4809 is CN2. Provincial networks hold AS numbers of their own; the international arm is China Telecom Global (Hong Kong pack)."
+  },
+  {
+   "name": "中国联通",
+   "slug": "china-unicom",
+   "kind": "national_carrier",
+   "aka": [
+    "China Unicom",
+    "China169",
+    "CUII",
+    "中国网通",
+    "China Netcom",
+    "CNC",
+    "联通"
+   ],
+   "asns": [
+    {
+     "asn": 4837,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9929,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.chinaunicom.cn/",
+   "support_url": null,
+   "notes": "AS4837 is the China169 backbone and AS9929 is the Industrial Internet backbone (formerly China Netcom). The international arm is China Unicom Global (Hong Kong pack)."
+  },
+  {
+   "name": "中国移动",
+   "slug": "china-mobile",
+   "kind": "national_carrier",
+   "aka": [
+    "China Mobile",
+    "CMCC",
+    "CMNET",
+    "中国铁通",
+    "China Tietong",
+    "CTTNET",
+    "移动"
+   ],
+   "asns": [
+    {
+     "asn": 9808,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9394,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.10086.cn/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS9394 is China Tietong, its fixed-line subsidiary. The international arm is China Mobile International (Hong Kong pack)."
+  },
+  {
+   "name": "中国广电",
+   "slug": "china-broadnet",
+   "kind": "cable_fibre",
+   "aka": [
+    "China Broadnet",
+    "CBN",
+    "China Broadcasting Network",
+    "中国广播电视网络",
+    "中国广电网络"
+   ],
+   "asns": [],
+   "website": null,
+   "support_url": null,
+   "notes": "The fourth basic carrier (cable and 5G), formed from the provincial cable networks."
+  },
+  {
+   "name": "CERNET",
+   "slug": "cernet",
+   "kind": "research_education",
+   "aka": [
+    "中国教育和科研计算机网",
+    "China Education and Research Network",
+    "教育网",
+    "CERNET2"
+   ],
+   "asns": [
+    {
+     "asn": 4538,
+     "rir": "apnic"
+    },
+    {
+     "asn": 23910,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.cernet.edu.cn/",
+   "support_url": null,
+   "notes": "The national education and research network. AS23910 is CERNET2, its IPv6 backbone."
+  },
+  {
+   "name": "中国科技网",
+   "slug": "cstnet",
+   "kind": "research_education",
+   "aka": [
+    "CSTNET",
+    "China Science and Technology Network",
+    "CNIC",
+    "中国科学院计算机网络信息中心"
+   ],
+   "asns": [
+    {
+     "asn": 7497,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.cstnet.cn/",
+   "support_url": null,
+   "notes": "Research network of the Chinese Academy of Sciences."
+  }
+ ]
+}

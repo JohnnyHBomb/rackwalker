@@ -1,0 +1,349 @@
+{
+ "pack": "providers",
+ "id": "providers-fi",
+ "version": "1.0.0",
+ "country": "FI",
+ "title": "Common providers: Finland",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the three national carriers, which are also the mobile network operators, and the main fibre operators; the regional telephone companies and business ISPs are partial.",
+ "missing": [
+  "Most of the regional telephone companies of the Finnet group (five are listed)",
+  "Municipal and co-operative fibre networks",
+  "Smaller business ISPs",
+  "AS numbers for Valokuitunen and GlobalConnect in Finland (none confirmed)",
+  "Satellite providers"
+ ],
+ "sources": [
+  {
+   "name": "Traficom (Finnish Transport and Communications Agency): telephone and broadband",
+   "url": "https://www.traficom.fi/en/telephone-and-broadband",
+   "read": "2026-11-11",
+   "terms": "The page answered on the read date; no reuse licence was found on it, so nothing is copied.",
+   "use": "cited",
+   "result": "Page read for its address only. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Finland",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Finland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 15 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Finland",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Finland",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 15 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "15 of 15 websites and 3 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "16 AS numbers confirmed, each announced on the read date; a number registered to the provider but not announced was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+   "use": "cross-check",
+   "result": "Used to find candidate numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+   "use": "copied",
+   "result": "2 ids recorded; an item of a parent group was not used."
+  },
+  {
+   "name": "Wikipedia: DNA Oyj",
+   "url": "https://en.wikipedia.org/wiki/DNA_Oyj",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "Names Telenor as the owner of DNA, and Welho as a former brand."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Elisa",
+   "slug": "elisa",
+   "kind": "national_carrier",
+   "aka": [
+    "Elisa Oyj",
+    "Saunalahti",
+    "Elisa Yrityksille"
+   ],
+   "asns": [
+    {
+     "asn": 719,
+     "rir": "ripe"
+    },
+    {
+     "asn": 6667,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://yrityksille.elisa.fi/",
+   "support_url": "https://elisa.fi/hairiotiedotteet/",
+   "notes": "Fixed and mobile.",
+   "wikidata": "Q965268"
+  },
+  {
+   "name": "Telia Finland",
+   "slug": "telia-fi",
+   "kind": "national_carrier",
+   "aka": [
+    "Telia",
+    "Sonera",
+    "TeliaSonera Finland"
+   ],
+   "asns": [
+    {
+     "asn": 1759,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telia.fi/yrityksille",
+   "support_url": "https://www.telia.fi/asiakastuki/viat-ja-hairiot",
+   "notes": "Fixed and mobile.",
+   "wikidata": "Q3359335"
+  },
+  {
+   "name": "DNA",
+   "slug": "dna",
+   "kind": "national_carrier",
+   "aka": [
+    "DNA Oyj",
+    "Welho",
+    "DNA Yrityksille"
+   ],
+   "asns": [
+    {
+     "asn": 16086,
+     "rir": "ripe"
+    },
+    {
+     "asn": 20542,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.dna.fi/yrityksille",
+   "support_url": "https://www.dna.fi/fi/tuki/hairiotilanteet/hairiotiedotteet",
+   "notes": "Fixed, cable and mobile. Owned by Telenor."
+  },
+  {
+   "name": "Lounea",
+   "slug": "lounea",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 21348,
+     "rir": "ripe"
+    },
+    {
+     "asn": 39699,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://lounea.fi/",
+   "support_url": null,
+   "notes": "Regional carrier in south-west Finland."
+  },
+  {
+   "name": "Valoo",
+   "slug": "valoo",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 202246,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.valoo.fi/",
+   "support_url": null,
+   "notes": "Fibre operator."
+  },
+  {
+   "name": "Valokuitunen",
+   "slug": "valokuitunen",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [],
+   "website": "https://www.valokuitunen.fi/",
+   "support_url": null,
+   "notes": "Open fibre network; retail through several providers."
+  },
+  {
+   "name": "GlobalConnect",
+   "slug": "globalconnect",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [],
+   "website": "https://globalconnect.fi/",
+   "support_url": null,
+   "notes": "Nordic fibre group, also in the Sweden and Denmark packs; open fibre in Finland."
+  },
+  {
+   "name": "Cinia",
+   "slug": "cinia",
+   "kind": "business_isp",
+   "aka": [
+    "Netplaza"
+   ],
+   "asns": [
+    {
+     "asn": 20904,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cinia.fi/",
+   "support_url": null,
+   "notes": "Backbone and business network services. AS20904 was Netplaza's number."
+  },
+  {
+   "name": "Suomi Communications",
+   "slug": "suomicom",
+   "kind": "business_isp",
+   "aka": [
+    "SuomiCom"
+   ],
+   "asns": [
+    {
+     "asn": 16302,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://suomicom.fi/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Kaisanet",
+   "slug": "kaisanet",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 13170,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.kaisanet.fi/",
+   "support_url": null,
+   "notes": "Regional carrier in Kainuu and northern Finland."
+  },
+  {
+   "name": "MPY",
+   "slug": "mpy",
+   "kind": "cable_fibre",
+   "aka": [
+    "MPY Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 12330,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://mpy.fi/",
+   "support_url": null,
+   "notes": "Regional carrier in eastern Finland."
+  },
+  {
+   "name": "BLC",
+   "slug": "blc",
+   "kind": "cable_fibre",
+   "aka": [
+    "BLC Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 51935,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.blc.fi/",
+   "support_url": null,
+   "notes": "Regional carrier in eastern Finland."
+  },
+  {
+   "name": "JNT",
+   "slug": "jnt",
+   "kind": "cable_fibre",
+   "aka": [
+    "Jakobstadsnejdens Telefon",
+    "Multi.fi"
+   ],
+   "asns": [
+    {
+     "asn": 24751,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.jnt.fi/",
+   "support_url": null,
+   "notes": "Regional carrier around Jakobstad."
+  },
+  {
+   "name": "Ålcom",
+   "slug": "alcom",
+   "kind": "national_carrier",
+   "aka": [
+    "Ålands Telekommunikation"
+   ],
+   "asns": [
+    {
+     "asn": 3238,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.alcom.ax/",
+   "support_url": null,
+   "notes": "The carrier of the Åland Islands."
+  },
+  {
+   "name": "Funet",
+   "slug": "funet",
+   "kind": "research_education",
+   "aka": [
+    "CSC"
+   ],
+   "asns": [
+    {
+     "asn": 1741,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.funet.fi/",
+   "support_url": null,
+   "notes": "The national research and education network, run by CSC."
+  }
+ ]
+}

@@ -1,0 +1,384 @@
+{
+ "pack": "providers",
+ "id": "providers-ca",
+ "version": "1.0.0",
+ "country": "CA",
+ "title": "Common providers: Canada",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the mobile network operators, the main cable operators and the national research network; regional independents and business ISPs are partial.",
+ "missing": [
+  "Regional telephone companies, co-operatives and municipal networks",
+  "Smaller independent and wholesale-based ISPs",
+  "The provincial research networks",
+  "Websites for Telus, Cogeco, Eastlink, TekSavvy, Distributel, Northwestel and CANARIE (they did not answer an automated request on the read date)",
+  "The regulator's list of registered providers (the site refused an automated request on the read date)"
+ ],
+ "sources": [
+  {
+   "name": "CRTC (Canadian Radio-television and Telecommunications Commission)",
+   "url": "https://crtc.gc.ca/",
+   "read": "2026-11-11",
+   "terms": "The site refused an automated request on the read date: its terms were not read and nothing is copied.",
+   "use": "cited",
+   "result": "Not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Canada and 5 more pages",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Canada",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "13 of 16 entries were found by a name on the 6 pages read."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "9 of 16 websites and 1 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+   "use": "cross-check",
+   "result": "22 AS numbers confirmed; a number whose registered holder was an unrelated name was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+   "use": "cross-check",
+   "result": "Read to find which AS numbers are registered under each provider's company names."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "7 entries carry the id of a Wikidata item that states one of the entry's AS numbers (property P3797)."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Bell",
+   "slug": "bell-ca",
+   "kind": "national_carrier",
+   "aka": [
+    "Bell Canada",
+    "Bell Aliant",
+    "Bell MTS"
+   ],
+   "asns": [
+    {
+     "asn": 577,
+     "rir": "arin"
+    },
+    {
+     "asn": 855,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.bell.ca/",
+   "support_url": null,
+   "notes": "Fixed and mobile. Networks named Aliant and MTS are registered to Bell Canada.",
+   "wikidata": "Q815694"
+  },
+  {
+   "name": "Rogers",
+   "slug": "rogers",
+   "kind": "national_carrier",
+   "aka": [
+    "Rogers Communications",
+    "Rogers Business",
+    "Shaw",
+    "Shaw Communications",
+    "Rogers together with Shaw"
+   ],
+   "asns": [
+    {
+     "asn": 812,
+     "rir": "arin"
+    },
+    {
+     "asn": 6327,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.rogers.com/business",
+   "support_url": "https://www.rogers.com/support/outage",
+   "notes": "Cable and mobile. AS6327 is the Shaw cable network in western Canada, registered to Shaw Communications.",
+   "wikidata": "Q165684"
+  },
+  {
+   "name": "Telus",
+   "slug": "telus",
+   "kind": "national_carrier",
+   "aka": [
+    "TELUS",
+    "TELUS Communications"
+   ],
+   "asns": [
+    {
+     "asn": 852,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed and mobile.",
+   "wikidata": "Q165858"
+  },
+  {
+   "name": "Videotron",
+   "slug": "videotron",
+   "kind": "cable_fibre",
+   "aka": [
+    "Vidéotron",
+    "Fibrenoire"
+   ],
+   "asns": [
+    {
+     "asn": 5769,
+     "rir": "arin"
+    },
+    {
+     "asn": 22652,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.videotron.com/en/business",
+   "support_url": null,
+   "notes": "Cable and mobile. AS22652 is the Fibrenoire business network, registered to Videotron."
+  },
+  {
+   "name": "Freedom Mobile",
+   "slug": "freedom-mobile",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 36273,
+     "rir": "arin"
+    },
+    {
+     "asn": 20365,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.freedommobile.ca/",
+   "support_url": null,
+   "notes": "Both AS numbers are registered to Videotron."
+  },
+  {
+   "name": "Cogeco",
+   "slug": "cogeco",
+   "kind": "cable_fibre",
+   "aka": [
+    "Cogeco Connexion"
+   ],
+   "asns": [
+    {
+     "asn": 7992,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "SaskTel",
+   "slug": "sasktel",
+   "kind": "national_carrier",
+   "aka": [
+    "Saskatchewan Telecommunications"
+   ],
+   "asns": [
+    {
+     "asn": 803,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.sasktel.com/business/",
+   "support_url": null,
+   "notes": "Fixed and mobile in Saskatchewan.",
+   "wikidata": "Q339928"
+  },
+  {
+   "name": "Eastlink",
+   "slug": "eastlink",
+   "kind": "cable_fibre",
+   "aka": [
+    "EastLink"
+   ],
+   "asns": [
+    {
+     "asn": 11260,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable.",
+   "wikidata": "Q5327589"
+  },
+  {
+   "name": "TekSavvy",
+   "slug": "teksavvy",
+   "kind": "cable_fibre",
+   "aka": [
+    "TekSavvy Solutions"
+   ],
+   "asns": [
+    {
+     "asn": 5645,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q7695271"
+  },
+  {
+   "name": "Xplore",
+   "slug": "xplore",
+   "kind": "cable_fibre",
+   "aka": [
+    "Xplornet",
+    "Xplornet Communications"
+   ],
+   "asns": [
+    {
+     "asn": 22995,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.xplore.ca/business/",
+   "support_url": null,
+   "notes": "Rural fixed wireless, fibre and satellite; formerly Xplornet.",
+   "wikidata": "Q21178784"
+  },
+  {
+   "name": "Zayo",
+   "slug": "zayo",
+   "kind": "wholesale",
+   "aka": [
+    "Allstream",
+    "Zayo Canada"
+   ],
+   "asns": [
+    {
+     "asn": 6461,
+     "rir": "arin"
+    },
+    {
+     "asn": 15290,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.zayo.com/",
+   "support_url": null,
+   "notes": "AS15290 is registered as its Canadian network; Allstream has been owned by Zayo since 2016. AS6461 is the backbone the international pack lists."
+  },
+  {
+   "name": "Beanfield",
+   "slug": "beanfield",
+   "kind": "business_isp",
+   "aka": [
+    "Beanfield Technologies"
+   ],
+   "asns": [
+    {
+     "asn": 21949,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.beanfield.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Distributel",
+   "slug": "distributel",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 11814,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "A Bell brand."
+  },
+  {
+   "name": "Northwestel",
+   "slug": "northwestel",
+   "kind": "national_carrier",
+   "aka": [
+    "NorthwesTel"
+   ],
+   "asns": [
+    {
+     "asn": 6058,
+     "rir": "arin"
+    },
+    {
+     "asn": 22573,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Carrier in Yukon, the Northwest Territories and Nunavut."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "CANARIE",
+   "slug": "canarie",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 6509,
+     "rir": "arin"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "National research and education network."
+  }
+ ]
+}

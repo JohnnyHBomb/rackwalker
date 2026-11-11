@@ -1,0 +1,398 @@
+{
+ "pack": "providers",
+ "id": "providers-dk",
+ "version": "1.0.0",
+ "country": "DK",
+ "title": "Common providers: Denmark",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the mobile network operators and the main fibre and cable operators; the regional energy-company fibre networks and business ISPs are partial.",
+ "missing": [
+  "Other regional energy-company fibre networks and the local antenna associations",
+  "Smaller business ISPs",
+  "AS numbers for 3 and OpenNet (none confirmed)",
+  "A website for Energi Fyn (it refused an automated read on the read date)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "Agency for Digital Government (Digitaliseringsstyrelsen): telecoms",
+   "url": "https://digst.dk/tele/",
+   "read": "2026-11-11",
+   "terms": "The page answered on the read date; no reuse licence was found on it, so nothing is copied.",
+   "use": "cited",
+   "result": "Page read for its address only. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Denmark",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Denmark",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "8 of 17 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Denmark",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Denmark",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 17 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "16 of 17 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "19 AS numbers confirmed, each announced on the read date; a number registered to the provider but not announced was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+   "use": "cross-check",
+   "result": "Used to find candidate numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+   "use": "copied",
+   "result": "1 ids recorded; an item of a parent group was not used."
+  },
+  {
+   "name": "RIPE Database RDAP: AS1835",
+   "url": "https://rdap.db.ripe.net/autnum/1835",
+   "read": "2026-11-11",
+   "terms": "RIPE Database terms apply; nothing is copied. Read to confirm one AS number whose holder name in RIPEstat was unclear.",
+   "use": "cross-check",
+   "result": "The record describes AS1835 as the Danish research and education network and is maintained by DeiC."
+  },
+  {
+   "name": "Wikipedia: Norlys",
+   "url": "https://en.wikipedia.org/wiki/Norlys",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "States that Norlys bought Telia's Danish business in 2024."
+  }
+ ],
+ "providers": [
+  {
+   "name": "TDC Erhverv",
+   "slug": "tdc-erhverv",
+   "kind": "national_carrier",
+   "aka": [
+    "TDC",
+    "TDC Brands",
+    "Nuuday",
+    "YouSee"
+   ],
+   "asns": [
+    {
+     "asn": 34482,
+     "rir": "ripe"
+    },
+    {
+     "asn": 50757,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://tdc.dk/",
+   "support_url": null,
+   "notes": "The retail side of the former TDC: TDC Erhverv for business, YouSee for homes. Its company was Nuuday and is now TDC Brands."
+  },
+  {
+   "name": "TDC NET",
+   "slug": "tdc-net",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 3292,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://tdcnet.dk/",
+   "support_url": null,
+   "notes": "The network side of the former TDC: copper, cable, fibre and mobile network; wholesale."
+  },
+  {
+   "name": "Telenor Danmark",
+   "slug": "telenor-dk",
+   "kind": "national_carrier",
+   "aka": [
+    "Telenor",
+    "Sonofon",
+    "Cybercity",
+    "Telenor Erhverv"
+   ],
+   "asns": [
+    {
+     "asn": 9158,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telenor.dk/erhverv/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "Norlys",
+   "slug": "norlys",
+   "kind": "national_carrier",
+   "aka": [
+    "Telia Danmark",
+    "Telia",
+    "Stofa",
+    "Norlys Erhverv"
+   ],
+   "asns": [
+    {
+     "asn": 3308,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8273,
+     "rir": "ripe"
+    },
+    {
+     "asn": 197288,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://norlys.dk/erhverv/",
+   "support_url": null,
+   "notes": "Energy company with fibre, cable and mobile. It bought Telia's Danish business in 2024; AS3308 was Telia Danmark's number, AS8273 Stofa's."
+  },
+  {
+   "name": "3",
+   "slug": "3-dk",
+   "kind": "mobile",
+   "aka": [
+    "3 Danmark",
+    "Hi3G Denmark",
+    "3Business"
+   ],
+   "asns": [],
+   "website": "https://www.3.dk/business/",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "GlobalConnect",
+   "slug": "globalconnect",
+   "kind": "business_isp",
+   "aka": [
+    "Nianet"
+   ],
+   "asns": [
+    {
+     "asn": 31027,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://globalconnect.dk/",
+   "support_url": null,
+   "notes": "Nordic fibre group, also in the Sweden and Finland packs."
+  },
+  {
+   "name": "Fibia",
+   "slug": "fibia",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 44869,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://fibia.dk/",
+   "support_url": null,
+   "notes": "Fibre network on Zealand."
+  },
+  {
+   "name": "Waoo",
+   "slug": "waoo",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 35637,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.waoo.dk/",
+   "support_url": null,
+   "notes": "Internet and TV brand on energy-company fibre networks."
+  },
+  {
+   "name": "Ewii",
+   "slug": "ewii",
+   "kind": "cable_fibre",
+   "aka": [
+    "EWII Bredbånd",
+    "TREFOR Bredbånd",
+    "Kviknet"
+   ],
+   "asns": [
+    {
+     "asn": 48288,
+     "rir": "ripe"
+    },
+    {
+     "asn": 204151,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.ewii.dk/",
+   "support_url": null,
+   "notes": "Fibre in the Triangle Region. AS204151 is the Kviknet brand."
+  },
+  {
+   "name": "Energi Fyn",
+   "slug": "energi-fyn",
+   "kind": "cable_fibre",
+   "aka": [
+    "Energi Fyn Bredbånd"
+   ],
+   "asns": [
+    {
+     "asn": 203646,
+     "rir": "ripe"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fibre network on Funen."
+  },
+  {
+   "name": "AURA Fiber",
+   "slug": "aura-fiber",
+   "kind": "cable_fibre",
+   "aka": [
+    "AURA"
+   ],
+   "asns": [
+    {
+     "asn": 204274,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.aura.dk/",
+   "support_url": null,
+   "notes": "Fibre network in East Jutland."
+  },
+  {
+   "name": "Hiper",
+   "slug": "hiper",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 203953,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.hiper.dk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Fastspeed",
+   "slug": "fastspeed",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 209424,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://fastspeed.dk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Altibox Danmark",
+   "slug": "altibox-dk",
+   "kind": "cable_fibre",
+   "aka": [
+    "Altibox"
+   ],
+   "asns": [
+    {
+     "asn": 214875,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.altibox.dk/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Cibicom",
+   "slug": "cibicom",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 3342,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://cibicom.dk/",
+   "support_url": null,
+   "notes": "Broadcast towers and business lines."
+  },
+  {
+   "name": "OpenNet",
+   "slug": "opennet",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [],
+   "website": "https://opennet.dk/",
+   "support_url": null,
+   "notes": "Wholesale platform for the fibre networks; seldom the name on the bill."
+  },
+  {
+   "name": "DeiC",
+   "slug": "deic",
+   "kind": "research_education",
+   "aka": [
+    "Forskningsnettet",
+    "Danish e-Infrastructure Consortium"
+   ],
+   "asns": [
+    {
+     "asn": 1835,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.deic.dk/",
+   "support_url": null,
+   "notes": "Runs Forskningsnettet, the national research and education network.",
+   "wikidata": "Q1438194"
+  }
+ ]
+}

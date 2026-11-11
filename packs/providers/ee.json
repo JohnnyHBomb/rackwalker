@@ -1,0 +1,240 @@
+{
+ "pack": "providers",
+ "id": "providers-ee",
+ "version": "1.0.0",
+ "country": "EE",
+ "title": "Common providers: Estonia",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the three national carriers, which are also the mobile network operators, two cable operators and the research network; wholesale networks and business ISPs are thin.",
+ "missing": [
+  "An AS number for Tele2 Eesti (none confirmed)",
+  "Wholesale and rural fibre networks (none could be confirmed from a public source in the time given)",
+  "Smaller business ISPs and local cable operators",
+  "The regulator's register of communications undertakings (not read)",
+  "Satellite providers",
+  "Status pages (none checked)"
+ ],
+ "sources": [
+  {
+   "name": "TTJA (Consumer Protection and Technical Regulatory Authority): communications market",
+   "url": "https://www.ttja.ee/ariklient/side-ja-meediateenused/sideteenused/sideturg",
+   "read": "2026-11-11",
+   "terms": "The page answered on the read date, in Estonian; no reuse licence was found on it, so nothing is copied.",
+   "use": "cited",
+   "result": "Page read for its address only; the register of undertakings was not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Estonia",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Estonia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 9 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Estonia",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Estonia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "1 of 9 names were found on the page (whole-word match; a name under three characters is not counted)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "9 of 9 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "8 AS numbers confirmed, each announced on the read date; a number registered to the provider but not announced was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+   "use": "cross-check",
+   "result": "Used to find candidate numbers; each was then confirmed as above."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+   "use": "copied",
+   "result": "1 ids recorded; an item of a parent group was not used."
+  },
+  {
+   "name": "Wikipedia: Telia Eesti",
+   "url": "https://en.wikipedia.org/wiki/Telia_Eesti",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+   "use": "cross-check",
+   "result": "Names Elion, EMT and Eesti Telekom as former names of Telia Eesti."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telia Eesti",
+   "slug": "telia-ee",
+   "kind": "national_carrier",
+   "aka": [
+    "Telia",
+    "Elion",
+    "EMT",
+    "Eesti Telekom"
+   ],
+   "asns": [
+    {
+     "asn": 3249,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.telia.ee/ari",
+   "support_url": null,
+   "notes": "Fixed and mobile.",
+   "wikidata": "Q1295663"
+  },
+  {
+   "name": "Elisa Eesti",
+   "slug": "elisa-ee",
+   "kind": "national_carrier",
+   "aka": [
+    "Elisa",
+    "Starman"
+   ],
+   "asns": [
+    {
+     "asn": 2586,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.elisa.ee/et/ariklient",
+   "support_url": null,
+   "notes": "Mobile, and cable since it took over Starman."
+  },
+  {
+   "name": "Tele2 Eesti",
+   "slug": "tele2-ee",
+   "kind": "mobile",
+   "aka": [
+    "Tele2"
+   ],
+   "asns": [],
+   "website": "https://tele2.ee/",
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "STV",
+   "slug": "stv",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 61307,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://stv.ee/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Telset",
+   "slug": "telset",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 51504,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://telset.ee/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Infonet",
+   "slug": "infonet",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8728,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://infonet.ee/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Levira",
+   "slug": "levira",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 50794,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.levira.ee/",
+   "support_url": null,
+   "notes": "Broadcast network operator; also data-centre and business lines."
+  },
+  {
+   "name": "CITIC Telecom CPC",
+   "slug": "citic-telecom-cpc",
+   "kind": "business_isp",
+   "aka": [
+    "Linxtelecom",
+    "Linx Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 3327,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.citictel-cpc.com/",
+   "support_url": null,
+   "notes": "Baltic and international business lines. AS3327 was Linxtelecom's number; it is registered in the Netherlands."
+  },
+  {
+   "name": "EENet",
+   "slug": "eenet",
+   "kind": "research_education",
+   "aka": [
+    "Estonian Education and Research Network"
+   ],
+   "asns": [
+    {
+     "asn": 3221,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eenet.ee/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

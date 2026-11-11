@@ -1,0 +1,333 @@
+{
+ "pack": "providers",
+ "id": "providers-mx",
+ "version": "1.0.0",
+ "country": "MX",
+ "title": "Common providers: Mexico",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carrier, the three mobile network operators, the main cable and fibre operators, the shared wholesale mobile network and the university network; business ISPs and regional cable operators are thin.",
+ "missing": [
+  "Regional cable operators and wireless ISPs",
+  "Business ISPs beyond Axtel, Bestel and Flo Networks",
+  "The state operator CFE Telecomunicaciones e Internet para Todos (its pages did not answer on the read date)",
+  "An AS number for Flo Networks (none registered in Mexico was found)",
+  "Websites for Telmex, Telcel, Totalplay, izzi, Bestel and Megacable (they did not answer an automated request on the read date)",
+  "Status pages (none was found)",
+  "The regulator's register is a search application: it could not be read as a list"
+ ],
+ "sources": [
+  {
+   "name": "CRT (Comisión Reguladora de Telecomunicaciones): public register of concessions",
+   "url": "https://rpc.crt.gob.mx/vrpc/",
+   "read": "2026-11-11",
+   "terms": "No reuse licence was found on the page read on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date (the former regulator's register address leads to it). It is a search form, not a list. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Mexico and 5 more pages",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Mexico",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "9 of 13 entries were found by a name on the 6 pages read."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "7 of 13 websites and 0 support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+   "use": "cross-check",
+   "result": "18 AS numbers confirmed; a number whose registered holder was an unrelated name was left out."
+  },
+  {
+   "name": "RIPE NCC list of AS names",
+   "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+   "read": "2026-11-11",
+   "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+   "use": "cross-check",
+   "result": "Read to find which AS numbers are registered under each provider's company names."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of a Wikidata item that states one of the entry's AS numbers (property P3797)."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telmex",
+   "slug": "telmex",
+   "kind": "national_carrier",
+   "aka": [
+    "Teléfonos de México",
+    "Infinitum",
+    "Uninet",
+    "UNINET"
+   ],
+   "asns": [
+    {
+     "asn": 8151,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed lines; Infinitum is its internet name. AS8151 is registered as Uninet."
+  },
+  {
+   "name": "Telcel",
+   "slug": "telcel",
+   "kind": "mobile",
+   "aka": [
+    "Radiomóvil Dipsa"
+   ],
+   "asns": [
+    {
+     "asn": 28403,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Registered as RadioMovil Dipsa."
+  },
+  {
+   "name": "Totalplay",
+   "slug": "totalplay",
+   "kind": "cable_fibre",
+   "aka": [
+    "Total Play",
+    "Totalplay Empresarial"
+   ],
+   "asns": [
+    {
+     "asn": 17072,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 22884,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fibre."
+  },
+  {
+   "name": "izzi",
+   "slug": "izzi",
+   "kind": "cable_fibre",
+   "aka": [
+    "izzi telecom",
+    "Cablevisión",
+    "Cablemás",
+    "Cablecom",
+    "Telecable"
+   ],
+   "asns": [
+    {
+     "asn": 28548,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 28545,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 28509,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable. AS28548 is registered to Cablevisión, AS28545 and AS28509 to Cablemás.",
+   "wikidata": "Q11680385"
+  },
+  {
+   "name": "Megacable",
+   "slug": "megacable",
+   "kind": "cable_fibre",
+   "aka": [
+    "Mega Cable",
+    "Megacable Comunicaciones"
+   ],
+   "asns": [
+    {
+     "asn": 13999,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 14178,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "AT&T México",
+   "slug": "att-mx",
+   "kind": "mobile",
+   "aka": [
+    "AT&T Mexico",
+    "Iusacell",
+    "Nextel México"
+   ],
+   "asns": [
+    {
+     "asn": 28469,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.att.com.mx/",
+   "support_url": null,
+   "notes": "Formerly Iusacell and Nextel Mexico."
+  },
+  {
+   "name": "Movistar",
+   "slug": "movistar-mx",
+   "kind": "mobile",
+   "aka": [
+    "Movistar México",
+    "Pegaso PCS"
+   ],
+   "asns": [
+    {
+     "asn": 7438,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.movistar.com.mx/",
+   "support_url": null,
+   "notes": "AS7438 is registered as Pegaso PCS."
+  },
+  {
+   "name": "Axtel",
+   "slug": "axtel",
+   "kind": "business_isp",
+   "aka": [
+    "Alestra"
+   ],
+   "asns": [
+    {
+     "asn": 6503,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 11172,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://alestra.mx/",
+   "support_url": null,
+   "notes": "Alestra is its name for business services; AS11172 is registered to Alestra."
+  },
+  {
+   "name": "Bestel",
+   "slug": "bestel",
+   "kind": "business_isp",
+   "aka": [
+    "Operbes"
+   ],
+   "asns": [
+    {
+     "asn": 18734,
+     "rir": "lacnic"
+    },
+    {
+     "asn": 13440,
+     "rir": "lacnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Registered as Operbes; same group as izzi."
+  },
+  {
+   "name": "Flo Networks",
+   "slug": "flo-networks",
+   "kind": "business_isp",
+   "aka": [
+    "Transtelco"
+   ],
+   "asns": [],
+   "website": "https://flo.net/",
+   "support_url": null,
+   "notes": "Formerly Transtelco (its old address leads to the new one)."
+  },
+  {
+   "name": "Altán Redes",
+   "slug": "altan-redes",
+   "kind": "wholesale",
+   "aka": [
+    "ALTÁN",
+    "Red Compartida"
+   ],
+   "asns": [
+    {
+     "asn": 265540,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://www.altanredes.com/",
+   "support_url": null,
+   "notes": "Wholesale mobile network (Red Compartida); retail through other operators."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "CUDI",
+   "slug": "cudi",
+   "kind": "research_education",
+   "aka": [
+    "Corporación Universitaria para el Desarrollo de Internet"
+   ],
+   "asns": [
+    {
+     "asn": 18592,
+     "rir": "lacnic"
+    }
+   ],
+   "website": "https://cudi.edu.mx/",
+   "support_url": null,
+   "notes": "University network. AS18592 was not announced on the read date."
+  }
+ ]
+}

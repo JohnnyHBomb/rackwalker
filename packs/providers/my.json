@@ -1,0 +1,289 @@
+{
+ "pack": "providers",
+ "id": "providers-my",
+ "version": "1.0.0",
+ "country": "MY",
+ "title": "Common providers: Malaysia",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the fixed-line incumbent, the mobile network operators, the main fibre providers and the wholesale 5G network; business ISPs and the operators of Sabah and Sarawak are partial.",
+ "missing": [
+  "Smaller business ISPs",
+  "Regional operators of Sabah and Sarawak other than Sacofa",
+  "Mobile virtual network operators",
+  "Satellite providers",
+  "A website for TIME (it refused an automated check on the read date)",
+  "Status pages (none was found that answered a check)"
+ ],
+ "sources": [
+  {
+   "name": "MCMC (Malaysian Communications and Multimedia Commission): registers of licences",
+   "url": "https://www.mcmc.gov.my/en/legal/registers",
+   "read": "2026-11-11",
+   "terms": "The site shows a copyright notice; its terms-of-use page did not answer on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Malaysia and Telecommunications in Malaysia",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Malaysia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "9 of 11 names were found on the pages."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "10 of 11 websites and 2 business, support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+   "use": "cross-check",
+   "result": "15 AS numbers confirmed; a number whose registered holder was another company, or that was not announced on the read date, was left out."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "TM",
+   "slug": "tm",
+   "kind": "national_carrier",
+   "aka": [
+    "Telekom Malaysia",
+    "unifi",
+    "TM One",
+    "TM Global",
+    "TM Technology Services",
+    "Streamyx"
+   ],
+   "asns": [
+    {
+     "asn": 4788,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.tm.com.my/",
+   "support_url": "https://unifi.com.my/",
+   "notes": "unifi is its retail name; the support address is the unifi site."
+  },
+  {
+   "name": "Maxis",
+   "slug": "maxis",
+   "kind": "national_carrier",
+   "aka": [
+    "Maxis Broadband",
+    "Maxis Business",
+    "Hotlink",
+    "Binariang"
+   ],
+   "asns": [
+    {
+     "asn": 9534,
+     "rir": "apnic"
+    },
+    {
+     "asn": 132434,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.maxis.com.my/",
+   "support_url": "https://business.maxis.com.my/",
+   "notes": "Mobile and fibre. The support address is the business site.",
+   "wikidata": "Q2627330"
+  },
+  {
+   "name": "CelcomDigi",
+   "slug": "celcomdigi",
+   "kind": "mobile",
+   "aka": [
+    "Celcom",
+    "Celcom Axiata",
+    "Digi",
+    "Digi Telecommunications"
+   ],
+   "asns": [
+    {
+     "asn": 10030,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4818,
+     "rir": "apnic"
+    },
+    {
+     "asn": 10081,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.celcomdigi.com/",
+   "support_url": null,
+   "notes": "The merged Celcom (AS10030) and Digi (AS4818, AS10081); the numbers are still registered under the two former names."
+  },
+  {
+   "name": "U Mobile",
+   "slug": "u-mobile",
+   "kind": "mobile",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 38466,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.u.com.my/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "TIME",
+   "slug": "time",
+   "kind": "cable_fibre",
+   "aka": [
+    "TIME dotCom",
+    "TIME Fibre"
+   ],
+   "asns": [
+    {
+     "asn": 9930,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Its website refused an automated check on the read date."
+  },
+  {
+   "name": "Yes",
+   "slug": "yes",
+   "kind": "mobile",
+   "aka": [
+    "YTL Communications",
+    "Yes 5G"
+   ],
+   "asns": [
+    {
+     "asn": 45960,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.yes.my/",
+   "support_url": null,
+   "notes": "The trading name of YTL Communications."
+  },
+  {
+   "name": "Allo",
+   "slug": "allo",
+   "kind": "cable_fibre",
+   "aka": [
+    "Allo Technology"
+   ],
+   "asns": [
+    {
+     "asn": 45410,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.allo.my/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Digital Nasional Berhad",
+   "slug": "digital-nasional-berhad",
+   "kind": "wholesale",
+   "aka": [
+    "DNB"
+   ],
+   "asns": [
+    {
+     "asn": 149051,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.digital-nasional.com.my/",
+   "support_url": null,
+   "notes": "Wholesale 5G network: seldom the name on the bill."
+  },
+  {
+   "name": "REDtone",
+   "slug": "redtone",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 24028,
+     "rir": "apnic"
+    },
+    {
+     "asn": 24068,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.redtone.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Sacofa",
+   "slug": "sacofa",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 134232,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.sacofa.com.my/",
+   "support_url": null,
+   "notes": "Network infrastructure in Sarawak."
+  },
+  {
+   "name": "MYREN",
+   "slug": "myren",
+   "kind": "research_education",
+   "aka": [
+    "Malaysian Research and Education Network"
+   ],
+   "asns": [
+    {
+     "asn": 24514,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://myren.net.my/",
+   "support_url": null,
+   "notes": "The AS number is registered to the Ministry of Higher Education."
+  }
+ ]
+}

@@ -1,0 +1,300 @@
+{
+ "pack": "providers",
+ "id": "providers-vn",
+ "version": "1.0.0",
+ "country": "VN",
+ "title": "Common providers: Vietnam",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the three large carriers, the mobile network operators, two cable operators, three business ISPs and the research network; names are as the providers write them, without the long Vietnamese company names.",
+ "missing": [
+  "Full Vietnamese company names (none was confirmed against a source that may be copied)",
+  "The regulator's operator register (the telecommunications authority's site did not answer on the read date)",
+  "Smaller ISPs and regional cable operators",
+  "Satellite providers",
+  "Websites for VNPT, VTVcab and VinaREN (none answered an automated check on the read date)",
+  "Status pages (none was found that answered a check)"
+ ],
+ "sources": [
+  {
+   "name": "Ministry of Science and Technology (the ministry that regulates telecommunications)",
+   "url": "https://mst.gov.vn/",
+   "read": "2026-11-11",
+   "terms": "The site shows a copyright notice in Vietnamese and no reuse licence was found on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date; the telecommunications authority's own site did not. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "VNNIC (Vietnam Internet Network Information Center)",
+   "url": "https://vnnic.vn/",
+   "read": "2026-11-11",
+   "terms": "The site shows a copyright notice and no reuse licence was found on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the national registry to consult for an AS number."
+  },
+  {
+   "name": "Wikipedia: Internet in Vietnam and Telecommunications in Vietnam",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Vietnam",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "6 of 11 names were found on the pages."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "8 of 11 websites and 1 business, support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+   "use": "cross-check",
+   "result": "18 AS numbers confirmed; a number whose registered holder was another company, or that was not announced on the read date, was left out."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Viettel",
+   "slug": "viettel",
+   "kind": "national_carrier",
+   "aka": [
+    "Viettel Group",
+    "Viettel Telecom",
+    "Viettel Corporation"
+   ],
+   "asns": [
+    {
+     "asn": 7552,
+     "rir": "apnic"
+    },
+    {
+     "asn": 24086,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://viettel.com.vn/",
+   "support_url": "https://viettel.vn/",
+   "notes": "Fixed and mobile. The second address is the retail site."
+  },
+  {
+   "name": "VNPT",
+   "slug": "vnpt",
+   "kind": "national_carrier",
+   "aka": [
+    "Vietnam Posts and Telecommunications Group",
+    "VinaPhone",
+    "VNPT VinaPhone"
+   ],
+   "asns": [
+    {
+     "asn": 45899,
+     "rir": "apnic"
+    },
+    {
+     "asn": 7643,
+     "rir": "apnic"
+    },
+    {
+     "asn": 135905,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed, and mobile as VinaPhone. Its websites did not answer an automated check on the read date."
+  },
+  {
+   "name": "FPT Telecom",
+   "slug": "fpt-telecom",
+   "kind": "cable_fibre",
+   "aka": [
+    "FPT",
+    "FPT Internet"
+   ],
+   "asns": [
+    {
+     "asn": 18403,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://fpt.vn/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "MobiFone",
+   "slug": "mobifone",
+   "kind": "mobile",
+   "aka": [
+    "MobiFone Corporation",
+    "MobiFone Global"
+   ],
+   "asns": [
+    {
+     "asn": 131429,
+     "rir": "apnic"
+    },
+    {
+     "asn": 45896,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.mobifone.vn/",
+   "support_url": null,
+   "notes": "AS45896 is registered to MobiFone Global."
+  },
+  {
+   "name": "CMC Telecom",
+   "slug": "cmc-telecom",
+   "kind": "business_isp",
+   "aka": [
+    "CMC Telecom Infrastructure"
+   ],
+   "asns": [
+    {
+     "asn": 45903,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38732,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38733,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://cmctelecom.vn/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "NetNam",
+   "slug": "netnam",
+   "kind": "business_isp",
+   "aka": [
+    "Netnam Company"
+   ],
+   "asns": [
+    {
+     "asn": 24173,
+     "rir": "apnic"
+    },
+    {
+     "asn": 24176,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://netnam.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "SCTV",
+   "slug": "sctv",
+   "kind": "cable_fibre",
+   "aka": [
+    "Saigontourist Cable Television"
+   ],
+   "asns": [
+    {
+     "asn": 45543,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.sctv.com.vn/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "VTVcab",
+   "slug": "vtvcab",
+   "kind": "cable_fibre",
+   "aka": [
+    "Vietnam Cable Television Corporation"
+   ],
+   "asns": [
+    {
+     "asn": 131410,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable. Its website refused an automated check on the read date."
+  },
+  {
+   "name": "Vietnamobile",
+   "slug": "vietnamobile",
+   "kind": "mobile",
+   "aka": [
+    "Vietnamobile Telecommunications"
+   ],
+   "asns": [
+    {
+     "asn": 38247,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.vietnamobile.com.vn/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "SPT",
+   "slug": "spt",
+   "kind": "business_isp",
+   "aka": [
+    "Saigon Postel",
+    "Sai Gon Postel Corporation"
+   ],
+   "asns": [
+    {
+     "asn": 7602,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://spt.vn/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "VinaREN",
+   "slug": "vinaren",
+   "kind": "research_education",
+   "aka": [
+    "Vietnam Research and Education Network"
+   ],
+   "asns": [
+    {
+     "asn": 24175,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "The AS number is registered to the National Agency for Scientific and Technological Information. No website answered."
+  }
+ ]
+}

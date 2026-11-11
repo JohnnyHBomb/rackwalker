@@ -1,0 +1,167 @@
+{
+ "pack": "providers",
+ "id": "providers-mt",
+ "version": "1.0.0",
+ "country": "MT",
+ "title": "Common providers: Malta",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Complete for the three network operators (fixed and mobile); only one smaller business ISP was confirmed, and the regulator's register was not read.",
+ "missing": [
+  "Smaller business ISPs and resellers (the regulator's register was not found on the pages read)",
+  "A trading name for the national research network: it is listed under the University of Malta, which holds its AS number",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "MCA (Malta Communications Authority)",
+   "url": "https://www.mca.org.mt/",
+   "read": "2026-11-11",
+   "terms": "Terms of use: all material is owned by or licensed to the authority and no reuse is granted: nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date; no register of authorised undertakings was found on it. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Malta",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Malta",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 5 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Malta",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Malta",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 5 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "5 of 5 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "5 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "MaltaToday: Melita set to take over Epic",
+   "url": "https://www.maltatoday.com.mt/news/national/144424/melita_set_to_take_over_epic",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above (article of 16 September 2026): Melita agreed to buy Epic from Monaco Telecom; the deal awaited approval and the two still operated apart."
+  }
+ ],
+ "providers": [
+  {
+   "name": "GO",
+   "slug": "go",
+   "kind": "national_carrier",
+   "aka": [
+    "GO plc",
+    "GO Business",
+    "Maltacom"
+   ],
+   "asns": [
+    {
+     "asn": 15735,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.go.com.mt/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile."
+  },
+  {
+   "name": "Melita",
+   "slug": "melita",
+   "kind": "cable_fibre",
+   "aka": [
+    "Melita Business"
+   ],
+   "asns": [
+    {
+     "asn": 12709,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.melita.com/",
+   "support_url": null,
+   "notes": "Cable, fibre and mobile."
+  },
+  {
+   "name": "Epic",
+   "slug": "epic-mt",
+   "kind": "mobile",
+   "aka": [
+    "Epic Communications",
+    "Vodafone Malta"
+   ],
+   "asns": [
+    {
+     "asn": 33874,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.epic.com.mt/",
+   "support_url": null,
+   "notes": "Mobile and fibre; Vodafone Malta until 2020. Melita agreed to buy it in September 2026; the two still traded apart on the read date."
+  },
+  {
+   "name": "Vanilla Telecoms",
+   "slug": "vanilla-telecoms",
+   "kind": "business_isp",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 34410,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://vanilla.net.mt/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "University of Malta",
+   "slug": "university-of-malta",
+   "kind": "research_education",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 12046,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.um.edu.mt/",
+   "support_url": null,
+   "notes": "Runs the research and education network of Malta."
+  }
+ ]
+}

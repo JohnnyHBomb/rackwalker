@@ -1,0 +1,438 @@
+{
+ "pack": "providers",
+ "id": "providers-it",
+ "version": "1.0.0",
+ "country": "IT",
+ "title": "Common providers: Italy",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national fixed-line carriers, the mobile network operators and the two wholesale access networks; regional fibre operators, fixed-wireless operators and business ISPs are partial.",
+ "missing": [
+  "Regional fibre and fixed-wireless operators (several hundred are on the regulator's register)",
+  "Smaller business ISPs",
+  "An AS number for iliad (none confirmed: the number it is known by is registered to another company of the group)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "AGCOM: Registro degli Operatori di Comunicazione (public list)",
+   "url": "https://www.agcom.it/",
+   "read": "2026-11-11",
+   "terms": "The public list of the register refused an automated read on the read date and no reuse terms were found on the regulator's front page: nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date; the register was not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Italy",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Italy",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "2 of 17 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Italy",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Italy",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "0 of 17 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "17 of 17 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "24 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "2 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "Fastweb: Fastweb and Vodafone Italia merge",
+   "url": "https://www.fastweb.it/wholesale/news/fastweb-e-vodafone-italia-si-uniscono.php?lng=EN",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: the merger took effect on 1 January 2026 and the company is Fastweb S.p.A."
+  },
+  {
+   "name": "Retelit: completion of the purchase of BT Italia's operations",
+   "url": "https://www.retelit.it/en/press/press-releases/2025/retelit-completes-the-acquisition-of-bt-italia-s-italian-operations-and-assets",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: completed on 1 October 2025 through the new company Retelit-X."
+  },
+  {
+   "name": "Teleborsa: lease of Tiscali Italia's consumer business",
+   "url": "https://www.teleborsa.it/AMP/News/2026/06/03/tessellis-avvio-dell-affitto-del-ramo-d-azienda-b2c-di-tiscali-italia-a-favore-di-canarbino-257.html",
+   "read": "2026-11-11",
+   "terms": "Cited for a date and a name (facts); no text is copied.",
+   "use": "cited",
+   "result": "Read on the date above: leased to Smeraldo (Canarbino group) from 1 June 2026, with the Tiscali and Linkem names licensed to it."
+  }
+ ],
+ "providers": [
+  {
+   "name": "TIM",
+   "slug": "tim",
+   "kind": "national_carrier",
+   "aka": [
+    "Telecom Italia",
+    "TIM Business",
+    "TIM Enterprise"
+   ],
+   "asns": [
+    {
+     "asn": 3269,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tim.it/",
+   "support_url": null,
+   "notes": "The incumbent; fixed and mobile. Its fixed access network is run by FiberCop.",
+   "wikidata": "Q144617"
+  },
+  {
+   "name": "Fastweb",
+   "slug": "fastweb",
+   "kind": "national_carrier",
+   "aka": [
+    "Fastweb + Vodafone",
+    "Fastweb Business"
+   ],
+   "asns": [
+    {
+     "asn": 12874,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.fastweb.it/",
+   "support_url": null,
+   "notes": "Fixed and mobile; owned by Swisscom. Merged with Vodafone Italia on 1 January 2026."
+  },
+  {
+   "name": "Vodafone Italia",
+   "slug": "vodafone-it",
+   "kind": "national_carrier",
+   "aka": [
+    "Vodafone",
+    "Vodafone Business",
+    "Fastweb + Vodafone",
+    "ho. Mobile"
+   ],
+   "asns": [
+    {
+     "asn": 30722,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vodafone.it/",
+   "support_url": null,
+   "notes": "A name of Fastweb S.p.A. since the merger of 1 January 2026; AS30722 is registered to Fastweb."
+  },
+  {
+   "name": "WINDTRE",
+   "slug": "windtre",
+   "kind": "national_carrier",
+   "aka": [
+    "Wind Tre",
+    "WINDTRE Business",
+    "Wind",
+    "3 Italia",
+    "Infostrada"
+   ],
+   "asns": [
+    {
+     "asn": 1267,
+     "rir": "ripe"
+    },
+    {
+     "asn": 24608,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.windtre.it/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "iliad",
+   "slug": "iliad-it",
+   "kind": "mobile",
+   "aka": [
+    "Iliad Italia"
+   ],
+   "asns": [],
+   "website": "https://www.iliad.it/",
+   "support_url": null,
+   "notes": "Mobile, and fibre over the wholesale networks."
+  },
+  {
+   "name": "FiberCop",
+   "slug": "fibercop",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 213677,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.fibercop.it/",
+   "support_url": null,
+   "notes": "Wholesale fixed access network, formerly TIM's; seldom the name on the bill."
+  },
+  {
+   "name": "Open Fiber",
+   "slug": "open-fiber",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 210218,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://openfiber.it/",
+   "support_url": null,
+   "notes": "Wholesale fibre access network; retail through other providers."
+  },
+  {
+   "name": "Tiscali",
+   "slug": "tiscali",
+   "kind": "business_isp",
+   "aka": [
+    "Tiscali Italia",
+    "Linkem",
+    "Tessellis",
+    "Smeraldo"
+   ],
+   "asns": [
+    {
+     "asn": 8612,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.tiscali.it/",
+   "support_url": null,
+   "notes": "Run by Smeraldo (Canarbino group) under a lease since 1 June 2026; AS8612 is registered to Smeraldo."
+  },
+  {
+   "name": "EOLO",
+   "slug": "eolo",
+   "kind": "business_isp",
+   "aka": [
+    "NGI"
+   ],
+   "asns": [
+    {
+     "asn": 35612,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.eolo.it/",
+   "support_url": null,
+   "notes": "Fixed wireless."
+  },
+  {
+   "name": "Sky Italia",
+   "slug": "sky-it",
+   "kind": "cable_fibre",
+   "aka": [
+    "Sky Wifi",
+    "Sky"
+   ],
+   "asns": [
+    {
+     "asn": 210278,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.sky.it/",
+   "support_url": null,
+   "notes": "Broadband under the name Sky Wifi, over the wholesale networks."
+  },
+  {
+   "name": "Retelit",
+   "slug": "retelit",
+   "kind": "business_isp",
+   "aka": [
+    "Irideos",
+    "MC-link",
+    "Clouditalia",
+    "Brennercom",
+    "BT Italia",
+    "Retelit-X"
+   ],
+   "asns": [
+    {
+     "asn": 28716,
+     "rir": "ripe"
+    },
+    {
+     "asn": 3302,
+     "rir": "ripe"
+    },
+    {
+     "asn": 5602,
+     "rir": "ripe"
+    },
+    {
+     "asn": 5396,
+     "rir": "ripe"
+    },
+    {
+     "asn": 15589,
+     "rir": "ripe"
+    },
+    {
+     "asn": 20811,
+     "rir": "ripe"
+    },
+    {
+     "asn": 43611,
+     "rir": "ripe"
+    },
+    {
+     "asn": 8968,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.retelit.it/",
+   "support_url": null,
+   "notes": "Business fibre and data centres. Took over BT Italia's operations on 1 October 2025; AS8968 was BT Italia's number."
+  },
+  {
+   "name": "Colt Technology Services",
+   "slug": "colt",
+   "kind": "business_isp",
+   "aka": [
+    "Colt",
+    "COLT"
+   ],
+   "asns": [
+    {
+     "asn": 8220,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.colt.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Vianova",
+   "slug": "vianova",
+   "kind": "business_isp",
+   "aka": [
+    "Welcome Italia"
+   ],
+   "asns": [
+    {
+     "asn": 21056,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.vianova.it/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Intred",
+   "slug": "intred",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 31115,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.intred.it/",
+   "support_url": null,
+   "notes": "Regional fibre operator (Lombardy)."
+  },
+  {
+   "name": "Unidata",
+   "slug": "unidata",
+   "kind": "cable_fibre",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 5394,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.unidata.it/",
+   "support_url": null,
+   "notes": "Regional fibre operator (Rome and Lazio)."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q127785902"
+  },
+  {
+   "name": "GARR",
+   "slug": "garr",
+   "kind": "research_education",
+   "aka": [
+    "Consortium GARR"
+   ],
+   "asns": [
+    {
+     "asn": 137,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.garr.it/",
+   "support_url": null,
+   "notes": "The national research and education network."
+  }
+ ]
+}

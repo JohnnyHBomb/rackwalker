@@ -1,0 +1,180 @@
+{
+ "pack": "providers",
+ "id": "providers-cy",
+ "version": "1.0.0",
+ "country": "CY",
+ "title": "Common providers: Cyprus",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Complete for the four network operators of the Republic of Cyprus (fixed and mobile) and the research network; smaller ISPs and the operators in the north of the island are not listed.",
+ "missing": [
+  "Smaller ISPs and resellers (the register is a search form at another site and was not read)",
+  "Operators in the north of the island (they are not on the Republic's register)",
+  "An announced AS number for CYNET (AS211779 is registered to it and was not announced on the read date)",
+  "Support and status pages (none recorded)"
+ ],
+ "sources": [
+  {
+   "name": "OCECPR (Office of the Commissioner of Electronic Communications and Postal Regulation)",
+   "url": "https://ocecpr.ee.cy/",
+   "read": "2026-11-11",
+   "terms": "Terms of use: the information is advisory; they say nothing on reuse: nothing is copied.",
+   "use": "cited",
+   "result": "The front page answered on the read date and links to the licence register (a search form), which was not read. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Cyprus",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Cyprus",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 6 candidate names were found on the page (the name as listed; other names of an entry were not looked up)."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "6 of 6 websites answered one plain automated request; an address that did not answer, or that refused it, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "6 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "RIPE Database full-text search (RIPE NCC)",
+   "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+   "read": "2026-11-11",
+   "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+   "use": "cross-check",
+   "result": "Candidate numbers found for some providers; none was taken without the confirmation."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Cyta",
+   "slug": "cyta",
+   "kind": "national_carrier",
+   "aka": [
+    "Cyprus Telecommunications Authority",
+    "Cytanet",
+    "Cytamobile-Vodafone",
+    "ΑΤΗΚ"
+   ],
+   "asns": [
+    {
+     "asn": 6866,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.cyta.com.cy/",
+   "support_url": null,
+   "notes": "The incumbent; state owned; fixed and mobile."
+  },
+  {
+   "name": "Cablenet",
+   "slug": "cablenet",
+   "kind": "cable_fibre",
+   "aka": [
+    "Cablenet Communication Systems"
+   ],
+   "asns": [
+    {
+     "asn": 35432,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://cablenet.com.cy/",
+   "support_url": null,
+   "notes": "Cable, fibre and mobile."
+  },
+  {
+   "name": "PrimeTel",
+   "slug": "primetel",
+   "kind": "national_carrier",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 8544,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://primetel.com.cy/",
+   "support_url": null,
+   "notes": "Fixed and mobile."
+  },
+  {
+   "name": "Epic",
+   "slug": "epic-cy",
+   "kind": "mobile",
+   "aka": [
+    "MTN Cyprus"
+   ],
+   "asns": [
+    {
+     "asn": 15805,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://www.epic.com.cy/",
+   "support_url": null,
+   "notes": "Mobile and fixed; MTN Cyprus until 2019."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q127785902"
+  },
+  {
+   "name": "CYNET",
+   "slug": "cynet",
+   "kind": "research_education",
+   "aka": [
+    "Cyprus Research and Academic Network"
+   ],
+   "asns": [
+    {
+     "asn": 211779,
+     "rir": "ripe"
+    }
+   ],
+   "website": "https://cynet.ac.cy/",
+   "support_url": null,
+   "notes": "The national research and education network. AS211779 was not announced on the read date."
+  }
+ ]
+}
