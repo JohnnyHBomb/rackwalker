@@ -1,0 +1,375 @@
+{
+ "pack": "providers",
+ "id": "providers-kr",
+ "version": "1.0.0",
+ "country": "KR",
+ "title": "Common providers: South Korea",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the three national carriers, the mobile network operators and the main cable operators; business ISPs are partial, and five websites did not answer an automated check.",
+ "missing": [
+  "Regional cable operators and the regional AS numbers of CMB (only its head-office number is listed)",
+  "Smaller business ISPs and data-centre networks",
+  "Websites of LG U+, HCN, Sejong Telecom, Dreamline and KOREN (none answered an automated check on the read date)",
+  "Status pages (none was checked)"
+ ],
+ "sources": [
+  {
+   "name": "Ministry of Science and ICT (MSIT)",
+   "url": "https://www.msit.go.kr/",
+   "read": "2026-11-11",
+   "terms": "The site answered but its pages are drawn by script and its terms could not be read by an automated request: nothing is copied.",
+   "use": "cited",
+   "result": "No public register of facilities-based operators was found in the time given. The ministry is the authority to consult for operators this pack lacks; AS numbers of South Korea are assigned through KISA (KRNIC)."
+  },
+  {
+   "name": "Wikipedia: Internet in South Korea",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_South_Korea",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "7 of 13 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in South Korea",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_South_Korea",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 13 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "8 of 13 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "19 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "APNIC RDAP (the registry's own record of an AS number)",
+   "url": "https://rdap.apnic.net/",
+   "read": "2026-11-11",
+   "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+   "use": "cross-check",
+   "result": "Read where the holder name in RIPEstat did not name the provider plainly."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "KT",
+   "slug": "kt",
+   "kind": "national_carrier",
+   "aka": [
+    "케이티",
+    "Korea Telecom",
+    "한국통신",
+    "KORNET",
+    "olleh",
+    "KTF"
+   ],
+   "asns": [
+    {
+     "asn": 4766,
+     "rir": "apnic"
+    },
+    {
+     "asn": 3559,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.kt.com/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS4766 is KORNET."
+  },
+  {
+   "name": "SK브로드밴드",
+   "slug": "sk-broadband",
+   "kind": "national_carrier",
+   "aka": [
+    "SK Broadband",
+    "SKB",
+    "SK broadband",
+    "Hanaro Telecom",
+    "하나로텔레콤",
+    "Tbroad",
+    "티브로드",
+    "B tv"
+   ],
+   "asns": [
+    {
+     "asn": 9318,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9277,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.skbroadband.com/",
+   "support_url": null,
+   "notes": "Fixed arm of the SK group. AS9277 came with the cable operator Tbroad, merged in 2020."
+  },
+  {
+   "name": "LG유플러스",
+   "slug": "lg-uplus",
+   "kind": "national_carrier",
+   "aka": [
+    "LG U+",
+    "LG Uplus",
+    "LG Dacom",
+    "LG데이콤",
+    "Dacom",
+    "LG Powercomm",
+    "LG파워콤",
+    "LG Telecom",
+    "BORANET"
+   ],
+   "asns": [
+    {
+     "asn": 3786,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17858,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed and mobile. The AS numbers are still registered under the former names LG Dacom and LG Powercomm."
+  },
+  {
+   "name": "SK텔레콤",
+   "slug": "sk-telecom",
+   "kind": "mobile",
+   "aka": [
+    "SK Telecom",
+    "SKT",
+    "T world"
+   ],
+   "asns": [
+    {
+     "asn": 9644,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.sktelecom.com/",
+   "support_url": null,
+   "notes": "Mobile; fixed services are sold through SK Broadband."
+  },
+  {
+   "name": "LG헬로비전",
+   "slug": "lg-hellovision",
+   "kind": "cable_fibre",
+   "aka": [
+    "LG HelloVision",
+    "CJ Hello",
+    "CJ헬로",
+    "CJ HelloVision",
+    "CJ헬로비전",
+    "헬로넷"
+   ],
+   "asns": [
+    {
+     "asn": 9845,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38091,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17839,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.lghellovision.net/",
+   "support_url": null,
+   "notes": "Cable; LG U+ group since 2019."
+  },
+  {
+   "name": "딜라이브",
+   "slug": "dlive",
+   "kind": "cable_fibre",
+   "aka": [
+    "D'LIVE",
+    "DLIVE",
+    "C&M",
+    "씨앤앰"
+   ],
+   "asns": [
+    {
+     "asn": 10036,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.dlive.kr/",
+   "support_url": null,
+   "notes": "Cable, Seoul area."
+  },
+  {
+   "name": "HCN",
+   "slug": "hcn",
+   "kind": "cable_fibre",
+   "aka": [
+    "kt HCN",
+    "KT HCN",
+    "현대HCN",
+    "Hyundai HCN"
+   ],
+   "asns": [
+    {
+     "asn": 9762,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable; KT group since 2021."
+  },
+  {
+   "name": "CMB",
+   "slug": "cmb",
+   "kind": "cable_fibre",
+   "aka": [
+    "씨엠비"
+   ],
+   "asns": [
+    {
+     "asn": 38680,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.cmb.co.kr/",
+   "support_url": null,
+   "notes": "Cable. Its regional systems hold AS numbers of their own, which are not listed."
+  },
+  {
+   "name": "세종텔레콤",
+   "slug": "sejong-telecom",
+   "kind": "business_isp",
+   "aka": [
+    "Sejong Telecom",
+    "Sejong Networks",
+    "세종네트웍스",
+    "Onse Telecom",
+    "온세텔레콤"
+   ],
+   "asns": [
+    {
+     "asn": 9848,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Business lines and wholesale."
+  },
+  {
+   "name": "드림라인",
+   "slug": "dreamline",
+   "kind": "business_isp",
+   "aka": [
+    "Dreamline",
+    "DREAMLINE",
+    "DreamX"
+   ],
+   "asns": [
+    {
+     "asn": 9457,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Leased lines and wholesale."
+  },
+  {
+   "name": "KINX",
+   "slug": "kinx",
+   "kind": "business_isp",
+   "aka": [
+    "케이아이엔엑스",
+    "Korea Internet Neutral Exchange"
+   ],
+   "asns": [
+    {
+     "asn": 9286,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.kinx.net/",
+   "support_url": null,
+   "notes": "Carrier-neutral exchange, data centres and transit."
+  },
+  {
+   "name": "KREONET",
+   "slug": "kreonet",
+   "kind": "research_education",
+   "aka": [
+    "Korea Research Environment Open Network",
+    "국가과학기술연구망",
+    "KISTI",
+    "크레오넷"
+   ],
+   "asns": [
+    {
+     "asn": 1237,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17579,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.kreonet.net/",
+   "support_url": null,
+   "notes": "The national research network, run by KISTI."
+  },
+  {
+   "name": "KOREN",
+   "slug": "koren",
+   "kind": "research_education",
+   "aka": [
+    "Korea Advanced Research Network",
+    "미래네트워크선도시험망",
+    "NIA",
+    "APAN-KR"
+   ],
+   "asns": [
+    {
+     "asn": 9270,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Research test-bed network of the National Information Society Agency."
+  }
+ ]
+}

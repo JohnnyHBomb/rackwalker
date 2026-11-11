@@ -1,0 +1,335 @@
+{
+ "pack": "providers",
+ "id": "providers-tw",
+ "version": "1.0.0",
+ "country": "TW",
+ "title": "Common providers: Taiwan",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the three national carriers (which are also the three mobile network operators since the mergers of 2023) and the academic networks; cable operators and business ISPs are partial.",
+ "missing": [
+  "Regional cable operators outside the three largest groups",
+  "Smaller business ISPs",
+  "AS numbers for 中嘉寬頻 (Homeplus) and 是方電訊 (Chief Telecom): none confirmed; AS17408, which Chief maintains, is registered to AboveNet Communications Taiwan",
+  "Websites of 台灣寬頻通訊 (TBC) and TANet (neither answered an automated check on the read date)",
+  "Status pages (none was checked)"
+ ],
+ "sources": [
+  {
+   "name": "National Communications Commission (NCC)",
+   "url": "https://www.ncc.gov.tw/",
+   "read": "2026-11-11",
+   "terms": "The site refused an automated request on the read date (HTTP 403) and its terms were not read: nothing is copied.",
+   "use": "cited",
+   "result": "Not read. It is the authority to consult for the registered telecommunications enterprises this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Taiwan",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Taiwan",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "4 of 11 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Wikipedia: Telecommunications in Taiwan",
+   "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Taiwan",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "3 of 11 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "9 of 11 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "16 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "APNIC RDAP (the registry's own record of an AS number)",
+   "url": "https://rdap.apnic.net/",
+   "read": "2026-11-11",
+   "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+   "use": "cross-check",
+   "result": "Read where the holder name in RIPEstat did not name the provider plainly."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "中華電信",
+   "slug": "chunghwa-telecom",
+   "kind": "national_carrier",
+   "aka": [
+    "Chunghwa Telecom",
+    "CHT",
+    "HiNet",
+    "emome",
+    "TWGate"
+   ],
+   "asns": [
+    {
+     "asn": 3462,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9505,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17421,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9680,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.cht.com.tw/",
+   "support_url": null,
+   "notes": "Fixed and mobile; HiNet is its internet service. AS9505 is TWGate, its international gateway."
+  },
+  {
+   "name": "台灣大哥大",
+   "slug": "taiwan-mobile",
+   "kind": "national_carrier",
+   "aka": [
+    "Taiwan Mobile",
+    "TWM",
+    "台灣固網",
+    "Taiwan Fixed Network",
+    "TFN",
+    "台灣之星",
+    "Taiwan Star Telecom",
+    "T Star",
+    "大大寬頻"
+   ],
+   "asns": [
+    {
+     "asn": 24158,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9924,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.taiwanmobile.com/",
+   "support_url": null,
+   "notes": "Mobile and fixed (AS9924 is Taiwan Fixed Network). Took over Taiwan Star Telecom in December 2023."
+  },
+  {
+   "name": "遠傳電信",
+   "slug": "far-eastone",
+   "kind": "national_carrier",
+   "aka": [
+    "Far EasTone",
+    "FET",
+    "FETnet",
+    "新世紀資通",
+    "New Century InfoComm",
+    "NCIC",
+    "Sparq",
+    "速博",
+    "Seednet",
+    "Digital United",
+    "亞太電信",
+    "Asia Pacific Telecom",
+    "APT",
+    "Gt"
+   ],
+   "asns": [
+    {
+     "asn": 9674,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9919,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4780,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17709,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.fetnet.net/",
+   "support_url": null,
+   "notes": "Mobile and fixed. AS9919 and AS4780 (Seednet) are its fixed arm New Century InfoComm; AS17709 came with Asia Pacific Telecom, merged in December 2023."
+  },
+  {
+   "name": "凱擘大寬頻",
+   "slug": "kbro",
+   "kind": "cable_fibre",
+   "aka": [
+    "kbro",
+    "凱擘",
+    "Kbro Broadband"
+   ],
+   "asns": [
+    {
+     "asn": 38841,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.kbro.com.tw/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "中嘉寬頻",
+   "slug": "homeplus",
+   "kind": "cable_fibre",
+   "aka": [
+    "Homeplus",
+    "Home+",
+    "中嘉",
+    "CNS",
+    "China Network Systems",
+    "bb寬頻"
+   ],
+   "asns": [],
+   "website": "https://www.homeplus.net.tw/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "台灣寬頻通訊",
+   "slug": "tbc",
+   "kind": "cable_fibre",
+   "aka": [
+    "TBC",
+    "Taiwan Broadband Communications"
+   ],
+   "asns": [
+    {
+     "asn": 131596,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "台灣智慧光網",
+   "slug": "taifo",
+   "kind": "cable_fibre",
+   "aka": [
+    "Taifo",
+    "Taiwan Intelligent Fiber Optic Network",
+    "TIFO"
+   ],
+   "asns": [
+    {
+     "asn": 131584,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.taifo.com.tw/",
+   "support_url": null,
+   "notes": "Fibre network in Taipei."
+  },
+  {
+   "name": "是方電訊",
+   "slug": "chief-telecom",
+   "kind": "business_isp",
+   "aka": [
+    "Chief Telecom",
+    "Chief",
+    "是方"
+   ],
+   "asns": [],
+   "website": "https://www.chief.com.tw/",
+   "support_url": null,
+   "notes": "Carrier-neutral data centres, exchange and business lines."
+  },
+  {
+   "name": "So-net",
+   "slug": "so-net-tw",
+   "kind": "business_isp",
+   "aka": [
+    "So-net Taiwan",
+    "台灣碩網",
+    "Sony Network Taiwan",
+    "So-net Entertainment Taiwan"
+   ],
+   "asns": [
+    {
+     "asn": 18182,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.so-net.net.tw/",
+   "support_url": null,
+   "notes": "ISP; AS18182 is registered under the name Sony Network Taiwan."
+  },
+  {
+   "name": "TANet",
+   "slug": "tanet",
+   "kind": "research_education",
+   "aka": [
+    "臺灣學術網路",
+    "台灣學術網路",
+    "Taiwan Academic Network"
+   ],
+   "asns": [
+    {
+     "asn": 1659,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "The academic network of the Ministry of Education."
+  },
+  {
+   "name": "TWAREN",
+   "slug": "twaren",
+   "kind": "research_education",
+   "aka": [
+    "臺灣高品質學術研究網路",
+    "Taiwan Advanced Research and Education Network",
+    "NCHC",
+    "國家高速網路與計算中心"
+   ],
+   "asns": [
+    {
+     "asn": 7539,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.twaren.net/",
+   "support_url": null,
+   "notes": "Research network run by the National Center for High-performance Computing."
+  }
+ ]
+}

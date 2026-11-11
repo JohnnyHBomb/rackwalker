@@ -1,0 +1,362 @@
+{
+ "pack": "providers",
+ "id": "providers-hk",
+ "version": "1.0.0",
+ "country": "HK",
+ "title": "Common providers: Hong Kong",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the fixed carriers, the four mobile network operators, cable and the Hong Kong arms of the mainland carriers; business ISPs and data-centre networks are partial.",
+ "missing": [
+  "Smaller business ISPs and data-centre networks",
+  "Regional and international carriers that hold a Hong Kong licence but are seldom the local access provider",
+  "Websites of HGC, SmarTone and China Mobile Hong Kong (each refused an automated request on the read date)",
+  "Status pages (none was checked)"
+ ],
+ "sources": [
+  {
+   "name": "Communications Authority (OFCA): online enquiry of telecommunications licences",
+   "url": "https://app2.coms-auth.hk/apps/lic_search/onlineEnquiry?lang=en",
+   "read": "2026-11-11",
+   "terms": "The register is an interactive enquiry and its terms of reuse were not found on the read date: nothing is copied.",
+   "use": "cited",
+   "result": "The licensing page of the Authority names this enquiry as the list of carrier licensees. It was not queried; it is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Communications in Hong Kong",
+   "url": "https://en.wikipedia.org/wiki/Communications_in_Hong_Kong",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "8 of 13 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "10 of 13 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "18 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "APNIC RDAP (the registry's own record of an AS number)",
+   "url": "https://rdap.apnic.net/",
+   "read": "2026-11-11",
+   "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+   "use": "cross-check",
+   "result": "Read where the holder name in RIPEstat did not name the provider plainly."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "HKT",
+   "slug": "hkt",
+   "kind": "national_carrier",
+   "aka": [
+    "PCCW",
+    "PCCW-HKT",
+    "香港電訊",
+    "電訊盈科",
+    "Netvigator",
+    "網上行",
+    "csl",
+    "CSL",
+    "1O1O",
+    "Hong Kong Telecom",
+    "PCCW IMS"
+   ],
+   "asns": [
+    {
+     "asn": 4760,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4515,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38819,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.hkt.com/",
+   "support_url": null,
+   "notes": "Fixed and mobile (csl, 1O1O). AS4515 is its business internet service and AS38819 is the CSL mobile network. PCCW Global is in the international pack."
+  },
+  {
+   "name": "HKBN",
+   "slug": "hkbn",
+   "kind": "national_carrier",
+   "aka": [
+    "Hong Kong Broadband Network",
+    "香港寬頻",
+    "HKBN Enterprise Solutions",
+    "香港寬頻企業方案",
+    "WTT",
+    "Wharf T&T",
+    "九倉電訊",
+    "City Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 9269,
+     "rir": "apnic"
+    },
+    {
+     "asn": 10103,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9381,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17444,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.hkbn.net/",
+   "support_url": null,
+   "notes": "AS9381 and AS17444 are HKBN Enterprise Solutions, the business arm (formerly WTT and Wharf T&T)."
+  },
+  {
+   "name": "HGC",
+   "slug": "hgc",
+   "kind": "national_carrier",
+   "aka": [
+    "HGC Global Communications",
+    "環球全域電訊",
+    "Hutchison Global Communications",
+    "和記環球電訊"
+   ],
+   "asns": [
+    {
+     "asn": 9304,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed network and wholesale; Hutchison Global Communications until 2017."
+  },
+  {
+   "name": "3 Hong Kong",
+   "slug": "three-hk",
+   "kind": "mobile",
+   "aka": [
+    "3",
+    "3HK",
+    "3香港",
+    "Hutchison Telephone",
+    "Hutchison Telecommunications Hong Kong",
+    "和記電訊"
+   ],
+   "asns": [
+    {
+     "asn": 10118,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.three.com.hk/",
+   "support_url": null,
+   "notes": "Mobile."
+  },
+  {
+   "name": "SmarTone",
+   "slug": "smartone",
+   "kind": "mobile",
+   "aka": [
+    "數碼通",
+    "SmarTone Mobile Communications"
+   ],
+   "asns": [
+    {
+     "asn": 17924,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Mobile and fixed wireless."
+  },
+  {
+   "name": "China Mobile Hong Kong",
+   "slug": "china-mobile-hk",
+   "kind": "mobile",
+   "aka": [
+    "CMHK",
+    "中國移動香港",
+    "PEOPLES",
+    "China Mobile Peoples Telephone"
+   ],
+   "asns": [
+    {
+     "asn": 9231,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Mobile and fibre broadband."
+  },
+  {
+   "name": "i-CABLE",
+   "slug": "i-cable",
+   "kind": "cable_fibre",
+   "aka": [
+    "有線寬頻",
+    "Hong Kong Cable Television",
+    "香港有線電視",
+    "HK Cable TV",
+    "i-Cable Communications"
+   ],
+   "asns": [
+    {
+     "asn": 9908,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.i-cable.com/",
+   "support_url": null,
+   "notes": "Cable broadband."
+  },
+  {
+   "name": "CITIC Telecom CPC",
+   "slug": "citic-telecom-cpc",
+   "kind": "business_isp",
+   "aka": [
+    "中信國際電訊CPC",
+    "CITIC Telecom International CPC",
+    "CPCNet"
+   ],
+   "asns": [
+    {
+     "asn": 4058,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.citictel-cpc.com/",
+   "support_url": null,
+   "notes": "Business networks across Hong Kong and mainland China."
+  },
+  {
+   "name": "Towngas Telecom",
+   "slug": "towngas-telecom",
+   "kind": "wholesale",
+   "aka": [
+    "TGT",
+    "名氣通",
+    "Towngas Telecommunications Fixed Network"
+   ],
+   "asns": [
+    {
+     "asn": 10098,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.towngastelecom.com/",
+   "support_url": null,
+   "notes": "Fibre network and data centres; mostly wholesale and business."
+  },
+  {
+   "name": "China Telecom Global",
+   "slug": "china-telecom-global",
+   "kind": "business_isp",
+   "aka": [
+    "CTG",
+    "CTGNet",
+    "中國電信國際"
+   ],
+   "asns": [
+    {
+     "asn": 23764,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.chinatelecomglobal.com/",
+   "support_url": null,
+   "notes": "International arm of China Telecom (China pack), based in Hong Kong."
+  },
+  {
+   "name": "China Unicom Global",
+   "slug": "china-unicom-global",
+   "kind": "business_isp",
+   "aka": [
+    "CUG",
+    "中國聯通國際",
+    "China Unicom (Hong Kong) Operations"
+   ],
+   "asns": [
+    {
+     "asn": 10099,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.chinaunicomglobal.com/",
+   "support_url": null,
+   "notes": "International arm of China Unicom (China pack), based in Hong Kong."
+  },
+  {
+   "name": "China Mobile International",
+   "slug": "china-mobile-international",
+   "kind": "business_isp",
+   "aka": [
+    "CMI",
+    "中國移動國際"
+   ],
+   "asns": [
+    {
+     "asn": 58453,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.cmi.chinamobile.com/",
+   "support_url": null,
+   "notes": "International arm of China Mobile (China pack), based in Hong Kong."
+  },
+  {
+   "name": "HARNET",
+   "slug": "harnet",
+   "kind": "research_education",
+   "aka": [
+    "Hong Kong Academic and Research Network",
+    "JUCC",
+    "Joint Universities Computer Centre",
+    "大學聯合電腦中心"
+   ],
+   "asns": [
+    {
+     "asn": 3662,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.jucc.edu.hk/",
+   "support_url": null,
+   "notes": "The academic and research network of the universities, run by JUCC."
+  }
+ ]
+}

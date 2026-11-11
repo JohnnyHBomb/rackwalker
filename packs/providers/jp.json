@@ -1,0 +1,529 @@
+{
+ "pack": "providers",
+ "id": "providers-jp",
+ "version": "1.0.0",
+ "country": "JP",
+ "title": "Common providers: Japan",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the four mobile network operators, the main cable operator and the regional power-company fibre carriers; business ISPs are partial.",
+ "missing": [
+  "Local cable television operators (several hundred)",
+  "Smaller business ISPs and the retail ISP brands that resell NTT fibre access",
+  "An AS number for NTT West (none confirmed)",
+  "An announced AS number for NTT East (AS17933 is registered to it and was not announced on the read date)",
+  "HTNet, the Hokuriku regional carrier (no AS number confirmed)",
+  "Status pages (none was checked)"
+ ],
+ "sources": [
+  {
+   "name": "Ministry of Internal Affairs and Communications (MIC): telecommunications carriers data",
+   "url": "https://www.soumu.go.jp/johotsusintokei/field/tsuushin04.html",
+   "read": "2026-11-11",
+   "terms": "The ministry site states the Public Data License 1.0 (reuse with the source named). The page gives counts of carriers, not a register of names: nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. A public register of carrier names was not found in the time given; the ministry is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in Japan",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Japan",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 22 entries were found on the page under their name or one of their other names."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "22 of 22 websites answered an automated check; an address that did not answer, or that refused an automated request, is left empty. No support or status page was checked."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+   "use": "cross-check",
+   "result": "23 AS numbers confirmed; a number whose registered holder was another company or an unrelated name was left out."
+  },
+  {
+   "name": "APNIC RDAP (the registry's own record of an AS number)",
+   "url": "https://rdap.apnic.net/",
+   "read": "2026-11-11",
+   "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+   "use": "cross-check",
+   "result": "Read where the holder name in RIPEstat did not name the provider plainly."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "NTT東日本",
+   "slug": "ntt-east",
+   "kind": "national_carrier",
+   "aka": [
+    "NTT East",
+    "Nippon Telegraph and Telephone East",
+    "東日本電信電話",
+    "FLET'S",
+    "フレッツ"
+   ],
+   "asns": [
+    {
+     "asn": 17933,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.ntt-east.co.jp/",
+   "support_url": null,
+   "notes": "Fixed access in eastern Japan (FLET'S); internet service usually comes from a separate ISP. AS17933 is registered to it and was not announced on the read date."
+  },
+  {
+   "name": "NTT西日本",
+   "slug": "ntt-west",
+   "kind": "national_carrier",
+   "aka": [
+    "NTT West",
+    "Nippon Telegraph and Telephone West",
+    "西日本電信電話",
+    "FLET'S",
+    "フレッツ"
+   ],
+   "asns": [],
+   "website": "https://www.ntt-west.co.jp/",
+   "support_url": null,
+   "notes": "Fixed access in western Japan (FLET'S); internet service usually comes from a separate ISP."
+  },
+  {
+   "name": "NTTドコモビジネス",
+   "slug": "ntt-docomo-business",
+   "kind": "business_isp",
+   "aka": [
+    "NTT DOCOMO BUSINESS",
+    "NTT Communications",
+    "NTTコミュニケーションズ",
+    "NTT Com",
+    "OCN",
+    "Arcstar"
+   ],
+   "asns": [
+    {
+     "asn": 4713,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.ntt.com/",
+   "support_url": null,
+   "notes": "NTT Communications until July 2025. AS4713 is OCN, the domestic network; the global backbone is NTT Global IP Network (international pack)."
+  },
+  {
+   "name": "KDDI",
+   "slug": "kddi",
+   "kind": "national_carrier",
+   "aka": [
+    "au",
+    "au one net",
+    "auひかり",
+    "DION",
+    "KDDI株式会社"
+   ],
+   "asns": [
+    {
+     "asn": 2516,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.kddi.com/",
+   "support_url": null,
+   "notes": "Fixed and mobile (au)."
+  },
+  {
+   "name": "ソフトバンク",
+   "slug": "softbank",
+   "kind": "national_carrier",
+   "aka": [
+    "SoftBank",
+    "SoftBank Corp.",
+    "Y!mobile",
+    "ワイモバイル",
+    "Yahoo! BB",
+    "ODN",
+    "SoftBank Telecom",
+    "Japan Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 17676,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4725,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.softbank.jp/",
+   "support_url": null,
+   "notes": "Fixed and mobile. AS4725 is ODN, the former Japan Telecom network."
+  },
+  {
+   "name": "NTTドコモ",
+   "slug": "ntt-docomo",
+   "kind": "mobile",
+   "aka": [
+    "NTT DOCOMO",
+    "docomo",
+    "ドコモ",
+    "ドコモ光"
+   ],
+   "asns": [
+    {
+     "asn": 9605,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.docomo.ne.jp/",
+   "support_url": null,
+   "notes": "Mobile; also retails fibre over the NTT East and NTT West access networks."
+  },
+  {
+   "name": "楽天モバイル",
+   "slug": "rakuten-mobile",
+   "kind": "mobile",
+   "aka": [
+    "Rakuten Mobile",
+    "Rakuten Mobile Network",
+    "楽天ひかり"
+   ],
+   "asns": [
+    {
+     "asn": 138384,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://network.mobile.rakuten.co.jp/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "IIJ",
+   "slug": "iij",
+   "kind": "business_isp",
+   "aka": [
+    "Internet Initiative Japan",
+    "インターネットイニシアティブ",
+    "IIJmio"
+   ],
+   "asns": [
+    {
+     "asn": 2497,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.iij.ad.jp/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "アルテリア・ネットワークス",
+   "slug": "arteria-networks",
+   "kind": "business_isp",
+   "aka": [
+    "ARTERIA Networks",
+    "ARTERIA",
+    "アルテリア",
+    "UCOM",
+    "VECTANT",
+    "Marubeni Access Solutions"
+   ],
+   "asns": [
+    {
+     "asn": 17506,
+     "rir": "apnic"
+    },
+    {
+     "asn": 2519,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.arteria-net.com/",
+   "support_url": null,
+   "notes": "Business fibre and apartment-block networks. AS17506 was UCOM and AS2519 was VECTANT."
+  },
+  {
+   "name": "J:COM",
+   "slug": "jcom",
+   "kind": "cable_fibre",
+   "aka": [
+    "JCOM",
+    "ジェイコム",
+    "Jupiter Telecommunications",
+    "ジュピターテレコム"
+   ],
+   "asns": [
+    {
+     "asn": 9824,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.jcom.co.jp/",
+   "support_url": null,
+   "notes": "The largest cable operator."
+  },
+  {
+   "name": "ソニーネットワークコミュニケーションズ",
+   "slug": "sony-network-communications",
+   "kind": "cable_fibre",
+   "aka": [
+    "Sony Network Communications",
+    "So-net",
+    "ソネット",
+    "NURO",
+    "NURO 光",
+    "NURO Biz"
+   ],
+   "asns": [
+    {
+     "asn": 2527,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.sonynetwork.co.jp/",
+   "support_url": null,
+   "notes": "NURO fibre and the So-net ISP."
+  },
+  {
+   "name": "オプテージ",
+   "slug": "optage",
+   "kind": "cable_fibre",
+   "aka": [
+    "OPTAGE",
+    "eo光",
+    "eo",
+    "K-OPTI.COM",
+    "ケイ・オプティコム",
+    "mineo"
+   ],
+   "asns": [
+    {
+     "asn": 17511,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://optage.co.jp/",
+   "support_url": null,
+   "notes": "Kansai region; Kansai Electric Power group."
+  },
+  {
+   "name": "中部テレコミュニケーション",
+   "slug": "ctc-chubu",
+   "kind": "cable_fibre",
+   "aka": [
+    "ctc",
+    "Chubu Telecommunications",
+    "コミュファ光",
+    "commufa"
+   ],
+   "asns": [
+    {
+     "asn": 18126,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.ctc.co.jp/",
+   "support_url": null,
+   "notes": "Chubu region; KDDI group."
+  },
+  {
+   "name": "QTnet",
+   "slug": "qtnet",
+   "kind": "cable_fibre",
+   "aka": [
+    "QTNET",
+    "九州通信ネットワーク",
+    "BBIQ",
+    "QTPRO"
+   ],
+   "asns": [
+    {
+     "asn": 7679,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.qtnet.co.jp/",
+   "support_url": null,
+   "notes": "Kyushu region; Kyushu Electric Power group."
+  },
+  {
+   "name": "エネコム",
+   "slug": "enecom",
+   "kind": "cable_fibre",
+   "aka": [
+    "Enecom",
+    "Energia Communications",
+    "エネルギア・コミュニケーションズ",
+    "メガ・エッグ",
+    "MEGA EGG"
+   ],
+   "asns": [
+    {
+     "asn": 18144,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.enecom.co.jp/",
+   "support_url": null,
+   "notes": "Chugoku region; Chugoku Electric Power group."
+  },
+  {
+   "name": "STNet",
+   "slug": "stnet",
+   "kind": "cable_fibre",
+   "aka": [
+    "STネット",
+    "ピカラ",
+    "Pikara"
+   ],
+   "asns": [
+    {
+     "asn": 7522,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.stnet.co.jp/",
+   "support_url": null,
+   "notes": "Shikoku region; Shikoku Electric Power group."
+  },
+  {
+   "name": "TOHKnet",
+   "slug": "tohknet",
+   "kind": "business_isp",
+   "aka": [
+    "トークネット",
+    "東北インテリジェント通信",
+    "Tohoku Intelligent Telecommunication"
+   ],
+   "asns": [
+    {
+     "asn": 7516,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.tohknet.co.jp/",
+   "support_url": null,
+   "notes": "Tohoku region, business services; Tohoku Electric Power group."
+  },
+  {
+   "name": "HOTnet",
+   "slug": "hotnet",
+   "kind": "business_isp",
+   "aka": [
+    "北海道総合通信網",
+    "Hokkaido Telecommunication Network"
+   ],
+   "asns": [
+    {
+     "asn": 7682,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.hotnet.co.jp/",
+   "support_url": null,
+   "notes": "Hokkaido, business services; Hokkaido Electric Power group."
+  },
+  {
+   "name": "BIGLOBE",
+   "slug": "biglobe",
+   "kind": "business_isp",
+   "aka": [
+    "ビッグローブ",
+    "BIGLOBE光"
+   ],
+   "asns": [
+    {
+     "asn": 2518,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.biglobe.ne.jp/",
+   "support_url": null,
+   "notes": "KDDI group ISP."
+  },
+  {
+   "name": "NTTPCコミュニケーションズ",
+   "slug": "nttpc",
+   "kind": "business_isp",
+   "aka": [
+    "NTT PC Communications",
+    "NTTPC",
+    "InfoSphere",
+    "Master'sONE"
+   ],
+   "asns": [
+    {
+     "asn": 2514,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.nttpc.co.jp/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "朝日ネット",
+   "slug": "asahi-net",
+   "kind": "business_isp",
+   "aka": [
+    "Asahi Net",
+    "ASAHIネット",
+    "ASAHI-NET"
+   ],
+   "asns": [
+    {
+     "asn": 4685,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://asahi-net.co.jp/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "SINET",
+   "slug": "sinet",
+   "kind": "research_education",
+   "aka": [
+    "Science Information Network",
+    "学術情報ネットワーク",
+    "NII",
+    "National Institute of Informatics",
+    "国立情報学研究所"
+   ],
+   "asns": [
+    {
+     "asn": 2907,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.sinet.ad.jp/",
+   "support_url": null,
+   "notes": "The national research and education network, run by the National Institute of Informatics."
+  }
+ ]
+}
