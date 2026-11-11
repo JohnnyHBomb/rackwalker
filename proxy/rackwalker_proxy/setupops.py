@@ -30,7 +30,7 @@ from typing import Any
 
 from . import netbox as nb
 from . import packs
-from .country import NAMES as COUNTRY_NAMES
+from .country import NAMES as COUNTRY_NAMES, name_of as country_name_of
 from .errors import ApiError
 
 SETUP_OPS = ("create_site", "create_provider", "create_circuit_type", "add_device_type", "add_module_type", "create_device",
@@ -60,9 +60,7 @@ ROLE_COLOURS = {"router": "9c27b0", "switch": "2196f3", "firewall": "f44336", "s
 MAX_IMPORTS = 8        # models read from the library for one change set (a quest line imports at most three)
 # A device in one of these states has left service: its serial may be recorded again on the record that replaces it.
 RETIRED = ("decommissioning", "inventory", "offline", "failed")
-COUNTRY_OF = {"GB": "United Kingdom", "NL": "Netherlands", "US": "United States", "DE": "Germany", "FR": "France", "IE": "Ireland"}
-for _name, _code in COUNTRY_NAMES.items():
-    COUNTRY_OF.setdefault(_code, _name.title())
+COUNTRY_OF: dict[str, str] = {_code: country_name_of(_code) or _code for _code in sorted(set(COUNTRY_NAMES.values()))}
 
 
 def _v(x: Any) -> Any:

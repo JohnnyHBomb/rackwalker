@@ -189,8 +189,15 @@ name or with the same AS number, is that provider: it is used, and never made tw
 script and with their spacing left out ("AT & T" is "AT&T"; "МТС" is not "Ростелеком"). Where NetBox holds one
 network under two names (two providers with one AS number) and neither is the pack's name, the line asks which.
 A site with no country on record, or in a country with no pack yet, says so and offers the search.
+The search shows the site's own country first, then the international names, then other countries with their code;
+[`docs/packs.md`](packs.md#how-the-game-finds-a-provider-among-fifty-packs) has the rules.
 
 ![The provider pack of the site's country offers its providers by name](screenshots/setup/provider-choice.png)
+
+In a country whose providers trade under names in another script, the choices are those names as they stand on the
+bill; the search finds them by their Latin names too.
+
+![A site in Japan: the Japan pack's providers under the names they trade by](screenshots/setup/provider-choice-jp.png)
 
 **"What is this box?"** You type what is printed on the box: the model, the part number, or part of either; what a
 label adds (an order suffix, "-EU", "V05", the word "Series") is let go when nothing else matches. The

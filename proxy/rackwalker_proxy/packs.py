@@ -32,6 +32,7 @@ import httpx
 from jsonschema import Draft202012Validator
 from referencing import Registry, Resource
 
+from .country import ISO_CODES
 from .errors import ApiError
 
 log = logging.getLogger("rackwalker_proxy.packs")
@@ -150,8 +151,8 @@ def _strings(node: Any) -> list[str]:
 
 def validate(root: Path | None = None) -> list[str]:
     """Everything wrong with the packs under `root`, one line each ([] = all good). Checks the schema of every file,
-    and what a schema cannot say: ids used once, a slug and an AS number once per pack, the file name against the
-    country, a thin pack that says what it lacks, no phone number or mail address anywhere in a provider pack, a
+    and what a schema cannot say: ids used once, a slug and an AS number once per pack, an AS number under one registry
+    in every pack that lists it, the file name against the country, a country code that is an assigned one, a thin pack that says what it lacks, no phone number or mail address anywhere in a provider pack, a
     device index that is the file its pack names (size, SHA-256, counts, every row whole), and serial rules that
     compile and carry their source."""
     root = root or packs_dir()
@@ -164,6 +165,7 @@ def validate(root: Path | None = None) -> list[str]:
         return [f"schema: the pack schemas could not be read ({type(err).__name__}); the proxy log names the file"]
     ids: dict[str, str] = {}
     countries: dict[str | None, str] = {}
+    registries: dict[int, tuple[str, str]] = {}
     found = 0
     for kind in KINDS:
         for path in sorted((root / kind).glob("*.json")):
@@ -184,7 +186,7 @@ def validate(root: Path | None = None) -> list[str]:
             if doc["partial"] and not doc["missing"]:
                 out.append(f"{rel}: a partial pack says what it lacks (`missing` is empty)")
             if kind == "providers":
-                out += [f"{rel}: {m}" for m in _check_providers(doc, path, countries)]
+                out += [f"{rel}: {m}" for m in _check_providers(doc, path, countries, registries)]
             elif kind == "devices":
                 out += [f"{rel}: {m}" for m in _check_devices(doc, path)]
             else:
@@ -195,8 +197,10 @@ def validate(root: Path | None = None) -> list[str]:
     return out
 
 
-def _check_providers(doc: dict[str, Any], path: Path, countries: dict[str | None, str]) -> list[str]:
+def _check_providers(doc: dict[str, Any], path: Path, countries: dict[str | None, str], registries: dict[int, tuple[str, str]]) -> list[str]:
     out = []
+    if doc["country"] is not None and doc["country"] not in ISO_CODES:
+        out.append(f"{doc['country']} is not an assigned ISO 3166-1 alpha-2 country code")
     want = "international" if doc["country"] is None else doc["country"].lower()
     if path.stem != want or doc["id"] != f"providers-{want}":
         out.append(f"a pack for {doc['country'] or 'no one country'} is the file {want}.json with the id providers-{want}")
@@ -217,6 +221,9 @@ def _check_providers(doc: dict[str, Any], path: Path, countries: dict[str | None
             if a["asn"] in asns:
                 out.append(f"AS{a['asn']} is on {asns[a['asn']]} and on {p['name']}: one AS number belongs to one provider of a pack")
             asns[a["asn"]] = p["name"]
+            held = registries.setdefault(a["asn"], (a["rir"], path.name))
+            if held[0] != a["rir"]:
+                out.append(f"AS{a['asn']} is under {a['rir']} here and under {held[0]} in {held[1]}: one registry holds an AS number")
     for s in _strings(doc):
         bare = _DATE.sub("", s)
         if _PHONE.search(bare):
@@ -344,10 +351,14 @@ class Packs:
 
     def search_providers(self, text: str, country: str | None = None, limit: int = 6) -> list[dict[str, Any]]:
         """Providers of every pack that a typed name could mean: by name, by another name they go by, by slug, or by AS
-        number ("AS2856", "2856"). The site's own country first; one entry per provider (a backbone name that several
-        packs list is offered once)."""
+        number ("AS2856", "2856"). The site's own country first, then the backbone names, then other countries; one
+        entry per network (a backbone name that several packs list is offered once, and two countries' networks of
+        one name are two entries)."""
         t, tt = norm(text), tight(text)
         digits = re.fullmatch(r"(?:as)?\s*(\d{1,10})", text.strip().lower())
+        # Two or three Latin letters are looked for at the start of a word only: in the middle of one they are in half
+        # the names of fifty countries ("ais" in Kaisanet). A script written without spaces is looked for anywhere.
+        inside = len(t) >= 4 or not t.isascii()
         hits: list[tuple[int, int, dict[str, Any]]] = []
         for n, p in enumerate(self.all_providers()):
             names = [norm(p["name"]), *(norm(a) for a in p["aka"]), p["slug"].replace("-", " ")]
@@ -359,6 +370,10 @@ class Packs:
                 score = None
             elif any(x.startswith(t) for x in names):
                 score = 1
+            elif any(w.startswith(t) for x in names for w in x.split()):
+                score = 2           # the start of a later word: "telekom" finds Deutsche Telekom
+            elif not inside:
+                score = None
             elif any(t in x for x in names):
                 score = 2
             elif all(any(w in x for x in names) for w in t.split()):
@@ -366,10 +381,10 @@ class Packs:
             else:
                 score = None
             if score is not None:
-                hits.append((score + (0 if p["country"] == country else 10 if p["country"] is None else 5), n, p))
+                hits.append((score + (0 if p["country"] == country else 5 if p["country"] is None else 10), n, p))
         out: list[dict[str, Any]] = []
         for _, _, p in sorted(hits, key=lambda h: h[:2]):
-            if not any(same_provider(p, q) for q in out):
+            if not any(same_network(p, q) for q in out):
                 out.append(p)
         return out[:limit]
 
@@ -410,6 +425,18 @@ def same_provider(a: dict[str, Any], b: dict[str, Any]) -> bool:
     """Two entries (of packs, or one of NetBox: `name`, `slug`, `asns` as numbers or as {asn}) are the same provider
     when their names or slugs are the same, or they share an AS number."""
     return same_name(a["name"], b["name"]) or _same_slug(a, b) or bool(_asns(a) & _asns(b))
+
+
+def same_network(a: dict[str, Any], b: dict[str, Any]) -> bool:
+    """Two pack entries (each with the `country` of its pack) that a search shows as one: they share an AS number, or
+    they are one name and one of them is a backbone name of the international pack. Two countries' entries of one
+    name with no AS number in common ("Telenet" in Belgium and in Latvia, "Vodafone" in two countries) are two
+    networks, and both are shown."""
+    if _asns(a) & _asns(b):
+        return True
+    if not (same_name(a["name"], b["name"]) or _same_slug(a, b)):
+        return False
+    return a.get("country") == b.get("country") or a.get("country") is None or b.get("country") is None
 
 
 def provider_matches(entry: dict[str, Any], existing: list[dict[str, Any]]) -> list[dict[str, Any]]:

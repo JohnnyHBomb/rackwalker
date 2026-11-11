@@ -41,12 +41,14 @@ refuses a provider pack that contains a phone number or a mail address.
 
 ## Provider packs
 
-First sweep: `gb`, `nl`, `us`, `de`, `fr`, `ie`, and `international` (the backbone names met on a transit bill in
-any country). Each provider has:
+There is a pack for 49 countries, and `international` (the backbone names met on a transit bill in any country).
+The first sweep made `gb`, `nl`, `us`, `de`, `fr` and `ie`; the second sweep added the rest of the European Union,
+the other large economies of Europe and the Americas, and the large economies of Asia and the Pacific
+([the list is below](#the-second-sweep)). Each provider has:
 
 | Field | |
 |---|---|
-| `name` | as the provider trades ("BT", not the registered company name) |
+| `name` | as the provider trades ("BT", not the registered company name). Where it trades in another script, the name is in that script ("ソフトバンク") and the Latin form is among `aka` |
 | `slug` | the NetBox slug it gets |
 | `kind` | `national_carrier`, `business_isp`, `cable_fibre`, `mobile`, `wholesale`, `satellite` or `research_education` (a national research and education network) |
 | `aka` | other names on a bill or a hand-off box: former names, the business brand, the group. Used for search and to match a provider NetBox already holds |
@@ -76,10 +78,95 @@ How the first sweep was made, on the read date in each file:
 * **Web addresses.** Each address was requested on the read date. One that did not answer (a site that refuses
   automated requests, a certificate that did not validate) is left empty rather than guessed.
 
-What is thin, by design: the United States and Ireland packs are marked `partial`. The US has many hundreds of
-regional telephone companies, co-operatives, municipal networks and wireless ISPs that are not listed; Ireland's
-fixed-wireless and smaller business ISPs are thin, and no AS number was confirmed for its wholesale fibre networks.
-"My provider is not listed" is always an answer: the name is recorded as you type it.
+What is thin, by design: of the first sweep, the United States and Ireland packs are marked `partial`. The US has
+many hundreds of regional telephone companies, co-operatives, municipal networks and wireless ISPs that are not
+listed; Ireland's fixed-wireless and smaller business ISPs are thin, and no AS number was confirmed for its wholesale
+fibre networks. The table below says the same for each partial pack of the second sweep. "My provider is not listed"
+is always an answer: the name is recorded as you type it.
+
+### The second sweep
+
+The second sweep added 43 countries, read on 2026-11-11: the rest of the European Union, Switzerland, Norway and
+Türkiye, Canada, Mexico and Brazil, and the large economies of Asia and the Pacific. 19 of them are marked `partial`.
+
+| Pack | Country | Providers | Partial, and why |
+|---|---|---|---|
+| `at` | Austria | 12 | **partial**: the many regional utility and municipal fibre networks and smaller cable operators are not listed; the regulator's directory was not read |
+| `au` | Australia | 13 | no |
+| `be` | Belgium | 16 | no |
+| `bg` | Bulgaria | 9 | **partial**: several hundred local cable and LAN providers are not listed and business ISPs are thin; the regulator's register is in Bulgarian and was not read; no AS number for Yettel Bulgaria |
+| `br` | Brazil | 20 | **partial**: Brazil has thousands of regional ISPs that are not listed; three websites did not answer |
+| `ca` | Canada | 16 | no |
+| `ch` | Switzerland | 13 | no |
+| `cn` | China (mainland) | 6 | **partial**: only the national backbones of the state carriers and the two academic networks: several hundred provincial AS numbers, regional cable and resellers are not listed, and the licence register could not be read |
+| `cy` | Cyprus | 6 | **partial**: smaller ISPs are not listed (the register is a search form and was not read), nor are the operators in the north of the island |
+| `cz` | Czechia | 11 | no |
+| `dk` | Denmark | 17 | no |
+| `ee` | Estonia | 9 | **partial**: wholesale networks and business ISPs are thin; the regulator's register was not read; no AS number for Tele2 Eesti |
+| `es` | Spain | 19 | no |
+| `fi` | Finland | 15 | no |
+| `gr` | Greece | 9 | **partial**: fibre newcomers, regional operators and business ISPs are thin; the regulator's register was not found on the pages read |
+| `hk` | Hong Kong | 13 | no |
+| `hr` | Croatia | 6 | no |
+| `hu` | Hungary | 9 | no |
+| `id` | Indonesia | 13 | **partial**: many hundreds of regional ISPs are not listed; the ministry's site refused an automated read |
+| `in` | India | 21 | **partial**: many hundreds of regional cable and fibre operators hold a licence and are not listed; three websites did not answer |
+| `it` | Italy | 17 | no |
+| `jp` | Japan | 22 | no |
+| `kr` | South Korea | 13 | no |
+| `lt` | Lithuania | 12 | **partial**: business ISPs and regional operators are thin; the regulator's list was not read; no AS number for Tele2 Lietuva |
+| `lu` | Luxembourg | 10 | **partial**: the regulator's list of notified operators was not found on the pages read; the communes' cable networks are not listed |
+| `lv` | Latvia | 8 | **partial**: cable, regional and business ISPs are thin; the regulator's register was not read |
+| `mt` | Malta | 5 | **partial**: the three network operators and one business ISP: the regulator's register was not found on the pages read |
+| `mx` | Mexico | 13 | **partial**: business ISPs and regional cable operators are thin; the state operator's pages did not answer; six websites did not answer |
+| `my` | Malaysia | 11 | no |
+| `no` | Norway | 9 | no |
+| `nz` | New Zealand | 13 | no |
+| `ph` | Philippines | 10 | **partial**: provincial cable operators and regional ISPs are not listed; the regulator's site refused an automated read |
+| `pl` | Poland | 17 | no |
+| `pt` | Portugal | 12 | no |
+| `ro` | Romania | 7 | **partial**: several hundred local networks are not listed and business ISPs are thin; the regulator's site failed the secure connection |
+| `se` | Sweden | 14 | no |
+| `sg` | Singapore | 10 | no |
+| `si` | Slovenia | 7 | no |
+| `sk` | Slovakia | 10 | no |
+| `th` | Thailand | 10 | **partial**: names are in Latin script only (no Thai-script name was confirmed against a source that may be copied); the regulator's site refused an automated read and is in Thai |
+| `tr` | Türkiye | 11 | **partial**: business ISPs and regional operators are thin; the regulator's list is an application that needs a browser and could not be read |
+| `tw` | Taiwan | 11 | no |
+| `vn` | Vietnam | 11 | **partial**: the long Vietnamese company names are not given (none was confirmed against a source that may be copied); the regulator's site did not answer |
+
+It was made by the method of the first sweep, with these differences:
+
+* **Which providers.** Only names a site admin in that country would plausibly see on a bill or a hand-off box:
+  the national carriers, the mobile network operators, the main cable and fibre operators, the main business ISPs,
+  the wholesale networks, the national research network. A pack is not filled up to a number: Malta has five entries
+  and Croatia six, because that is what was confirmed.
+* **Where information is sparse, the pack is smaller and says so.** A regulator's register that could not be read
+  as a list (a search form, an application that needs a browser, a site that refuses automated requests, a language
+  the sweep could not check a name in) is recorded as `cited` with the reason, and `missing` says what the pack
+  lacks because of it. No regulator's list was copied.
+* **AS numbers.** As before, each number was confirmed on the read date against a registry service: the registered
+  holder is the named provider (RIPEstat, and for some packs the RIPE Database or APNIC's RDAP record; all read
+  only), and the registry that holds it comes from the registries' joint delegated statistics. A number that could
+  not be confirmed is left out and named in `missing`. A number that is registered to the provider and was not
+  announced on the read date is left out too (CYNET, LuxConnect).
+* **Names in another script.** The Japan, South Korea, Taiwan, mainland China and Hong Kong packs give a provider
+  the name it trades under at home ("NTT東日本", "LG유플러스", "中華電信"), with the Latin form and former names in `aka`.
+  The Greece and Bulgaria packs use the Latin trading name and give the Greek or Cyrillic one in `aka`. The Thailand
+  and Vietnam packs have Latin names only, and say so in `missing`. Every slug is in Latin letters. The search finds
+  a provider by any of its names in any script, with or without accents, in full-width or half-width letters.
+* **Ownership changes** up to the read date are in `aka` and `notes` (One Magyarország, formerly Vodafone Hungary;
+  Norlys, formerly Telia Danmark; Telemach Hrvatska, formerly Tele2 Hrvatska).
+
+**One group, many countries.** A group that trades in several countries (Vodafone, Orange, Telia, Telenor, Tele2,
+A1, Deutsche Telekom's subsidiaries, DIGI) has an entry in each country's pack under the name it trades by there
+("Vodafone Portugal", "Orange Polska", "Magyar Telekom") with the AS numbers of that country's network; no AS number
+is shared between them. A network that is the same everywhere (Colt, Starlink, euNetworks) is the same entry, with
+the same slug and AS number, in each pack that lists it and in the international pack. The group's backbone is an
+entry of the international pack under its own name (Vodafone Carrier Services, Orange International Carriers,
+Arelion, Deutsche Telekom Global Carrier). Where a domestic network and the backbone trade under one name (Tata
+Communications: AS4755 in India, AS6453 abroad), the country's entry says so in `notes`. The validator refuses an
+AS number that two packs list under two registries.
 
 ### How a provider reaches NetBox
 
@@ -94,17 +181,39 @@ Choosing a provider proposes one op, `create_provider` (name, slug, AS numbers).
 In the way-out quest the provider is created in the same previewed change as its circuit (`create_circuit` may name
 `"@provider"`), and a NetBox with no circuit type yet gets one the same way (`create_circuit_type`).
 
+### How the game finds a provider among fifty packs
+
+* **The country of a site** is read from the custom field `iso_country`, from the site's region (its slug or name as
+  a two-letter code, or its name as a country's name) or from the last line of its address. The game knows the
+  English name of every country that has a pack, and some names a country uses for itself ("Türkiye", "España",
+  "Deutschland"); accents do not count. The first-site quest asks for the country as a typed name or code: with
+  fifty countries there is no short list that suits every player.
+* **The choices** of "Whose line is it?" are the providers NetBox holds, then the first six names of the country's
+  pack that NetBox does not hold. The list does not grow with the pack: the rest is reached by the search.
+* **The search** looks in every pack, by name, by another name, by slug or by AS number, and shows at most six: the
+  site's own country first, then the international pack, then other countries with their code ("Telia (NO)").
+  An AS number that several packs list is one line. Two countries' networks of one name ("Telenet" in Belgium and in
+  Latvia) are two lines. Two or three Latin letters are looked for at the start of a word only; a longer text, and any
+  text in a script written without spaces, is looked for anywhere in a name.
+* **A typed name** ("My provider is not listed") that is the name of an entry of the site's own country or of the
+  international pack is that entry, with its AS numbers; so is a name that only one pack lists. A name that several
+  countries use for different networks is recorded as typed, with no AS number: pick the entry from the search to
+  say which one it is.
+
 ### Adding or correcting a provider pack
 
 1. Copy an existing file to `packs/providers/<code>.json` (the ISO 3166-1 alpha-2 code in lower case), and set
-   `country`, `id` (`providers-<code>`), `title` and `version`.
+   `country`, `id` (`providers-<code>`), `title` and `version`. If the game does not know the country by name yet,
+   add its English name to `NAMES` in `proxy/rackwalker_proxy/country.py` (a test names the country that lacks one).
 2. List the providers a site admin in that country meets, most common first: the first six that NetBox does not hold
    yet are offered as choices, the rest are found by search.
 3. For every source: read its terms first. Record what they allow in `terms`. Take facts only from a source whose
    terms allow it (`copied`); otherwise mark it `cross-check` or `cited`.
 4. Confirm each AS number against the registry, and record the registry. Leave out what you cannot confirm and say
-   so in `missing`.
-5. Say what the pack is complete for in `coverage`. If the country's information is sparse, set `partial: true`.
+   so in `missing`. A network another pack already lists keeps that pack's slug and AS numbers; a group's network in
+   this country gets its own entry under the name it trades by here.
+5. Say what the pack is complete for in `coverage`. If the country's information is sparse, set `partial: true`
+   and ship the smaller pack: do not fill it with names you could not confirm.
 6. Run `make packs-check` (or `make test`).
 
 To correct an entry, change it, raise `version`, and set `read` to the day you checked it.
@@ -262,7 +371,8 @@ game last read. A refusal writes nothing.
 network. It checks each file against its JSON Schema in `packs/schema/`, and what a schema cannot say:
 
 * an id is used once; a slug, a name and an AS number are used once per provider pack;
-* the file name matches the country and the id;
+* an AS number that several packs list is under the same registry in each;
+* the file name matches the country and the id, and the country is an assigned ISO 3166-1 alpha-2 code;
 * a partial pack says what it lacks; one source is marked as the one the facts came from;
 * no phone number and no mail address anywhere in a provider pack;
 * the device index is the file the pack names (size and SHA-256), was built from the pinned commit, holds the number

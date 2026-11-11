@@ -53,13 +53,16 @@ def offline_library(monkeypatch):
 def test_the_shipped_packs_are_valid_and_every_one_loads():
     assert packs.validate() == []
     p = packs.load()
-    assert p.errors == [] and p.countries() == ["DE", "FR", "GB", "IE", "NL", "US"]
+    assert p.errors == [] and len(p.countries()) == 49 and {"DE", "FR", "GB", "IE", "NL", "US", "JP", "BR", "GR", "IN"} <= set(p.countries())
     for pack in p.providers:
         # every pack says where it came from, when it was read, what it is complete for and what it lacks
         assert pack["sources"] and pack["read"] and len(pack["coverage"]) > 20 and (pack["missing"] or not pack["partial"])
         assert all(s["terms"] and s["use"] in ("copied", "cross-check", "cited") for s in pack["sources"])
         kinds = {x["kind"] for x in pack["providers"]}
         if pack["country"]:
+            # a thin pack is allowed, an empty one is not: every country has its national carrier and a handful of names
+            assert len(pack["providers"]) >= 5 and "national_carrier" in kinds, pack["id"]
+        if pack["country"] in ("DE", "FR", "GB", "IE", "NL", "US"):
             assert len(pack["providers"]) >= 12 and {"national_carrier", "wholesale"} <= kinds, pack["id"]
     assert p.provider_pack("US")["partial"] and p.provider_pack("IE")["partial"] and not p.provider_pack("GB")["partial"]
     index = p.index()
@@ -145,13 +148,14 @@ def test_the_validator_says_what_is_wrong_with_a_pack(tmp_path):
 def test_a_new_country_is_one_data_file(tmp_path):
     def add(root: Path) -> None:
         doc = json.loads((root / "providers/ie.json").read_text())
-        doc.update(country="BE", id="providers-be", title="Common providers: Belgium", providers=[
+        doc.update(country="IS", id="providers-is", title="Common providers: Iceland", providers=[
             {"name": "Example Net", "slug": "example-net", "kind": "national_carrier", "aka": ["ExNet"], "asns": [{"asn": 64500, "rir": "ripe"}],
              "website": None, "support_url": None, "notes": None}])
-        (root / "providers/be.json").write_text(json.dumps(doc))
+        (root / "providers/is.json").write_text(json.dumps(doc))
+    assert "IS" not in packs.load().countries()
     assert broken(tmp_path, add) == []
     p = packs._load(str(tmp_path / "packs"))
-    assert "BE" in p.countries() and [x["name"] for x in p.providers_of("BE")] == ["Example Net"]
+    assert "IS" in p.countries() and [x["name"] for x in p.providers_of("IS")] == ["Example Net"]
 
 
 def test_packs_that_do_not_validate_are_not_half_used(tmp_path):
@@ -516,10 +520,9 @@ def test_an_empty_netbox_is_set_up_by_playing_from_the_first_site_to_the_way_out
     assert b["message"].startswith("NetBox has no site yet.") and b["sites"] == [] and b["next_quest_id"] == FIRST_SITE
     q = b["quests"][0]
     assert (q["id"], q["site_id"], q["title"], q["target"], q["status"]) == (FIRST_SITE, 0, "Your first site", None, "offered")
-    assert [ch["label"] for ch in q["step"]["choices"]] == ["Germany", "France", "United Kingdom", "Ireland", "Netherlands", "United States",
-                                                            "Another country", "I don't know yet"]
+    assert (q["step"]["id"], q["step"]["input"]) == ("country_code", "text") and q["step"]["prompt"].startswith("Which country is your first site in?")
     # ---- the site: nothing is written before the preview is applied
-    q = say(cl, FIRST_SITE, ("country", {"choice": "country:NL"}), ("site_name", {"text": "Mill Lane"}))
+    q = say(cl, FIRST_SITE, ("country_code", {"text": "NL"}), ("site_name", {"text": "Mill Lane"}))
     assert q["status"] == "ready" and q["changes"] == ["New site Mill Lane in Netherlands."] and box.writes == []
     v = apply(cl, FIRST_SITE)
     assert v["mode"] == "real" and v["verified"] and v["complete"] and v["xp_awarded"] == 60 and v["unlocked"] == []
@@ -687,15 +690,15 @@ def test_my_provider_is_not_listed_takes_the_name_as_typed_and_a_pack_carrier_co
 
 def test_a_site_in_a_country_with_no_pack_says_so_and_searches_the_others(tmp_path, monkeypatch):
     box = EmptyBox()
-    site, _ = near_empty(box, "be")
+    site, _ = near_empty(box, "is")
     cl = game(tmp_path, monkeypatch, box)
     q = next(x for x in board(cl)["quests"] if x["id"] == CARRIER.format(site["id"]))
-    assert q["step"]["prompt"] == ("Whose line is it? (The game has no provider pack for Belgium yet: search the others, or type the name.)")
+    assert q["step"]["prompt"] == ("Whose line is it? (The game has no provider pack for Iceland yet: search the others, or type the name.)")
     assert [ch["label"] for ch in q["step"]["choices"]] == ["Another provider: search by name", "My provider is not listed", "We do not keep carriers in NetBox",
                                                             "I don't know yet"]
     line = CARRIER.format(site["id"])
     q = say(cl, line, ("provider", {"choice": "search"}), ("provider_find0", {"text": "colt"}))
-    assert [ch["label"] for ch in q["step"]["choices"]][0] == "Colt Technology Services (DE)"
+    assert [ch["label"] for ch in q["step"]["choices"]][0] == "Colt Technology Services (international)"
     parked = post(cl, "answer", line, step="provider_pick0", choice="unknown")
     assert parked["status"] == "parked" and parked["checklist"][0] == "The hand-off box and the bill carry the carrier's name."
     # "we do not keep carriers in NetBox" closes it, unpaid, and the site is not asked again
@@ -1125,8 +1128,11 @@ def test_the_packs_route_says_what_ships_how_complete_it_is_and_where_it_came_fr
     body = TestClient(base_url=LOCAL, app=cl.app).get("/api/packs").json()       # no sign-in needed
     schema_validator("PackList").validate(body)
     assert body["errors"] == [] and body["library"]["import_from"] == "local" and len(body["library"]["commit"]) == 40
-    assert [p["id"] for p in body["packs"]] == ["providers-de", "providers-fr", "providers-gb", "providers-ie", "providers-nl", "providers-us",
-                                                "providers-international", "devices-community-library", "serials-network-vendors"]
+    ids = [p["id"] for p in body["packs"]]
+    # the country packs in the order of their codes, then the international one, the device pack and the serial rules
+    assert len(ids) == 52 and ids[:3] == ["providers-at", "providers-au", "providers-be"] and ids[:49] == sorted(ids[:49])
+    assert ids[49:] == ["providers-international", "devices-community-library", "serials-network-vendors"]
+    assert len(json.dumps(body)) < 400_000          # the whole list is read when the catalogue opens: it stays a small page
     us = next(p for p in body["packs"] if p["id"] == "providers-us")
     assert us["partial"] and us["missing"] and us["coverage"].startswith("Partial.") and all(s["terms"] for s in us["sources"])
     dev = next(p for p in body["packs"] if p["kind"] == "devices")
@@ -1137,7 +1143,7 @@ def test_the_packs_route_says_what_ships_how_complete_it_is_and_where_it_came_fr
 def test_a_dry_run_proxy_plays_the_setup_lines_as_practice_and_writes_nothing(tmp_path, monkeypatch):
     box = EmptyBox()
     cl = game(tmp_path, monkeypatch, box, write_enabled=False)
-    say(cl, FIRST_SITE, ("country", {"choice": "other"}), ("country_code", {"text": "be"}), ("site_name", {"text": "Quay House"}))
+    say(cl, FIRST_SITE, ("country_code", {"text": "be"}), ("site_name", {"text": "Quay House"}))
     v = post(cl, "apply", FIRST_SITE)
     assert v["mode"] == "dry_run" and v["xp_awarded"] == 0 and box.writes == [] and v["message"].startswith("Practice run, nothing was written")
     assert v["result"]["ops"][0]["after"] == {"name": "Quay House", "country": "BE"}
@@ -1162,7 +1168,7 @@ def test_a_player_without_the_netbox_permission_plays_the_first_site_as_practice
     box = EmptyBox()
     box.superuser = False
     cl = game(tmp_path, monkeypatch, box)
-    q = say(cl, FIRST_SITE, ("country", {"choice": "country:GB"}), ("site_name", {"text": "Quay House"}))
+    q = say(cl, FIRST_SITE, ("country_code", {"text": "GB"}), ("site_name", {"text": "Quay House"}))
     assert q["write_blocked"].startswith("Your NetBox user may not add dcim.site, add dcim.region.")
     v = post(cl, "apply", FIRST_SITE)
     assert v["mode"] == "dry_run" and box.writes == [] and v["xp_awarded"] == 0

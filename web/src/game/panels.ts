@@ -32,6 +32,9 @@ const CSS = `
 .game-panel .cat tr[data-status=verified] td:first-child{font-weight:bold}
 .game-panel details{margin:8px 0}
 .game-panel details summary{cursor:pointer;font-weight:bold}
+.game-panel details details{margin:2px 0 2px 12px}
+.game-panel details details summary{font-weight:normal}
+.game-panel details .note{font-size:13px;color:#4a4335}
 #game-button{position:fixed;right:8px;bottom:8px;z-index:15;font:14px ui-monospace,monospace;color:#1d1a14;background:#f6efd9;border:3px solid #1d1a14;padding:6px 10px;min-height:40px;cursor:pointer}
 #game-notice{position:fixed;left:50%;top:8px;transform:translateX(-50%);z-index:35;width:min(620px,calc(100vw - 24px));box-sizing:border-box;
   background:#f6efd9;color:#1d1a14;border:4px solid #8a1c12;box-shadow:0 0 0 2px #f6efd9;padding:8px 12px;font:14px/1.4 ui-monospace,monospace;
@@ -256,6 +259,28 @@ export function catalogueRow(it: CatalogueItem): { status: CatalogueItem['status
   };
 }
 
+type Pack = PackList['packs'][number];
+
+/**
+ * The packs as the catalogue lists them: the provider packs under one heading that counts them, in the order of their
+ * titles (so of the countries' names) with the international one last; the others as they are.
+ */
+export function packSections(packs: readonly Pack[]): { providers: Pack[]; others: Pack[]; heading: string } {
+  const providers = packs.filter((p) => p.kind === 'providers')
+    .sort((a, b) => Number(!a.country) - Number(!b.country) || a.title.localeCompare(b.title, 'en'));
+  const countries = providers.filter((p) => p.country).length;
+  const partial = providers.filter((p) => p.partial).length;
+  const what = [countries ? `${countries} ${countries === 1 ? 'country' : 'countries'}` : '', providers.length > countries ? 'the international names' : '']
+    .filter(Boolean).join(' and ');
+  return { providers, others: packs.filter((p) => p.kind !== 'providers'), heading: `Provider packs: ${what}${partial ? ` (${partial} partial)` : ''}` };
+}
+
+function noteLine(text: string): HTMLElement {
+  const p = para(text);
+  p.className = 'note';
+  return p;
+}
+
 /**
  * The device catalogue: the manufacturers and models of the player's own NetBox, as a collection. What the device-type
  * library confirms carries a tick; the rest is kept as recorded. It counts only what the player's NetBox holds: there
@@ -318,15 +343,30 @@ export function cataloguePanel(host: HTMLElement, load: (fresh: boolean) => Prom
       p.className = 'error';
       about.append(p);
     }
-    for (const p of list.packs) {
+    const { providers, others, heading } = packSections(list.packs);
+    for (const p of others) {
       const row = para(`${p.title} (${p.entries} entries, read ${p.read}${p.partial ? ', partial' : ''}). ${p.coverage}`);
       row.dataset.pack = p.id;
       about.append(row);
-      if (p.missing.length) {
-        const miss = para(`Missing: ${p.missing.join('; ')}.`);
-        miss.className = 'note';
-        about.append(miss);
+      if (p.missing.length) about.append(noteLine(`Missing: ${p.missing.join('; ')}.`));
+    }
+    if (providers.length) {
+      // one line per country, each opening on its own: fifty packs written out in full are a page nobody reads
+      const group = document.createElement('details');
+      group.id = 'catalogue-provider-packs';
+      const head = document.createElement('summary');
+      head.textContent = heading;
+      group.append(head);
+      for (const p of providers) {
+        const one = document.createElement('details');
+        one.dataset.pack = p.id;
+        const line = document.createElement('summary');
+        line.textContent = `${p.title} (${p.entries} entries${p.partial ? ', partial' : ''})`;
+        one.append(line, para(`Read ${p.read}. ${p.coverage}`));
+        if (p.missing.length) one.append(noteLine(`Missing: ${p.missing.join('; ')}.`));
+        group.append(one);
       }
+      about.append(group);
     }
     if (list.library) about.append(para(list.library.import_from === 'none'
       ? 'A model cannot be imported right now: this game has no copy of the device-type library and may not fetch it. Searching still works.'

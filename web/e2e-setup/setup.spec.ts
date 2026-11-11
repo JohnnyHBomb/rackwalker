@@ -24,7 +24,7 @@ async function choose(page: Page, label: string, shot?: string): Promise<void> {
       if (shot) await page.screenshot({ path: `${SHOTS}/${shot}.png` });
       return void (await page.click(`#dialogue-choices li:nth-child(${n + 1}) button`));
     }
-    await page.click('#dialogue-choices button:has-text("More choices")');
+    await page.locator('#dialogue-choices button:has-text("More choices"), #dialogue-choices button:has-text("Back to the first choices")').first().click();
   }
   throw new Error(`no choice "${label}"`);
 }
@@ -72,9 +72,9 @@ test('an empty NetBox is set up by playing: first site, rack, boxes from the lib
   expect((await game(page)).dialogue!.text).toContain('this NetBox has no site yet');
   await page.screenshot({ path: `${SHOTS}/onboarding.png` });
   await choose(page, 'Yes: my first site');
-  await expect.poll(async () => (await game(page)).dialogue?.text ?? '').toContain('Which country is your first site in?');
-  await expect(page.locator('#dialogue')).toHaveAttribute('data-speaker', 'ilatea');
-  await choose(page, 'Netherlands');
+  // the country is typed, by name or by code: there is a provider pack for some fifty of them
+  await expect(page.locator('#quest-step')).toContainText('Which country is your first site in?');
+  await type(page, 'netherlands');
   await type(page, 'Mill Lane');
   await expect(page.locator('#quest-preview')).toContainText('New site Mill Lane in Netherlands.');
   const reload = page.waitForEvent('load');
@@ -143,9 +143,22 @@ test('an empty NetBox is set up by playing: first site, rack, boxes from the lib
   await expect(row.locator('.mark')).toHaveText('✔');
   await expect(row).toContainText('confirmed by the device-type library · 1 device');
   await expect(page.locator('#game-catalogue tr[data-status="unverified"], #game-catalogue tr[data-status="mismatch"]')).toHaveCount(0);
-  await page.click('#catalogue-packs summary');
+  await page.click('#catalogue-packs > summary');
+  // the provider packs are one line that counts them; a country opens on its own and says what its pack lacks
+  await expect(page.locator('#catalogue-provider-packs > summary')).toContainText(/^Provider packs: 49 countries and the international names \(\d+ partial\)$/);
   await expect(page.locator('#catalogue-packs [data-pack="providers-nl"]')).toContainText('Common providers: Netherlands');
-  await page.click('#catalogue-packs summary');
+  await expect(page.locator('#catalogue-packs [data-pack="providers-jp"]')).toBeHidden();
+  await page.click('#catalogue-provider-packs > summary');
+  await expect(page.locator('#catalogue-provider-packs > details')).toHaveCount(50);
+  await page.click('#catalogue-packs [data-pack="providers-ie"] > summary');
+  await expect(page.locator('#catalogue-packs [data-pack="providers-ie"]')).toContainText('Missing: Regional fixed-wireless operators');
+  // the open list scrolls inside the panel, and the panel stays on the screen
+  const panel = await page.locator('#game-catalogue').boundingBox();
+  expect(panel!.y).toBeGreaterThanOrEqual(0);
+  expect(panel!.y + panel!.height).toBeLessThanOrEqual(600);
+  if (process.env.RACKWALKER_SETUP_PACKS_SHOT) await page.screenshot({ path: process.env.RACKWALKER_SETUP_PACKS_SHOT });
+  await page.click('#catalogue-provider-packs > summary');
+  await page.click('#catalogue-packs > summary');
   await page.screenshot({ path: `${SHOTS}/catalogue.png` });
   await page.click('#catalogue-back');
   await expect(page.locator('#game-menu')).toBeVisible();
@@ -205,4 +218,57 @@ test('the button says what it will do: "Apply to NetBox" writes, "Practice run" 
   await expect(page.locator('#quest-apply')).toHaveText('Practice run');
   expect(await apply(page)).toContain('Practice run, nothing was written');
   expect([await count(page, 'dcim/devices'), await count(page, 'dcim/device-types')]).toEqual([3, 2]);
+});
+
+// A site in a country whose providers trade under names in another script: the pack's names are the choices as they
+// stand on the bill, the search finds them by their Latin names too, and the provider is made under the name picked.
+test('a site in Japan is offered the carriers of the Japan pack under the names they trade by', async ({ page, request }) => {
+  const box = `http://127.0.0.1:${process.env.RACKWALKER_SETUP_NETBOX_PORT ?? 8745}/api`;
+  const made = async (path: string, data: Record<string, unknown>) => {
+    const r = await request.post(`${box}/${path}/`, { data, headers: { Authorization: 'Token nbt_synthetic.not-a-secret-proxy' } });
+    expect(r.status(), `${path}: ${await r.text()}`).toBe(201);
+    return ((await r.json()) as { id: number }).id;
+  };
+  const region = await made('dcim/regions', { name: 'Japan', slug: 'japan' });
+  const site = await made('dcim/sites', { name: 'Kanda Office', slug: 'kanda-office', status: 'active', region });
+  const role = await made('dcim/device-roles', { name: 'Edge switch', slug: 'edge-switch', color: '2196f3' });
+  const maker = await made('dcim/manufacturers', { name: 'Example', slug: 'example' });
+  const type_ = await made('dcim/device-types', { manufacturer: maker, model: 'EX-S', slug: 'ex-s' });
+  await made('dcim/interface-templates', { device_type: type_, name: 'eth1', type: '1000base-t' });
+  await made('dcim/devices', { name: 'kd-sw1', site, role, device_type: type_, status: 'active' });
+  await boot(page);
+  await page.fill('#signin-token', 'nbt_synthetic.not-a-secret-0123456789');
+  await page.click('#signin-submit');
+  await page.evaluate(() => window.__game!.ready);
+  await page.evaluate(() => (window.__game!.shell.transitionMs = 0));
+  await expect.poll(async () => (await game(page)).scene).toBe('overworld');
+  if ((await game(page)).dialogue) await page.keyboard.press('Escape');
+  await idle(page);
+  // the way out of the new site: which box the line lands on, then whose line it is
+  // (the proxy reads a whole NetBox again at most every few seconds: the new site's lines are there once it has)
+  const line = `q:site_no_way_out:site:${site}`;
+  await expect.poll(() => page.evaluate(async (id) => {
+    const s = window.__game!.shell;
+    await s.quests!.refresh(true);
+    return s.quests!.boards.netbox!.quests.some((x) => x.id === id);
+  }, line), { timeout: 40_000, intervals: [2_000] }).toBe(true);
+  await page.evaluate((id) => void window.__game!.shell.quests!.run(window.__game!.shell.quests!.boards.netbox!.quests.find((x) => x.id === id)!), line);
+  await choose(page, 'kd-sw1');
+  await expect.poll(async () => (await game(page)).dialogue?.text ?? '').toContain('Whose line is it?');
+  await typed(page);
+  // the first names of the pack, as they are written in Japan
+  // the provider NetBox already holds comes first, then the names of the pack, as they are written in Japan
+  expect((await game(page)).dialogue!.choices.slice(0, 2)).toEqual(['KPN', 'NTT東日本']);
+  for (let i = 0; i < 5 && (await game(page)).dialogue!.choices[0] !== 'NTT西日本'; i++) {
+    await page.click('#dialogue-choices button:has-text("More choices")');
+    await typed(page);
+  }
+  expect((await game(page)).dialogue!.choices.slice(0, 2)).toEqual(['NTT西日本', 'NTTドコモビジネス']);
+  await page.screenshot({ path: `${SHOTS}/provider-choice-jp.png` });
+  // a name typed in Latin letters finds the entry that trades in kana
+  await choose(page, 'Another provider: search by name');
+  await type(page, 'softbank');
+  await choose(page, 'ソフトバンク');
+  // the carrier is settled: the line goes on to the circuit, and names the carrier as it trades
+  await expect(page.locator('#quest-step')).toContainText('What is the circuit ID? ソフトバンク prints it');
 });

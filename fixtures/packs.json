@@ -2,6 +2,743 @@
   "contract_version": "2.5.0",
   "packs": [
     {
+      "id": "providers-at",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Austria",
+      "country": "AT",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Complete for the three national operators (fixed and mobile); covers the largest regional cable and utility networks and a few business ISPs. The regulator's provider directory was not read.",
+      "missing": [
+        "Regional utility and municipal fibre networks (many; only the largest are listed)",
+        "Smaller cable operators",
+        "Smaller business ISPs",
+        "An AS number for öGIG (none confirmed)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 12,
+      "sources": [
+        {
+          "name": "RTR (Rundfunk und Telekom Regulierungs-GmbH)",
+          "url": "https://www.rtr.at/",
+          "read": "2026-11-11",
+          "terms": "Impressum: all rights reserved to RTR; texts may be downloaded for personal, non-commercial use only: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Austria",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Austria",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-au",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Australia",
+      "country": "AU",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the mobile network operators, the largest retail broadband providers, the national wholesale network and the common satellite service; business ISPs and wholesale fibre networks are partial.",
+      "missing": [
+        "Smaller retail providers on the national wholesale network (there are well over a hundred)",
+        "Fixed-wireless and regional operators",
+        "Smaller business ISPs",
+        "Other wholesale fibre networks in new estates",
+        "A website for Aussie Broadband (it refused an automated check on the read date)",
+        "The regulator's register of licensed carriers (the ACMA site did not answer on the read date)"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "ACMA (Australian Communications and Media Authority): register of licensed carriers",
+          "url": "https://www.acma.gov.au/register-licensed-carriers",
+          "read": "2026-11-11",
+          "terms": "The site did not answer on the read date, so its terms were not read and nothing is taken.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Australia and Telecommunications in Australia",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Australia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-be",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Belgium",
+      "country": "BE",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed-line carrier, the cable operators, the mobile network operators and the wholesale access networks; business ISPs are partial.",
+      "missing": [
+        "Smaller business ISPs",
+        "AS numbers for the wholesale access networks, Scarlet and DIGI (none confirmed)",
+        "A website for Citymesh (it refused an automated request)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 16,
+      "sources": [
+        {
+          "name": "BIPT (Belgian Institute for Postal Services and Telecommunications)",
+          "url": "https://www.bipt.be/operators",
+          "read": "2026-11-11",
+          "terms": "Conditions of use: information may be used free of charge with the source named, for strictly personal use only: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Belgium",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Belgium",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Belgium",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Belgium",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "ITdaily: Orange Belgium and VOO merge",
+          "url": "https://itdaily.com/news/network/orange-belgium-voo-merge",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-bg",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Bulgaria",
+      "country": "BG",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the three national operators, the network company behind Yettel and the research network; business ISPs are thin and local networks are not listed.",
+      "missing": [
+        "Local cable and LAN internet providers (several hundred)",
+        "Most business ISPs: only three are listed; the regulator's register is in Bulgarian and was not read",
+        "An AS number for Yettel Bulgaria (its registry record holds none; its network is CETIN Bulgaria's)",
+        "The website of Novatel (it refused an automated request)",
+        "Names in Cyrillic, except the two found on the providers' own pages",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 9,
+      "sources": [
+        {
+          "name": "CRC (Communications Regulation Commission): registers",
+          "url": "https://crc.bg/bg/rubriki/205/registri",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Bulgaria",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Bulgaria",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in Bulgaria",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Bulgaria",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Vivacom; A1 Bulgaria; Yettel Bulgaria; CETIN",
+          "url": "https://en.wikipedia.org/wiki/Vivacom",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for dates and names (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-br",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Brazil",
+      "country": "BR",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carriers, the mobile network operators, the largest fibre operators, two wholesale backbones, satellite and the research network; Brazil has thousands of regional ISPs that are not listed.",
+      "missing": [
+        "Thousands of regional and municipal ISPs, which together serve a large share of fixed lines",
+        "Business ISPs and smaller wholesale carriers",
+        "Former names of Nio, Vero, Ligga and Giga+ Fibra (not confirmed on the read date)",
+        "An AS number for Nio (none was found registered to it)",
+        "Websites for Vivo, Giga+ Fibra and Alares (they did not answer an automated request on the read date)",
+        "Status pages (none was found)",
+        "The regulator's operator lists (its pages refused an automated request and its data panels were under maintenance on the read date)"
+      ],
+      "entries": 20,
+      "sources": [
+        {
+          "name": "Anatel (Agência Nacional de Telecomunicações)",
+          "url": "https://www.gov.br/anatel/pt-br",
+          "read": "2026-11-11",
+          "terms": "The inner pages refused an automated request on the read date: no reuse licence was read and nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Brazil and 3 more pages",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Brazil",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-ca",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Canada",
+      "country": "CA",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the mobile network operators, the main cable operators and the national research network; regional independents and business ISPs are partial.",
+      "missing": [
+        "Regional telephone companies, co-operatives and municipal networks",
+        "Smaller independent and wholesale-based ISPs",
+        "The provincial research networks",
+        "Websites for Telus, Cogeco, Eastlink, TekSavvy, Distributel, Northwestel and CANARIE (they did not answer an automated request on the read date)",
+        "The regulator's list of registered providers (the site refused an automated request on the read date)"
+      ],
+      "entries": 16,
+      "sources": [
+        {
+          "name": "CRTC (Canadian Radio-television and Telecommunications Commission)",
+          "url": "https://crtc.gc.ca/",
+          "read": "2026-11-11",
+          "terms": "The site refused an automated request on the read date: its terms were not read and nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Canada and 5 more pages",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Canada",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-ch",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Switzerland",
+      "country": "CH",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the three mobile network operators, the main cable networks and the research network; business ISPs are partial and city utility fibre networks are not listed.",
+      "missing": [
+        "City and regional utility fibre networks, and local cable networks",
+        "Smaller business ISPs",
+        "An AS number for Swiss Fibre Net (none was found registered to it)",
+        "Status pages (only one answered a check on the read date)",
+        "The regulator's list of registered providers (its address was not found on the reorganised site on the read date)"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "BAKOM / OFCOM (Federal Office of Communications): telecommunications pages",
+          "url": "https://www.bakom.admin.ch/de/telekommunikation",
+          "read": "2026-11-11",
+          "terms": "The page answered; the federal terms page refused an automated request, so no reuse licence was read and nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Switzerland and 3 more pages",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Switzerland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-cn",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: China (mainland)",
+      "country": "CN",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the four state-owned basic carriers and the two national academic networks, with their backbone AS numbers only; provincial networks, regional cable and private resellers are not listed.",
+      "missing": [
+        "The provincial and city AS numbers of China Telecom, China Unicom and China Mobile (several hundred; only the national backbones are listed)",
+        "An AS number and a website for 中国广电 (China Broadnet): none confirmed",
+        "The website of 中国电信 (it refused an automated request on the read date)",
+        "Provincial cable networks (now grouped under China Broadnet) and private broadband resellers: no public list was readable, so none is named",
+        "The licence register of the Ministry of Industry and Information Technology was not readable by an automated request, so licensed operators could not be checked against it",
+        "Status pages (none was checked)"
+      ],
+      "entries": 6,
+      "sources": [
+        {
+          "name": "Ministry of Industry and Information Technology (MIIT)",
+          "url": "https://www.miit.gov.cn/",
+          "read": "2026-11-11",
+          "terms": "No reuse terms were found on the page on the read date: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in China",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_China",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications industry in China",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_industry_in_China",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in China",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_China",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "APNIC RDAP (the registry's own record of an AS number)",
+          "url": "https://rdap.apnic.net/",
+          "read": "2026-11-11",
+          "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-cy",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Cyprus",
+      "country": "CY",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Complete for the four network operators of the Republic of Cyprus (fixed and mobile) and the research network; smaller ISPs and the operators in the north of the island are not listed.",
+      "missing": [
+        "Smaller ISPs and resellers (the register is a search form at another site and was not read)",
+        "Operators in the north of the island (they are not on the Republic's register)",
+        "An announced AS number for CYNET (AS211779 is registered to it and was not announced on the read date)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 6,
+      "sources": [
+        {
+          "name": "OCECPR (Office of the Commissioner of Electronic Communications and Postal Regulation)",
+          "url": "https://ocecpr.ee.cy/",
+          "read": "2026-11-11",
+          "terms": "Terms of use: the information is advisory; they say nothing on reuse: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Cyprus",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Cyprus",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-cz",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Czechia",
+      "country": "CZ",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the three mobile network operators (all sell fixed lines) and the national wholesale network; cable, fibre and business ISPs are partial, and local wireless ISPs are not listed.",
+      "missing": [
+        "Local wireless and fibre ISPs (well over a thousand are registered)",
+        "Smaller business ISPs",
+        "An AS number for České Radiokomunikace (none found)",
+        "AS5588 of T-Mobile Czech Republic (registered to it and not announced on the read date)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 11,
+      "sources": [
+        {
+          "name": "ČTÚ (Czech Telecommunication Office): register of undertakings in electronic communications",
+          "url": "https://ctu.gov.cz/vyhledavaci-databaze/evidence-podnikatelu-v-elektronickych-komunikacich-podle-vseobecneho-opravneni",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in the Czech Republic",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_the_Czech_Republic",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in the Czech Republic",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_the_Czech_Republic",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: CETIN",
+          "url": "https://en.wikipedia.org/wiki/CETIN",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for a date and a name (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: O2 Czech Republic; Vodafone Czech Republic",
+          "url": "https://en.wikipedia.org/wiki/O2_Czech_Republic",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
       "id": "providers-de",
       "kind": "providers",
       "version": "1.2.0",
@@ -64,6 +801,348 @@
           "read": "2026-11-11",
           "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
           "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-dk",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Denmark",
+      "country": "DK",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the mobile network operators and the main fibre and cable operators; the regional energy-company fibre networks and business ISPs are partial.",
+      "missing": [
+        "Other regional energy-company fibre networks and the local antenna associations",
+        "Smaller business ISPs",
+        "AS numbers for 3 and OpenNet (none confirmed)",
+        "A website for Energi Fyn (it refused an automated read on the read date)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 17,
+      "sources": [
+        {
+          "name": "Agency for Digital Government (Digitaliseringsstyrelsen): telecoms",
+          "url": "https://digst.dk/tele/",
+          "read": "2026-11-11",
+          "terms": "The page answered on the read date; no reuse licence was found on it, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Denmark",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Denmark",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Denmark",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Denmark",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPE Database RDAP: AS1835",
+          "url": "https://rdap.db.ripe.net/autnum/1835",
+          "read": "2026-11-11",
+          "terms": "RIPE Database terms apply; nothing is copied. Read to confirm one AS number whose holder name in RIPEstat was unclear.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Norlys",
+          "url": "https://en.wikipedia.org/wiki/Norlys",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-ee",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Estonia",
+      "country": "EE",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the three national carriers, which are also the mobile network operators, two cable operators and the research network; wholesale networks and business ISPs are thin.",
+      "missing": [
+        "An AS number for Tele2 Eesti (none confirmed)",
+        "Wholesale and rural fibre networks (none could be confirmed from a public source in the time given)",
+        "Smaller business ISPs and local cable operators",
+        "The regulator's register of communications undertakings (not read)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 9,
+      "sources": [
+        {
+          "name": "TTJA (Consumer Protection and Technical Regulatory Authority): communications market",
+          "url": "https://www.ttja.ee/ariklient/side-ja-meediateenused/sideteenused/sideturg",
+          "read": "2026-11-11",
+          "terms": "The page answered on the read date, in Estonian; no reuse licence was found on it, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Estonia",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Estonia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Estonia",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Estonia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Telia Eesti",
+          "url": "https://en.wikipedia.org/wiki/Telia_Eesti",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-es",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Spain",
+      "country": "ES",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed and mobile operators, the regional cable operators and the main wholesale fibre networks; local fibre operators and business ISPs are partial.",
+      "missing": [
+        "Local cable and fibre operators (the regulator's register holds several thousand)",
+        "Smaller business ISPs",
+        "Regional research networks",
+        "AS numbers for Onivia and Reintel (none confirmed: they sell no internet service)",
+        "A website for Aire Networks (it did not answer)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 19,
+      "sources": [
+        {
+          "name": "CNMC: Registro de Operadores",
+          "url": "https://numeracionyoperadores.cnmc.es/operadores",
+          "read": "2026-11-11",
+          "terms": "The register is a search form with no list to read and no reuse terms on the page; the legal notice did not answer on the read date: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Spain",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Spain",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Spain",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Spain",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "TelcoTitans: Orange and the MasOrange joint venture",
+          "url": "https://www.telcotitans.com/orangewatch/orange-gets-spanish-green-light-to-absorb-masorange/10383.article",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-fi",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Finland",
+      "country": "FI",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the three national carriers, which are also the mobile network operators, and the main fibre operators; the regional telephone companies and business ISPs are partial.",
+      "missing": [
+        "Most of the regional telephone companies of the Finnet group (five are listed)",
+        "Municipal and co-operative fibre networks",
+        "Smaller business ISPs",
+        "AS numbers for Valokuitunen and GlobalConnect in Finland (none confirmed)",
+        "Satellite providers"
+      ],
+      "entries": 15,
+      "sources": [
+        {
+          "name": "Traficom (Finnish Transport and Communications Agency): telephone and broadband",
+          "url": "https://www.traficom.fi/en/telephone-and-broadband",
+          "read": "2026-11-11",
+          "terms": "The page answered on the read date; no reuse licence was found on it, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Finland",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Finland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Finland",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Finland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: DNA Oyj",
+          "url": "https://en.wikipedia.org/wiki/DNA_Oyj",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
         }
       ]
     },
@@ -209,6 +1288,377 @@
       ]
     },
     {
+      "id": "providers-gr",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Greece",
+      "country": "GR",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Complete for the three national operators (fixed and mobile) and the research network; fibre newcomers, regional operators and business ISPs are thin, and the regulator's register was not read.",
+      "missing": [
+        "Smaller and regional ISPs (the regulator's register of providers was not found on the pages read)",
+        "The fibre networks of the power utility PPC (no trading name or AS number was confirmed)",
+        "An AS number for HCN (none confirmed), so it is not listed",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 9,
+      "sources": [
+        {
+          "name": "EETT (Hellenic Telecommunications and Post Commission)",
+          "url": "https://www.eett.gr/",
+          "read": "2026-11-11",
+          "terms": "Terms of use: reproduction is allowed for personal or non-commercial use with the source named: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Greece",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Greece",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Greece",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Greece",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "Deutsche Telekom: COSMOTE TELEKOM becomes Telekom",
+          "url": "https://www.telekom.com/en/newsroom/latest-updates/media-information/2026/09/cosmote-telekom-becomes-telekom",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-hk",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Hong Kong",
+      "country": "HK",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the fixed carriers, the four mobile network operators, cable and the Hong Kong arms of the mainland carriers; business ISPs and data-centre networks are partial.",
+      "missing": [
+        "Smaller business ISPs and data-centre networks",
+        "Regional and international carriers that hold a Hong Kong licence but are seldom the local access provider",
+        "Websites of HGC, SmarTone and China Mobile Hong Kong (each refused an automated request on the read date)",
+        "Status pages (none was checked)"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "Communications Authority (OFCA): online enquiry of telecommunications licences",
+          "url": "https://app2.coms-auth.hk/apps/lic_search/onlineEnquiry?lang=en",
+          "read": "2026-11-11",
+          "terms": "The register is an interactive enquiry and its terms of reuse were not found on the read date: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Communications in Hong Kong",
+          "url": "https://en.wikipedia.org/wiki/Communications_in_Hong_Kong",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "APNIC RDAP (the registry's own record of an AS number)",
+          "url": "https://rdap.apnic.net/",
+          "read": "2026-11-11",
+          "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-hr",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Croatia",
+      "country": "HR",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the three national operators (fixed and mobile), the state transmission network and the research network; business ISPs are partial.",
+      "missing": [
+        "Smaller business ISPs and local cable operators",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 6,
+      "sources": [
+        {
+          "name": "HAKOM (Croatian Regulatory Authority for Network Industries): e-register of operators",
+          "url": "https://www.hakom.hr/hr/e-registar/197",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Croatia",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Croatia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in Croatia",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Croatia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Hrvatski Telekom; A1 Hrvatska",
+          "url": "https://en.wikipedia.org/wiki/Hrvatski_Telekom",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-hu",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Hungary",
+      "country": "HU",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the three national operators (fixed and mobile) and the two network companies behind them, after the mergers of 2025; regional cable operators and business ISPs are partial.",
+      "missing": [
+        "Smaller regional cable operators and business ISPs",
+        "The state network operator MVM NET (no AS number found, and its address did not answer)",
+        "Websites of KIFÜ and PR-TELECOM (neither answered an automated check)",
+        "AS8990 and AS20568 (former Antenna Hungária numbers, registered to a 4iG holding company)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 9,
+      "sources": [
+        {
+          "name": "NMHH (National Media and Infocommunications Authority): registers",
+          "url": "https://nmhh.hu/szakmai-erdekeltek/hirkozles/nyilvantartasok",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Hungary",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Hungary",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "4iG: announcement of 1 October 2025 on 2Connect",
+          "url": "https://www.4ig.hu/new-chapter-in-telecommunications-introducing-2connect",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and names (facts); no text is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: One Hungary; Yettel Hungary; CETIN",
+          "url": "https://en.wikipedia.org/wiki/One_Hungary",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for dates and names (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-id",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Indonesia",
+      "country": "ID",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carrier, the mobile network operators, the main cable and fibre providers, three business and wholesale networks and the research network.",
+      "missing": [
+        "Regional ISPs (the provider association counts many hundreds of members)",
+        "The regulator's operator register (the ministry's site refused an automated check on the read date)",
+        "Smaller business ISPs and network access providers",
+        "Satellite providers",
+        "Websites for First Media and PLN Icon Plus (none answered an automated check on the read date)",
+        "Status pages (none was found that answered a check)"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "Komdigi (Ministry of Communication and Digital Affairs)",
+          "url": "https://www.komdigi.go.id/",
+          "read": "2026-11-11",
+          "terms": "The site refused an automated check on the read date, so its terms were not read and nothing is taken.",
+          "use": "cited"
+        },
+        {
+          "name": "APJII (the Indonesian internet service provider association)",
+          "url": "https://apjii.or.id/",
+          "read": "2026-11-11",
+          "terms": "No terms or reuse licence were found on the page on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Indonesia",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Indonesia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
       "id": "providers-ie",
       "kind": "providers",
       "version": "1.2.0",
@@ -284,6 +1734,748 @@
       ]
     },
     {
+      "id": "providers-in",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: India",
+      "country": "IN",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carriers, the mobile network operators, the largest cable and fibre operators, the main business ISPs, two state-backed wholesale networks and the research networks.",
+      "missing": [
+        "Regional and city cable and fibre operators (many hundreds hold an ISP licence)",
+        "Smaller business ISPs and data-centre providers",
+        "Satellite providers",
+        "Websites for BSNL, MTNL and RailTel (none answered an automated check on the read date)",
+        "Status pages (none was found that answered a check)",
+        "The regulator's operator lists: the licence list of the Department of Telecommunications was not read (its site gave no readable page)"
+      ],
+      "entries": 21,
+      "sources": [
+        {
+          "name": "TRAI (Telecom Regulatory Authority of India)",
+          "url": "https://www.trai.gov.in/",
+          "read": "2026-11-11",
+          "terms": "The site's terms carry a disclaimer and \"All rights reserved\"; no reuse licence was found on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in India and Telecommunications in India",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_India",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-it",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Italy",
+      "country": "IT",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed-line carriers, the mobile network operators and the two wholesale access networks; regional fibre operators, fixed-wireless operators and business ISPs are partial.",
+      "missing": [
+        "Regional fibre and fixed-wireless operators (several hundred are on the regulator's register)",
+        "Smaller business ISPs",
+        "An AS number for iliad (none confirmed: the number it is known by is registered to another company of the group)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 17,
+      "sources": [
+        {
+          "name": "AGCOM: Registro degli Operatori di Comunicazione (public list)",
+          "url": "https://www.agcom.it/",
+          "read": "2026-11-11",
+          "terms": "The public list of the register refused an automated read on the read date and no reuse terms were found on the regulator's front page: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Italy",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Italy",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Italy",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Italy",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "Fastweb: Fastweb and Vodafone Italia merge",
+          "url": "https://www.fastweb.it/wholesale/news/fastweb-e-vodafone-italia-si-uniscono.php?lng=EN",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Retelit: completion of the purchase of BT Italia's operations",
+          "url": "https://www.retelit.it/en/press/press-releases/2025/retelit-completes-the-acquisition-of-bt-italia-s-italian-operations-and-assets",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Teleborsa: lease of Tiscali Italia's consumer business",
+          "url": "https://www.teleborsa.it/AMP/News/2026/06/03/tessellis-avvio-dell-affitto-del-ramo-d-azienda-b2c-di-tiscali-italia-a-favore-di-canarbino-257.html",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-jp",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Japan",
+      "country": "JP",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the four mobile network operators, the main cable operator and the regional power-company fibre carriers; business ISPs are partial.",
+      "missing": [
+        "Local cable television operators (several hundred)",
+        "Smaller business ISPs and the retail ISP brands that resell NTT fibre access",
+        "An AS number for NTT West (none confirmed)",
+        "An announced AS number for NTT East (AS17933 is registered to it and was not announced on the read date)",
+        "HTNet, the Hokuriku regional carrier (no AS number confirmed)",
+        "Status pages (none was checked)"
+      ],
+      "entries": 22,
+      "sources": [
+        {
+          "name": "Ministry of Internal Affairs and Communications (MIC): telecommunications carriers data",
+          "url": "https://www.soumu.go.jp/johotsusintokei/field/tsuushin04.html",
+          "read": "2026-11-11",
+          "terms": "The ministry site states the Public Data License 1.0 (reuse with the source named). The page gives counts of carriers, not a register of names: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Japan",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Japan",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "APNIC RDAP (the registry's own record of an AS number)",
+          "url": "https://rdap.apnic.net/",
+          "read": "2026-11-11",
+          "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-kr",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: South Korea",
+      "country": "KR",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the three national carriers, the mobile network operators and the main cable operators; business ISPs are partial, and five websites did not answer an automated check.",
+      "missing": [
+        "Regional cable operators and the regional AS numbers of CMB (only its head-office number is listed)",
+        "Smaller business ISPs and data-centre networks",
+        "Websites of LG U+, HCN, Sejong Telecom, Dreamline and KOREN (none answered an automated check on the read date)",
+        "Status pages (none was checked)"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "Ministry of Science and ICT (MSIT)",
+          "url": "https://www.msit.go.kr/",
+          "read": "2026-11-11",
+          "terms": "The site answered but its pages are drawn by script and its terms could not be read by an automated request: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in South Korea",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_South_Korea",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in South Korea",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_South_Korea",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "APNIC RDAP (the registry's own record of an AS number)",
+          "url": "https://rdap.apnic.net/",
+          "read": "2026-11-11",
+          "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-lt",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Lithuania",
+      "country": "LT",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national fixed-line carrier, the three mobile network operators, the main cable and fibre operators and the research network; business ISPs and regional operators are thin.",
+      "missing": [
+        "An AS number for Tele2 Lietuva and for Skaidula (none confirmed)",
+        "A website for Telia Lietuva (it refused an automated read on the read date)",
+        "Regional cable and fibre operators",
+        "Smaller business ISPs and data-centre operators",
+        "The regulator's list of service providers (not read)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 12,
+      "sources": [
+        {
+          "name": "RRT (Communications Regulatory Authority): electronic communications providers",
+          "url": "https://rrt.lt/veiklos-sritys/elektroniniai-rysiai/paslaugu-teikejai",
+          "read": "2026-11-11",
+          "terms": "The page answered on the read date, in Lithuanian; no reuse licence was found on it, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Lithuania",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Lithuania",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Telia Lietuva",
+          "url": "https://en.wikipedia.org/wiki/Telia_Lietuva",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-lu",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Luxembourg",
+      "country": "LU",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the incumbent, the three mobile network operators, cable, and the business ISPs with a network of their own that were confirmed; the regulator's list of notified operators was not read.",
+      "missing": [
+        "Operators on the regulator's list that are not named here (the list was not found on the pages read)",
+        "Local cable networks of the communes",
+        "A website for LuxNetwork (it did not answer)",
+        "An announced AS number for LuxConnect (AS44818 is registered to it and was not announced on the read date)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 10,
+      "sources": [
+        {
+          "name": "ILR (Institut Luxembourgeois de Régulation)",
+          "url": "https://www.ilr.lu/",
+          "read": "2026-11-11",
+          "terms": "No reuse terms were found on the front page or on the legal information page on the read date: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Luxembourg",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Luxembourg",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-lv",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Latvia",
+      "country": "LV",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national fixed-line carrier, the three mobile network operators, the state broadcast and backbone operator and the research network; cable, regional and business ISPs are thin.",
+      "missing": [
+        "Regional and local ISPs outside Riga",
+        "Smaller business ISPs and data-centre operators",
+        "The regulator's register of electronic communications merchants (not read)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 8,
+      "sources": [
+        {
+          "name": "SPRK (Public Utilities Commission): electronic communications",
+          "url": "https://www.sprk.gov.lv/lv/elektronisko-sakaru-nozare",
+          "read": "2026-11-11",
+          "terms": "The site says all rights to its published content are reserved: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Latvia",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Latvia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0. An item's id is recorded where the item states one of the entry's AS numbers.",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Tet (company)",
+          "url": "https://en.wikipedia.org/wiki/Tet_(company)",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: SigmaNet",
+          "url": "https://en.wikipedia.org/wiki/SigmaNet",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-mt",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Malta",
+      "country": "MT",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Complete for the three network operators (fixed and mobile); only one smaller business ISP was confirmed, and the regulator's register was not read.",
+      "missing": [
+        "Smaller business ISPs and resellers (the regulator's register was not found on the pages read)",
+        "A trading name for the national research network: it is listed under the University of Malta, which holds its AS number",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 5,
+      "sources": [
+        {
+          "name": "MCA (Malta Communications Authority)",
+          "url": "https://www.mca.org.mt/",
+          "read": "2026-11-11",
+          "terms": "Terms of use: all material is owned by or licensed to the authority and no reuse is granted: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Malta",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Malta",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Malta",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Malta",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "MaltaToday: Melita set to take over Epic",
+          "url": "https://www.maltatoday.com.mt/news/national/144424/melita_set_to_take_over_epic",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-mx",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Mexico",
+      "country": "MX",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carrier, the three mobile network operators, the main cable and fibre operators, the shared wholesale mobile network and the university network; business ISPs and regional cable operators are thin.",
+      "missing": [
+        "Regional cable operators and wireless ISPs",
+        "Business ISPs beyond Axtel, Bestel and Flo Networks",
+        "The state operator CFE Telecomunicaciones e Internet para Todos (its pages did not answer on the read date)",
+        "An AS number for Flo Networks (none registered in Mexico was found)",
+        "Websites for Telmex, Telcel, Totalplay, izzi, Bestel and Megacable (they did not answer an automated request on the read date)",
+        "Status pages (none was found)",
+        "The regulator's register is a search application: it could not be read as a list"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "CRT (Comisión Reguladora de Telecomunicaciones): public register of concessions",
+          "url": "https://rpc.crt.gob.mx/vrpc/",
+          "read": "2026-11-11",
+          "terms": "No reuse licence was found on the page read on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Mexico and 5 more pages",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Mexico",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-my",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Malaysia",
+      "country": "MY",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the fixed-line incumbent, the mobile network operators, the main fibre providers and the wholesale 5G network; business ISPs and the operators of Sabah and Sarawak are partial.",
+      "missing": [
+        "Smaller business ISPs",
+        "Regional operators of Sabah and Sarawak other than Sacofa",
+        "Mobile virtual network operators",
+        "Satellite providers",
+        "A website for TIME (it refused an automated check on the read date)",
+        "Status pages (none was found that answered a check)"
+      ],
+      "entries": 11,
+      "sources": [
+        {
+          "name": "MCMC (Malaysian Communications and Multimedia Commission): registers of licences",
+          "url": "https://www.mcmc.gov.my/en/legal/registers",
+          "read": "2026-11-11",
+          "terms": "The site shows a copyright notice; its terms-of-use page did not answer on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Malaysia and Telecommunications in Malaysia",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Malaysia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
       "id": "providers-nl",
       "kind": "providers",
       "version": "1.2.0",
@@ -340,6 +2532,944 @@
           "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
           "read": "2026-11-11",
           "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-no",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Norway",
+      "country": "NO",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the three mobile networks, the main national fibre and business networks and the research network; the many regional fibre companies are partial (two are listed).",
+      "missing": [
+        "Most regional and municipal fibre companies (many sell under the Altibox name)",
+        "Smaller business ISPs",
+        "A website for Sikt (it refused an automated request on the read date)",
+        "Status pages for Altibox, Eidsiva and NTE (none answered a check on the read date)"
+      ],
+      "entries": 9,
+      "sources": [
+        {
+          "name": "Nkom (Norwegian Communications Authority): list of registered providers",
+          "url": "https://nkom.no/ekom-markedet/liste-over-registrerte-tilbydere",
+          "read": "2026-11-11",
+          "terms": "No reuse licence was found on the pages read on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Norway and 3 more pages",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Norway",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-nz",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: New Zealand",
+      "country": "NZ",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the mobile network operators, the four wholesale fibre networks and the common satellite service; smaller retail providers and business ISPs are partial.",
+      "missing": [
+        "Smaller retail broadband providers, among them the power companies other than Mercury",
+        "Regional wireless ISPs",
+        "Smaller business ISPs",
+        "A register of operators (none that could be read was found on the read date)"
+      ],
+      "entries": 13,
+      "sources": [
+        {
+          "name": "Commerce Commission: telecommunications",
+          "url": "https://comcom.govt.nz/regulated-industries/telecommunications",
+          "read": "2026-11-11",
+          "terms": "Crown copyright; the site's copyright page licenses its material under Creative Commons Attribution 4.0 unless marked otherwise. Nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in New Zealand and Telecommunications in New Zealand",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_New_Zealand",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-ph",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Philippines",
+      "country": "PH",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carriers, the three mobile network operators, the main fibre and cable providers, two business ISPs, the research network and the common satellite service.",
+      "missing": [
+        "The regulator's operator register (the NTC site refused an automated check on the read date)",
+        "Provincial cable operators and regional ISPs",
+        "Smaller business ISPs",
+        "Websites for Smart, Globe, Sky and PREGINET (none gave a normal answer to an automated check on the read date)",
+        "Status pages (none was found that answered a check)"
+      ],
+      "entries": 10,
+      "sources": [
+        {
+          "name": "NTC (National Telecommunications Commission)",
+          "url": "https://ntc.gov.ph/",
+          "read": "2026-11-11",
+          "terms": "The site refused an automated check on the read date, so its terms were not read and nothing is taken.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in the Philippines and Telecommunications in the Philippines",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_the_Philippines",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-pl",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Poland",
+      "country": "PL",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national fixed-line carrier, the four mobile network operators, the largest cable operators and the main wholesale fibre networks; business ISPs are partial.",
+      "missing": [
+        "Local cable and fibre operators (several thousand undertakings are registered)",
+        "Smaller business ISPs and the city academic networks",
+        "AS numbers for the wholesale-only fibre networks Światłowód Inwestycje, Nexera and Polski Światłowód Otwarty (none found)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 17,
+      "sources": [
+        {
+          "name": "UKE (Office of Electronic Communications): register of telecommunications undertakings",
+          "url": "https://bip.uke.gov.pl/rpt/",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Poland",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Poland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in Poland",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Poland",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: UPC Polska",
+          "url": "https://en.wikipedia.org/wiki/UPC_Polska",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for a date and a name (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-pt",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Portugal",
+      "country": "PT",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the four network operators (fixed and mobile) and the cable operator; wholesale rural fibre networks and business ISPs are partial.",
+      "missing": [
+        "Operators that serve only Madeira or the Azores",
+        "Smaller business ISPs",
+        "Rural wholesale fibre networks other than dstelecom",
+        "An AS number for DIGI (none confirmed)",
+        "A website for Claranet Portugal (it did not answer)",
+        "Support and status pages (none recorded)"
+      ],
+      "entries": 12,
+      "sources": [
+        {
+          "name": "ANACOM: registered providers of electronic communications",
+          "url": "https://www.anacom.pt/",
+          "read": "2026-11-11",
+          "terms": "The site did not answer an automated read on the read date and its terms were not read: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Portugal",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Portugal",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Portugal",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Portugal",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database full-text search (RIPE NCC)",
+          "url": "https://apps.db.ripe.net/db-web-ui/fulltextsearch",
+          "read": "2026-11-11",
+          "terms": "The database terms were not read on the read date: nothing is copied. Searched by company name to find candidate AS numbers; each was then confirmed as the entries above and below say.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "Total Telecom: Digi Portugal and Nowo",
+          "url": "https://totaltele.com/digi-portugal-acquires-nowo-communications-for-e150m/",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-ro",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Romania",
+      "country": "RO",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the three national operators after the takeover of Telekom Romania Mobile in 2025, and the research network; business ISPs are thin and local networks are not listed.",
+      "missing": [
+        "Local cable and neighbourhood fibre networks (several hundred)",
+        "Most business ISPs: only three are listed, and the regulator's register could not be read (its site failed the secure connection)",
+        "The government network operator STS (its site did not answer; not a commercial provider)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 7,
+      "sources": [
+        {
+          "name": "ANCOM (National Authority for Management and Regulation in Communications)",
+          "url": "https://www.ancom.ro/",
+          "read": "2026-11-11",
+          "terms": "The site did not answer an automated read on the read date and its terms were not read: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Romania",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Romania",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in Romania",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Romania",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Telekom Romania",
+          "url": "https://en.wikipedia.org/wiki/Telekom_Romania",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for dates and names (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Vodafone Romania",
+          "url": "https://en.wikipedia.org/wiki/Vodafone_Romania",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-se",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Sweden",
+      "country": "SE",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the mobile network operators and the largest broadband and business ISPs; open-fibre network owners and the municipal city networks are partial.",
+      "missing": [
+        "The municipal city networks (stadsnät): well over a hundred, only Stokab is listed",
+        "Smaller business ISPs and regional broadband providers",
+        "AS numbers for Stokab and Open Infra (none confirmed as announced)",
+        "Satellite providers",
+        "Status pages other than the three that answered a check on the read date"
+      ],
+      "entries": 14,
+      "sources": [
+        {
+          "name": "PTS (Swedish Post and Telecom Authority)",
+          "url": "https://www.pts.se/",
+          "read": "2026-11-11",
+          "terms": "The start page answered; the pages under it, the operator list among them, returned a bot-check page to an automated read, so the register and the terms were not read: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Sweden",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Sweden",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Sweden",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Sweden",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "Its terms were not read: nothing is copied. Searched by name to find the numbers to confirm.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: Com Hem",
+          "url": "https://en.wikipedia.org/wiki/Com_Hem",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check a fact only; no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-sg",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Singapore",
+      "country": "SG",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the national carriers, the mobile network operators, the main fibre broadband providers and the wholesale fibre network; business ISPs are partial.",
+      "missing": [
+        "Smaller business ISPs and data-centre providers",
+        "Mobile virtual network operators",
+        "An AS number for NetLink Trust (wholesale only: it sells no internet service)",
+        "Status pages (none was found that answered a check)"
+      ],
+      "entries": 10,
+      "sources": [
+        {
+          "name": "IMDA (Infocomm Media Development Authority): list of telecommunication licensees",
+          "url": "https://www.imda.gov.sg/regulations-and-licences/licensing/list-of-telecommunication-licensees",
+          "read": "2026-11-11",
+          "terms": "The page links to terms of use that could not be read by an automated check; no reuse licence was found, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Singapore and Telecommunications in Singapore",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Singapore",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikidata",
+          "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+          "read": "2026-11-11",
+          "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-si",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Slovenia",
+      "country": "SI",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the four national operators (fixed and mobile) and the research network; business ISPs and local cable operators are partial.",
+      "missing": [
+        "Local cable operators and smaller business ISPs",
+        "AS8591 of A1 Slovenija (registered to it and not announced on the read date)",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 7,
+      "sources": [
+        {
+          "name": "AKOS (Agency for Communication Networks and Services): registers",
+          "url": "https://www.akos-rs.si/registri",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Slovenia",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Slovenia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Internet in Slovenia",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Slovenia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Wikipedia: A1 Slovenija",
+          "url": "https://en.wikipedia.org/wiki/A1_Slovenija",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-sk",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Slovakia",
+      "country": "SK",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the four mobile network operators (three sell fixed lines) and the main cable operator; business ISPs and regional operators are partial.",
+      "missing": [
+        "Regional cable, fibre and wireless ISPs",
+        "Smaller business ISPs",
+        "An AS number for O2 Slovakia (its registry record holds none) and the network company behind it",
+        "Satellite providers",
+        "Status pages (none checked)"
+      ],
+      "entries": 10,
+      "sources": [
+        {
+          "name": "RÚ (Regulatory Authority for Electronic Communications and Postal Services)",
+          "url": "https://www.teleoff.gov.sk/",
+          "read": "2026-11-11",
+          "terms": "The page was requested on the read date; its reuse terms were not read (they are in the national language), so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Slovakia",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Slovakia",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE Database (RIPE NCC): organisation and aut-num objects",
+          "url": "https://apps.db.ripe.net/db-web-ui/query",
+          "read": "2026-11-11",
+          "terms": "The RIPE Database terms were not re-read for this pack; it is treated like RIPEstat data: nothing is copied. Consulted to find which AS numbers an organisation holds.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "Press reports on the SWAN mergers",
+          "url": "https://developingtelecoms.com/telecom-business/operator-news/12604-slovak-operators-swan-and-4ka-merged-on-new-year-eve.html",
+          "read": "2026-11-11",
+          "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Slovak Telekom",
+          "url": "https://en.wikipedia.org/wiki/Slovak_Telekom",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Cited for names and dates (facts); no text is copied.",
+          "use": "cross-check"
+        }
+      ]
+    },
+    {
+      "id": "providers-th",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Thailand",
+      "country": "TH",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carriers, the mobile network operators, the main fibre broadband name and five business ISPs; names are given in Latin script, as the providers write them on their own pages.",
+      "missing": [
+        "Names in Thai script (none was confirmed against a source that may be copied)",
+        "The regulator's operator register (the NBTC site refused an automated check on the read date, and it is in Thai)",
+        "Smaller business ISPs and regional operators",
+        "Satellite providers",
+        "Websites for NT, INET and UniNet (none answered an automated check on the read date)",
+        "Status pages (none was found that answered a check)"
+      ],
+      "entries": 10,
+      "sources": [
+        {
+          "name": "NBTC (National Broadcasting and Telecommunications Commission)",
+          "url": "https://www.nbtc.go.th/",
+          "read": "2026-11-11",
+          "terms": "The site refused an automated check on the read date, so its terms were not read and nothing is taken.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Thailand and Telecommunications in Thailand",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Thailand",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-tr",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Türkiye",
+      "country": "TR",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the national carrier, the three mobile network operators, the main fibre, cable and alternative broadband names and the research network; business ISPs and regional operators are thin.",
+      "missing": [
+        "Regional ISPs and smaller alternative operators",
+        "Business ISPs beyond İşNet",
+        "Websites for TurkNet and Millenicom (they did not answer an automated request on the read date)",
+        "Status pages (none was found)",
+        "The regulator's list of authorised operators is an application that needs a browser: it could not be read",
+        "Names were checked in Latin script against English-language pages only"
+      ],
+      "entries": 11,
+      "sources": [
+        {
+          "name": "BTK (Bilgi Teknolojileri ve İletişim Kurumu): authorisations",
+          "url": "https://kurumsal.btk.gov.tr/yetkilendirmeler",
+          "read": "2026-11-11",
+          "terms": "No reuse licence was read on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Turkey and 3 more pages",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Turkey",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and former names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider or a company the entry names.",
+          "use": "cross-check"
+        },
+        {
+          "name": "RIPE NCC list of AS names",
+          "url": "https://ftp.ripe.net/ripe/asnames/asn.txt",
+          "read": "2026-11-11",
+          "terms": "No licence statement was read: used only to find candidate AS numbers, each then confirmed as above; nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        }
+      ]
+    },
+    {
+      "id": "providers-tw",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Taiwan",
+      "country": "TW",
+      "read": "2026-11-11",
+      "partial": false,
+      "coverage": "Complete for the three national carriers (which are also the three mobile network operators since the mergers of 2023) and the academic networks; cable operators and business ISPs are partial.",
+      "missing": [
+        "Regional cable operators outside the three largest groups",
+        "Smaller business ISPs",
+        "AS numbers for 中嘉寬頻 (Homeplus) and 是方電訊 (Chief Telecom): none confirmed; AS17408, which Chief maintains, is registered to AboveNet Communications Taiwan",
+        "Websites of 台灣寬頻通訊 (TBC) and TANet (neither answered an automated check on the read date)",
+        "Status pages (none was checked)"
+      ],
+      "entries": 11,
+      "sources": [
+        {
+          "name": "National Communications Commission (NCC)",
+          "url": "https://www.ncc.gov.tw/",
+          "read": "2026-11-11",
+          "terms": "The site refused an automated request on the read date (HTTP 403) and its terms were not read: nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Taiwan",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Taiwan",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Wikipedia: Telecommunications in Taiwan",
+          "url": "https://en.wikipedia.org/wiki/Telecommunications_in_Taiwan",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names only (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat terms forbid redistributing RIPEstat data: nothing is copied. Consulted to confirm, for each AS number, that the registered holder is the named provider.",
+          "use": "cross-check"
+        },
+        {
+          "name": "APNIC RDAP (the registry's own record of an AS number)",
+          "url": "https://rdap.apnic.net/",
+          "read": "2026-11-11",
+          "terms": "The APNIC Whois terms allow lookups for internet operational purposes and forbid bulk copying or redistribution without consent: nothing is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
           "use": "copied"
         },
         {
@@ -431,6 +3561,76 @@
           "url": null,
           "read": "2026-11-11",
           "terms": "Cited for a date and a name (facts); no text is copied.",
+          "use": "cited"
+        }
+      ]
+    },
+    {
+      "id": "providers-vn",
+      "kind": "providers",
+      "version": "1.0.0",
+      "title": "Common providers: Vietnam",
+      "country": "VN",
+      "read": "2026-11-11",
+      "partial": true,
+      "coverage": "Partial. Covers the three large carriers, the mobile network operators, two cable operators, three business ISPs and the research network; names are as the providers write them, without the long Vietnamese company names.",
+      "missing": [
+        "Full Vietnamese company names (none was confirmed against a source that may be copied)",
+        "The regulator's operator register (the telecommunications authority's site did not answer on the read date)",
+        "Smaller ISPs and regional cable operators",
+        "Satellite providers",
+        "Websites for VNPT, VTVcab and VinaREN (none answered an automated check on the read date)",
+        "Status pages (none was found that answered a check)"
+      ],
+      "entries": 11,
+      "sources": [
+        {
+          "name": "Ministry of Science and Technology (the ministry that regulates telecommunications)",
+          "url": "https://mst.gov.vn/",
+          "read": "2026-11-11",
+          "terms": "The site shows a copyright notice in Vietnamese and no reuse licence was found on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "VNNIC (Vietnam Internet Network Information Center)",
+          "url": "https://vnnic.vn/",
+          "read": "2026-11-11",
+          "terms": "The site shows a copyright notice and no reuse licence was found on the read date, so nothing is copied.",
+          "use": "cited"
+        },
+        {
+          "name": "Wikipedia: Internet in Vietnam and Telecommunications in Vietnam",
+          "url": "https://en.wikipedia.org/wiki/Internet_in_Vietnam",
+          "read": "2026-11-11",
+          "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+          "use": "cross-check"
+        },
+        {
+          "name": "Each provider's own public website",
+          "url": null,
+          "read": "2026-11-11",
+          "terms": "Only the address itself is recorded (a fact); no content is copied.",
+          "use": "copied"
+        },
+        {
+          "name": "RIPEstat as-overview (RIPE NCC)",
+          "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+          "read": "2026-11-11",
+          "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+          "use": "cross-check"
+        },
+        {
+          "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+          "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+          "read": "2026-11-11",
+          "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+          "use": "copied"
+        },
+        {
+          "name": "PeeringDB",
+          "url": "https://www.peeringdb.com/aup",
+          "read": "2026-11-11",
+          "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
           "use": "cited"
         }
       ]

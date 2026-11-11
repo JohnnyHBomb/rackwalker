@@ -31,7 +31,7 @@ import zlib
 from typing import Any
 
 from . import packs
-from .country import ISO_CODES, NAMES as COUNTRY_NAMES
+from .country import ISO_CODES, NAMES as COUNTRY_NAMES, fold as fold_country
 from .estate import Estate, natural
 from .estate import name_of as nm
 from .setupops import COUNTRY_OF, RETIRED
@@ -376,9 +376,12 @@ def ask_provider(ctx: Any, site_id: int, closing: list[dict[str, str]] | None = 
         hit = packs.match_provider({"name": name, "slug": packs.slugify(name), "asns": [], "aka": []}, known)
         if hit is not None:
             return hit["id"], hit["name"], []
-        exact = [x for x in p.search_providers(name, country, limit=3) if packs.same_name(x["name"], name)]
-        if exact:
-            return from_pack(exact[0])
+        exact = [x for x in p.search_providers(name, country, limit=12) if packs.same_name(x["name"], name)]
+        near = [x for x in exact if x["country"] in (country, None)]
+        # a name of the site's own country or of the backbone names is that provider; so is a name only one pack lists.
+        # A name several countries use for different networks ("Telenet", "TIM") is recorded as typed, with no AS number
+        if near or len(exact) == 1:
+            return from_pack((near or exact)[0])
         return "@provider", name, [{"op": "create_provider", "target": {"kind": "provider", "id": None}, "client_ref": "provider", "fields": {"name": name}}]
 
     offered = [x for x in p.providers_of(country) if packs.match_provider(x, known) is None]
@@ -455,7 +458,7 @@ def country_typed(text: str) -> tuple[Any, str | None]:
     """A typed country: its ISO 3166-1 code, or a name the game knows ("Belgium", "UK"). Two letters that are no
     country's code are not taken, so no region is made for a slip of the keyboard."""
     t = text.strip()
-    code = COUNTRY_NAMES.get(re.sub(r"[^a-z ]", "", t.lower()).strip())          # first, so "UK" reads as GB
+    code = COUNTRY_NAMES.get(fold_country(t))          # first, so "UK" reads as GB
     if code is None and re.fullmatch(r"[A-Za-z]{2}", t) and t.upper() in ISO_CODES:
         code = t.upper()
     if code is None:
@@ -468,14 +471,10 @@ def country_typed(text: str) -> tuple[Any, str | None]:
 def flow_first_site(ctx: Any) -> list[dict[str, Any]]:
     q = _q()
     e = ctx.e
-    p = packs.load()
     look = ["Decide which building or room is your first site: the one you can walk to today is a good one."]
-    got = ctx.choice("country", "Which country is your first site in?",
-                     [q.choice(f"country:{cc}", country_name(cc)) for cc in p.countries()[:6]] + [q.choice("other", "Another country", "other")], look)
-    if got == "other":
-        code = ctx.text("country_code", "Which country? Type its name, or its two-letter code (BE, JP).", country_typed, "for example Belgium, or BE", look)
-    else:
-        code = got.split(":")[1]
+    # one question, typed: with a provider pack for some fifty countries, no short list of them is the right one
+    code = ctx.text("country_code", "Which country is your first site in? Type its name, or its two-letter code (BE, JP).", country_typed,
+                    "for example Belgium, or BE", look)
     taken = {s["name"].lower() for s in e.sites.values()}
 
     def check(t: str) -> tuple[Any, str | None]:

@@ -11,6 +11,7 @@ its parents: give the country region to the site, or name the country on the add
 from __future__ import annotations
 
 import re
+import unicodedata
 
 # The 249 officially assigned ISO 3166-1 alpha-2 codes.
 ISO_CODES = frozenset((
@@ -26,7 +27,9 @@ ISO_CODES = frozenset((
 # Two-letter codes that are not countries.
 NOT_COUNTRIES = {"EU", "UN", "XX", "ZZ"}
 
-# Country names (and common short or older names) -> code. Lower case, punctuation stripped.
+# Country names (and common short or older names) -> code, as `fold` leaves them: lower case, accents off, no
+# punctuation. Every country with a provider pack has its English name here, so a region called "Bulgaria" or a typed
+# "Hong Kong" reads as that country; a few names a country uses for itself in Latin script are known too.
 NAMES: dict[str, str] = {
     "united kingdom": "GB", "uk": "GB", "great britain": "GB", "britain": "GB", "england": "GB", "scotland": "GB",
     "wales": "GB", "northern ireland": "GB", "united kingdom of great britain and northern ireland": "GB",
@@ -37,11 +40,29 @@ NAMES: dict[str, str] = {
     "czech republic": "CZ", "greece": "GR", "united states": "US", "united states of america": "US", "usa": "US",
     "canada": "CA", "mexico": "MX", "brazil": "BR", "argentina": "AR", "japan": "JP", "china": "CN", "india": "IN",
     "australia": "AU", "new zealand": "NZ", "south africa": "ZA", "singapore": "SG", "south korea": "KR",
+    "bulgaria": "BG", "croatia": "HR", "cyprus": "CY", "estonia": "EE", "hungary": "HU", "latvia": "LV",
+    "lithuania": "LT", "malta": "MT", "romania": "RO", "slovakia": "SK", "slovenia": "SI", "turkiye": "TR",
+    "turkey": "TR", "hong kong": "HK", "taiwan": "TW", "indonesia": "ID", "malaysia": "MY", "philippines": "PH",
+    "the philippines": "PH", "thailand": "TH", "vietnam": "VN", "viet nam": "VN",
+    "republic of korea": "KR", "espana": "ES", "italia": "IT", "osterreich": "AT", "schweiz": "CH", "suisse": "CH",
+    "belgie": "BE", "belgique": "BE", "danmark": "DK", "norge": "NO", "sverige": "SE", "suomi": "FI",
+    "polska": "PL", "brasil": "BR",
 }
+# The name a country is shown under, and the name of the region the game makes for it, where the first name above
+# in title case is not it.
+SHOWN: dict[str, str] = {"TR": "Türkiye"}
 
 
-def _norm(s: str) -> str:
-    return re.sub(r"[^a-z ]", "", s.lower()).strip()
+def fold(s: str) -> str:
+    """A country name as it is compared: lower case, accents off ("España" is "espana"), letters and spaces only."""
+    plain = "".join(ch for ch in unicodedata.normalize("NFKD", s.casefold()) if not unicodedata.combining(ch))
+    return re.sub(r"[^a-z ]", "", plain).strip()
+
+
+def name_of(code: str) -> str | None:
+    """The English name of a country the game knows by name, or None."""
+    code = code.upper()
+    return SHOWN.get(code) or next((n.title() for n, c in NAMES.items() if c == code), None)
 
 
 def code_of(text: str | None) -> str | None:
@@ -49,8 +70,8 @@ def code_of(text: str | None) -> str | None:
     if not text:
         return None
     t = text.strip()
-    if _norm(t) in NAMES:  # first, so "UK" reads as GB rather than as a code
-        return NAMES[_norm(t)]
+    if fold(t) in NAMES:  # first, so "UK" reads as GB rather than as a code
+        return NAMES[fold(t)]
     if re.fullmatch(r"[A-Za-z]{2}", t):
         c = t.upper()
         return None if c in NOT_COUNTRIES else c

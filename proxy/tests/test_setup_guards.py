@@ -598,7 +598,7 @@ def test_the_first_site_goes_into_the_region_netbox_holds_for_its_country(tmp_pa
     box = EmptyBox()
     region = box.create("dcim/regions", {"name": name, "slug": slug})
     cl = game(tmp_path, monkeypatch, box)
-    say(cl, FIRST_SITE, ("country", {"choice": "country:GB"}), ("site_name", {"text": "Harbour Office"}))
+    say(cl, FIRST_SITE, ("country_code", {"text": "GB"}), ("site_name", {"text": "Harbour Office"}))
     v = apply(cl, FIRST_SITE)
     assert v["complete"] and v["mode"] == "real"
     assert len(box.data["dcim/regions"]) == 1 and box.data["dcim/sites"][0]["region"]["id"] == region["id"]
@@ -623,8 +623,9 @@ def test_the_country_codes_are_the_assigned_ones():
 def test_uk_typed_as_a_country_makes_the_region_united_kingdom(tmp_path, monkeypatch):
     box = EmptyBox()
     cl = game(tmp_path, monkeypatch, box)
-    q = say(cl, FIRST_SITE, ("country", {"choice": "other"}))
-    assert q["step"]["prompt"] == "Which country? Type its name, or its two-letter code (BE, JP)."
+    q = next(x for x in board(cl)["quests"] if x["id"] == FIRST_SITE)
+    assert q["step"]["id"] == "country_code" and q["step"]["input"] == "text"
+    assert q["step"]["prompt"] == "Which country is your first site in? Type its name, or its two-letter code (BE, JP)."
     bad = post(cl, "answer", FIRST_SITE, step="country_code", text="QQ")
     assert bad["step"]["id"] == "country_code" and bad["step"]["error"].startswith("That is not a country code the game knows.")
     say(cl, FIRST_SITE, ("country_code", {"text": "UK"}), ("site_name", {"text": "Head Office"}))
@@ -861,7 +862,7 @@ def test_a_player_who_may_only_add_sites_is_told_the_first_site_will_be_written_
     cl = game(tmp_path, monkeypatch, box)
     b = board(cl)
     assert b["can_write"] is True and b["write_blocked"].startswith("Your NetBox user may not add cables,") and "Lines that need that run as practice" in b["write_blocked"]
-    q = say(cl, FIRST_SITE, ("country", {"choice": "country:NL"}), ("site_name", {"text": "Button Yard"}))
+    q = say(cl, FIRST_SITE, ("country_code", {"text": "NL"}), ("site_name", {"text": "Button Yard"}))
     assert q["status"] == "ready" and q["write_blocked"] is None             # the line's own verdict: this one is written
     v = post(cl, "apply", FIRST_SITE)
     assert v["mode"] == "real" and v["xp_awarded"] == 60 and [s["name"] for s in box.data["dcim/sites"]] == ["Button Yard"]

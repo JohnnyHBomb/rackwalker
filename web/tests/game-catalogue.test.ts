@@ -1,10 +1,11 @@
 // The device catalogue as it is shown: every state has its own mark and its own word, an entry's note is shown, and
 // nothing that the device-type library does not confirm carries the tick.
 import { describe, expect, it } from 'vitest';
-import type { CatalogueItem, Quest } from '../src/contracts/scene.gen';
-import { catalogueRow } from '../src/game/panels';
+import type { CatalogueItem, PackList, Quest } from '../src/contracts/scene.gen';
+import { catalogueRow, packSections } from '../src/game/panels';
 import { wouldWrite } from '../src/game/quests';
 import catalogue from '../../fixtures/game-catalogue.json';
+import packs from '../../fixtures/packs.json';
 
 const item = (over: Partial<CatalogueItem>): CatalogueItem => ({
   id: 1, manufacturer: 'Juniper', model: 'EX2300-24P', part_number: 'EX2300-24P', status: 'verified', note: null, devices: 2, first_seen: null, ...over,
@@ -55,5 +56,36 @@ describe('what the Apply button will do', () => {
     // nothing proposed: no verdict of its own, the log's summary stands
     expect(wouldWrite({ ...ready, proposal: null }, { can_write: false })).toBe(false);
     expect(wouldWrite({ ...ready, proposal: null }, { can_write: true })).toBe(true);
+  });
+});
+
+describe('the packs the game ships with, as the catalogue lists them', () => {
+  const list = packs as unknown as PackList;
+
+  it('puts the provider packs under one heading that counts the countries and the partial ones', () => {
+    const { providers, others, heading } = packSections(list.packs);
+    expect(providers.length).toBe(50);
+    expect(providers.every((p) => p.kind === 'providers')).toBe(true);
+    expect(others.map((p) => p.kind)).toEqual(['devices', 'serials']);
+    expect(providers.length + others.length).toBe(list.packs.length);
+    const partial = providers.filter((p) => p.partial).length;
+    expect(partial).toBeGreaterThan(0);
+    expect(heading).toBe(`Provider packs: 49 countries and the international names (${partial} partial)`);
+    // by the name of the country, not by its code (Spain is ES, and stands after Slovenia); the international pack last
+    const titles = providers.map((p) => p.title);
+    expect(titles.slice(0, 3)).toEqual(['Common providers: Australia', 'Common providers: Austria', 'Common providers: Belgium']);
+    expect(titles.indexOf('Common providers: Spain')).toBeGreaterThan(titles.indexOf('Common providers: Slovenia'));
+    expect(providers.at(-1)!.country).toBeNull();
+    expect(providers.slice(0, -1).every((p) => p.country)).toBe(true);
+    // every partial pack has something to show under "Missing"
+    for (const p of providers.filter((x) => x.partial)) expect(p.missing.length, p.id).toBeGreaterThan(0);
+  });
+
+  it('counts one country as one, and says nothing of partial packs when there are none', () => {
+    const one = list.packs.filter((p) => p.id === 'providers-nl');
+    expect(one[0]!.partial).toBe(false);
+    expect(packSections(one).heading).toBe('Provider packs: 1 country');
+    expect(packSections(list.packs.filter((p) => p.id === 'providers-international')).heading).toBe('Provider packs: the international names (1 partial)');
+    expect(packSections([])).toEqual({ providers: [], others: [], heading: 'Provider packs: ' });
   });
 });

@@ -92,7 +92,7 @@ def test_an_empty_live_netbox_is_set_up_by_playing_and_how_long_it_takes(nbx, tm
         b = _board(cl)
         assert b["message"].startswith("NetBox has no site yet.") and b["next_quest_id"] == "q:estate_no_site:estate:0" and b["can_write"]
         # ---- the site
-        play.say("q:estate_no_site:estate:0", ("country", {"choice": "country:NL"}), ("site_name", {"text": "Mill Lane"}))
+        play.say("q:estate_no_site:estate:0", ("country_code", {"text": "NL"}), ("site_name", {"text": "Mill Lane"}))
         v = play.apply("q:estate_no_site:estate:0")
         assert v["mode"] == "real" and v["complete"] and v["xp_awarded"] == 60, v["message"]
         site = rows(nbx, "dcim/sites/", slug="mill-lane")[0]
