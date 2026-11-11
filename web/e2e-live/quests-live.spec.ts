@@ -81,7 +81,9 @@ test('live: a quest line from the giver to a cable NetBox confirms, with XP, a t
     await page.keyboard.press('KeyE');
     await expect.poll(async () => (await game(page)).dialogue?.script, { timeout: 30_000 }).toBe('quest-offer');
     await page.screenshot({ path: `${SHOTS}/live-giver.png` });
-    await choose(page, "Let's find out");
+    // the giver's first line is the way out of North Depot (the seed's circuits are private lines between its sites);
+    // this player may add cables only, so the cable line is the one played
+    await choose(page, 'Or: The other end of nd-rtr1 ge-0/0/0');
     await typed(page);
     expect((await game(page)).dialogue!.text).toBe('What is on the other end of nd-rtr1 ge-0/0/0?');
     await choose(page, 'nd-fw1');

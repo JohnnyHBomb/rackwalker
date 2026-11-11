@@ -43,8 +43,8 @@ def _first(nbx, path: str, **params) -> dict:
 @pytest.fixture(scope="module")
 def harbour(nbx):
     """Three switches, an ISP, two rooms with a rack each; nothing interconnected. Removed again afterwards, and
-    before: a run that was cut short leaves it behind, and the suite can then simply be started again."""
-    _clear(nbx)
+    before (here, and before the first live test of a run: conftest.py): a run that was cut short leaves it behind."""
+    clear_harbour(nbx)
 
     def make(path: str, body: dict) -> dict:
         return _post(nbx, path, body)
@@ -66,10 +66,10 @@ def harbour(nbx):
     provider = make("circuits/providers/", {"name": "Example Fibre", "slug": "example-fibre"})
     ctype = make("circuits/circuit-types/", {"name": "Internet", "slug": "internet"})
     yield {"site": site, "rooms": rooms, "racks": racks, "devs": devs, "provider": provider, "ctype": ctype}
-    _clear(nbx)
+    clear_harbour(nbx)
 
 
-def _clear(nbx) -> None:
+def clear_harbour(nbx) -> None:
     """Removes Harbour Office and everything the tests put around it, found by name: what the quests created first
     (cables, circuits with their ends, addresses, the hand-off prefix, the provider's account and network, the
     contacts), then the estate itself."""
@@ -421,7 +421,7 @@ def test_the_way_out_is_played_as_a_whole_chain_to_the_complete_record_live(admi
     # at the first of them and does not ask for them a second time
     assert v["chain"]["label"] == "3 of 3: administrative (not known yet: the account manager, the billing contact and the monthly charge)"
     assert v["quest"]["step"]["id"] == "contact" and v["quest"]["checklist"]
-    assert [f["id"] for f in v["quest"]["step"]["fields"]][::3] == ["contact:account:name", "contact:billing:name"]
+    assert [f["id"] for f in v["quest"]["step"]["fields"]][::4] == ["contact:account:name", "contact:billing:name"]
     # NetBox itself holds every fact where its own model has a place for it
     live = _first(nbx, "circuits/circuits/", id=circuit["id"])
     account = _first(nbx, "circuits/provider-accounts/", provider_id=harbour["provider"]["id"])
@@ -447,8 +447,10 @@ def test_the_way_out_is_played_as_a_whole_chain_to_the_complete_record_live(admi
     assert mine == scanned - 1 - 3                         # "no link, on purpose" from before, and the three facts not known yet
     # ---- the charges go to the custom fields, and the whole record is read back from NetBox
     # ---- the bill turns up: the same desk is the account manager too (one contact in NetBox, a second role)
-    q = _say(admin, rec, ("contact", {"values": {"contact:account:name": CONTACT[0].lower(), "contact:billing:name": BILLING[0], "contact:billing:email": BILLING[1]}}),
-             ("cost", {"values": {"mrc": 245.5}}))
+    q = _say(admin, rec, ("contact", {"values": {"contact:account:name": CONTACT[0].lower(), "contact:billing:name": BILLING[0], "contact:billing:email": BILLING[1]}}))
+    # a name NetBox already has is not taken over in silence: the player says that this contact is the one they mean
+    assert q["step"]["id"].startswith("contact_is_") and q["step"]["prompt"].startswith(f"NetBox already has a contact called {CONTACT[0]}, {CONTACT[1]}. Is that who you mean?")
+    q = _say(admin, rec, (q["step"]["id"], {"choice": "yes"}), ("cost", {"values": {"mrc": 245.5}}))
     assert q["status"] == "ready" and q["changes"][-1] == "Circuit EXF-20417: 245.50 GBP a month."
     assert [o["op"] for o in q["proposal"]["ops"]] == ["assign_contact", "create_contact", "assign_contact", "record_circuit"]
     v = _apply(admin, rec)

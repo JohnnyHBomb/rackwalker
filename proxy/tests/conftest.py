@@ -21,6 +21,22 @@ def repo() -> Path:
     return REPO
 
 
+@pytest.fixture(scope="session", autouse=True)
+def no_leftovers_on_the_live_stack():
+    """A live run that was cut short leaves its made-up site in the dev NetBox, and every later live test that compares
+    the stack with the seed would fail. Before the first live test, what such a run left behind is removed, so the live
+    suites can simply be started again."""
+    import os
+
+    if os.environ.get("RACKWALKER_LIVE_NETBOX") == "1" and os.environ.get("NETBOX_ADMIN_TOKEN"):
+        from .test_live_quests import clear_harbour
+
+        with httpx.Client(base_url=os.environ.get("NETBOX_URL", "") + "/api/", timeout=30,
+                          headers={"Authorization": f"Bearer {os.environ['NETBOX_ADMIN_TOKEN']}"}) as nbx:
+            clear_harbour(nbx)
+    yield
+
+
 def schema_validator(defname: str):
     from rackwalker_proxy.schema import validator
     return validator(defname)

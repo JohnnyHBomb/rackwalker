@@ -178,7 +178,9 @@ class World:
         key = lambda p: self.cterm_key(p) if p["kind"] == "circuit_termination" else [p["kind"], p["id"]]  # noqa: E731
         ports = [{"kind": p["kind"], "id": p["id"], "device_id": self.dev_id[p["device"]], "name": p["name"], "type": p["type"],
                   "enabled": True, "mgmt_only": p["mgmt_only"], "cable_id": p["cable"], "description": "", "mark_connected": False,
-                  "rear_ids": [self.ports[("rear_port", p["device"], p["name"])]["id"]] if p["kind"] == "front_port" else []}
+                  "rear_ids": [self.ports[("rear_port", p["device"], p["name"])]["id"]] if p["kind"] == "front_port" else [],
+                  # the seed's panels are one front port to one rear port of one position
+                  "rear": [[self.ports[("rear_port", p["device"], p["name"])]["id"], 1]] if p["kind"] == "front_port" else [], "positions": 1}
                  for p in self.ports.values()]
         ips, n = [], 0
         for d in m.devices:
@@ -215,7 +217,7 @@ class World:
             "providers": [{"id": 1, "name": m.circuits[0].provider}] if m.circuits else [],
             "circuit_types": [{"id": 1, "name": m.circuits[0].type}] if m.circuits else [],
             "cterms": [{"id": t["id"], "circuit_id": self.circ_id[t["cid"]], "side": t["side"], "site_id": self.site_id[t["site"]],
-                        "network_id": None, "cable_id": t["cable"]} for t in self.cterm.values()],
+                        "location_id": None, "network_id": None, "cable_id": t["cable"]} for t in self.cterm.values()],
             "feeds": [], "platforms": [], "ips": ips,
             # devnetbox/seed.py creates one prefix (the carrier's hand-off range) and none for the devices' own addresses
             "prefixes": [{"id": 1, "prefix": sm.CARRIER_PREFIX, "vrf_id": None}],
