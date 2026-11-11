@@ -65,7 +65,7 @@ test-proxy: $(VENV_OK) packs-check
 # changelog and undoes the test writes.
 test-live: $(VENV_OK)
 	@eval "$$(PY=$(PY) devnetbox/nb.sh env rw | sed 's/^/export /')"; \
-	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 $(PY) -m pytest proxy/tests/test_live_netbox.py proxy/tests/test_live_quests.py proxy/tests/test_live_settlement.py proxy/tests/test_live_setup.py -p no:cacheprovider
+	export NETBOX_ADMIN_TOKEN="$$(PY=$(PY) devnetbox/nb.sh env admin | sed -n 's/^NETBOX_TOKEN=//p')"; RACKWALKER_LIVE_NETBOX=1 $(PY) -m pytest proxy/tests/test_live_netbox.py proxy/tests/test_live_quests.py proxy/tests/test_live_settlement.py proxy/tests/test_live_setup.py proxy/tests/test_live_messy.py -p no:cacheprovider
 
 # The onboarding chain on a NetBox with nothing in it: a stack that was started and never seeded
 # (make netbox-destroy netbox-up). It leaves a site, a rack, two devices, a carrier and a circuit behind and prints how

@@ -321,7 +321,7 @@ def test_an_imported_patch_panel_lets_a_trace_through_and_a_wrong_part_number_is
     assert [t["id"] for t in trace[-1][0]] == [rear["03"]["id"]], trace[-1]
     # ---- a part number in NetBox that the library contradicts: the label decides, and the library's spelling is written
     mx = rows(nbx, "dcim/device-types/", slug="juniper-mx204")[0]
-    assert nbx.patch(f"dcim/device-types/{mx['id']}/", json={"part_number": "MX-204-OLD"}).status_code == 200
+    assert nbx.patch(f"dcim/device-types/{mx['id']}/", json={"part_number": "EX2300-24P"}).status_code == 200
     player.cl.get("/api/game/quests", params={"scope": "netbox", "fresh": True})
     line = f"q:device_type_part_number:device_type:{mx['id']}"
     q = player.say(line, ("label", {"choice": "else"}), ("label_says", {"text": "mx 204"}))

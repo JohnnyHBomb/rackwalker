@@ -217,7 +217,8 @@ class World:
             "providers": [{"id": 1, "name": m.circuits[0].provider, "slug": "example-carrier", "asns": []}] if m.circuits else [],
             # every device type and role of the seed, and no module bays (the seed's models have none)
             "dtypes": [{"id": self.dt_id[t.slug], "manufacturer": t.manufacturer, "model": t.model, "slug": t.slug, "part_number": "",
-                        "u_height": float(t.u_height), "tags": []} for t in sm.DEVICE_TYPES.values()],
+                        "u_height": float(t.u_height), "tags": [], "interfaces": len(t.interfaces),
+                        "templates": len(t.interfaces) + 2 * t.front_rear + len(t.power_ports) + len(t.power_outlets)} for t in sm.DEVICE_TYPES.values()],
             "roles": [{"id": self.role_id[slug], "name": name, "slug": slug} for slug, (name, _) in sm.ROLES.items()],
             "module_bays": [],
             "circuit_types": [{"id": 1, "name": m.circuits[0].type}] if m.circuits else [],

@@ -283,7 +283,7 @@ imports at most eight models from the library.
 | Op | Creates or changes | Needs of the player's NetBox user |
 |---|---|---|
 | `create_site` | a site, and the region of its country when missing | add site, add region |
-| `create_provider` | a provider with its ASNs (and their registry when missing) | add provider, add ASN, add RIR |
+| `create_provider` | a provider with its ASNs (and their registry when missing; an ASN NetBox already holds is used) and, from a pack, what kind of network it is as its description | add provider, add ASN, add RIR |
 | `create_circuit_type` | a circuit type | add circuit type |
 | `add_device_type` | a device type with its manufacturer and templates | add device type, manufacturer and each template kind (by hand: also add tag) |
 | `add_module_type` | a module type with its templates | add module type, manufacturer and each template kind (by hand: also add tag) |

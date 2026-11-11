@@ -180,9 +180,10 @@ def test_the_unconnected_estate_is_found_and_ordered_live(admin, harbour):
     b = _board(admin, site)
     kinds = [f["kind"] for f in b["findings"]]
     assert kinds == ["site_no_way_out", "sites_not_linked", "locations_not_linked", "device_unconnected", "device_unconnected",
-                     "device_unconnected", "device_unreachable", "device_unreachable", "device_unreachable", "site_record"]
-    # at most a few lines are open at one site, the most valuable first; the rest wait
-    assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "sites_not_linked", "locations_not_linked"]
+                     "device_unconnected", "device_unreachable", "device_unreachable", "device_unreachable", "site_record", "site_more_devices"]
+    # at most a few lines are open at one site, the most valuable first; the rest wait. Nothing at this site is cabled
+    # yet, so "is there another box here?" stands beside them: optional, and never instead of one
+    assert [q["kind"] for q in b["quests"]] == ["site_no_way_out", "sites_not_linked", "locations_not_linked", "site_more_devices"]
     assert b["queued"] == 7 and all(q["status"] == "offered" for q in b["quests"])
     # the lines on offer are the first stage of three chains; nothing of a later stage is asked yet
     assert [(c["kind"], c["label"]) for c in b["chains"] if c["site_id"] == site] == [

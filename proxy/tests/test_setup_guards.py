@@ -1144,3 +1144,18 @@ def test_an_import_keeps_bridge_membership_and_comments_and_a_pack_provider_says
     by_name = {p["name"]: p for p in box.data["circuits/providers"]}
     assert by_name["KPN"]["description"] == "National carrier" and "description" not in by_name["Harbour Wireless Co-op"]
     assert r["ops"][1]["after"]["description"] == "National carrier"
+
+
+def test_a_tall_box_is_not_placed_where_it_would_stick_out_of_the_rack(tmp_path, monkeypatch):
+    box = EmptyBox()
+    site, kit = kit_box(box)                    # a rack of 12 units
+    cl = game(tmp_path, monkeypatch, box)
+    q = say(cl, kit, ("box0_find0", {"text": "SR650"}), ("box0_pick0", {"choice": f"lib:{lib('Lenovo', 'ThinkSystem SR650')['n']}"}))
+    say(cl, kit, ("role0", {"choice": next(c["id"] for c in q["step"]["choices"] if c["label"] == "Server")}))
+    q = post(cl, "answer", kit, step="box0_details", values={"name": "ml-srv1", "position": 12})
+    assert q["step"]["id"] == "box0_details" and q["step"]["error"] == "Rack ML-1 has 12 units; a box of 2U does not fit at U12."
+    q = say(cl, kit, ("box0_details", {"values": {"name": "ml-srv1", "position": 11}}), ("more0", {"choice": "no"}))
+    assert q["proposal"]["ops"][-1]["fields"]["position"] == 11
+    # the library lists this model's part number as a pattern: the import leaves the part number empty
+    assert "part number not given" in q["changes"][0]
+    assert apply(cl, kit)["complete"] and box.data["dcim/device-types"][0]["part_number"] == ""

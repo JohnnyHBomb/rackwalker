@@ -23857,7 +23857,9 @@
       "slug": "ex-c9000",
       "part_number": "",
       "u_height": 2.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 25,
+      "templates": 27
     },
     {
       "id": 2,
@@ -23866,7 +23868,9 @@
       "slug": "ex-a2400",
       "part_number": "",
       "u_height": 1.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 27,
+      "templates": 28
     },
     {
       "id": 3,
@@ -23875,7 +23879,9 @@
       "slug": "ex-r400",
       "part_number": "",
       "u_height": 1.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 6,
+      "templates": 7
     },
     {
       "id": 4,
@@ -23884,7 +23890,9 @@
       "slug": "ex-f200",
       "part_number": "",
       "u_height": 1.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 8,
+      "templates": 9
     },
     {
       "id": 5,
@@ -23893,7 +23901,9 @@
       "slug": "ex-s2",
       "part_number": "",
       "u_height": 2.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 3,
+      "templates": 5
     },
     {
       "id": 6,
@@ -23902,7 +23912,9 @@
       "slug": "ex-pp24",
       "part_number": "",
       "u_height": 1.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 0,
+      "templates": 48
     },
     {
       "id": 7,
@@ -23911,7 +23923,9 @@
       "slug": "ex-pdu16",
       "part_number": "",
       "u_height": 0.0,
-      "tags": []
+      "tags": [],
+      "interfaces": 0,
+      "templates": 17
     }
   ],
   "roles": [
