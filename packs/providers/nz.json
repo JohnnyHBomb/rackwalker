@@ -1,0 +1,326 @@
+{
+ "pack": "providers",
+ "id": "providers-nz",
+ "version": "1.0.0",
+ "country": "NZ",
+ "title": "Common providers: New Zealand",
+ "read": "2026-11-11",
+ "partial": false,
+ "coverage": "Complete for the national carriers, the mobile network operators, the four wholesale fibre networks and the common satellite service; smaller retail providers and business ISPs are partial.",
+ "missing": [
+  "Smaller retail broadband providers, among them the power companies other than Mercury",
+  "Regional wireless ISPs",
+  "Smaller business ISPs",
+  "A register of operators (none that could be read was found on the read date)"
+ ],
+ "sources": [
+  {
+   "name": "Commerce Commission: telecommunications",
+   "url": "https://comcom.govt.nz/regulated-industries/telecommunications",
+   "read": "2026-11-11",
+   "terms": "Crown copyright; the site's copyright page licenses its material under Creative Commons Attribution 4.0 unless marked otherwise. Nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. Its market monitoring reports are the place to look for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in New Zealand and Telecommunications in New Zealand",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_New_Zealand",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "5 of 13 names were found on the pages."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "13 of 13 websites and 5 business, support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+   "use": "cross-check",
+   "result": "18 AS numbers confirmed; a number whose registered holder was another company, or that was not announced on the read date, was left out."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "2 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Spark",
+   "slug": "spark",
+   "kind": "national_carrier",
+   "aka": [
+    "Spark New Zealand",
+    "Telecom New Zealand",
+    "Spark Business",
+    "Skinny"
+   ],
+   "asns": [
+    {
+     "asn": 4771,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4648,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9325,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.spark.co.nz/",
+   "support_url": "https://www.spark.co.nz/help/outages",
+   "notes": "AS4648 is its international gateway."
+  },
+  {
+   "name": "One NZ",
+   "slug": "one-nz",
+   "kind": "national_carrier",
+   "aka": [
+    "One New Zealand",
+    "Vodafone New Zealand"
+   ],
+   "asns": [
+    {
+     "asn": 9500,
+     "rir": "apnic"
+    },
+    {
+     "asn": 4768,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://one.nz/",
+   "support_url": "https://one.nz/network/status/",
+   "notes": "Formerly Vodafone New Zealand."
+  },
+  {
+   "name": "2degrees",
+   "slug": "2degrees",
+   "kind": "national_carrier",
+   "aka": [
+    "Two Degrees Mobile",
+    "2degrees Networks",
+    "Orcon",
+    "Slingshot",
+    "Flip"
+   ],
+   "asns": [
+    {
+     "asn": 23655,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9790,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.2degrees.nz/",
+   "support_url": "https://www.2degrees.nz/network-status",
+   "notes": "Mobile and fixed; Orcon, Slingshot and Flip are its companies."
+  },
+  {
+   "name": "Chorus",
+   "slug": "chorus",
+   "kind": "wholesale",
+   "aka": [
+    "Chorus New Zealand"
+   ],
+   "asns": [
+    {
+     "asn": 132898,
+     "rir": "apnic"
+    },
+    {
+     "asn": 152653,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.chorus.co.nz/",
+   "support_url": "https://www.chorus.co.nz/outages",
+   "notes": "The largest wholesale fibre and copper network: the retail provider's name is on the bill."
+  },
+  {
+   "name": "Enable",
+   "slug": "enable",
+   "kind": "wholesale",
+   "aka": [
+    "Enable Networks"
+   ],
+   "asns": [
+    {
+     "asn": 131196,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.enable.net.nz/",
+   "support_url": null,
+   "notes": "Wholesale fibre, Christchurch area."
+  },
+  {
+   "name": "Tuatahi First Fibre",
+   "slug": "tuatahi-first-fibre",
+   "kind": "wholesale",
+   "aka": [
+    "Tuatahi"
+   ],
+   "asns": [
+    {
+     "asn": 150287,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.tuatahifibre.co.nz/",
+   "support_url": null,
+   "notes": "Wholesale fibre network."
+  },
+  {
+   "name": "Northpower Fibre",
+   "slug": "northpower-fibre",
+   "kind": "wholesale",
+   "aka": [
+    "Northpower"
+   ],
+   "asns": [
+    {
+     "asn": 131254,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://northpower.nz/",
+   "support_url": null,
+   "notes": "Wholesale fibre network. The AS number is registered to Northpower."
+  },
+  {
+   "name": "Mercury",
+   "slug": "mercury",
+   "kind": "cable_fibre",
+   "aka": [
+    "Mercury NZ"
+   ],
+   "asns": [
+    {
+     "asn": 55850,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.mercury.co.nz/",
+   "support_url": "https://www.mercury.co.nz/broadband",
+   "notes": "The second address is its broadband page."
+  },
+  {
+   "name": "Voyager",
+   "slug": "voyager",
+   "kind": "business_isp",
+   "aka": [
+    "Voyager Internet"
+   ],
+   "asns": [
+    {
+     "asn": 56030,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://voyager.nz/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Kordia",
+   "slug": "kordia",
+   "kind": "business_isp",
+   "aka": [
+    "Kordia Limited"
+   ],
+   "asns": [
+    {
+     "asn": 24324,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.kordia.co.nz/",
+   "support_url": null,
+   "notes": null,
+   "wikidata": "Q6431534"
+  },
+  {
+   "name": "Devoli",
+   "slug": "devoli",
+   "kind": "wholesale",
+   "aka": [],
+   "asns": [
+    {
+     "asn": 45177,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://devoli.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "REANNZ",
+   "slug": "reannz",
+   "kind": "research_education",
+   "aka": [
+    "Research and Education Advanced Network New Zealand"
+   ],
+   "asns": [
+    {
+     "asn": 38022,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.reannz.co.nz/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX Starlink",
+    "Starlink Business"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": "Satellite; also in the international pack under the same AS number.",
+   "wikidata": "Q127785902"
+  }
+ ]
+}

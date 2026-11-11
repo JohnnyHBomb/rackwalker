@@ -1,0 +1,282 @@
+{
+ "pack": "providers",
+ "id": "providers-ph",
+ "version": "1.0.0",
+ "country": "PH",
+ "title": "Common providers: Philippines",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carriers, the three mobile network operators, the main fibre and cable providers, two business ISPs, the research network and the common satellite service.",
+ "missing": [
+  "The regulator's operator register (the NTC site refused an automated check on the read date)",
+  "Provincial cable operators and regional ISPs",
+  "Smaller business ISPs",
+  "Websites for Smart, Globe, Sky and PREGINET (none gave a normal answer to an automated check on the read date)",
+  "Status pages (none was found that answered a check)"
+ ],
+ "sources": [
+  {
+   "name": "NTC (National Telecommunications Commission)",
+   "url": "https://ntc.gov.ph/",
+   "read": "2026-11-11",
+   "terms": "The site refused an automated check on the read date, so its terms were not read and nothing is taken.",
+   "use": "cited",
+   "result": "Did not answer (HTTP 403). It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in the Philippines and Telecommunications in the Philippines",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_the_Philippines",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "9 of 10 names were found on the pages."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "6 of 10 websites and 1 business, support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+   "use": "cross-check",
+   "result": "15 AS numbers confirmed; a number whose registered holder was another company, or that was not announced on the read date, was left out."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "PLDT",
+   "slug": "pldt",
+   "kind": "national_carrier",
+   "aka": [
+    "Philippine Long Distance Telephone Company",
+    "PLDT Enterprise",
+    "PLDT Home"
+   ],
+   "asns": [
+    {
+     "asn": 9299,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17796,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.pldt.com/",
+   "support_url": "https://pldtenterprise.com/",
+   "notes": "The support address is the business site."
+  },
+  {
+   "name": "Smart",
+   "slug": "smart",
+   "kind": "mobile",
+   "aka": [
+    "Smart Communications",
+    "Smart Broadband",
+    "Smart Bro"
+   ],
+   "asns": [
+    {
+     "asn": 10139,
+     "rir": "apnic"
+    },
+    {
+     "asn": 45608,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Mobile; part of the PLDT group. Its website gave no normal answer to an automated check on the read date."
+  },
+  {
+   "name": "Globe",
+   "slug": "globe",
+   "kind": "national_carrier",
+   "aka": [
+    "Globe Telecom",
+    "Globe Business",
+    "Globe At Home"
+   ],
+   "asns": [
+    {
+     "asn": 4775,
+     "rir": "apnic"
+    },
+    {
+     "asn": 132199,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Mobile and fixed. Its website refused an automated check on the read date."
+  },
+  {
+   "name": "Converge",
+   "slug": "converge",
+   "kind": "cable_fibre",
+   "aka": [
+    "Converge ICT Solutions",
+    "Converge ICT",
+    "ComClark"
+   ],
+   "asns": [
+    {
+     "asn": 17639,
+     "rir": "apnic"
+    },
+    {
+     "asn": 56207,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.convergeict.com/",
+   "support_url": null,
+   "notes": "Fibre. AS56207 is registered to ComClark Network & Technology."
+  },
+  {
+   "name": "DITO",
+   "slug": "dito",
+   "kind": "mobile",
+   "aka": [
+    "DITO Telecommunity"
+   ],
+   "asns": [
+    {
+     "asn": 139831,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://dito.ph/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Sky Cable",
+   "slug": "sky-cable",
+   "kind": "cable_fibre",
+   "aka": [
+    "SKY",
+    "SKYcable",
+    "SKYBroadband",
+    "Sky Fiber"
+   ],
+   "asns": [
+    {
+     "asn": 23944,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17970,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Cable. No website answered an automated check on the read date."
+  },
+  {
+   "name": "Eastern Communications",
+   "slug": "eastern-communications",
+   "kind": "business_isp",
+   "aka": [
+    "Eastern Telecommunications Philippines",
+    "ETPI",
+    "Eastern Telecoms"
+   ],
+   "asns": [
+    {
+     "asn": 9658,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://eastern.com.ph/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Radius Telecoms",
+   "slug": "radius-telecoms",
+   "kind": "business_isp",
+   "aka": [
+    "Radius"
+   ],
+   "asns": [
+    {
+     "asn": 55821,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.radius.com.ph/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "PREGINET",
+   "slug": "preginet",
+   "kind": "research_education",
+   "aka": [
+    "Philippine Research, Education and Government Information Network"
+   ],
+   "asns": [
+    {
+     "asn": 9821,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "The AS number is registered to the Department of Science and Technology. No website answered."
+  },
+  {
+   "name": "Starlink",
+   "slug": "starlink",
+   "kind": "satellite",
+   "aka": [
+    "SpaceX Starlink",
+    "Starlink Business"
+   ],
+   "asns": [
+    {
+     "asn": 14593,
+     "rir": "arin"
+    }
+   ],
+   "website": "https://www.starlink.com/",
+   "support_url": null,
+   "notes": "Satellite; also in the international pack under the same AS number.",
+   "wikidata": "Q127785902"
+  }
+ ]
+}

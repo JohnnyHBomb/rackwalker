@@ -1,0 +1,508 @@
+{
+ "pack": "providers",
+ "id": "providers-in",
+ "version": "1.0.0",
+ "country": "IN",
+ "title": "Common providers: India",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carriers, the mobile network operators, the largest cable and fibre operators, the main business ISPs, two state-backed wholesale networks and the research networks.",
+ "missing": [
+  "Regional and city cable and fibre operators (many hundreds hold an ISP licence)",
+  "Smaller business ISPs and data-centre providers",
+  "Satellite providers",
+  "Websites for BSNL, MTNL and RailTel (none answered an automated check on the read date)",
+  "Status pages (none was found that answered a check)",
+  "The regulator's operator lists: the licence list of the Department of Telecommunications was not read (its site gave no readable page)"
+ ],
+ "sources": [
+  {
+   "name": "TRAI (Telecom Regulatory Authority of India)",
+   "url": "https://www.trai.gov.in/",
+   "read": "2026-11-11",
+   "terms": "The site's terms carry a disclaimer and \"All rights reserved\"; no reuse licence was found on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "Wikipedia: Internet in India and Telecommunications in India",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_India",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "11 of 21 names were found on the pages."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "18 of 21 websites and 3 business, support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+   "use": "cross-check",
+   "result": "32 AS numbers confirmed; a number whose registered holder was another company, or that was not announced on the read date, was left out."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "Wikidata",
+   "url": "https://www.wikidata.org/wiki/Wikidata:Licensing",
+   "read": "2026-11-11",
+   "terms": "CC0 1.0: no conditions. The item id of a provider is recorded as a stable cross-reference.",
+   "use": "copied",
+   "result": "1 entries carry the id of their own Wikidata item; each item states one of the entry's AS numbers (property P3797). A parent group's item is not used."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Jio",
+   "slug": "jio",
+   "kind": "national_carrier",
+   "aka": [
+    "Reliance Jio",
+    "Reliance Jio Infocomm",
+    "JioFiber",
+    "JioBusiness",
+    "Jio AirFiber"
+   ],
+   "asns": [
+    {
+     "asn": 55836,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.jio.com/",
+   "support_url": "https://www.jio.com/business/",
+   "notes": "Mobile and fibre. The support address is the business page.",
+   "wikidata": "Q18643672"
+  },
+  {
+   "name": "Airtel",
+   "slug": "airtel",
+   "kind": "national_carrier",
+   "aka": [
+    "Bharti Airtel",
+    "Airtel Business",
+    "Airtel Xstream Fiber",
+    "Bharti Telemedia"
+   ],
+   "asns": [
+    {
+     "asn": 9498,
+     "rir": "apnic"
+    },
+    {
+     "asn": 24560,
+     "rir": "apnic"
+    },
+    {
+     "asn": 45609,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.airtel.in/",
+   "support_url": "https://www.airtel.in/business/",
+   "notes": "AS9498 is the backbone, AS24560 fixed broadband, AS45609 mobile. The support address is the business page."
+  },
+  {
+   "name": "Vi",
+   "slug": "vi",
+   "kind": "mobile",
+   "aka": [
+    "Vodafone Idea",
+    "Vodafone India",
+    "Idea Cellular",
+    "Vi Business"
+   ],
+   "asns": [
+    {
+     "asn": 38266,
+     "rir": "apnic"
+    },
+    {
+     "asn": 55410,
+     "rir": "apnic"
+    },
+    {
+     "asn": 45271,
+     "rir": "apnic"
+    },
+    {
+     "asn": 55644,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.myvi.in/",
+   "support_url": "https://www.myvi.in/business",
+   "notes": "Vodafone Idea: the merged Vodafone India and Idea Cellular. The support address is the business page."
+  },
+  {
+   "name": "BSNL",
+   "slug": "bsnl",
+   "kind": "national_carrier",
+   "aka": [
+    "Bharat Sanchar Nigam Limited",
+    "Bharat Fibre",
+    "National Internet Backbone"
+   ],
+   "asns": [
+    {
+     "asn": 9829,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Fixed and mobile carrier. Its website did not answer an automated check on the read date."
+  },
+  {
+   "name": "MTNL",
+   "slug": "mtnl",
+   "kind": "national_carrier",
+   "aka": [
+    "Mahanagar Telephone Nigam Limited"
+   ],
+   "asns": [
+    {
+     "asn": 17813,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Carrier of Delhi and Mumbai. Its website did not answer an automated check on the read date."
+  },
+  {
+   "name": "Tata Communications",
+   "slug": "tata-communications",
+   "kind": "business_isp",
+   "aka": [
+    "VSNL",
+    "Videsh Sanchar Nigam",
+    "Tata Communications Internet Services"
+   ],
+   "asns": [
+    {
+     "asn": 4755,
+     "rir": "apnic"
+    },
+    {
+     "asn": 10199,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.tatacommunications.com/",
+   "support_url": null,
+   "notes": "The domestic network. Its international backbone, AS6453, is in the international pack."
+  },
+  {
+   "name": "Tata Tele Business Services",
+   "slug": "tata-tele-business-services",
+   "kind": "business_isp",
+   "aka": [
+    "Tata Teleservices",
+    "TTSL",
+    "TTML",
+    "Tata Teleservices (Maharashtra)"
+   ],
+   "asns": [
+    {
+     "asn": 45820,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17762,
+     "rir": "apnic"
+    },
+    {
+     "asn": 134540,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.tatatelebusiness.com/",
+   "support_url": null,
+   "notes": "Business lines of Tata Teleservices."
+  },
+  {
+   "name": "ACT Fibernet",
+   "slug": "act-fibernet",
+   "kind": "cable_fibre",
+   "aka": [
+    "Atria Convergence Technologies",
+    "ACT Broadband",
+    "ACT Enterprise"
+   ],
+   "asns": [
+    {
+     "asn": 24309,
+     "rir": "apnic"
+    },
+    {
+     "asn": 18209,
+     "rir": "apnic"
+    },
+    {
+     "asn": 131269,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.actcorp.in/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Hathway",
+   "slug": "hathway",
+   "kind": "cable_fibre",
+   "aka": [
+    "Hathway Cable and Datacom",
+    "Hathway Broadband"
+   ],
+   "asns": [
+    {
+     "asn": 17488,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.hathway.com/",
+   "support_url": null,
+   "notes": "Cable. Reliance Industries holds the majority."
+  },
+  {
+   "name": "DEN Broadband",
+   "slug": "den-broadband",
+   "kind": "cable_fibre",
+   "aka": [
+    "DEN Networks",
+    "Den Digital Entertainment"
+   ],
+   "asns": [
+    {
+     "asn": 45184,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.dennetworks.com/",
+   "support_url": null,
+   "notes": "Cable. Reliance Industries holds the majority."
+  },
+  {
+   "name": "GTPL Broadband",
+   "slug": "gtpl-broadband",
+   "kind": "cable_fibre",
+   "aka": [
+    "GTPL Hathway",
+    "Gujarat Telelink"
+   ],
+   "asns": [
+    {
+     "asn": 45916,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.gtpl.net/",
+   "support_url": null,
+   "notes": "Cable and fibre."
+  },
+  {
+   "name": "Excitel",
+   "slug": "excitel",
+   "kind": "cable_fibre",
+   "aka": [
+    "Excitel Broadband"
+   ],
+   "asns": [
+    {
+     "asn": 133982,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.excitel.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Tata Play Fiber",
+   "slug": "tata-play-fiber",
+   "kind": "cable_fibre",
+   "aka": [
+    "Tata Play Broadband",
+    "Tata Sky Broadband"
+   ],
+   "asns": [
+    {
+     "asn": 134674,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.tataplayfiber.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "YOU Broadband",
+   "slug": "you-broadband",
+   "kind": "cable_fibre",
+   "aka": [
+    "YOU Broadband & Cable India"
+   ],
+   "asns": [
+    {
+     "asn": 18207,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.youbroadband.in/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Asianet Broadband",
+   "slug": "asianet-broadband",
+   "kind": "cable_fibre",
+   "aka": [
+    "Asianet"
+   ],
+   "asns": [
+    {
+     "asn": 17465,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://asianetbroadband.in/",
+   "support_url": null,
+   "notes": "Cable."
+  },
+  {
+   "name": "Sify",
+   "slug": "sify",
+   "kind": "business_isp",
+   "aka": [
+    "Sify Technologies",
+    "Sify Limited"
+   ],
+   "asns": [
+    {
+     "asn": 9583,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.sifytechnologies.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Spectra",
+   "slug": "spectra",
+   "kind": "business_isp",
+   "aka": [
+    "Shyam Spectra"
+   ],
+   "asns": [
+    {
+     "asn": 10029,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.spectra.co/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "RailTel",
+   "slug": "railtel",
+   "kind": "wholesale",
+   "aka": [
+    "RailTel Corporation of India",
+    "RailWire"
+   ],
+   "asns": [
+    {
+     "asn": 24186,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Its website did not answer an automated check on the read date."
+  },
+  {
+   "name": "Powergrid Teleservices",
+   "slug": "powergrid-teleservices",
+   "kind": "wholesale",
+   "aka": [
+    "POWERTEL",
+    "POWERGRID",
+    "Power Grid Corporation of India"
+   ],
+   "asns": [
+    {
+     "asn": 132215,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.powergrid.in/",
+   "support_url": null,
+   "notes": "The address is the parent company's."
+  },
+  {
+   "name": "NKN",
+   "slug": "nkn",
+   "kind": "research_education",
+   "aka": [
+    "National Knowledge Network"
+   ],
+   "asns": [
+    {
+     "asn": 55824,
+     "rir": "apnic"
+    },
+    {
+     "asn": 55847,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://nkn.gov.in/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "ERNET India",
+   "slug": "ernet-india",
+   "kind": "research_education",
+   "aka": [
+    "ERNET",
+    "Education and Research Network"
+   ],
+   "asns": [
+    {
+     "asn": 2697,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://ernet.in/",
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}

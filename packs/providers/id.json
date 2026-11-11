@@ -1,0 +1,360 @@
+{
+ "pack": "providers",
+ "id": "providers-id",
+ "version": "1.0.0",
+ "country": "ID",
+ "title": "Common providers: Indonesia",
+ "read": "2026-11-11",
+ "partial": true,
+ "coverage": "Partial. Covers the national carrier, the mobile network operators, the main cable and fibre providers, three business and wholesale networks and the research network.",
+ "missing": [
+  "Regional ISPs (the provider association counts many hundreds of members)",
+  "The regulator's operator register (the ministry's site refused an automated check on the read date)",
+  "Smaller business ISPs and network access providers",
+  "Satellite providers",
+  "Websites for First Media and PLN Icon Plus (none answered an automated check on the read date)",
+  "Status pages (none was found that answered a check)"
+ ],
+ "sources": [
+  {
+   "name": "Komdigi (Ministry of Communication and Digital Affairs)",
+   "url": "https://www.komdigi.go.id/",
+   "read": "2026-11-11",
+   "terms": "The site refused an automated check on the read date, so its terms were not read and nothing is taken.",
+   "use": "cited",
+   "result": "Did not answer (HTTP 403). It is the authority to consult for operators this pack lacks."
+  },
+  {
+   "name": "APJII (the Indonesian internet service provider association)",
+   "url": "https://apjii.or.id/",
+   "read": "2026-11-11",
+   "terms": "No terms or reuse licence were found on the page on the read date, so nothing is copied.",
+   "use": "cited",
+   "result": "The page answered on the read date. Its member list is the place to look for a regional ISP."
+  },
+  {
+   "name": "Wikipedia: Internet in Indonesia",
+   "url": "https://en.wikipedia.org/wiki/Internet_in_Indonesia",
+   "read": "2026-11-11",
+   "terms": "CC BY-SA 4.0. Used to cross-check names and ownership (facts); no text is copied.",
+   "use": "cross-check",
+   "result": "1 of 13 names were found on the page."
+  },
+  {
+   "name": "Each provider's own public website",
+   "url": null,
+   "read": "2026-11-11",
+   "terms": "Only the address itself is recorded (a fact); no content is copied.",
+   "use": "copied",
+   "result": "11 of 13 websites and 3 business, support or status pages answered an automated check; an address that did not answer is left empty."
+  },
+  {
+   "name": "RIPEstat as-overview (RIPE NCC)",
+   "url": "https://stat.ripe.net/docs/data-api/api-endpoints/as-overview",
+   "read": "2026-11-11",
+   "terms": "The RIPEstat service terms were read on the read date; RIPEstat data is not redistributed: nothing is copied. Consulted to confirm, for each AS number, the registered holder and that the number is announced.",
+   "use": "cross-check",
+   "result": "23 AS numbers confirmed; a number whose registered holder was another company, or that was not announced on the read date, was left out."
+  },
+  {
+   "name": "NRO delegated statistics (the regional registries' joint list of assigned AS numbers)",
+   "url": "https://ftp.ripe.net/pub/stats/ripencc/nro-stats/latest/nro-delegated-stats",
+   "read": "2026-11-11",
+   "terms": "Published by the registries for public use; only which registry holds each AS number is taken (a fact).",
+   "use": "copied",
+   "result": "Every AS number in the pack was found in the list; its registry is recorded beside it."
+  },
+  {
+   "name": "PeeringDB",
+   "url": "https://www.peeringdb.com/aup",
+   "read": "2026-11-11",
+   "terms": "The acceptable use policy forbids reproducing PeeringDB data outside approved operational purposes: nothing is copied; cited as a place to look up an AS number.",
+   "use": "cited",
+   "result": "Terms read; no data taken."
+  }
+ ],
+ "providers": [
+  {
+   "name": "Telkom Indonesia",
+   "slug": "telkom-indonesia",
+   "kind": "national_carrier",
+   "aka": [
+    "Telkom",
+    "Telekomunikasi Indonesia",
+    "Telkomnet",
+    "Indibiz"
+   ],
+   "asns": [
+    {
+     "asn": 7713,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.telkom.co.id/",
+   "support_url": null,
+   "notes": "Its home broadband name IndiHome is run by Telkomsel."
+  },
+  {
+   "name": "Telkomsel",
+   "slug": "telkomsel",
+   "kind": "mobile",
+   "aka": [
+    "Telekomunikasi Selular",
+    "IndiHome"
+   ],
+   "asns": [
+    {
+     "asn": 23693,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.telkomsel.com/",
+   "support_url": "https://www.telkomsel.com/indihome",
+   "notes": "Mobile, and IndiHome home broadband. The support address is the IndiHome page."
+  },
+  {
+   "name": "Indosat Ooredoo Hutchison",
+   "slug": "indosat-ooredoo-hutchison",
+   "kind": "mobile",
+   "aka": [
+    "Indosat",
+    "IOH",
+    "IM3",
+    "Tri",
+    "Indosat Ooredoo"
+   ],
+   "asns": [
+    {
+     "asn": 4761,
+     "rir": "apnic"
+    },
+    {
+     "asn": 45727,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://ioh.co.id/",
+   "support_url": null,
+   "notes": "AS45727 is the former Tri (3) network."
+  },
+  {
+   "name": "XLSMART",
+   "slug": "xlsmart",
+   "kind": "mobile",
+   "aka": [
+    "XL Axiata",
+    "XL",
+    "Smartfren",
+    "Smartfren Telecom"
+   ],
+   "asns": [
+    {
+     "asn": 24203,
+     "rir": "apnic"
+    },
+    {
+     "asn": 17885,
+     "rir": "apnic"
+    },
+    {
+     "asn": 133798,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.xlsmart.co.id/",
+   "support_url": "https://www.xl.co.id/",
+   "notes": "The merged XL Axiata and Smartfren; the numbers are still registered under those names (AS133798 to Smartfren). The second address is XL's."
+  },
+  {
+   "name": "Biznet",
+   "slug": "biznet",
+   "kind": "cable_fibre",
+   "aka": [
+    "Biznet Networks"
+   ],
+   "asns": [
+    {
+     "asn": 17451,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38482,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.biznetnetworks.com/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "First Media",
+   "slug": "first-media",
+   "kind": "cable_fibre",
+   "aka": [
+    "Link Net",
+    "Linknet",
+    "Fastnet"
+   ],
+   "asns": [
+    {
+     "asn": 23700,
+     "rir": "apnic"
+    },
+    {
+     "asn": 9905,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "The trading name of Link Net. Its websites did not answer or refused an automated check on the read date."
+  },
+  {
+   "name": "MyRepublic Indonesia",
+   "slug": "myrepublic-id",
+   "kind": "cable_fibre",
+   "aka": [
+    "MyRepublic",
+    "Eka Mas Republik"
+   ],
+   "asns": [
+    {
+     "asn": 63859,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://myrepublic.co.id/",
+   "support_url": null,
+   "notes": "Trades as MyRepublic; the Singapore provider of that name is registered as another company."
+  },
+  {
+   "name": "CBN",
+   "slug": "cbn",
+   "kind": "cable_fibre",
+   "aka": [
+    "Cyberindo Aditama",
+    "CBN Fiber"
+   ],
+   "asns": [
+    {
+     "asn": 4787,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38158,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38508,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.cbn.id/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Indonet",
+   "slug": "indonet",
+   "kind": "business_isp",
+   "aka": [
+    "INDO Internet",
+    "Indointernet"
+   ],
+   "asns": [
+    {
+     "asn": 9340,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://indonet.id/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "Lintasarta",
+   "slug": "lintasarta",
+   "kind": "business_isp",
+   "aka": [
+    "Aplikanusa Lintasarta"
+   ],
+   "asns": [
+    {
+     "asn": 4800,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38513,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.lintasarta.net/",
+   "support_url": null,
+   "notes": null
+  },
+  {
+   "name": "PLN Icon Plus",
+   "slug": "pln-icon-plus",
+   "kind": "cable_fibre",
+   "aka": [
+    "ICON+",
+    "Indonesia Comnets Plus",
+    "ICONNET",
+    "Icon Plus"
+   ],
+   "asns": [
+    {
+     "asn": 9341,
+     "rir": "apnic"
+    },
+    {
+     "asn": 38757,
+     "rir": "apnic"
+    },
+    {
+     "asn": 46065,
+     "rir": "apnic"
+    }
+   ],
+   "website": null,
+   "support_url": null,
+   "notes": "Its websites did not answer an automated check on the read date."
+  },
+  {
+   "name": "Moratelindo",
+   "slug": "moratelindo",
+   "kind": "wholesale",
+   "aka": [
+    "Mora Telematika Indonesia",
+    "Moratel",
+    "Oxygen.id"
+   ],
+   "asns": [
+    {
+     "asn": 23947,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://www.moratelindo.co.id/",
+   "support_url": "https://oxygen.id/",
+   "notes": "Backbone and wholesale; Oxygen.id is its retail name (the second address)."
+  },
+  {
+   "name": "IDREN",
+   "slug": "idren",
+   "kind": "research_education",
+   "aka": [
+    "Indonesia Research and Education Network"
+   ],
+   "asns": [
+    {
+     "asn": 64302,
+     "rir": "apnic"
+    }
+   ],
+   "website": "https://idren.id/",
+   "support_url": null,
+   "notes": null
+  }
+ ]
+}
