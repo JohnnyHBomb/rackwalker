@@ -17,7 +17,7 @@
     "check:types": "node scripts/gen-types.mjs --check"
   },
   "dependencies": {
-    "pixi.js": "8.22.0"
+    "pixi.js": "8.23.0"
   },
   "devDependencies": {
     "@playwright/test": "1.65.0",
@@ -26,7 +26,7 @@
     "ajv-formats": "3.0.1",
     "json-schema-to-typescript": "16.0.0",
     "typescript": "7.0.2",
-    "vite": "8.3.6",
+    "vite": "8.3.8",
     "vitest": "5.1.0"
   }
 }
